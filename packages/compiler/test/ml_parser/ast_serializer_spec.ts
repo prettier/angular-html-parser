@@ -79,6 +79,8 @@ class _SerializerVisitor implements html.Visitor {
 
   visitComment(comment: html.Comment, context: any): any { return `<!--${comment.value}-->`; }
 
+  visitDocType(docType: html.DocType, context: any): any { return `<!DOCTYPE ${docType.value}-->`; }
+
   visitExpansion(expansion: html.Expansion, context: any): any {
     return `{${expansion.switchValue}, ${expansion.type},${this._visitAll(expansion.cases)}}`;
   }

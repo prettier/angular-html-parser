@@ -72,6 +72,8 @@ class _Expander implements html.Visitor {
 
   visitComment(comment: html.Comment, context: any): any { return comment; }
 
+  visitDocType(docType: html.DocType, context: any): any { return docType; }
+
   visitExpansion(icu: html.Expansion, context: any): any {
     this.isExpanded = true;
     return icu.type == 'plural' ? _expandPluralForm(icu, this.errors) :

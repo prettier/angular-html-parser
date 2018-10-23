@@ -78,6 +78,8 @@ class _TreeBuilder {
         this._consumeText(this._advance());
       } else if (this._peek.type === lex.TokenType.EXPANSION_FORM_START) {
         this._consumeExpansion(this._advance());
+      } else if (this._peek.type === lex.TokenType.DOC_TYPE_START) {
+        this._consumeDocType(this._advance());
       } else {
         // Skip all other tokens...
         this._advance();
@@ -116,6 +118,15 @@ class _TreeBuilder {
     this._advanceIf(lex.TokenType.COMMENT_END);
     const value = text != null ? text.parts[0].trim() : null;
     this._addToParent(new html.Comment(value, token.sourceSpan));
+  }
+
+  private _consumeDocType(startToken: lex.Token) {
+    const text = this._advanceIf(lex.TokenType.RAW_TEXT);
+    const endToken = this._advanceIf(lex.TokenType.DOC_TYPE_END);
+    const value = text != null ? text.parts[0].trim() : null;
+    const sourceSpan = new ParseSourceSpan(
+        startToken.sourceSpan.start, (endToken || text || startToken).sourceSpan.end);
+    this._addToParent(new html.DocType(value, sourceSpan));
   }
 
   private _consumeExpansion(token: lex.Token) {

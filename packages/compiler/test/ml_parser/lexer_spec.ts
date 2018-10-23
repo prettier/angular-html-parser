@@ -107,22 +107,26 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
 
     describe('doctype', () => {
       it('should parse doctypes', () => {
-        expect(tokenizeAndHumanizeParts('<!doctype html>')).toEqual([
-          [lex.TokenType.DOC_TYPE, 'doctype html'],
+        expect(tokenizeAndHumanizeParts('<!doctype  html >')).toEqual([
+          [lex.TokenType.DOC_TYPE_START],
+          [lex.TokenType.RAW_TEXT, 'html '],
+          [lex.TokenType.DOC_TYPE_END],
           [lex.TokenType.EOF],
         ]);
       });
 
       it('should store the locations', () => {
-        expect(tokenizeAndHumanizeSourceSpans('<!doctype html>')).toEqual([
-          [lex.TokenType.DOC_TYPE, '<!doctype html>'],
+        expect(tokenizeAndHumanizeSourceSpans('<!doctype  html >')).toEqual([
+          [lex.TokenType.DOC_TYPE_START, '<!doctype'],
+          [lex.TokenType.RAW_TEXT, 'html '],
+          [lex.TokenType.DOC_TYPE_END, '>'],
           [lex.TokenType.EOF, ''],
         ]);
       });
 
       it('should report missing end doctype', () => {
         expect(tokenizeAndHumanizeErrors('<!')).toEqual([
-          [lex.TokenType.DOC_TYPE, 'Unexpected character "EOF"', '0:2']
+          [lex.TokenType.DOC_TYPE_START, 'Unexpected character "EOF"', '0:2']
         ]);
       });
     });

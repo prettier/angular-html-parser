@@ -26,7 +26,8 @@ export enum TokenType {
   CDATA_END,
   ATTR_NAME,
   ATTR_VALUE,
-  DOC_TYPE,
+  DOC_TYPE_START,
+  DOC_TYPE_END,
   EXPANSION_FORM_START,
   EXPANSION_CASE_VALUE,
   EXPANSION_CASE_EXP_START,
@@ -288,6 +289,13 @@ class _Tokenizer {
     }
   }
 
+  private _requireStrCaseInsensitive(chars: string) {
+    const location = this._getLocation();
+    if (!this._attemptStrCaseInsensitive(chars)) {
+      throw this._createError(_unexpectedCharacterErrorMsg(this._peek), this._getSpan(location));
+    }
+  }
+
   private _attemptCharCodeUntilFn(predicate: (code: number) => boolean) {
     while (!predicate(this._peek)) {
       this._advance();
@@ -396,10 +404,13 @@ class _Tokenizer {
   }
 
   private _consumeDocType(start: ParseLocation) {
-    this._beginToken(TokenType.DOC_TYPE, start);
-    this._attemptUntilChar(chars.$GT);
-    this._advance();
-    this._endToken([this._input.substring(start.offset + 2, this._index - 1)]);
+    this._beginToken(TokenType.DOC_TYPE_START, start);
+    this._requireStrCaseInsensitive('DOCTYPE');
+    this._endToken([]);
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+    const textToken = this._consumeRawText(false, chars.$GT, () => true);
+    this._beginToken(TokenType.DOC_TYPE_END, textToken.sourceSpan.end);
+    this._endToken([]);
   }
 
   private _consumePrefixAndName(): string[] {

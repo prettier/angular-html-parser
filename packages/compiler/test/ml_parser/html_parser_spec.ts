@@ -42,6 +42,12 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
             [html.CDATA, 'text', 0]
           ]);
         });
+
+        it('should parse DocType', () => {
+          expect(humanizeDom(parser.parse('<!DocType  html >', 'TestComp'))).toEqual([
+            [html.DocType, 'html', 0]
+          ]);
+        });
       });
 
       describe('elements', () => {
