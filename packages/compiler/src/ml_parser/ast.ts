@@ -19,6 +19,11 @@ export class Text implements Node {
   visit(visitor: Visitor, context: any): any { return visitor.visitText(this, context); }
 }
 
+export class CDATA implements Node {
+  constructor(public value: string, public sourceSpan: ParseSourceSpan) {}
+  visit(visitor: Visitor, context: any): any { return visitor.visitCdata(this, context); }
+}
+
 export class Expansion implements Node {
   constructor(
       public switchValue: string, public type: string, public cases: ExpansionCase[],
@@ -62,6 +67,7 @@ export interface Visitor {
   visitElement(element: Element, context: any): any;
   visitAttribute(attribute: Attribute, context: any): any;
   visitText(text: Text, context: any): any;
+  visitCdata(text: Text, context: any): any;
   visitComment(comment: Comment, context: any): any;
   visitExpansion(expansion: Expansion, context: any): any;
   visitExpansionCase(expansionCase: ExpansionCase, context: any): any;
@@ -94,6 +100,7 @@ export class RecursiveVisitor implements Visitor {
 
   visitAttribute(ast: Attribute, context: any): any {}
   visitText(ast: Text, context: any): any {}
+  visitCdata(ast: CDATA, context: any): any {}
   visitComment(ast: Comment, context: any): any {}
 
   visitExpansion(ast: Expansion, context: any): any {

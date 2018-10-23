@@ -75,6 +75,8 @@ class _SerializerVisitor implements html.Visitor {
 
   visitText(text: html.Text, context: any): any { return text.value; }
 
+  visitCdata(cdata: html.CDATA, context: any): any { return cdata.value; }
+
   visitComment(comment: html.Comment, context: any): any { return `<!--${comment.value}-->`; }
 
   visitExpansion(expansion: html.Expansion, context: any): any {

@@ -57,6 +57,11 @@ class _Humanizer implements html.Visitor {
     this.result.push(res);
   }
 
+  visitCdata(cdata: html.CDATA, context: any): any {
+    const res = this._appendContext(cdata, [html.CDATA, cdata.value, this.elDepth]);
+    this.result.push(res);
+  }
+
   visitComment(comment: html.Comment, context: any): any {
     const res = this._appendContext(comment, [html.Comment, comment.value, this.elDepth]);
     this.result.push(res);

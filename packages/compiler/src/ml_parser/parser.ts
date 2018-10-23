@@ -104,8 +104,11 @@ class _TreeBuilder {
   }
 
   private _consumeCdata(startToken: lex.Token) {
-    this._consumeText(this._advance());
-    this._advanceIf(lex.TokenType.CDATA_END);
+    const text = this._advance();
+    const value = this._getText(text);
+    const endToken = this._advanceIf(lex.TokenType.CDATA_END);
+    this._addToParent(new html.CDATA(value, new ParseSourceSpan(
+        startToken.sourceSpan.start, (endToken || text).sourceSpan.end)));
   }
 
   private _consumeComment(token: lex.Token) {
@@ -215,7 +218,7 @@ class _TreeBuilder {
     }
   }
 
-  private _consumeText(token: lex.Token) {
+  private _getText(token: lex.Token) {
     let text = token.parts[0];
     if (text.length > 0 && text[0] == '\n') {
       const parent = this._getParentElement();
@@ -224,7 +227,11 @@ class _TreeBuilder {
         text = text.substring(1);
       }
     }
+    return text;
+  }
 
+  private _consumeText(token: lex.Token) {
+    const text = this._getText(token);
     if (text.length > 0) {
       this._addToParent(new html.Text(text, token.sourceSpan));
     }

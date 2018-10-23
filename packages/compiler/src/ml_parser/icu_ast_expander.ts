@@ -68,6 +68,8 @@ class _Expander implements html.Visitor {
 
   visitText(text: html.Text, context: any): any { return text; }
 
+  visitCdata(cdata: html.CDATA, context: any): any { return cdata; }
+
   visitComment(comment: html.Comment, context: any): any { return comment; }
 
   visitExpansion(icu: html.Expansion, context: any): any {

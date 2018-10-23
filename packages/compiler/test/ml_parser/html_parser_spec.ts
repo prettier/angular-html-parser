@@ -39,7 +39,7 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
 
         it('should parse CDATA', () => {
           expect(humanizeDom(parser.parse('<![CDATA[text]]>', 'TestComp'))).toEqual([
-            [html.Text, 'text', 0]
+            [html.CDATA, 'text', 0]
           ]);
         });
       });
