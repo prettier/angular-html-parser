@@ -208,19 +208,26 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
           ]);
         });
 
-        it('should match closing tags case sensitive', () => {
-          const errors = parser.parse('<DiV><P></p></dIv>', 'TestComp').errors;
+        it('should match local closing tags case insensitive', () => {
+          expect(humanizeDom(parser.parse('<DiV><P></p></dIv>', 'TestComp'))).toEqual([
+            [html.Element, 'DiV', 0],
+            [html.Element, 'P', 1],
+          ]);
+        });
+
+        it('should match foreign closing tags case sensitive', () => {
+          const errors = parser.parse('<x:DiV><P></p></x:dIv>', 'TestComp').errors;
           expect(errors.length).toEqual(2);
           expect(humanizeErrors(errors)).toEqual([
             [
-              'p',
-              'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
-              '0:8'
+              ':x:p',
+              'Unexpected closing tag ":x:p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
+              '0:10'
             ],
             [
-              'dIv',
-              'Unexpected closing tag "dIv". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
-              '0:12'
+              ':x:dIv',
+              'Unexpected closing tag ":x:dIv". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
+              '0:14'
             ],
           ]);
         });

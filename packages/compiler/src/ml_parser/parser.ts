@@ -334,7 +334,8 @@ class _TreeBuilder {
   private _popElement(fullName: string): boolean {
     for (let stackIndex = this._elementStack.length - 1; stackIndex >= 0; stackIndex--) {
       const el = this._elementStack[stackIndex];
-      if (el.name == fullName) {
+      const isForeignElement = getNsPrefix(el.name);
+      if (isForeignElement ? el.name == fullName : el.name.toLowerCase() == fullName.toLowerCase()) {
         this._elementStack.splice(stackIndex, this._elementStack.length - stackIndex);
         return true;
       }
