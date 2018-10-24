@@ -53,10 +53,11 @@ export class TokenizeResult {
 export function tokenize(
     source: string, url: string, getTagDefinition: (tagName: string) => TagDefinition,
     tokenizeExpansionForms: boolean = false,
-    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): TokenizeResult {
+    interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
+    canSelfClose = false): TokenizeResult {
   return new _Tokenizer(
              new ParseSourceFile(source, url), getTagDefinition, tokenizeExpansionForms,
-             interpolationConfig)
+             interpolationConfig, canSelfClose)
       .tokenize();
 }
 
@@ -104,7 +105,8 @@ class _Tokenizer {
   constructor(
       private _file: ParseSourceFile, private _getTagDefinition: (tagName: string) => TagDefinition,
       private _tokenizeIcu: boolean,
-      private _interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG) {
+      private _interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
+      private canSelfClose = false) {
     this._input = _file.content;
     this._length = _file.content.length;
     this._advance();
@@ -466,6 +468,10 @@ class _Tokenizer {
       }
 
       throw e;
+    }
+
+    if (this.canSelfClose && this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID) {
+      return;
     }
 
     const contentTokenType = this._getTagDefinition(tagName).contentType;

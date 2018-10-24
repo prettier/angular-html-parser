@@ -244,6 +244,18 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
           ]);
         });
 
+        it('should support self closing elements with canSelfClose', () => {
+          expect(humanizeDom(parser.parse('<div />', 'TestComp', undefined, undefined, true))).toEqual([
+            [html.Element, 'div', 0]
+          ]);
+        });
+
+        it('should support self closing elements (contentType=RAW_TEXT) with canSelfClose', () => {
+          expect(humanizeDom(parser.parse('<script />', 'TestComp', undefined, undefined, true))).toEqual([
+            [html.Element, 'script', 0]
+          ]);
+        });
+
         it('should ignore LF immediately after textarea, pre and listing', () => {
           expect(humanizeDom(parser.parse(
                      '<p>\n</p><textarea>\n</textarea><pre>\n\n</pre><listing>\n\n</listing>',

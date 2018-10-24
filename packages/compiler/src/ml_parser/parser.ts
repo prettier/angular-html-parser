@@ -32,11 +32,12 @@ export class Parser {
 
   parse(
       source: string, url: string, parseExpansionForms: boolean = false,
-      interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ParseTreeResult {
+      interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
+      canSelfClose = false): ParseTreeResult {
     const tokensAndErrors =
-        lex.tokenize(source, url, this.getTagDefinition, parseExpansionForms, interpolationConfig);
+        lex.tokenize(source, url, this.getTagDefinition, parseExpansionForms, interpolationConfig, canSelfClose);
 
-    const treeAndErrors = new _TreeBuilder(tokensAndErrors.tokens, this.getTagDefinition).build();
+    const treeAndErrors = new _TreeBuilder(tokensAndErrors.tokens, this.getTagDefinition, canSelfClose).build();
 
     return new ParseTreeResult(
         treeAndErrors.rootNodes,
@@ -55,7 +56,8 @@ class _TreeBuilder {
   private _elementStack: html.Element[] = [];
 
   constructor(
-      private tokens: lex.Token[], private getTagDefinition: (tagName: string) => TagDefinition) {
+      private tokens: lex.Token[], private getTagDefinition: (tagName: string) => TagDefinition,
+      private canSelfClose: boolean) {
     this._advance();
   }
 
@@ -177,7 +179,7 @@ class _TreeBuilder {
     exp.push(new lex.Token(lex.TokenType.EOF, [], end.sourceSpan));
 
     // parse everything in between { and }
-    const parsedExp = new _TreeBuilder(exp, this.getTagDefinition).build();
+    const parsedExp = new _TreeBuilder(exp, this.getTagDefinition, this.canSelfClose).build();
     if (parsedExp.errors.length > 0) {
       this._errors = this._errors.concat(<TreeError[]>parsedExp.errors);
       return null;
@@ -272,7 +274,7 @@ class _TreeBuilder {
       this._advance();
       selfClosing = true;
       const tagDef = this.getTagDefinition(fullName);
-      if (!(tagDef.canSelfClose || getNsPrefix(fullName) !== null || tagDef.isVoid)) {
+      if (!(this.canSelfClose || tagDef.canSelfClose || getNsPrefix(fullName) !== null || tagDef.isVoid)) {
         this._errors.push(TreeError.create(
             fullName, startTagToken.sourceSpan,
             `Only void and foreign elements can be self closed "${startTagToken.parts[1]}"`));
