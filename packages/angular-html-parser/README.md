@@ -43,8 +43,8 @@ interface Options {
 - add `DocType` node
 - add `nameSpan` field to `Element` and `Attribute`
 - add `canSelfClose` option
-- allow case-insensitive non-foreign closing tags
-- fix `sourceSpan` in `Comment`
+- allow case-insensitive closing tags for non-foreign elements
+- fix `Comment#sourceSpan`
 
 ## Development
 
