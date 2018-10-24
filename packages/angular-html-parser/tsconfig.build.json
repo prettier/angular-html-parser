@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es6",
+    "declaration": true,
+    "importHelpers": true,
+    "rootDir": "..",
+    "outDir": "lib",
+    "baseUrl": ".",
+    "paths": {
+      "tslib": ["node_modules/tslib"]
+    }
+  },
+  "files": ["./src/index.ts"]
+}
