@@ -281,7 +281,8 @@ class _TreeBuilder {
     }
     const end = this._peek.sourceSpan.start;
     const span = new ParseSourceSpan(startTagToken.sourceSpan.start, end);
-    const el = new html.Element(fullName, attrs, [], span, span, undefined);
+    const nameSpan = new ParseSourceSpan(startTagToken.sourceSpan.start.moveBy(1), startTagToken.sourceSpan.end);
+    const el = new html.Element(fullName, attrs, [], span, span, undefined, nameSpan);
     this._pushElement(el);
     if (selfClosing) {
       this._popElement(fullName);
@@ -355,7 +356,7 @@ class _TreeBuilder {
       valueSpan = valueToken.sourceSpan;
     }
     return new html.Attribute(
-        fullName, value, new ParseSourceSpan(attrName.sourceSpan.start, end), valueSpan);
+        fullName, value, new ParseSourceSpan(attrName.sourceSpan.start, end), valueSpan, attrName.sourceSpan);
   }
 
   private _getParentElement(): html.Element|null {

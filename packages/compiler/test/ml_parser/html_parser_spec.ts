@@ -421,7 +421,7 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
 
         it('should not report a value span for an attribute without a value', () => {
           const ast = parser.parse('<div bar></div>', 'TestComp');
-          expect((ast.rootNodes[0] as html.Element).attrs[0].valueSpan).toBeUndefined();
+          expect((ast.rootNodes[0] as html.Element).attrs[0].valueSpan).toBeNull();
         });
 
         it('should report a value span for an attribute with a value', () => {
@@ -429,6 +429,27 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
           const attr = (ast.rootNodes[0] as html.Element).attrs[0];
           expect(attr.valueSpan !.start.offset).toEqual(9);
           expect(attr.valueSpan !.end.offset).toEqual(13);
+        });
+
+        it('should report a name span for an attribute', () => {
+          const ast = parser.parse('<div bar="12"></div>', 'TestComp');
+          const attr = (ast.rootNodes[0] as html.Element).attrs[0];
+          expect(attr.nameSpan !.start.offset).toEqual(5);
+          expect(attr.nameSpan !.end.offset).toEqual(8);
+        });
+
+        it('should report a name span for an element', () => {
+          const ast = parser.parse('<div bar="12"></div>', 'TestComp');
+          const el = (ast.rootNodes[0] as html.Element);
+          expect(el.nameSpan !.start.offset).toEqual(1);
+          expect(el.nameSpan !.end.offset).toEqual(4);
+        });
+
+        it('should not report a name span for an element that is an extra parent', () => {
+          const ast = parser.parse('<table><tr>', 'TestComp');
+          const tbody = (ast.rootNodes[0] as html.Element).children[0] as html.Element;
+          expect(tbody.name).toEqual('tbody');
+          expect(tbody.nameSpan).toBeNull();
         });
       });
 
@@ -461,6 +482,8 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
             visitAttribute(attribute: html.Attribute, context: any): any {}
             visitText(text: html.Text, context: any): any {}
             visitComment(comment: html.Comment, context: any): any {}
+            visitCdata(cdata: html.CDATA, context: any): any {}
+            visitDocType(docType: html.DocType, context: any): any {}
             visitExpansion(expansion: html.Expansion, context: any): any {
               html.visitAll(this, expansion.cases);
             }
@@ -483,6 +506,8 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
             }
             visitText(text: html.Text, context: any): any { throw Error('Unexpected'); }
             visitComment(comment: html.Comment, context: any): any { throw Error('Unexpected'); }
+            visitCdata(cdata: html.CDATA, context: any): any { throw Error('Unexpected'); }
+            visitDocType(docType: html.DocType, context: any): any { throw Error('Unexpected'); }
             visitExpansion(expansion: html.Expansion, context: any): any {
               throw Error('Unexpected');
             }

@@ -42,7 +42,7 @@ export class ExpansionCase implements Node {
 export class Attribute implements Node {
   constructor(
       public name: string, public value: string, public sourceSpan: ParseSourceSpan,
-      public valueSpan?: ParseSourceSpan) {}
+      public valueSpan: ParseSourceSpan|null = null, public nameSpan: ParseSourceSpan|null = null) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitAttribute(this, context); }
 }
 
@@ -50,7 +50,7 @@ export class Element implements Node {
   constructor(
       public name: string, public attrs: Attribute[], public children: Node[],
       public sourceSpan: ParseSourceSpan, public startSourceSpan: ParseSourceSpan|null = null,
-      public endSourceSpan: ParseSourceSpan|null = null) {}
+      public endSourceSpan: ParseSourceSpan|null = null, public nameSpan: ParseSourceSpan|null = null) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitElement(this, context); }
 }
 
