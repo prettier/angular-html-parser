@@ -113,11 +113,13 @@ class _TreeBuilder {
         startToken.sourceSpan.start, (endToken || text).sourceSpan.end)));
   }
 
-  private _consumeComment(token: lex.Token) {
+  private _consumeComment(startToken: lex.Token) {
     const text = this._advanceIf(lex.TokenType.RAW_TEXT);
-    this._advanceIf(lex.TokenType.COMMENT_END);
+    const endToken = this._advanceIf(lex.TokenType.COMMENT_END);
     const value = text != null ? text.parts[0].trim() : null;
-    this._addToParent(new html.Comment(value, token.sourceSpan));
+    const sourceSpan = new ParseSourceSpan(
+        startToken.sourceSpan.start, (endToken || text || startToken).sourceSpan.end);
+    this._addToParent(new html.Comment(value, sourceSpan));
   }
 
   private _consumeDocType(startToken: lex.Token) {

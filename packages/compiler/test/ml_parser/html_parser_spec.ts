@@ -451,6 +451,13 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
           expect(tbody.name).toEqual('tbody');
           expect(tbody.nameSpan).toBeNull();
         });
+
+        it('should support comment', () => {
+          const ast = parser.parse('<!--foo-->', 'TestComp');
+          const comment = (ast.rootNodes[0] as html.Comment);
+          expect(comment.sourceSpan !.start.offset).toEqual(0);
+          expect(comment.sourceSpan !.end.offset).toEqual(10);
+        });
       });
 
       describe('visitor', () => {
