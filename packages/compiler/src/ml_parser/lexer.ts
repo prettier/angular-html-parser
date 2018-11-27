@@ -126,17 +126,25 @@ class _Tokenizer {
       try {
         if (this._attemptCharCode(chars.$LT)) {
           if (this._attemptCharCode(chars.$BANG)) {
-            if (this._attemptCharCode(chars.$LBRACKET)) {
+            if (this._attemptStr('[CDATA[')) {
               this._consumeCdata(start);
-            } else if (this._attemptCharCode(chars.$MINUS)) {
+            } else if (this._attemptStr('--')) {
               this._consumeComment(start);
-            } else {
+            } else if (this._attemptStrCaseInsensitive('doctype')) {
               this._consumeDocType(start);
+            } else {
+              this._consumeBogusComment(start);
             }
           } else if (this._attemptCharCode(chars.$SLASH)) {
             this._consumeTagClose(start);
           } else {
-            this._consumeTagOpen(start);
+            const savedPos = this._savePosition();
+            if (this._attemptCharCode(chars.$QUESTION)) {
+              this._restorePosition(savedPos);
+              this._consumeBogusComment(start);
+            } else {
+              this._consumeTagOpen(start);
+            }
           }
         } else if (!(this._tokenizeIcu && this._tokenizeExpansionForm())) {
           this._consumeText();
@@ -389,16 +397,23 @@ class _Tokenizer {
 
   private _consumeComment(start: ParseLocation) {
     this._beginToken(TokenType.COMMENT_START, start);
-    this._requireCharCode(chars.$MINUS);
     this._endToken([]);
     const textToken = this._consumeRawText(false, chars.$MINUS, () => this._attemptStr('->'));
     this._beginToken(TokenType.COMMENT_END, textToken.sourceSpan.end);
     this._endToken([]);
   }
 
+  // https://www.w3.org/TR/html5/syntax.html#bogus-comment-state
+  private _consumeBogusComment(start: ParseLocation) {
+    this._beginToken(TokenType.COMMENT_START, start);
+    this._endToken([]);
+    const textToken = this._consumeRawText(false, chars.$GT, () => true);
+    this._beginToken(TokenType.COMMENT_END, textToken.sourceSpan.end);
+    this._endToken([]);
+  }
+
   private _consumeCdata(start: ParseLocation) {
     this._beginToken(TokenType.CDATA_START, start);
-    this._requireStr('CDATA[');
     this._endToken([]);
     const textToken = this._consumeRawText(false, chars.$RBRACKET, () => this._attemptStr(']>'));
     this._beginToken(TokenType.CDATA_END, textToken.sourceSpan.end);
@@ -407,9 +422,7 @@ class _Tokenizer {
 
   private _consumeDocType(start: ParseLocation) {
     this._beginToken(TokenType.DOC_TYPE_START, start);
-    this._requireStrCaseInsensitive('DOCTYPE');
     this._endToken([]);
-    this._attemptCharCodeUntilFn(isNotWhitespace);
     const textToken = this._consumeRawText(false, chars.$GT, () => true);
     this._beginToken(TokenType.DOC_TYPE_END, textToken.sourceSpan.end);
     this._endToken([]);

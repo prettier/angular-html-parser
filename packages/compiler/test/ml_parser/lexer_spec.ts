@@ -74,12 +74,6 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
         ]);
       });
 
-      it('should report <!- without -', () => {
-        expect(tokenizeAndHumanizeErrors('<!-a')).toEqual([
-          [lex.TokenType.COMMENT_START, 'Unexpected character "a"', '0:3']
-        ]);
-      });
-
       it('should report missing end comment', () => {
         expect(tokenizeAndHumanizeErrors('<!--')).toEqual([
           [lex.TokenType.RAW_TEXT, 'Unexpected character "EOF"', '0:4']
@@ -105,11 +99,31 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
       });
     });
 
+    describe('bogus comments', () => {
+      it('should parse bogus comments (<!...>)', () => {
+        expect(tokenizeAndHumanizeParts('<!-t\ne\rs\r\nt-->')).toEqual([
+          [lex.TokenType.COMMENT_START],
+          [lex.TokenType.RAW_TEXT, '-t\ne\ns\nt--'],
+          [lex.TokenType.COMMENT_END],
+          [lex.TokenType.EOF],
+        ]);
+      });
+
+      it('should parse bogus comments (<?...>)', () => {
+        expect(tokenizeAndHumanizeParts('<?--t\ne\rs\r\nt--?>')).toEqual([
+          [lex.TokenType.COMMENT_START],
+          [lex.TokenType.RAW_TEXT, '?--t\ne\ns\nt--?'],
+          [lex.TokenType.COMMENT_END],
+          [lex.TokenType.EOF],
+        ]);
+      });
+    });
+
     describe('doctype', () => {
       it('should parse doctypes', () => {
         expect(tokenizeAndHumanizeParts('<!doctype  html >')).toEqual([
           [lex.TokenType.DOC_TYPE_START],
-          [lex.TokenType.RAW_TEXT, 'html '],
+          [lex.TokenType.RAW_TEXT, '  html '],
           [lex.TokenType.DOC_TYPE_END],
           [lex.TokenType.EOF],
         ]);
@@ -118,15 +132,9 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
       it('should store the locations', () => {
         expect(tokenizeAndHumanizeSourceSpans('<!doctype  html >')).toEqual([
           [lex.TokenType.DOC_TYPE_START, '<!doctype'],
-          [lex.TokenType.RAW_TEXT, 'html '],
+          [lex.TokenType.RAW_TEXT, '  html '],
           [lex.TokenType.DOC_TYPE_END, '>'],
           [lex.TokenType.EOF, ''],
-        ]);
-      });
-
-      it('should report missing end doctype', () => {
-        expect(tokenizeAndHumanizeErrors('<!')).toEqual([
-          [lex.TokenType.DOC_TYPE_START, 'Unexpected character "EOF"', '0:2']
         ]);
       });
     });
@@ -147,12 +155,6 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
           [lex.TokenType.RAW_TEXT, 't\ne\rs\r\nt'],
           [lex.TokenType.CDATA_END, ']]>'],
           [lex.TokenType.EOF, ''],
-        ]);
-      });
-
-      it('should report <![ without CDATA[', () => {
-        expect(tokenizeAndHumanizeErrors('<![a')).toEqual([
-          [lex.TokenType.CDATA_START, 'Unexpected character "a"', '0:3']
         ]);
       });
 

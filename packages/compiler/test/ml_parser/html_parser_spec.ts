@@ -321,6 +321,22 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
         });
       });
 
+      describe('bogus comments', () => {
+        it('should preserve bogus comments', () => {
+          expect(humanizeDom(parser.parse('<!- comment --><div></div>', 'TestComp'))).toEqual([
+            [html.Comment, '- comment --', 0],
+            [html.Element, 'div', 0],
+          ]);
+        });
+
+        it('should preserve bogus comments', () => {
+          expect(humanizeDom(parser.parse('<?- comment --><div></div>', 'TestComp'))).toEqual([
+            [html.Comment, '?- comment --', 0],
+            [html.Element, 'div', 0],
+          ]);
+        });
+      });
+
       describe('expansion forms', () => {
         it('should parse out expansion forms', () => {
           const parsed = parser.parse(
@@ -594,9 +610,8 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
 
         it('should also report lexer errors', () => {
           const errors = parser.parse('<!-err--><div></p></div>', 'TestComp').errors;
-          expect(errors.length).toEqual(2);
+          expect(errors.length).toEqual(1);
           expect(humanizeErrors(errors)).toEqual([
-            [TokenType.COMMENT_START, 'Unexpected character "e"', '0:3'],
             [
               'p',
               'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',

@@ -45,6 +45,7 @@ interface Options {
 - add `canSelfClose` option
 - allow case-insensitive closing tags for non-foreign elements
 - fix `Comment#sourceSpan`
+- support [bogus comments](https://www.w3.org/TR/html5/syntax.html#bogus-comment-state) (`<!...>`, `<?...>`)
 
 ## Development
 
