@@ -18,7 +18,7 @@ export class HtmlParser extends Parser {
   parse(
       source: string, url: string, parseExpansionForms: boolean = false,
       interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
-      canSelfClose = false): ParseTreeResult {
-    return super.parse(source, url, parseExpansionForms, interpolationConfig, canSelfClose);
+      canSelfClose = false, allowHtmComponentClosingTags = false): ParseTreeResult {
+    return super.parse(source, url, parseExpansionForms, interpolationConfig, canSelfClose, allowHtmComponentClosingTags);
   }
 }

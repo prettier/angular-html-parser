@@ -33,11 +33,11 @@ export class Parser {
   parse(
       source: string, url: string, parseExpansionForms: boolean = false,
       interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
-      canSelfClose = false): ParseTreeResult {
+      canSelfClose = false, allowHtmComponentClosingTags = false): ParseTreeResult {
     const tokensAndErrors =
-        lex.tokenize(source, url, this.getTagDefinition, parseExpansionForms, interpolationConfig, canSelfClose);
+        lex.tokenize(source, url, this.getTagDefinition, parseExpansionForms, interpolationConfig, canSelfClose, allowHtmComponentClosingTags);
 
-    const treeAndErrors = new _TreeBuilder(tokensAndErrors.tokens, this.getTagDefinition, canSelfClose).build();
+    const treeAndErrors = new _TreeBuilder(tokensAndErrors.tokens, this.getTagDefinition, canSelfClose, allowHtmComponentClosingTags).build();
 
     return new ParseTreeResult(
         treeAndErrors.rootNodes,
@@ -57,7 +57,7 @@ class _TreeBuilder {
 
   constructor(
       private tokens: lex.Token[], private getTagDefinition: (tagName: string) => TagDefinition,
-      private canSelfClose: boolean) {
+      private canSelfClose: boolean, private allowHtmComponentClosingTags: boolean) {
     this._advance();
   }
 
@@ -179,7 +179,7 @@ class _TreeBuilder {
     exp.push(new lex.Token(lex.TokenType.EOF, [], end.sourceSpan));
 
     // parse everything in between { and }
-    const parsedExp = new _TreeBuilder(exp, this.getTagDefinition, this.canSelfClose).build();
+    const parsedExp = new _TreeBuilder(exp, this.getTagDefinition, this.canSelfClose, this.allowHtmComponentClosingTags).build();
     if (parsedExp.errors.length > 0) {
       this._errors = this._errors.concat(<TreeError[]>parsedExp.errors);
       return null;
@@ -315,14 +315,15 @@ class _TreeBuilder {
   }
 
   private _consumeEndTag(endTagToken: lex.Token) {
-    const fullName = this._getElementFullName(
-        endTagToken.parts[0], endTagToken.parts[1], this._getParentElement());
+    const fullName = this.allowHtmComponentClosingTags && endTagToken.parts.length === 0
+      ? null
+      : this._getElementFullName(endTagToken.parts[0], endTagToken.parts[1], this._getParentElement());
 
     if (this._getParentElement()) {
       this._getParentElement() !.endSourceSpan = endTagToken.sourceSpan;
     }
 
-    if (this.getTagDefinition(fullName).isVoid) {
+    if (fullName && this.getTagDefinition(fullName).isVoid) {
       this._errors.push(TreeError.create(
           fullName, endTagToken.sourceSpan,
           `Void elements do not have end tags "${endTagToken.parts[1]}"`));
@@ -333,11 +334,15 @@ class _TreeBuilder {
     }
   }
 
-  private _popElement(fullName: string): boolean {
+  private _popElement(fullName: string | null): boolean {
     for (let stackIndex = this._elementStack.length - 1; stackIndex >= 0; stackIndex--) {
       const el = this._elementStack[stackIndex];
-      const isForeignElement = getNsPrefix(el.name);
-      if (isForeignElement ? el.name == fullName : el.name.toLowerCase() == fullName.toLowerCase()) {
+      if (
+        !fullName ||
+        (/* isForeignElement */ getNsPrefix(el.name)
+          ? el.name == fullName
+          : el.name.toLowerCase() == fullName.toLowerCase())
+      ) {
         this._elementStack.splice(stackIndex, this._elementStack.length - stackIndex);
         return true;
       }

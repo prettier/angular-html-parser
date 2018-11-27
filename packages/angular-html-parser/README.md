@@ -34,6 +34,8 @@ declare function parse(input: string, options?: Options): ng.ParseTreeResult;
 interface Options {
   /** defaults to false */
   canSelfClose?: boolean;
+  /** defaults to false */
+  allowHtmComponentClosingTags?: boolean;
 }
 ```
 
@@ -46,6 +48,7 @@ interface Options {
 - allow case-insensitive closing tags for non-foreign elements
 - fix `Comment#sourceSpan`
 - support [bogus comments](https://www.w3.org/TR/html5/syntax.html#bogus-comment-state) (`<!...>`, `<?...>`)
+- add `allowHtmComponentClosingTags` option to support [`htm`](https://github.com/developit/htm) component closing tags (`<//>`)
 
 ## Development
 

@@ -54,10 +54,10 @@ export function tokenize(
     source: string, url: string, getTagDefinition: (tagName: string) => TagDefinition,
     tokenizeExpansionForms: boolean = false,
     interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
-    canSelfClose = false): TokenizeResult {
+    canSelfClose = false, allowHtmComponentClosingTags = false): TokenizeResult {
   return new _Tokenizer(
              new ParseSourceFile(source, url), getTagDefinition, tokenizeExpansionForms,
-             interpolationConfig, canSelfClose)
+             interpolationConfig, canSelfClose, allowHtmComponentClosingTags)
       .tokenize();
 }
 
@@ -106,7 +106,7 @@ class _Tokenizer {
       private _file: ParseSourceFile, private _getTagDefinition: (tagName: string) => TagDefinition,
       private _tokenizeIcu: boolean,
       private _interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
-      private canSelfClose = false) {
+      private canSelfClose = false, private allowHtmComponentClosingTags = false) {
     this._input = _file.content;
     this._length = _file.content.length;
     this._advance();
@@ -551,10 +551,18 @@ class _Tokenizer {
   private _consumeTagClose(start: ParseLocation) {
     this._beginToken(TokenType.TAG_CLOSE, start);
     this._attemptCharCodeUntilFn(isNotWhitespace);
-    const prefixAndName = this._consumePrefixAndName();
-    this._attemptCharCodeUntilFn(isNotWhitespace);
-    this._requireCharCode(chars.$GT);
-    this._endToken(prefixAndName);
+
+    // https://github.com/developit/htm
+    if (this.allowHtmComponentClosingTags && this._attemptCharCode(chars.$SLASH)) {
+      this._attemptCharCodeUntilFn(isNotWhitespace);
+      this._requireCharCode(chars.$GT);
+      this._endToken([]);
+    } else {
+      const prefixAndName = this._consumePrefixAndName();
+      this._attemptCharCodeUntilFn(isNotWhitespace);
+      this._requireCharCode(chars.$GT);
+      this._endToken(prefixAndName);
+    }
   }
 
   private _consumeExpansionFormStart() {

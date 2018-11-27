@@ -384,6 +384,13 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
           [lex.TokenType.TAG_CLOSE, 'Unexpected character "EOF"', '0:6']
         ]);
       });
+
+      it('should allow htm component tag close if enabled', () => {
+        expect(tokenizeAndHumanizeParts('</ / >', undefined, undefined, undefined, true)).toEqual([
+          [lex.TokenType.TAG_CLOSE],
+          [lex.TokenType.EOF],
+        ]);
+      });
     });
 
     describe('entities', () => {
@@ -798,9 +805,11 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
 
 function tokenizeWithoutErrors(
     input: string, tokenizeExpansionForms: boolean = false,
-    interpolationConfig?: InterpolationConfig): lex.Token[] {
+    interpolationConfig?: InterpolationConfig,
+    canSelfClose?: boolean, allowHtmComponentClosingTags?: boolean): lex.Token[] {
   const tokenizeResult = lex.tokenize(
-      input, 'someUrl', getHtmlTagDefinition, tokenizeExpansionForms, interpolationConfig);
+      input, 'someUrl', getHtmlTagDefinition, tokenizeExpansionForms, interpolationConfig,
+      canSelfClose, allowHtmComponentClosingTags);
 
   if (tokenizeResult.errors.length > 0) {
     const errorString = tokenizeResult.errors.join('\n');
@@ -812,8 +821,9 @@ function tokenizeWithoutErrors(
 
 function tokenizeAndHumanizeParts(
     input: string, tokenizeExpansionForms: boolean = false,
-    interpolationConfig?: InterpolationConfig): any[] {
-  return tokenizeWithoutErrors(input, tokenizeExpansionForms, interpolationConfig)
+    interpolationConfig?: InterpolationConfig,
+    canSelfClose?: boolean, allowHtmComponentClosingTags?: boolean): any[] {
+  return tokenizeWithoutErrors(input, tokenizeExpansionForms, interpolationConfig, canSelfClose, allowHtmComponentClosingTags)
       .map(token => [<any>token.type].concat(token.parts));
 }
 

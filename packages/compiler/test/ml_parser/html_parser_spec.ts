@@ -271,6 +271,17 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
               ]);
         });
 
+        it('should allow htm component tag close if enabled', () => {
+          expect(humanizeDom(parser.parse(
+                     'foo<Footer>footer content</ / >bar',
+                     'TestComp', undefined, undefined, undefined, true)))
+              .toEqual([
+                [html.Text, 'foo', 0],
+                [html.Element, 'Footer', 0],
+                [html.Text, 'footer content', 1],
+                [html.Text, 'bar', 0],
+              ]);
+        });
       });
 
       describe('attributes', () => {
