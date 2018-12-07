@@ -136,5 +136,5 @@ export function getHtmlTagDefinition(tagName: string): HtmlTagDefinition {
           {contentType: TagContentType.ESCAPABLE_RAW_TEXT, ignoreFirstLf: true}),
     };
   }
-  return TAG_DEFINITIONS[tagName.toLowerCase()] || _DEFAULT_TAG_DEFINITION;
+  return TAG_DEFINITIONS[tagName] || _DEFAULT_TAG_DEFINITION;
 }

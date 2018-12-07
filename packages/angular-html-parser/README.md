@@ -32,10 +32,24 @@ const { rootNodes, errors } = ngHtmlParser.parse('<div>hello world</div>');
 declare function parse(input: string, options?: Options): ng.ParseTreeResult;
 
 interface Options {
-  /** defaults to false */
+  /** 
+   * any element can self close
+   *
+   * defaults to false
+   */
   canSelfClose?: boolean;
-  /** defaults to false */
+  /** 
+   * support [`htm`](https://github.com/developit/htm) component closing tags (`<//>`) 
+   *
+   * defaults to false
+   */
   allowHtmComponentClosingTags?: boolean;
+  /** 
+   * do not lowercase tag names before querying their tag definitions
+   *
+   * defaults to false
+   */
+  isTagNameCaseSensitive?: boolean;
 }
 ```
 
@@ -44,11 +58,9 @@ interface Options {
 - add `CDATA` node
 - add `DocType` node
 - add `nameSpan` field to `Element` and `Attribute`
-- add `canSelfClose` option
 - allow case-insensitive closing tags for non-foreign elements
 - fix `Comment#sourceSpan`
 - support [bogus comments](https://www.w3.org/TR/html5/syntax.html#bogus-comment-state) (`<!...>`, `<?...>`)
-- add `allowHtmComponentClosingTags` option to support [`htm`](https://github.com/developit/htm) component closing tags (`<//>`)
 
 ## Development
 

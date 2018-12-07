@@ -603,6 +603,11 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
           ]);
         });
 
+        it('should not report closing tag for non-lowercase void elements with isTagNameCaseSensitive', () => {
+          const errors = parser.parse('<Input></Input>', 'TestComp', undefined, undefined, undefined, undefined, true).errors;
+          expect(errors.length).toEqual(0);
+        });
+
         it('should report self closing html element', () => {
           const errors = parser.parse('<p />', 'TestComp').errors;
           expect(errors.length).toEqual(1);

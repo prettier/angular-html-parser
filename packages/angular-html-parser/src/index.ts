@@ -11,7 +11,11 @@ const getParser = () => {
 
 export function parse(
   input: string,
-  { canSelfClose = false, allowHtmComponentClosingTags = false } = {}
+  {
+    canSelfClose = false,
+    allowHtmComponentClosingTags = false,
+    isTagNameCaseSensitive = false
+  } = {}
 ) {
   return getParser().parse(
     input,
@@ -19,6 +23,7 @@ export function parse(
     false,
     undefined,
     canSelfClose,
-    allowHtmComponentClosingTags
+    allowHtmComponentClosingTags,
+    isTagNameCaseSensitive
   );
 }
