@@ -6,13 +6,9 @@ node_js:
 
 before_install:
 - cd packages/angular-html-parser
-- yarn global add codecov
 
 script:
-- yarn run test
-
-after_script:
-- codecov
+- yarn test
 
 cache:
   yarn: true

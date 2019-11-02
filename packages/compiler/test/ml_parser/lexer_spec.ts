@@ -401,6 +401,13 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
         ]);
       });
 
+      it('should parse full named entities', () => {
+        expect(tokenizeAndHumanizeParts('a&excl;b')).toEqual([
+          [lex.TokenType.TEXT, 'a!b'],
+          [lex.TokenType.EOF],
+        ]);
+      });
+
       it('should parse hexadecimal entities', () => {
         expect(tokenizeAndHumanizeParts('&#x41;&#X41;')).toEqual([
           [lex.TokenType.TEXT, 'AA'],

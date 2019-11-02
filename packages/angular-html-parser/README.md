@@ -1,8 +1,7 @@
 # angular-html-parser
 
 [![npm](https://img.shields.io/npm/v/angular-html-parser.svg)](https://www.npmjs.com/package/angular-html-parser)
-[![build](https://img.shields.io/travis/ikatyang/angular-html-parser/master.svg)](https://travis-ci.com/ikatyang/angular-html-parser/builds)
-[![coverage](https://img.shields.io/codecov/c/github/ikatyang/angular-html-parser/master.svg)](https://codecov.io/gh/ikatyang/angular-html-parser)
+[![build](https://img.shields.io/travis/com/ikatyang/angular-html-parser/master.svg)](https://travis-ci.com/ikatyang/angular-html-parser/builds)
 
 A HTML parser extracted from Angular with some [modifications](#modifications)
 
@@ -61,6 +60,7 @@ interface Options {
 - allow case-insensitive closing tags for non-foreign elements
 - fix `Comment#sourceSpan`
 - support [bogus comments](https://www.w3.org/TR/html5/syntax.html#bogus-comment-state) (`<!...>`, `<?...>`)
+- support full [named entities](https://html.spec.whatwg.org/multipage/entities.json)
 
 ## Development
 
