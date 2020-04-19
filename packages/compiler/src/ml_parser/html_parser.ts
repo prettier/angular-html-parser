@@ -9,13 +9,14 @@
 import {getHtmlTagDefinition} from './html_tags';
 import {TokenizeOptions} from './lexer';
 import {ParseTreeResult, Parser} from './parser';
+import {TagContentType} from './tags';
 
 export {ParseTreeResult, TreeError} from './parser';
 
 export class HtmlParser extends Parser {
   constructor() { super(getHtmlTagDefinition); }
 
-  parse(source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false): ParseTreeResult {
-    return super.parse(source, url, options, isTagNameCaseSensitive);
+  parse(source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string) => TagContentType): ParseTreeResult {
+    return super.parse(source, url, options, isTagNameCaseSensitive, getTagContentType);
   }
 }

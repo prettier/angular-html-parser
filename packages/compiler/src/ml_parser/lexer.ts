@@ -108,9 +108,9 @@ export interface TokenizeOptions {
 }
 
 export function tokenize(
-    source: string, url: string, getTagDefinition: (tagName: string) => TagDefinition,
+    source: string, url: string, getTagContentType: (tagName: string) => TagContentType,
     options: TokenizeOptions = {}): TokenizeResult {
-  return new _Tokenizer(new ParseSourceFile(source, url), getTagDefinition, options).tokenize();
+  return new _Tokenizer(new ParseSourceFile(source, url), getTagContentType, options).tokenize();
 }
 
 const _CR_OR_CRLF_REGEXP = /\r\n?/g;
@@ -145,11 +145,11 @@ class _Tokenizer {
 
   /**
    * @param _file The html source file being tokenized.
-   * @param _getTagDefinition A function that will retrieve a tag definition for a given tag name.
+   * @param _getTagContentType A function that will retrieve a tag content type for a given tag name.
    * @param options Configuration of the tokenization.
    */
   constructor(
-      _file: ParseSourceFile, private _getTagDefinition: (tagName: string) => TagDefinition,
+      _file: ParseSourceFile, private _getTagContentType: (tagName: string) => TagContentType,
       options: TokenizeOptions) {
     this._tokenizeIcu = options.tokenizeExpansionForms || false;
     this._interpolationConfig = options.interpolationConfig || DEFAULT_INTERPOLATION_CONFIG;
@@ -543,7 +543,7 @@ class _Tokenizer {
       return;
     }
 
-    const contentTokenType = this._getTagDefinition(tagName).contentType;
+    const contentTokenType = this._getTagContentType(tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
       this._consumeRawTextWithTagClose(prefix, tagName, false);

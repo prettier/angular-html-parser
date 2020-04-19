@@ -10,7 +10,7 @@ import {ParseError, ParseSourceSpan, ParseLocation} from '../parse_util';
 
 import * as html from './ast';
 import * as lex from './lexer';
-import {TagDefinition, getNsPrefix, isNgContainer, mergeNsAndName} from './tags';
+import {TagContentType, TagDefinition, getNsPrefix, isNgContainer, mergeNsAndName} from './tags';
 
 export class TreeError extends ParseError {
   static create(elementName: string|null, span: ParseSourceSpan, msg: string): TreeError {
@@ -29,10 +29,16 @@ export class ParseTreeResult {
 export class Parser {
   constructor(public getTagDefinition: (tagName: string) => TagDefinition) {}
 
-  parse(source: string, url: string, options?: lex.TokenizeOptions, isTagNameCaseSensitive = false): ParseTreeResult {
-    const getTagDefinition = isTagNameCaseSensitive ? this.getTagDefinition : (tagName: string) => this.getTagDefinition(tagName.toLowerCase());
-    
-    const tokensAndErrors = lex.tokenize(source, url, getTagDefinition, options);
+  parse(source: string, url: string, options?: lex.TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string) => TagContentType): ParseTreeResult {
+    const lowercasify = <T>(fn: (x: string) => T) => (x: string): T => fn(x.toLowerCase());
+    const getTagDefinition = isTagNameCaseSensitive ? this.getTagDefinition : lowercasify(this.getTagDefinition);
+    const _getTagContentType = getTagContentType
+      ? isTagNameCaseSensitive
+        ? getTagContentType
+        : lowercasify(getTagContentType)
+      : (tagName: string) => getTagDefinition(tagName).contentType;
+
+    const tokensAndErrors = lex.tokenize(source, url, _getTagContentType, options);
 
     const canSelfClose = (options && options.canSelfClose) || false;
     const allowHtmComponentClosingTags = (options && options.allowHtmComponentClosingTags) || false;

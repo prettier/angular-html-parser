@@ -31,24 +31,30 @@ const { rootNodes, errors } = ngHtmlParser.parse('<div>hello world</div>');
 declare function parse(input: string, options?: Options): ng.ParseTreeResult;
 
 interface Options {
-  /** 
+  /**
    * any element can self close
    *
    * defaults to false
    */
   canSelfClose?: boolean;
-  /** 
+  /**
    * support [`htm`](https://github.com/developit/htm) component closing tags (`<//>`) 
    *
    * defaults to false
    */
   allowHtmComponentClosingTags?: boolean;
-  /** 
+  /**
    * do not lowercase tag names before querying their tag definitions
    *
    * defaults to false
    */
   isTagNameCaseSensitive?: boolean;
+  /**
+   * customize tag content type
+   *
+   * defaults to the content type defined in the HTML spec
+   */
+  getTagContentType?: (tagName: string) => ng.TagContentType,
 }
 ```
 

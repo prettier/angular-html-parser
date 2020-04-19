@@ -8,6 +8,7 @@
 
 import {getHtmlTagDefinition} from '../../src/ml_parser/html_tags';
 import * as lex from '../../src/ml_parser/lexer';
+import {TagContentType} from '../../src/ml_parser/tags';
 import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_util';
 
 {
@@ -1247,11 +1248,23 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
         ]);
       });
     });
+
+    describe('getTagContentType', () => {
+      it('support custom content type', () => {
+        expect(tokenizeAndHumanizeParts(`<custom>const foo = "</";</custom>`, undefined, () => TagContentType.RAW_TEXT)).toEqual([
+          [lex.TokenType.TAG_OPEN_START, '', 'custom'],
+          [lex.TokenType.TAG_OPEN_END],
+          [lex.TokenType.RAW_TEXT, 'const foo = "</";'],
+          [lex.TokenType.TAG_CLOSE, '', 'custom'],
+          [lex.TokenType.EOF],
+        ]);
+      });
+    })
   });
 }
 
-function tokenizeWithoutErrors(input: string, options?: lex.TokenizeOptions): lex.Token[] {
-  const tokenizeResult = lex.tokenize(input, 'someUrl', getHtmlTagDefinition, options);
+function tokenizeWithoutErrors(input: string, options?: lex.TokenizeOptions, getTagContentType = (tagName: string) => getHtmlTagDefinition(tagName).contentType): lex.Token[] {
+  const tokenizeResult = lex.tokenize(input, 'someUrl', getTagContentType, options);
 
   if (tokenizeResult.errors.length > 0) {
     const errorString = tokenizeResult.errors.join('\n');
@@ -1261,12 +1274,12 @@ function tokenizeWithoutErrors(input: string, options?: lex.TokenizeOptions): le
   return tokenizeResult.tokens;
 }
 
-function tokenizeAndHumanizeParts(input: string, options?: lex.TokenizeOptions): any[] {
-  return tokenizeWithoutErrors(input, options).map(token => [<any>token.type].concat(token.parts));
+function tokenizeAndHumanizeParts(input: string, options?: lex.TokenizeOptions, getTagContentType?: (tagName: string) => TagContentType): any[] {
+  return tokenizeWithoutErrors(input, options, getTagContentType).map(token => [<any>token.type].concat(token.parts));
 }
 
-function tokenizeAndHumanizeSourceSpans(input: string, options?: lex.TokenizeOptions): any[] {
-  return tokenizeWithoutErrors(input, options)
+function tokenizeAndHumanizeSourceSpans(input: string, options?: lex.TokenizeOptions, getTagContentType?: (tagName: string) => TagContentType): any[] {
+  return tokenizeWithoutErrors(input, options, getTagContentType)
       .map(token => [<any>token.type, token.sourceSpan.toString()]);
 }
 
@@ -1274,12 +1287,12 @@ function humanizeLineColumn(location: ParseLocation): string {
   return `${location.line}:${location.col}`;
 }
 
-function tokenizeAndHumanizeLineColumn(input: string, options?: lex.TokenizeOptions): any[] {
-  return tokenizeWithoutErrors(input, options)
+function tokenizeAndHumanizeLineColumn(input: string, options?: lex.TokenizeOptions, getTagContentType?: (tagName: string) => TagContentType): any[] {
+  return tokenizeWithoutErrors(input, options, getTagContentType)
       .map(token => [<any>token.type, humanizeLineColumn(token.sourceSpan.start)]);
 }
 
-function tokenizeAndHumanizeErrors(input: string, options?: lex.TokenizeOptions): any[] {
-  return lex.tokenize(input, 'someUrl', getHtmlTagDefinition, options)
+function tokenizeAndHumanizeErrors(input: string, options?: lex.TokenizeOptions, getTagContentType = (tagName: string) => getHtmlTagDefinition(tagName).contentType): any[] {
+  return lex.tokenize(input, 'someUrl', getTagContentType, options)
       .errors.map(e => [<any>e.tokenType, e.msg, humanizeLineColumn(e.span.start)]);
 }
