@@ -10,7 +10,7 @@ import * as chars from '../chars';
 import {ParseError, ParseLocation, ParseSourceFile, ParseSourceSpan} from '../parse_util';
 
 import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from './interpolation_config';
-import {NAMED_ENTITIES, TagContentType, TagDefinition} from './tags';
+import {NAMED_ENTITIES, TagContentType, TagDefinition, mergeNsAndName} from './tags';
 
 export enum TokenType {
   TAG_OPEN_START,
@@ -108,7 +108,7 @@ export interface TokenizeOptions {
 }
 
 export function tokenize(
-    source: string, url: string, getTagContentType: (tagName: string) => TagContentType,
+    source: string, url: string, getTagContentType: (tagName: string, prefix: string, hasParent: boolean) => TagContentType,
     options: TokenizeOptions = {}): TokenizeResult {
   return new _Tokenizer(new ParseSourceFile(source, url), getTagContentType, options).tokenize();
 }
@@ -140,6 +140,7 @@ class _Tokenizer {
   private _currentTokenType: TokenType|null = null;
   private _expansionCaseStack: TokenType[] = [];
   private _inInterpolation: boolean = false;
+  private _fullNameStack: string[] = [];
   tokens: Token[] = [];
   errors: TokenError[] = [];
 
@@ -149,7 +150,7 @@ class _Tokenizer {
    * @param options Configuration of the tokenization.
    */
   constructor(
-      _file: ParseSourceFile, private _getTagContentType: (tagName: string) => TagContentType,
+      _file: ParseSourceFile, private _getTagContentType: (tagName: string, prefix: string, hasParent: boolean) => TagContentType,
       options: TokenizeOptions) {
     this._tokenizeIcu = options.tokenizeExpansionForms || false;
     this._interpolationConfig = options.interpolationConfig || DEFAULT_INTERPOLATION_CONFIG;
@@ -543,7 +544,8 @@ class _Tokenizer {
       return;
     }
 
-    const contentTokenType = this._getTagContentType(tagName);
+    const contentTokenType = this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0);
+    this._handleFullNameStackForTagOpen(prefix, tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
       this._consumeRawTextWithTagClose(prefix, tagName, false);
@@ -565,6 +567,7 @@ class _Tokenizer {
     this._requireCharCodeUntilFn(code => code === chars.$GT, 3);
     this._cursor.advance();  // Consume the `>`
     this._endToken([prefix, tagName]);
+    this._handleFullNameStackForTagClose(prefix, tagName);
   }
 
   private _consumeTagOpenStart(start: CharacterCursor) {
@@ -627,10 +630,11 @@ class _Tokenizer {
       this._requireCharCode(chars.$GT);
       this._endToken([]);
     } else {
-      const prefixAndName = this._consumePrefixAndName();
+      const [prefix, name] = this._consumePrefixAndName();
       this._attemptCharCodeUntilFn(isNotWhitespace);
       this._requireCharCode(chars.$GT);
-      this._endToken(prefixAndName);
+      this._endToken([prefix, name]);
+      this._handleFullNameStackForTagClose(prefix, name);
     }
   }
 
@@ -756,6 +760,20 @@ class _Tokenizer {
       return !isInterpolation;
     }
     return true;
+  }
+
+  private _handleFullNameStackForTagOpen(prefix: string, tagName: string) {
+    const fullName = mergeNsAndName(prefix, tagName);
+    if (this._fullNameStack.length === 0 || this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+      this._fullNameStack.push(fullName);
+    }
+  }
+
+  private _handleFullNameStackForTagClose(prefix: string, tagName: string) {
+    const fullName = mergeNsAndName(prefix, tagName);
+    if (this._fullNameStack.length !== 0 && this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+      this._fullNameStack.pop();
+    }
   }
 }
 

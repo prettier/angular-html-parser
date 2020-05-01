@@ -16,7 +16,7 @@
     "prepublish": "yarn run build",
     "prebuild": "rm -rf ./lib",
     "build": "tsc -p tsconfig.build.json",
-    "test": "ts-node --transpileOnly --project tsconfig.test.json -r tsconfig-paths/register node_modules/.bin/jasmine ../compiler/test/ml_parser/*_spec.ts",
+    "test": "ts-node --transpileOnly --project tsconfig.test.json -r tsconfig-paths/register node_modules/.bin/jasmine ../compiler/test/ml_parser/*_spec.ts ./test/*_spec.ts",
     "release": "standard-version"
   },
   "dependencies": {

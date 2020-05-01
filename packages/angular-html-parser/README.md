@@ -54,7 +54,7 @@ interface Options {
    *
    * defaults to the content type defined in the HTML spec
    */
-  getTagContentType?: (tagName: string) => ng.TagContentType,
+  getTagContentType?: (tagName: string, prefix: string, hasParent: boolean) => void | ng.TagContentType,
 }
 ```
 

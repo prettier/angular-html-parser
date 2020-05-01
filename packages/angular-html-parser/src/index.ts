@@ -36,7 +36,11 @@ export interface ParseOptions {
    *
    * defaults to the content type defined in the HTML spec
    */
-  getTagContentType?: (tagName: string) => TagContentType,
+  getTagContentType?: (
+    tagName: string,
+    prefix: string,
+    hasParent: boolean
+  ) => void | TagContentType,
 }
 
 export function parse(

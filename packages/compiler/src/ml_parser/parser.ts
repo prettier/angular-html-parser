@@ -29,14 +29,17 @@ export class ParseTreeResult {
 export class Parser {
   constructor(public getTagDefinition: (tagName: string) => TagDefinition) {}
 
-  parse(source: string, url: string, options?: lex.TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string) => TagContentType): ParseTreeResult {
-    const lowercasify = <T>(fn: (x: string) => T) => (x: string): T => fn(x.toLowerCase());
+  parse(source: string, url: string, options?: lex.TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string, prefix: string, hasParent: boolean) => void | TagContentType): ParseTreeResult {
+    const lowercasify = <T, U extends any[]>(fn: (x: string, ...args: U) => T) => (x: string, ...args: U): T => fn(x.toLowerCase(), ...args);
     const getTagDefinition = isTagNameCaseSensitive ? this.getTagDefinition : lowercasify(this.getTagDefinition);
+    const getDefaultTagContentType = (tagName: string) => getTagDefinition(tagName).contentType;
+    const getTagContentTypeWithProcessedTagName = isTagNameCaseSensitive ? getTagContentType! : lowercasify(getTagContentType!);
     const _getTagContentType = getTagContentType
-      ? isTagNameCaseSensitive
-        ? getTagContentType
-        : lowercasify(getTagContentType)
-      : (tagName: string) => getTagDefinition(tagName).contentType;
+      ? (tagName: string, prefix: string, hasParent: boolean) => {
+          const contentType = getTagContentTypeWithProcessedTagName(tagName, prefix, hasParent) as undefined | TagContentType;
+          return contentType !== undefined ? contentType : getDefaultTagContentType(tagName);
+        }
+      : getDefaultTagContentType;
 
     const tokensAndErrors = lex.tokenize(source, url, _getTagContentType, options);
 
