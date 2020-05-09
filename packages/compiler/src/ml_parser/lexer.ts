@@ -108,7 +108,7 @@ export interface TokenizeOptions {
 }
 
 export function tokenize(
-    source: string, url: string, getTagContentType: (tagName: string, prefix: string, hasParent: boolean) => TagContentType,
+    source: string, url: string, getTagContentType: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
     options: TokenizeOptions = {}): TokenizeResult {
   return new _Tokenizer(new ParseSourceFile(source, url), getTagContentType, options).tokenize();
 }
@@ -150,7 +150,7 @@ class _Tokenizer {
    * @param options Configuration of the tokenization.
    */
   constructor(
-      _file: ParseSourceFile, private _getTagContentType: (tagName: string, prefix: string, hasParent: boolean) => TagContentType,
+      _file: ParseSourceFile, private _getTagContentType: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
       options: TokenizeOptions) {
     this._tokenizeIcu = options.tokenizeExpansionForms || false;
     this._interpolationConfig = options.interpolationConfig || DEFAULT_INTERPOLATION_CONFIG;
@@ -504,6 +504,7 @@ class _Tokenizer {
     let openTagToken: Token|undefined;
     let tokensBeforeTagOpen = this.tokens.length;
     const innerStart = this._cursor.clone();
+    const attrs: Array<{prefix: string, name: string, value?: string}> = [];
     try {
       if (!chars.isAsciiLetter(this._cursor.peek())) {
         throw this._createError(
@@ -515,11 +516,14 @@ class _Tokenizer {
       tagName = openTagToken.parts[1];
       this._attemptCharCodeUntilFn(isNotWhitespace);
       while (this._cursor.peek() !== chars.$SLASH && this._cursor.peek() !== chars.$GT) {
-        this._consumeAttributeName();
+        const [prefix, name] = this._consumeAttributeName();
         this._attemptCharCodeUntilFn(isNotWhitespace);
         if (this._attemptCharCode(chars.$EQ)) {
           this._attemptCharCodeUntilFn(isNotWhitespace);
-          this._consumeAttributeValue();
+          const value = this._consumeAttributeValue();
+          attrs.push({prefix, name, value});
+        } else {
+          attrs.push({prefix, name});
         }
         this._attemptCharCodeUntilFn(isNotWhitespace);
       }
@@ -544,7 +548,7 @@ class _Tokenizer {
       return;
     }
 
-    const contentTokenType = this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0);
+    const contentTokenType = this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0, attrs);
     this._handleFullNameStackForTagOpen(prefix, tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
@@ -584,6 +588,7 @@ class _Tokenizer {
     this._beginToken(TokenType.ATTR_NAME);
     const prefixAndName = this._consumePrefixAndName();
     this._endToken(prefixAndName);
+    return prefixAndName;
   }
 
   private _consumeAttributeValue() {
@@ -598,8 +603,8 @@ class _Tokenizer {
       while (this._cursor.peek() !== quoteChar) {
         parts.push(this._readChar(true));
       }
-      value = parts.join('');
-      this._endToken([this._processCarriageReturns(value)]);
+      value = this._processCarriageReturns(parts.join(''));
+      this._endToken([value]);
       this._beginToken(TokenType.ATTR_QUOTE);
       this._cursor.advance();
       this._endToken([String.fromCodePoint(quoteChar)]);
@@ -607,9 +612,10 @@ class _Tokenizer {
       this._beginToken(TokenType.ATTR_VALUE);
       const valueStart = this._cursor.clone();
       this._requireCharCodeUntilFn(isNameEnd, 1);
-      value = this._cursor.getChars(valueStart);
-      this._endToken([this._processCarriageReturns(value)]);
+      value = this._processCarriageReturns(this._cursor.getChars(valueStart));
+      this._endToken([value]);
     }
+    return value;
   }
 
   private _consumeTagOpenEnd() {

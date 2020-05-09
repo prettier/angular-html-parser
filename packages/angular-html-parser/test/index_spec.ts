@@ -13,6 +13,9 @@ describe("options", () => {
     </template>
   </MyComponent>
 </template>
+<template lang="something-else">
+  <div>
+</template>
 <custom lang="babel">
   const foo = "</";
 </custom>
@@ -20,9 +23,14 @@ describe("options", () => {
       const getTagContentType = (
         tagName: string,
         prefix: string,
-        hasParent: boolean
+        hasParent: boolean,
+        attrs: Array<{ prefix: string; name: string; value?: string }>
       ) => {
-        if (!hasParent && tagName !== "template") {
+        if (
+          !hasParent &&
+          (tagName !== "template" ||
+            attrs.find(attr => attr.name === "lang" && attr.value !== "html"))
+        ) {
           return TagContentType.RAW_TEXT;
         }
       };
@@ -32,6 +40,9 @@ describe("options", () => {
         [html.Element, "template", 2],
         [html.Attribute, "#content", ""],
         [html.Text, "text", 3],
+        [html.Element, "template", 0],
+        [html.Attribute, "lang", "something-else"],
+        [html.Text, "<div>", 1],
         [html.Element, "custom", 0],
         [html.Attribute, "lang", "babel"],
         [html.Text, 'const foo = "</";', 1]

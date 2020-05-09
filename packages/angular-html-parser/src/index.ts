@@ -39,7 +39,8 @@ export interface ParseOptions {
   getTagContentType?: (
     tagName: string,
     prefix: string,
-    hasParent: boolean
+    hasParent: boolean,
+    attrs: Array<{prefix: string, name: string, value?: string}>
   ) => void | TagContentType,
 }
 

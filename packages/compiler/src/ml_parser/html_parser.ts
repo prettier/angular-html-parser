@@ -16,7 +16,7 @@ export {ParseTreeResult, TreeError} from './parser';
 export class HtmlParser extends Parser {
   constructor() { super(getHtmlTagDefinition); }
 
-  parse(source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string, prefix: string, hasParent: boolean) => void | TagContentType): ParseTreeResult {
+  parse(source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => void | TagContentType): ParseTreeResult {
     return super.parse(source, url, options, isTagNameCaseSensitive, getTagContentType);
   }
 }
