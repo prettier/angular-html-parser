@@ -456,6 +456,13 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn} from './ast_spe
           expect(comment.sourceSpan !.start.offset).toEqual(0);
           expect(comment.sourceSpan !.end.offset).toEqual(10);
         });
+
+        it('should support endSourceSpan with void element as its last child', () => {
+          const ast = parser.parse('<a><br></a>', 'TestComp');
+          const element = (ast.rootNodes[0] as html.Element);
+          expect(element.endSourceSpan !.start.offset).toEqual(7);
+          expect(element.endSourceSpan !.end.offset).toEqual(11);
+        });
       });
 
       describe('visitor', () => {

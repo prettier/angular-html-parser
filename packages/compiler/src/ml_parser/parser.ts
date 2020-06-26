@@ -74,6 +74,7 @@ class _TreeBuilder {
       if (this._peek.type === lex.TokenType.TAG_OPEN_START) {
         this._consumeStartTag(this._advance());
       } else if (this._peek.type === lex.TokenType.TAG_CLOSE) {
+        this._closeVoidElement();
         this._consumeEndTag(this._advance());
       } else if (this._peek.type === lex.TokenType.CDATA_START) {
         this._closeVoidElement();
