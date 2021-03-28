@@ -162,6 +162,7 @@ class _TreeBuilder {
       return;
     }
     const sourceSpan = new ParseSourceSpan(token.sourceSpan.start, this._peek.sourceSpan.end);
+    // @ts-ignore
     this._addToParent(new html.Expansion(
         switchValue.parts[0], type.parts[0], cases, sourceSpan, switchValue.sourceSpan));
 
