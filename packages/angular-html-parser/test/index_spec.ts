@@ -50,3 +50,21 @@ describe("options", () => {
     });
   });
 });
+
+describe("AST format", () => {
+  it("should have `type` property", () => {
+    const input = `<!DOCTYPE html> <el attr></el>txt<!--  --><![CDATA[foo]]>`;
+    const ast = parse(input);
+    expect(ast.rootNodes).toEqual([
+      jasmine.objectContaining({ type: "docType" }),
+      jasmine.objectContaining({ type: "text" }),
+      jasmine.objectContaining({
+        type: "element",
+        attrs: [jasmine.objectContaining({ type: "attribute" })],
+      }),
+      jasmine.objectContaining({ type: "text" }),
+      jasmine.objectContaining({ type: "comment" }),
+      jasmine.objectContaining({ type: "cdata" }),
+    ]);
+  });
+});

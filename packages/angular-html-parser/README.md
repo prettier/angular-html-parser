@@ -67,6 +67,7 @@ interface Options {
 - fix `Comment#sourceSpan`
 - support [bogus comments](https://www.w3.org/TR/html5/syntax.html#bogus-comment-state) (`<!...>`, `<?...>`)
 - support full [named entities](https://html.spec.whatwg.org/multipage/entities.json)
+- add `type` property to nodes
 
 ## Development
 

@@ -21,11 +21,13 @@ export type Node = Attribute|CDATA|Comment|DocType|Element|Text;
 export class Text implements BaseNode {
   constructor(public value: string, public sourceSpan: ParseSourceSpan, public i18n?: I18nAST) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitText(this, context); }
+  readonly type = 'text';
 }
 
 export class CDATA implements BaseNode {
   constructor(public value: string, public sourceSpan: ParseSourceSpan) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitCdata(this, context); }
+  readonly type = 'cdata';
 }
 
 export class Expansion implements BaseNode {
@@ -49,6 +51,7 @@ export class Attribute implements BaseNode {
       public name: string, public value: string, public sourceSpan: ParseSourceSpan,
       public valueSpan: ParseSourceSpan|null = null, public nameSpan: ParseSourceSpan|null = null, public i18n: I18nAST|null = null) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitAttribute(this, context); }
+  readonly type = 'attribute';
 }
 
 export class Element implements BaseNode {
@@ -57,16 +60,19 @@ export class Element implements BaseNode {
       public sourceSpan: ParseSourceSpan, public startSourceSpan: ParseSourceSpan|null = null,
       public endSourceSpan: ParseSourceSpan|null = null, public nameSpan: ParseSourceSpan|null = null, public i18n: I18nAST|null = null) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitElement(this, context); }
+  readonly type = 'element';
 }
 
 export class Comment implements BaseNode {
   constructor(public value: string|null, public sourceSpan: ParseSourceSpan) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitComment(this, context); }
+  readonly type = 'comment';
 }
 
 export class DocType implements BaseNode {
   constructor(public value: string|null, public sourceSpan: ParseSourceSpan) {}
   visit(visitor: Visitor, context: any): any { return visitor.visitDocType(this, context); }
+  readonly type = 'docType';
 }
 
 export interface Visitor {
@@ -77,7 +83,7 @@ export interface Visitor {
   visitElement(element: Element, context: any): any;
   visitAttribute(attribute: Attribute, context: any): any;
   visitText(text: Text, context: any): any;
-  visitCdata(text: Text, context: any): any;
+  visitCdata(text: CDATA, context: any): any;
   visitComment(comment: Comment, context: any): any;
   visitDocType(docType: DocType, context: any): any;
   visitExpansion(expansion: Expansion, context: any): any;
@@ -116,6 +122,8 @@ export class RecursiveVisitor implements Visitor {
   visitDocType(ast: DocType, context: any): any {}
 
   visitExpansion(ast: Expansion, context: any): any {
+    // `ExpansionCase` is excluded from `Node` in angular-html-parser.
+    // @ts-ignore -- Using ts-ignore here to minimize efforts on merging upstream changes.
     return this.visitChildren(context, visit => { visit(ast.cases); });
   }
 
