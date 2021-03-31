@@ -162,7 +162,8 @@ class _TreeBuilder {
       return;
     }
     const sourceSpan = new ParseSourceSpan(token.sourceSpan.start, this._peek.sourceSpan.end);
-    // @ts-ignore
+    // `Expansion` is excluded from `Node` in angular-html-parser as it doesn't generate such nodes.
+    // @ts-ignore -- Using ts-ignore here to minimize efforts on merging upstream changes.
     this._addToParent(new html.Expansion(
         switchValue.parts[0], type.parts[0], cases, sourceSpan, switchValue.sourceSpan));
 
