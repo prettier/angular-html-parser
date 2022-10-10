@@ -24,7 +24,7 @@ export interface TagDefinition {
   getContentType(prefix?: string): TagContentType;
 }
 
-export function splitNsName(elementName: string): [string | null, string] {
+export function splitNsName(elementName: string): [string|null, string] {
   if (elementName[0] != ':') {
     return [null, elementName];
   }
@@ -55,7 +55,7 @@ export function isNgTemplate(tagName: string): boolean {
 
 export function getNsPrefix(fullName: string): string;
 export function getNsPrefix(fullName: null): null;
-export function getNsPrefix(fullName: string | null): string|null {
+export function getNsPrefix(fullName: string|null): string|null {
   return fullName === null ? null : splitNsName(fullName)[0];
 }
 

@@ -48,7 +48,7 @@ export class ExpansionResult {
 export class ExpansionError extends ParseError {
   constructor(span: ParseSourceSpan, errorMsg: string) {
     super(span, errorMsg);
-}
+  }
 }
 
 /**
@@ -89,7 +89,7 @@ class _Expander implements html.Visitor {
   visitExpansion(icu: html.Expansion, context: any): any {
     this.isExpanded = true;
     return icu.type === 'plural' ? _expandPluralForm(icu, this.errors) :
-                                  _expandDefaultForm(icu, this.errors);
+                                   _expandDefaultForm(icu, this.errors);
   }
 
   visitExpansionCase(icuCase: html.ExpansionCase, context: any): any {

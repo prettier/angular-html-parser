@@ -29,14 +29,14 @@ export class HtmlTagDefinition implements TagDefinition {
     ignoreFirstLf = false,
     preventNamespaceInheritance = false
   }: {
-        closedByChildren?: string[],
-        closedByParent?: boolean,
-        implicitNamespacePrefix?: string,
+    closedByChildren?: string[],
+    closedByParent?: boolean,
+    implicitNamespacePrefix?: string,
     contentType?: TagContentType|{default: TagContentType, [namespace: string]: TagContentType},
-        isVoid?: boolean,
+    isVoid?: boolean,
     ignoreFirstLf?: boolean,
     preventNamespaceInheritance?: boolean
-      } = {}) {
+  } = {}) {
     if (closedByChildren && closedByChildren.length > 0) {
       closedByChildren.forEach(tagName => this.closedByChildren[tagName] = true);
     }
@@ -56,16 +56,16 @@ export class HtmlTagDefinition implements TagDefinition {
     if (typeof this.contentType === 'object') {
       const overrideType = prefix === undefined ? undefined : this.contentType[prefix];
       return overrideType ?? this.contentType.default;
-}
+    }
     return this.contentType;
   }
 }
 
-let _DEFAULT_TAG_DEFINITION !: HtmlTagDefinition;
+let _DEFAULT_TAG_DEFINITION!: HtmlTagDefinition;
 
 // see https://www.w3.org/TR/html51/syntax.html#optional-tags
 // This implementation does not fully conform to the HTML5 spec.
-let TAG_DEFINITIONS !: {[key: string]: HtmlTagDefinition};
+let TAG_DEFINITIONS!: {[key: string]: HtmlTagDefinition};
 
 export function getHtmlTagDefinition(tagName: string): HtmlTagDefinition {
   if (!TAG_DEFINITIONS) {

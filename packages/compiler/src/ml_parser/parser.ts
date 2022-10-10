@@ -49,7 +49,6 @@ export class Parser {
     const allowHtmComponentClosingTags = (options && options.allowHtmComponentClosingTags) || false;
     const parser = new _TreeBuilder(tokenizeResult.tokens, getTagDefinition, canSelfClose, allowHtmComponentClosingTags, isTagNameCaseSensitive);
     parser.build();
-
     return new ParseTreeResult(
         parser.rootNodes,
         (tokenizeResult.errors as ParseError[]).concat(parser.errors),

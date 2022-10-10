@@ -134,7 +134,7 @@ export function visitAll(visitor: Visitor, nodes: Node[], context: any = null): 
   const result: any[] = [];
 
   const visit = visitor.visit ?
-      (ast: Node) => visitor.visit !(ast, context) || ast.visit(visitor, context) :
+      (ast: Node) => visitor.visit!(ast, context) || ast.visit(visitor, context) :
       (ast: Node) => ast.visit(visitor, context);
   nodes.forEach(ast => {
     const astResult = visit(ast);
@@ -173,7 +173,7 @@ export class RecursiveVisitor implements Visitor {
       context: any, cb: (visit: (<V extends Node>(children: V[]|undefined) => void)) => void) {
     let results: any[][] = [];
     let t = this;
-    function visit<T extends Node>(children: T[] | undefined) {
+    function visit<T extends Node>(children: T[]|undefined) {
       if (children) results.push(visitAll(t, children, context));
     }
     cb(visit);
