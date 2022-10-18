@@ -11,8 +11,6 @@ const getParser = () => {
   return parser;
 };
 
-export { TagContentType };
-
 export interface ParseOptions {
   /**
    * any element can self close
@@ -68,3 +66,16 @@ export function parse(
     getTagContentType,
   );
 }
+
+// For prettier
+export { TagContentType };
+export {
+  RecursiveVisitor,
+  visitAll,
+} from "../../compiler/src/ml_parser/ast.js";
+export {
+  ParseSourceSpan,
+  ParseLocation,
+  ParseSourceFile,
+} from "../../compiler/src/parse_util.js";
+export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.js";
