@@ -4,10 +4,13 @@
 
 ```ts
 
+import { EnvironmentInjector } from '@angular/core';
+import { EnvironmentProviders } from '@angular/core';
 import * as i0 from '@angular/core';
 import { InjectionToken } from '@angular/core';
 import { ModuleWithProviders } from '@angular/core';
 import { Observable } from 'rxjs';
+import { Provider } from '@angular/core';
 import { XhrFactory as XhrFactory_2 } from '@angular/common';
 
 // @public
@@ -1652,7 +1655,7 @@ export class HttpClientModule {
     // (undocumented)
     static ɵinj: i0.ɵɵInjectorDeclaration<HttpClientModule>;
     // (undocumented)
-    static ɵmod: i0.ɵɵNgModuleDeclaration<HttpClientModule, never, [typeof HttpClientXsrfModule], never>;
+    static ɵmod: i0.ɵɵNgModuleDeclaration<HttpClientModule, never, never, never>;
 }
 
 // @public
@@ -1726,10 +1729,37 @@ export enum HttpEventType {
 }
 
 // @public
+export interface HttpFeature<KindT extends HttpFeatureKind> {
+    // (undocumented)
+    ɵkind: KindT;
+    // (undocumented)
+    ɵproviders: Provider[];
+}
+
+// @public
+export enum HttpFeatureKind {
+    // (undocumented)
+    CustomXsrfConfiguration = 2,
+    // (undocumented)
+    Interceptors = 0,
+    // (undocumented)
+    JsonpSupport = 4,
+    // (undocumented)
+    LegacyInterceptors = 1,
+    // (undocumented)
+    NoXsrfProtection = 3,
+    // (undocumented)
+    RequestsMadeViaParent = 5
+}
+
+// @public
 export abstract class HttpHandler {
     // (undocumented)
     abstract handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
 }
+
+// @public
+export type HttpHandlerFn = (req: HttpRequest<unknown>) => Observable<HttpEvent<unknown>>;
 
 // @public
 export class HttpHeaderResponse extends HttpResponseBase {
@@ -1767,6 +1797,9 @@ export class HttpHeaders {
 export interface HttpInterceptor {
     intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>;
 }
+
+// @public
+export type HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn) => Observable<HttpEvent<unknown>>;
 
 // @public
 export interface HttpParameterCodec {
@@ -2121,13 +2154,37 @@ export class JsonpClientBackend implements HttpBackend {
 
 // @public
 export class JsonpInterceptor {
-    constructor(jsonp: JsonpClientBackend);
-    intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>;
+    constructor(injector: EnvironmentInjector);
+    intercept(initialRequest: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<JsonpInterceptor, never>;
     // (undocumented)
     static ɵprov: i0.ɵɵInjectableDeclaration<JsonpInterceptor>;
 }
+
+// @public
+export function provideHttpClient(...features: HttpFeature<HttpFeatureKind>[]): EnvironmentProviders;
+
+// @public
+export function withInterceptors(interceptorFns: HttpInterceptorFn[]): HttpFeature<HttpFeatureKind.Interceptors>;
+
+// @public
+export function withInterceptorsFromDi(): HttpFeature<HttpFeatureKind.LegacyInterceptors>;
+
+// @public
+export function withJsonpSupport(): HttpFeature<HttpFeatureKind.JsonpSupport>;
+
+// @public
+export function withNoXsrfProtection(): HttpFeature<HttpFeatureKind.NoXsrfProtection>;
+
+// @public
+export function withRequestsMadeViaParent(): HttpFeature<HttpFeatureKind.RequestsMadeViaParent>;
+
+// @public
+export function withXsrfConfiguration({ cookieName, headerName }: {
+    cookieName?: string;
+    headerName?: string;
+}): HttpFeature<HttpFeatureKind.CustomXsrfConfiguration>;
 
 // @public @deprecated
 export type XhrFactory = XhrFactory_2;

@@ -2732,6 +2732,234 @@ function allTests(os: string) {
              expect(jsContents)
                  .toMatch(/function Test_Factory\(t\) { i0\.ɵɵinvalidFactory\(\)/ms);
            });
+
+        it('should not give a compile-time error if an invalid @Injectable without providedIn is an abstract class',
+           () => {
+             env.tsconfig({strictInjectionParameters: true});
+             env.write('test.ts', `
+               import {Injectable} from '@angular/core';
+
+               @Injectable()
+               export abstract class Test {
+                 constructor(private notInjectable: string) {}
+               }
+             `);
+
+             env.driveMain();
+             const jsContents = env.getContents('test.js');
+             expect(jsContents)
+                 .toMatch(/function Test_Factory\(t\) { i0\.ɵɵinvalidFactory\(\)/ms);
+           });
+
+        it('should not give a compile-time error if an invalid @Injectable with providedIn is an abstract class',
+           () => {
+             env.tsconfig({strictInjectionParameters: true});
+             env.write('test.ts', `
+               import {Injectable} from '@angular/core';
+
+               @Injectable({
+                 providedIn: 'root',
+               })
+               export abstract class Test {
+                 constructor(private notInjectable: string) {}
+               }
+             `);
+
+             env.driveMain();
+             const jsContents = env.getContents('test.js');
+             expect(jsContents)
+                 .toMatch(/function Test_Factory\(t\) { i0\.ɵɵinvalidFactory\(\)/ms);
+           });
+
+        it('should give a compile-time error when a derived Directive inherits an invalid constructor', () => {
+          env.tsconfig({strictInjectionParameters: true});
+          env.write('test.ts', `
+               import {Directive} from '@angular/core';
+
+               @Directive()
+               export abstract class ParentDir {
+                 constructor(private notInjectable: string) {}
+               }
+
+               @Directive()
+               export abstract class AbstractMiddleDir extends ParentDir {}
+
+               @Directive()
+               export class ConcreteMiddleDir extends AbstractMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithoutCtor extends ConcreteMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithCtor extends ConcreteMiddleDir {
+                 constructor() {
+                   super('correct');
+                 }
+               }
+
+               @Directive()
+               export class ConcreteDerivedDirWithoutCtor extends ConcreteDirWithCtor {}
+             `);
+
+          const diags = env.driveDiagnostics();
+          expect(diags.length).toBe(2);
+          expect(diags[0].code)
+              .toBe(ngErrorCode(ErrorCode.INJECTABLE_INHERITS_INVALID_CONSTRUCTOR));
+          expect(diags[0].messageText)
+              .toEqual(
+                  `The directive ConcreteMiddleDir inherits its constructor from ParentDir, but the latter has ` +
+                  `a constructor parameter that is not compatible with dependency injection. Either add an explicit ` +
+                  `constructor to ConcreteMiddleDir or change ParentDir's constructor to use parameters that are ` +
+                  `valid for DI.`);
+          expect(getDiagnosticSourceCode(diags[0])).toBe('ConcreteMiddleDir');
+
+          expect(diags[1].code)
+              .toBe(ngErrorCode(ErrorCode.INJECTABLE_INHERITS_INVALID_CONSTRUCTOR));
+          expect(diags[1].messageText)
+              .toEqual(
+                  `The directive ConcreteDirWithoutCtor inherits its constructor from ParentDir, but the latter ` +
+                  `has a constructor parameter that is not compatible with dependency injection. Either add an ` +
+                  `explicit constructor to ConcreteDirWithoutCtor or change ParentDir's constructor to use ` +
+                  `parameters that are valid for DI.`);
+          expect(getDiagnosticSourceCode(diags[1])).toBe('ConcreteDirWithoutCtor');
+        });
+
+        it('should give a compile-time error when a derived Injectable inherits an invalid constructor', () => {
+          env.tsconfig({strictInjectionParameters: true});
+          env.write('test.ts', `
+               import {Injectable} from '@angular/core';
+
+               @Injectable()
+               export abstract class ParentService {
+                 constructor(private notInjectable: string) {}
+               }
+
+               @Injectable()
+               export abstract class AbstractMiddleService extends ParentService {}
+
+               @Injectable()
+               export class ConcreteMiddleService extends AbstractMiddleService {}
+
+               @Injectable()
+               export class ConcreteServiceWithoutCtor extends ConcreteMiddleService {}
+
+               @Injectable()
+               export class ConcreteServiceWithCtor extends ConcreteMiddleService {
+                 constructor() {
+                   super('correct');
+                 }
+               }
+
+               @Injectable()
+               export class ConcreteDerivedServiceWithoutCtor extends ConcreteServiceWithCtor {}
+
+               @Injectable({ providedIn: 'root' })
+               export class ProvidedInRootService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useFactory: () => null })
+               export class UseFactoryService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useValue: null })
+               export class UseValueService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useClass: ConcreteServiceWithCtor })
+               export class UseClassService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useExisting: ConcreteServiceWithCtor })
+               export class UseExistingService extends ParentService {}
+             `);
+
+          const diags = env.driveDiagnostics();
+          expect(diags.length).toBe(3);
+          expect(diags[0].code)
+              .toBe(ngErrorCode(ErrorCode.INJECTABLE_INHERITS_INVALID_CONSTRUCTOR));
+          expect(diags[0].messageText)
+              .toEqual(
+                  `The injectable ConcreteMiddleService inherits its constructor from ParentService, but the ` +
+                  `latter has a constructor parameter that is not compatible with dependency injection. Either add ` +
+                  `an explicit constructor to ConcreteMiddleService or change ParentService's constructor to use ` +
+                  `parameters that are valid for DI.`);
+          expect(getDiagnosticSourceCode(diags[0])).toBe('ConcreteMiddleService');
+
+          expect(diags[1].code)
+              .toBe(ngErrorCode(ErrorCode.INJECTABLE_INHERITS_INVALID_CONSTRUCTOR));
+          expect(diags[1].messageText)
+              .toEqual(
+                  `The injectable ConcreteServiceWithoutCtor inherits its constructor from ParentService, but the ` +
+                  `latter has a constructor parameter that is not compatible with dependency injection. Either add ` +
+                  `an explicit constructor to ConcreteServiceWithoutCtor or change ParentService's constructor to ` +
+                  `use parameters that are valid for DI.`);
+          expect(getDiagnosticSourceCode(diags[1])).toBe('ConcreteServiceWithoutCtor');
+
+          expect(diags[2].code)
+              .toBe(ngErrorCode(ErrorCode.INJECTABLE_INHERITS_INVALID_CONSTRUCTOR));
+          expect(diags[2].messageText)
+              .toEqual(
+                  `The injectable ProvidedInRootService inherits its constructor from ParentService, but the ` +
+                  `latter has a constructor parameter that is not compatible with dependency injection. Either add ` +
+                  `an explicit constructor to ProvidedInRootService or change ParentService's constructor to use ` +
+                  `parameters that are valid for DI.`);
+          expect(getDiagnosticSourceCode(diags[2])).toBe('ProvidedInRootService');
+        });
+
+        it('should give a compile-time error when a derived Directive inherits from a non-decorated class', () => {
+          env.tsconfig({strictInjectionParameters: true});
+          env.write('test.ts', `
+               import {Directive} from '@angular/core';
+
+               export abstract class ParentClass {
+                 constructor(private notInjectable: string) {}
+               }
+
+               @Directive()
+               export abstract class AbstractMiddleDir extends ParentClass {}
+
+               @Directive()
+               export class ConcreteMiddleDir extends AbstractMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithoutCtor extends ConcreteMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithCtor extends ConcreteMiddleDir {
+                 constructor() {
+                   super('correct');
+                 }
+               }
+
+               @Directive()
+               export class ConcreteDerivedDirWithoutCtor extends ConcreteDirWithCtor {}
+             `);
+
+          const diags = env.driveDiagnostics();
+          expect(diags.length).toBe(3);
+          expect(diags[0].code).toBe(ngErrorCode(ErrorCode.DIRECTIVE_INHERITS_UNDECORATED_CTOR));
+          expect(diags[0].messageText)
+              .toEqual(
+                  `The directive AbstractMiddleDir inherits its constructor from ParentClass, but the latter ` +
+                  `does not have an Angular decorator of its own. Dependency injection will not be able to resolve ` +
+                  `the parameters of ParentClass's constructor. Either add a @Directive decorator to ParentClass, ` +
+                  `or add an explicit constructor to AbstractMiddleDir.`);
+          expect(getDiagnosticSourceCode(diags[0])).toBe('AbstractMiddleDir');
+
+          expect(diags[1].code).toBe(ngErrorCode(ErrorCode.DIRECTIVE_INHERITS_UNDECORATED_CTOR));
+          expect(diags[1].messageText)
+              .toEqual(
+                  `The directive ConcreteMiddleDir inherits its constructor from ParentClass, but the latter ` +
+                  `does not have an Angular decorator of its own. Dependency injection will not be able to resolve ` +
+                  `the parameters of ParentClass's constructor. Either add a @Directive decorator to ParentClass, or ` +
+                  `add an explicit constructor to ConcreteMiddleDir.`);
+          expect(getDiagnosticSourceCode(diags[1])).toBe('ConcreteMiddleDir');
+
+          expect(diags[2].code).toBe(ngErrorCode(ErrorCode.DIRECTIVE_INHERITS_UNDECORATED_CTOR));
+          expect(diags[2].messageText)
+              .toEqual(
+                  `The directive ConcreteDirWithoutCtor inherits its constructor from ParentClass, but the latter ` +
+                  `does not have an Angular decorator of its own. Dependency injection will not be able to resolve ` +
+                  `the parameters of ParentClass's constructor. Either add a @Directive decorator to ParentClass, ` +
+                  `or add an explicit constructor to ConcreteDirWithoutCtor.`);
+          expect(getDiagnosticSourceCode(diags[2])).toBe('ConcreteDirWithoutCtor');
+        });
       });
 
       describe('with strictInjectionParameters = false', () => {
@@ -2768,6 +2996,148 @@ function allTests(os: string) {
              expect(jsContents)
                  .toContain('Test.ɵfac = function Test_Factory(t) { i0.ɵɵinvalidFactory()');
            });
+
+        it('should compile when a derived Directive inherits an invalid constructor', () => {
+          env.tsconfig({strictInjectionParameters: false});
+          env.write('test.ts', `
+               import {Directive} from '@angular/core';
+
+               @Directive()
+               export abstract class ParentDir {
+                 constructor(private notInjectable: string) {}
+               }
+
+               @Directive()
+               export abstract class AbstractMiddleDir extends ParentDir {}
+
+               @Directive()
+               export class ConcreteMiddleDir extends AbstractMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithoutCtor extends ConcreteMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithCtor extends ConcreteMiddleDir {
+                 constructor() {
+                   super('correct');
+                 }
+               }
+
+               @Directive()
+               export class ConcreteDerivedDirWithoutCtor extends ConcreteDirWithCtor {}
+             `);
+
+          env.driveMain();
+        });
+
+        it('should compile when a derived Injectable inherits an invalid constructor', () => {
+          env.tsconfig({strictInjectionParameters: false});
+          env.write('test.ts', `
+               import {Injectable} from '@angular/core';
+
+               @Injectable()
+               export abstract class ParentService {
+                 constructor(private notInjectable: string) {}
+               }
+
+               @Injectable()
+               export abstract class AbstractMiddleService extends ParentService {}
+
+               @Injectable()
+               export class ConcreteMiddleService extends AbstractMiddleService {}
+
+               @Injectable()
+               export class ConcreteServiceWithoutCtor extends ConcreteMiddleService {}
+
+               @Injectable()
+               export class ConcreteServiceWithCtor extends ConcreteMiddleService {
+                 constructor() {
+                   super('correct');
+                 }
+               }
+
+               @Injectable()
+               export class ConcreteDerivedServiceWithoutCtor extends ConcreteServiceWithCtor {}
+
+               @Injectable({ providedIn: 'root' })
+               export class ProvidedInRootService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useFactory: () => null })
+               export class UseFactoryService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useValue: null })
+               export class UseValueService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useClass: ConcreteServiceWithCtor })
+               export class UseClassService extends ParentService {}
+
+               @Injectable({ providedIn: 'root', useExisting: ConcreteServiceWithCtor })
+               export class UseExistingService extends ParentService {}
+             `);
+
+          env.driveMain();
+        });
+
+        it('should give a compile-time error when a derived Directive inherits from a non-decorated class', () => {
+          // Errors for undecorated base classes should always be reported, even under
+          // `strictInjectionParameters`.
+          env.tsconfig({strictInjectionParameters: false});
+          env.write('test.ts', `
+               import {Directive} from '@angular/core';
+
+               export abstract class ParentClass {
+                 constructor(private notInjectable: string) {}
+               }
+
+               @Directive()
+               export abstract class AbstractMiddleDir extends ParentClass {}
+
+               @Directive()
+               export class ConcreteMiddleDir extends AbstractMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithoutCtor extends ConcreteMiddleDir {}
+
+               @Directive()
+               export class ConcreteDirWithCtor extends ConcreteMiddleDir {
+                 constructor() {
+                   super('correct');
+                 }
+               }
+
+               @Directive()
+               export class ConcreteDerivedDirWithoutCtor extends ConcreteDirWithCtor {}
+             `);
+
+          const diags = env.driveDiagnostics();
+          expect(diags.length).toBe(3);
+          expect(diags[0].code).toBe(ngErrorCode(ErrorCode.DIRECTIVE_INHERITS_UNDECORATED_CTOR));
+          expect(diags[0].messageText)
+              .toEqual(
+                  `The directive AbstractMiddleDir inherits its constructor from ParentClass, but the latter ` +
+                  `does not have an Angular decorator of its own. Dependency injection will not be able to resolve ` +
+                  `the parameters of ParentClass's constructor. Either add a @Directive decorator to ParentClass, ` +
+                  `or add an explicit constructor to AbstractMiddleDir.`);
+          expect(getDiagnosticSourceCode(diags[0])).toBe('AbstractMiddleDir');
+
+          expect(diags[1].code).toBe(ngErrorCode(ErrorCode.DIRECTIVE_INHERITS_UNDECORATED_CTOR));
+          expect(diags[1].messageText)
+              .toEqual(
+                  `The directive ConcreteMiddleDir inherits its constructor from ParentClass, but the latter ` +
+                  `does not have an Angular decorator of its own. Dependency injection will not be able to resolve ` +
+                  `the parameters of ParentClass's constructor. Either add a @Directive decorator to ParentClass, ` +
+                  `or add an explicit constructor to ConcreteMiddleDir.`);
+          expect(getDiagnosticSourceCode(diags[1])).toBe('ConcreteMiddleDir');
+
+          expect(diags[2].code).toBe(ngErrorCode(ErrorCode.DIRECTIVE_INHERITS_UNDECORATED_CTOR));
+          expect(diags[2].messageText)
+              .toEqual(
+                  `The directive ConcreteDirWithoutCtor inherits its constructor from ParentClass, but the latter ` +
+                  `does not have an Angular decorator of its own. Dependency injection will not be able to resolve ` +
+                  `the parameters of ParentClass's constructor. Either add a @Directive decorator to ParentClass, ` +
+                  `or add an explicit constructor to ConcreteDirWithoutCtor.`);
+          expect(getDiagnosticSourceCode(diags[2])).toBe('ConcreteDirWithoutCtor');
+        });
       });
     });
 
@@ -7134,6 +7504,144 @@ function allTests(os: string) {
 
         expect(jsContents).toContain('defineComponent');
       });
+    });
+
+    describe('iframe processing', () => {
+      it('should generate attribute and property bindings with a validator fn when on <iframe>',
+         () => {
+           env.write('test.ts', `
+                import {Component} from '@angular/core';
+
+                @Component({
+                  template: \`
+                    <iframe src="http://angular.io"
+                      [sandbox]="''" [attr.allow]="''"
+                      [title]="'Hi!'"
+                    ></iframe>
+                  \`
+                })
+                export class SomeComponent {}
+              `);
+
+           env.driveMain();
+           const jsContents = env.getContents('test.js');
+
+           // Only `sandbox` has an extra validation fn (since it's security-sensitive),
+           // the `title` property doesn't have an extra validation fn.
+           expect(jsContents)
+               .toContain(
+                   'ɵɵproperty("sandbox", "", i0.ɵɵvalidateIframeAttribute)("title", "Hi!")');
+
+           // The `allow` property is also security-sensitive, thus an extra validation fn.
+           expect(jsContents).toContain('ɵɵattribute("allow", "", i0.ɵɵvalidateIframeAttribute)');
+         });
+
+      it('should generate an attribute binding instruction with a validator function ' +
+             '(making sure it\'s case-insensitive, since this is allowed in Angular templates)',
+         () => {
+           env.write('test.ts', `
+              import {Component} from '@angular/core';
+
+              @Component({
+                template: \`
+                  <IFRAME
+                    src="http://angular.io"
+                    [attr.SANDBOX]="''"
+                  ></IFRAME>
+                \`
+              })
+              export class SomeComponent {}
+            `);
+
+           env.driveMain();
+           const jsContents = env.getContents('test.js');
+
+           // Make sure that the `sandbox` has an extra validation fn,
+           // and the check is case-insensitive (since the `setAttribute` DOM API
+           // is case-insensitive as well).
+           expect(jsContents).toContain('ɵɵattribute("SANDBOX", "", i0.ɵɵvalidateIframeAttribute)');
+         });
+
+      it('should *not* generate a validator fn for attribute and property bindings when *not* on <iframe>',
+         () => {
+           env.write('test.ts', `
+                import {Component, Directive} from '@angular/core';
+
+                @Directive({
+                  standalone: true,
+                  selector: '[sandbox]',
+                  inputs: ['sandbox']
+                })
+                class Dir {}
+
+                @Component({
+                  standalone: true,
+                  imports: [Dir],
+                  template: \`
+                    <div [sandbox]="''" [title]="'Hi!'"></div>
+                  \`
+                })
+                export class SomeComponent {}
+              `);
+
+           env.driveMain();
+           const jsContents = env.getContents('test.js');
+
+           // Note: no extra validation fn, since a security-sensitive attribute is *not* on an
+           // <iframe>.
+           expect(jsContents).toContain('ɵɵproperty("sandbox", "")("title", "Hi!")');
+         });
+
+      it('should generate a validator fn for attribute and property host bindings on a directive',
+         () => {
+           env.write('test.ts', `
+              import {Directive} from '@angular/core';
+
+              @Directive({
+                host: {
+                  '[sandbox]': "''",
+                  '[attr.allow]': "''",
+                  'src': 'http://angular.io'
+                }
+              })
+              export class SomeDir {}
+            `);
+
+           env.driveMain();
+           const jsContents = env.getContents('test.js');
+
+           // The `sandbox` is potentially a security-sensitive attribute of an <iframe>.
+           // Generate an extra validation function to invoke at runtime, which would
+           // check if an underlying host element is an <iframe>.
+           expect(jsContents)
+               .toContain('ɵɵhostProperty("sandbox", "", i0.ɵɵvalidateIframeAttribute)');
+
+           // Similar to the above, but for an attribute binding (host attributes are
+           // represented via `ɵɵattribute`).
+           expect(jsContents).toContain('ɵɵattribute("allow", "", i0.ɵɵvalidateIframeAttribute)');
+         });
+
+      it('should generate a validator fn for attribute host bindings on a directive ' +
+             '(making sure the check is case-insensitive)',
+         () => {
+           env.write('test.ts', `
+              import {Directive} from '@angular/core';
+
+              @Directive({
+                host: {
+                  '[attr.SANDBOX]': "''"
+                }
+              })
+              export class SomeDir {}
+            `);
+
+           env.driveMain();
+           const jsContents = env.getContents('test.js');
+
+           // Make sure that we generate a validation fn for the `sandbox` attribute,
+           // even when it was declared as `SANDBOX`.
+           expect(jsContents).toContain('ɵɵattribute("SANDBOX", "", i0.ɵɵvalidateIframeAttribute)');
+         });
     });
 
     describe('undecorated providers', () => {

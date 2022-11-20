@@ -48,7 +48,6 @@ export type InitialNavigation = 'disabled'|'enabledBlocking'|'enabledNonBlocking
  * Extra configuration options that can be used with the `withRouterConfig` function.
  *
  * @publicApi
- * @developerPreview
  */
 export interface RouterConfigOptions {
   /**
@@ -114,7 +113,6 @@ export interface RouterConfigOptions {
  * function.
  *
  * @publicApi
- * @developerPreview
  */
 export interface InMemoryScrollingOptions {
   /**
@@ -234,42 +232,6 @@ export interface ExtraOptions extends InMemoryScrollingOptions, RouterConfigOpti
    * */
   malformedUriErrorHandler?:
       (error: URIError, urlSerializer: UrlSerializer, url: string) => UrlTree;
-
-  /**
-   * Enables a bug fix that corrects relative link resolution in components with empty paths.
-   * Example:
-   *
-   * ```
-   * const routes = [
-   *   {
-   *     path: '',
-   *     component: ContainerComponent,
-   *     children: [
-   *       { path: 'a', component: AComponent },
-   *       { path: 'b', component: BComponent },
-   *     ]
-   *   }
-   * ];
-   * ```
-   *
-   * From the `ContainerComponent`, you should be able to navigate to `AComponent` using
-   * the following `routerLink`, but it will not work if `relativeLinkResolution` is set
-   * to `'legacy'`:
-   *
-   * `<a [routerLink]="['./a']">Link to A</a>`
-   *
-   * However, this will work:
-   *
-   * `<a [routerLink]="['../a']">Link to A</a>`
-   *
-   * In other words, you're required to use `../` rather than `./` when the relative link
-   * resolution is set to `'legacy'`.
-   *
-   * The default in v11 is `corrected`.
-   *
-   * @deprecated
-   */
-  relativeLinkResolution?: 'legacy'|'corrected';
 }
 
 /**

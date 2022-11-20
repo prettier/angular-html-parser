@@ -54,7 +54,6 @@
 # =========================================================
 #  Used for approving minor documentation-only changes that don't require engineering review.
 #
-# gkalpak
 # josmar-crwdstffng
 # ileil
 # TeriGlover
@@ -176,7 +175,6 @@ groups:
     reviewers:
       users:
         - alxhub
-        - gkalpak
         - JoostK
 
   # =========================================================
@@ -228,6 +226,27 @@ groups:
           'aio/content/images/guide/change-detection/**/{*,.*}',
           'aio/content/guide/class-binding.md',
           'aio/content/guide/cheatsheet.md',
+          'aio/content/guide/component/component-content-projection-complex.md',
+          'aio/content/guide/component/component-content-projection-conditional.md',
+          'aio/content/guide/component/component-content-projection-multi-slot.md',
+          'aio/content/guide/component/component-content-projection-overview.md',
+          'aio/content/guide/component/component-content-projection-single-slot.md',
+          'aio/content/guide/component/component-create-cli.md',
+          'aio/content/guide/component/component-create-manual.md',
+          'aio/content/guide/component/component-example-dynamic-load.md',
+          'aio/content/guide/component/component-example-interaction.md',
+          'aio/content/guide/component/component-example.md',
+          'aio/content/guide/component/component-exchange-data.md',
+          'aio/content/guide/component/component-lifecycle-overview.md',
+          'aio/content/guide/component/component-overview.md',
+          'aio/content/guide/component/component-share-data-overview.md',
+          'aio/content/guide/component/component-share-data-to-child.md',
+          'aio/content/guide/component/component-share-data-to-parent.md',
+          'aio/content/guide/component/component-structure.md',
+          'aio/content/guide/component/component-style-overview.md',
+          'aio/content/guide/component/component-style-view-encapsulate.md',
+          'aio/content/guide/component/component-style.md',
+          'aio/content/guide/component/component-use-overview.md',
           'aio/content/guide/component-interaction.md',
           'aio/content/examples/component-interaction/**/{*,.*}',
           'aio/content/images/guide/component-interaction/**/{*,.*}',
@@ -272,6 +291,8 @@ groups:
           'aio/content/guide/lazy-loading-ngmodules.md',
           'aio/content/examples/lazy-loading-ngmodules/**/{*,.*}',
           'aio/content/images/guide/lazy-loading-ngmodules/**/{*,.*}',
+          'aio/content/guide/lifecycle-hook/lifecycle-hook-example.md',
+          'aio/content/guide/lifecycle-hook/lifecycle-hook-overview.md',
           'aio/content/guide/lifecycle-hooks.md',
           'aio/content/examples/lifecycle-hooks/**/{*,.*}',
           'aio/content/images/guide/lifecycle-hooks/**/{*,.*}',
@@ -304,6 +325,7 @@ groups:
           'aio/content/guide/two-way-binding.md',
           'aio/content/examples/two-way-binding/**/{*,.*}',
           'aio/content/guide/built-in-directives.md',
+          'aio/content/guide/directive-composition-api.md',
           'aio/content/examples/built-in-directives/**/{*,.*}',
           'aio/content/images/guide/built-in-directives/**/{*,.*}',
           'aio/content/guide/template-reference-variables.md',
@@ -414,7 +436,6 @@ groups:
         - andrewseguin
         - atscott
         - dylhunn
-        - gkalpak
         - jessicajaniuk
         - pkozlowski-opensource
 
@@ -565,7 +586,6 @@ groups:
     reviewers:
       users:
         - alxhub
-        - gkalpak
 
   # =========================================================
   #  Framework: Upgrade
@@ -593,7 +613,6 @@ groups:
     reviewers:
       users:
         - alxhub
-        - gkalpak
         - jessicajaniuk
 
   # =========================================================
@@ -914,6 +933,8 @@ groups:
           'aio/content/guide/migration-module-with-providers.md',
           'aio/content/guide/static-query-migration.md',
           'aio/content/guide/update-to-latest-version.md',
+          'aio/content/guide/update-to-version-14.md',
+          'aio/content/guide/update-to-version-15.md'
           ])
     reviewers:
       users:
@@ -1064,11 +1085,32 @@ groups:
           'aio/content/guide/reviewing-content.md',
           'aio/content/guide/updating-content-github-ui.md',
           'aio/content/guide/updating-search-keywords.md',
+          'aio/content/guide/doc-build-test.md',
+          'aio/content/guide/doc-edit-finish.md',
+          'aio/content/guide/doc-editing.md',
+          'aio/content/guide/doc-github-tasks.md',
+          'aio/content/guide/doc-pr-open.md',
+          'aio/content/guide/doc-pr-prep.md',
+          'aio/content/guide/doc-pr-update.md',
+          'aio/content/guide/doc-prepare-to-edit.md',
+          'aio/content/guide/doc-select-issue.md',
+          'aio/content/guide/doc-tasks.md',
+          'aio/content/guide/doc-update-overview.md',
+          'aio/content/guide/doc-update-start.md',
+          'aio/content/guide/docs-lint-errors.md',
+          'aio/content/images/guide/preparing-to-edit-docs/**/{*,.*}',
+          'aio/content/images/guide/github-for-docs/**/{*,.*}',
+          'aio/content/images/guide/doc-update-start/**/{*,.*}',
+          'aio/content/images/guide/doc-update-overview/**/{*,.*}',
+          'aio/content/images/guide/doc-pr-update/**/{*,.*}',
+          'aio/content/images/guide/doc-pr-prep/**/{*,.*}',
+          'aio/content/images/guide/doc-pr-open/**/{*,.*}',
+          'aio/content/images/guide/doc-github-tasks/**/{*,.*}',
+          'aio/content/images/guide/doc-prepare-to-edit/**/{*,.*}',
           ])
     reviewers:
       users:
         - AndrewKushnir
-        - gkalpak
         - jessicajaniuk
         - josephperrott
 
@@ -1135,7 +1177,6 @@ groups:
     reviewers:
       users:
         - devversion
-        - gkalpak
         - josephperrott
 
   # =========================================================
@@ -1333,7 +1374,6 @@ groups:
         - dgp1130 # Doug Parker
         - dylhunn # Dylan Hunn
         - filipesilva # Filipe Silva
-        - gkalpak # Georgios Kalpakas
         - jelbourn # Jeremy Elbourn
         - jessicajaniuk # Jessica Janiuk
         - JiaLiPassion # Jia Li

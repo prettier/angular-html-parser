@@ -390,6 +390,9 @@
     "name": "addComponentLogic"
   },
   {
+    "name": "addPropertyAlias"
+  },
+  {
     "name": "addToViewTree"
   },
   {
@@ -493,6 +496,9 @@
   },
   {
     "name": "deepForEach"
+  },
+  {
+    "name": "deepForEachProvider"
   },
   {
     "name": "detachMovedView"
@@ -747,10 +753,10 @@
     "name": "isCurrentTNodeParent"
   },
   {
-    "name": "isFunction"
+    "name": "isEnvironmentProviders"
   },
   {
-    "name": "isImportedNgModuleProviders"
+    "name": "isFunction"
   },
   {
     "name": "isInlineTemplate"

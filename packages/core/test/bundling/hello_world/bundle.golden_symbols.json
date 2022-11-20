@@ -273,6 +273,9 @@
     "name": "_wrapInTimeout"
   },
   {
+    "name": "addPropertyAlias"
+  },
+  {
     "name": "allocExpando"
   },
   {
@@ -357,10 +360,16 @@
     "name": "deepForEach"
   },
   {
+    "name": "deepForEachProvider"
+  },
+  {
     "name": "detachMovedView"
   },
   {
     "name": "detectChangesInternal"
+  },
+  {
+    "name": "diPublicInInjector"
   },
   {
     "name": "empty"
@@ -459,6 +468,9 @@
     "name": "getOrCreateInjectable"
   },
   {
+    "name": "getOrCreateNodeInjectorForNode"
+  },
+  {
     "name": "getOrCreateTNode"
   },
   {
@@ -549,10 +561,10 @@
     "name": "isComponentDef"
   },
   {
-    "name": "isFunction"
+    "name": "isEnvironmentProviders"
   },
   {
-    "name": "isImportedNgModuleProviders"
+    "name": "isFunction"
   },
   {
     "name": "isInlineTemplate"

@@ -57,6 +57,9 @@
     "name": "BuiltInControlValueAccessor"
   },
   {
+    "name": "CALL_SET_DISABLED_STATE"
+  },
+  {
     "name": "CHECKBOX_VALUE_ACCESSOR"
   },
   {
@@ -552,6 +555,9 @@
     "name": "addComponentLogic"
   },
   {
+    "name": "addPropertyAlias"
+  },
+  {
     "name": "addToArray"
   },
   {
@@ -625,12 +631,6 @@
   },
   {
     "name": "cleanUpView"
-  },
-  {
-    "name": "coerceToAsyncValidator"
-  },
-  {
-    "name": "coerceToValidator"
   },
   {
     "name": "collectNativeNodes"
@@ -718,6 +718,9 @@
   },
   {
     "name": "deepForEach"
+  },
+  {
+    "name": "deepForEachProvider"
   },
   {
     "name": "defaultIterableDiffersFactory"
@@ -1095,6 +1098,9 @@
     "name": "isEmptyInputValue"
   },
   {
+    "name": "isEnvironmentProviders"
+  },
+  {
     "name": "isFormControlState"
   },
   {
@@ -1102,9 +1108,6 @@
   },
   {
     "name": "isFunction"
-  },
-  {
-    "name": "isImportedNgModuleProviders"
   },
   {
     "name": "isInlineTemplate"
@@ -1411,6 +1414,9 @@
   },
   {
     "name": "setDirectiveInputsWhichShadowsStyling"
+  },
+  {
+    "name": "setDisabledStateDefault"
   },
   {
     "name": "setIncludeViewProviders"
