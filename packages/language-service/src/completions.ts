@@ -8,7 +8,7 @@
 
 import {AST, ASTWithSource, BindingPipe, BindingType, Call, EmptyExpr, ImplicitReceiver, LiteralPrimitive, ParsedEventType, ParseSourceSpan, PropertyRead, PropertyWrite, SafePropertyRead, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstElement, TmplAstNode, TmplAstReference, TmplAstTemplate, TmplAstText, TmplAstTextAttribute, TmplAstVariable} from '@angular/compiler';
 import {NgCompiler} from '@angular/compiler-cli/src/ngtsc/core';
-import {CompletionKind, DirectiveInScope, SymbolKind, TemplateDeclarationSymbol} from '@angular/compiler-cli/src/ngtsc/typecheck/api';
+import {CompletionKind, PotentialDirective, SymbolKind, TemplateDeclarationSymbol} from '@angular/compiler-cli/src/ngtsc/typecheck/api';
 import {BoundEvent, TextAttribute} from '@angular/compiler/src/render3/r3_ast';
 import ts from 'typescript';
 
@@ -842,7 +842,8 @@ export class CompletionBuilder<N extends TmplAstNode|AST> {
 
   private getPipeCompletions(this: PipeCompletionBuilder):
       ts.WithMetadata<ts.CompletionInfo>|undefined {
-    const pipes = this.templateTypeChecker.getPipesInScope(this.component);
+    const pipes =
+        this.templateTypeChecker.getPotentialPipes(this.component).filter(p => p.isInScope);
     if (pipes === null) {
       return undefined;
     }
@@ -905,7 +906,7 @@ function makeReplacementSpanFromAst(node: PropertyRead|PropertyWrite|SafePropert
   };
 }
 
-function tagCompletionKind(directive: DirectiveInScope|null): ts.ScriptElementKind {
+function tagCompletionKind(directive: PotentialDirective|null): ts.ScriptElementKind {
   let kind: DisplayInfoKind;
   if (directive === null) {
     kind = DisplayInfoKind.ELEMENT;

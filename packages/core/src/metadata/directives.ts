@@ -326,12 +326,26 @@ export interface Directive {
    * directives don't depend on any "intermediate context" of an NgModule (ex. configured
    * providers).
    *
-   * More information about standalone components, directives and pipes can be found in [this
+   * More information about standalone components, directives, and pipes can be found in [this
    * guide](guide/standalone-components).
-   *
-   * @developerPreview
    */
   standalone?: boolean;
+
+  /**
+   * Standalone directives that should be applied to the host whenever the directive is matched.
+   * By default, none of the inputs or outputs of the host directives will be available on the host,
+   * unless they are specified in the `inputs` or `outputs` properties.
+   *
+   * You can additionally alias inputs and outputs by putting a colon and the alias after the
+   * original input or output name. For example, if a directive applied via `hostDirectives`
+   * defines an input named `menuDisabled`, you can alias this to `disabled` by adding
+   * `'menuDisabled: disabled'` as an entry to `inputs`.
+   */
+  hostDirectives?: (Type<unknown>|{
+    directive: Type<unknown>,
+    inputs?: string[],
+    outputs?: string[],
+  })[];
 }
 
 /**
@@ -601,30 +615,26 @@ export interface Component extends Directive {
 
   /**
    * Angular components marked as `standalone` do not need to be declared in an NgModule. Such
-   * components directly manage their own template dependencies (components, directives and pipes
+   * components directly manage their own template dependencies (components, directives, and pipes
    * used in a template) via the imports property.
    *
-   * More information about standalone components, directives and pipes can be found in [this
+   * More information about standalone components, directives, and pipes can be found in [this
    * guide](guide/standalone-components).
-   *
-   * @developerPreview
    */
   standalone?: boolean;
 
   /**
    * The imports property specifies the standalone component's template dependencies — those
    * directives, components, and pipes that can be used within its template. Standalone components
-   * can import other standalone components, directives and pipes as well as existing NgModules.
+   * can import other standalone components, directives, and pipes as well as existing NgModules.
    *
    * This property is only available for standalone components - specifying it for components
    * declared in an NgModule generates a compilation error.
    *
-   * More information about standalone components, directives and pipes can be found in [this
+   * More information about standalone components, directives, and pipes can be found in [this
    * guide](guide/standalone-components).
-   *
-   * @developerPreview
    */
-  imports?: (Type<any>|any[])[];
+  imports?: (Type<any>|ReadonlyArray<any>)[];
 
   /**
    * The set of schemas that declare elements to be allowed in a standalone component. Elements and
@@ -633,7 +643,7 @@ export interface Component extends Directive {
    * This property is only available for standalone components - specifying it for components
    * declared in an NgModule generates a compilation error.
    *
-   * More information about standalone components, directives and pipes can be found in [this
+   * More information about standalone components, directives, and pipes can be found in [this
    * guide](guide/standalone-components).
    */
   schemas?: SchemaMetadata[];
@@ -713,7 +723,7 @@ export interface Pipe {
    * Angular pipes marked as `standalone` do not need to be declared in an NgModule. Such
    * pipes don't depend on any "intermediate context" of an NgModule (ex. configured providers).
    *
-   * More information about standalone components, directives and pipes can be found in [this
+   * More information about standalone components, directives, and pipes can be found in [this
    * guide](guide/standalone-components).
    */
   standalone?: boolean;

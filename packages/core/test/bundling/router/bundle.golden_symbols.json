@@ -483,9 +483,6 @@
     "name": "RouterLinkActive"
   },
   {
-    "name": "RouterLinkWithHref"
-  },
-  {
     "name": "RouterOutlet"
   },
   {
@@ -699,6 +696,9 @@
     "name": "addComponentLogic"
   },
   {
+    "name": "addPropertyAlias"
+  },
+  {
     "name": "addToArray"
   },
   {
@@ -712,6 +712,9 @@
   },
   {
     "name": "allocLFrame"
+  },
+  {
+    "name": "allowSanitizationBypassAndThrow"
   },
   {
     "name": "appendChild"
@@ -880,6 +883,9 @@
   },
   {
     "name": "deepForEach"
+  },
+  {
+    "name": "deepForEachProvider"
   },
   {
     "name": "defaultErrorFactory"
@@ -1182,6 +1188,9 @@
     "name": "getResolve"
   },
   {
+    "name": "getSanitizer"
+  },
+  {
     "name": "getSelectedIndex"
   },
   {
@@ -1335,6 +1344,9 @@
     "name": "isEmptyError"
   },
   {
+    "name": "isEnvironmentProviders"
+  },
+  {
     "name": "isFunction"
   },
   {
@@ -1342,9 +1354,6 @@
   },
   {
     "name": "isImmediateMatch"
-  },
-  {
-    "name": "isImportedNgModuleProviders"
   },
   {
     "name": "isInlineTemplate"
@@ -1461,6 +1470,9 @@
     "name": "matrixParamsMatch"
   },
   {
+    "name": "maybeUnwrapDefaultExport"
+  },
+  {
     "name": "maybeUnwrapFn"
   },
   {
@@ -1554,6 +1566,9 @@
     "name": "pipeFromArray"
   },
   {
+    "name": "policy"
+  },
+  {
     "name": "prioritizedGuardValue"
   },
   {
@@ -1561,9 +1576,6 @@
   },
   {
     "name": "promise"
-  },
-  {
-    "name": "provideRoutes"
   },
   {
     "name": "redirectIfUrlTree"
@@ -1624,6 +1636,9 @@
   },
   {
     "name": "rootRoute"
+  },
+  {
+    "name": "routes"
   },
   {
     "name": "rxSubscriber"
@@ -1779,6 +1794,9 @@
     "name": "tree"
   },
   {
+    "name": "trustedScriptURLFromStringBypass"
+  },
+  {
     "name": "uniqueIdCounter"
   },
   {
@@ -1786,6 +1804,9 @@
   },
   {
     "name": "unwrapRNode"
+  },
+  {
+    "name": "unwrapSafeValue"
   },
   {
     "name": "updateMicroTaskStatus"
@@ -1830,9 +1851,6 @@
     "name": "ɵɵattribute"
   },
   {
-    "name": "ɵɵcontentQuery"
-  },
-  {
     "name": "ɵɵdefineComponent"
   },
   {
@@ -1857,16 +1875,13 @@
     "name": "ɵɵinject"
   },
   {
-    "name": "ɵɵinjectAttribute"
-  },
-  {
     "name": "ɵɵlistener"
   },
   {
-    "name": "ɵɵloadQuery"
+    "name": "ɵɵqueryRefresh"
   },
   {
-    "name": "ɵɵqueryRefresh"
+    "name": "ɵɵsanitizeResourceUrl"
   },
   {
     "name": "ɵɵsanitizeUrl"
