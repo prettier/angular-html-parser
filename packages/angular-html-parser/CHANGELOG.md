@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [4.0.0](https://github.com/prettier/angular-html-parser/compare/v2.1.0...v4.0.0) (2023-01-05)
+## [4.0.0](https://github.com/prettier/angular-html-parser/compare/v3.0.0...v4.0.0) (2023-01-05)
 
 Sync with upstream.
 
@@ -69,7 +69,7 @@ Sync with upstream.
 * **router:** restore 'history.state' on popstate even if navigationId missing ([#48033](https://github.com/prettier/angular-html-parser/issues/48033)) ([1976e37](https://github.com/prettier/angular-html-parser/commit/1976e37475e144d4df27b1558b2acd929bd439be)), closes [#28108](https://github.com/prettier/angular-html-parser/issues/28108) [#28954](https://github.com/prettier/angular-html-parser/issues/28954)
 * **zone.js:** cancel tasks only when they are scheduled or running ([#46435](https://github.com/prettier/angular-html-parser/issues/46435)) ([b618b5a](https://github.com/prettier/angular-html-parser/commit/b618b5aa86138c900055c5496967e3348a7b98fc)), closes [#45711](https://github.com/prettier/angular-html-parser/issues/45711)
 
-## [3.0.0](https://github.com/prettier/angular-html-parser/compare/v1.6.0...v3.0.0) (2022-11-20)
+## [3.0.0](https://github.com/prettier/angular-html-parser/compare/v2.1.0...v3.0.0) (2022-11-20)
 
 Sync with upstream.
 
