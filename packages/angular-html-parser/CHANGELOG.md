@@ -2,14 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name=".0.0"></a>
 ## [4.0.0](https://github.com/prettier/angular-html-parser/compare/v3.0.0...v4.0.0) (2023-01-05)
 
 Sync with upstream.
 
+<a name="3.0.0"></a>
 ## [3.0.0](https://github.com/prettier/angular-html-parser/compare/v2.1.0...v3.0.0) (2022-11-20)
 
 Sync with upstream.
 
+<a name="2.1.0"></a>
 ## [2.1.0](https://github.com/prettier/angular-html-parser/compare/v2.0.0...v2.1.0) (2022-10-18)
 
 
@@ -17,6 +20,7 @@ Sync with upstream.
 
 * expose utils and classes ([#26](https://github.com/prettier/angular-html-parser/issues/26)) ([aacfa00](https://github.com/prettier/angular-html-parser/commit/aacfa00bd92006bb4abb26adda1fabb69fca3800))
 
+<a name="2.0.0"></a>
 ## [2.0.0](https://github.com/prettier/angular-html-parser/compare/v1.8.0...v2.0.0) (2022-10-02)
 
 
@@ -27,7 +31,7 @@ Sync with upstream.
 
 
 <a name="1.8.0"></a>
-# [1.8.0](https://github.com/ikatyang/angular-html-parser/compare/v1.7.1...v1.8.0) (2021-04-05)
+## [1.8.0](https://github.com/ikatyang/angular-html-parser/compare/v1.7.1...v1.8.0) (2021-04-05)
 
 
 ### Features
@@ -47,7 +51,7 @@ Sync with upstream.
 
 
 <a name="1.7.0"></a>
-# [1.7.0](https://github.com/ikatyang/angular-html-parser/compare/v1.6.0...v1.7.0) (2020-05-09)
+## [1.7.0](https://github.com/ikatyang/angular-html-parser/compare/v1.6.0...v1.7.0) (2020-05-09)
 
 
 ### Features
@@ -57,7 +61,7 @@ Sync with upstream.
 
 
 <a name="1.6.0"></a>
-# [1.6.0](https://github.com/ikatyang/angular-html-parser/compare/v1.5.0...v1.6.0) (2020-05-03)
+## [1.6.0](https://github.com/ikatyang/angular-html-parser/compare/v1.5.0...v1.6.0) (2020-05-03)
 
 
 ### Features
@@ -67,7 +71,7 @@ Sync with upstream.
 
 
 <a name="1.5.0"></a>
-# [1.5.0](https://github.com/ikatyang/angular-html-parser/compare/v1.4.0...v1.5.0) (2020-04-21)
+## [1.5.0](https://github.com/ikatyang/angular-html-parser/compare/v1.4.0...v1.5.0) (2020-04-21)
 
 
 ### Features
@@ -77,7 +81,7 @@ Sync with upstream.
 
 
 <a name="1.4.0"></a>
-# [1.4.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.3.0...v1.4.0) (2020-01-28)
+## [1.4.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.3.0...v1.4.0) (2020-01-28)
 
 
 ### Bug Fixes
@@ -87,7 +91,7 @@ Sync with upstream.
 
 
 <a name="1.3.0"></a>
-# [1.3.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.2.0...v1.3.0) (2019-11-02)
+## [1.3.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.2.0...v1.3.0) (2019-11-02)
 
 
 ### Features
@@ -97,7 +101,7 @@ Sync with upstream.
 
 
 <a name="1.2.0"></a>
-# [1.2.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.1.0...v1.2.0) (2018-12-07)
+## [1.2.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.1.0...v1.2.0) (2018-12-07)
 
 
 ### Features
@@ -107,7 +111,7 @@ Sync with upstream.
 
 
 <a name="1.1.0"></a>
-# [1.1.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.0.0...v1.1.0) (2018-11-27)
+## [1.1.0](https://github.com/ikatyang/angular-html-parser/blob/master/packages/angular-html-parser/compare/v1.0.0...v1.1.0) (2018-11-27)
 
 
 ### Features
@@ -118,7 +122,7 @@ Sync with upstream.
 
 
 <a name="1.0.0"></a>
-# 1.0.0 (2018-10-24)
+## 1.0.0 (2018-10-24)
 
 ### Features
 
