@@ -11,7 +11,7 @@ import {ParseError, ParseLocation, ParseSourceFile, ParseSourceSpan} from '../pa
 
 import {NAMED_ENTITIES} from './entities';
 import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from './interpolation_config';
-import {TagContentType, TagDefinition, mergeNsAndName} from './tags';
+import {mergeNsAndName, TagContentType, TagDefinition} from './tags';
 import {IncompleteTagOpenToken, TagOpenStartToken, Token, TokenType} from './tokens';
 
 export class TokenError extends ParseError {
@@ -95,7 +95,10 @@ export interface TokenizeOptions {
 }
 
 export function tokenize(
-    source: string, url: string, getTagContentType: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
+    source: string, url: string,
+    getTagContentType: (
+        tagName: string, prefix: string, hasParent: boolean,
+        attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
     options: TokenizeOptions = {}): TokenizeResult {
   const tokenizer = new _Tokenizer(new ParseSourceFile(source, url), getTagContentType, options);
   tokenizer.tokenize();
@@ -150,11 +153,15 @@ class _Tokenizer {
 
   /**
    * @param _file The html source file being tokenized.
-   * @param _getTagContentType A function that will retrieve a tag content type for a given tag name.
+   * @param _getTagContentType A function that will retrieve a tag content type for a given tag
+   *     name.
    * @param options Configuration of the tokenization.
    */
   constructor(
-      _file: ParseSourceFile, private _getTagContentType: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
+      _file: ParseSourceFile,
+      private _getTagContentType:
+          (tagName: string, prefix: string, hasParent: boolean,
+           attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
       options: TokenizeOptions) {
     this._tokenizeIcu = options.tokenizeExpansionForms || false;
     this._interpolationConfig = options.interpolationConfig || DEFAULT_INTERPOLATION_CONFIG;
@@ -368,7 +375,8 @@ class _Tokenizer {
   private _requireStrCaseInsensitive(chars: string) {
     const location = this._cursor.clone();
     if (!this._attemptStrCaseInsensitive(chars)) {
-      throw this._createError(_unexpectedCharacterErrorMsg(this._cursor.peek()), this._cursor.getSpan(location));
+      throw this._createError(
+          _unexpectedCharacterErrorMsg(this._cursor.peek()), this._cursor.getSpan(location));
     }
   }
 
@@ -541,8 +549,8 @@ class _Tokenizer {
       prefix = openTagToken.parts[0];
       tagName = openTagToken.parts[1];
       this._attemptCharCodeUntilFn(isNotWhitespace);
-      while (this._cursor.peek() !== chars.$SLASH && this._cursor.peek() !== chars.$GT &&
-             this._cursor.peek() !== chars.$LT && this._cursor.peek() !== chars.$EOF) {
+      while (this._cursor.peek() !== chars.$GT && this._cursor.peek() !== chars.$LT &&
+             this._cursor.peek() !== chars.$EOF) {
         const [prefix, name] = this._consumeAttributeName();
         this._attemptCharCodeUntilFn(isNotWhitespace);
         if (this._attemptCharCode(chars.$EQ)) {
@@ -572,11 +580,13 @@ class _Tokenizer {
       throw e;
     }
 
-    if (this._canSelfClose && this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID) {
+    if (this._canSelfClose &&
+        this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID) {
       return;
     }
 
-    const contentTokenType = this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0, attrs);
+    const contentTokenType =
+        this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0, attrs);
     this._handleFullNameStackForTagOpen(prefix, tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
@@ -632,7 +642,7 @@ class _Tokenizer {
           endPredicate);
       this._consumeQuote(quoteChar);
     } else {
-      const endPredicate = () => isNameEnd(this._cursor.peek());
+      const endPredicate = () => isUnquotedEnd(this._cursor.peek());
       value = this._consumeWithInterpolation(
           TokenType.ATTR_VALUE_TEXT, TokenType.ATTR_VALUE_INTERPOLATION, endPredicate,
           endPredicate);
@@ -920,14 +930,16 @@ class _Tokenizer {
 
   private _handleFullNameStackForTagOpen(prefix: string, tagName: string) {
     const fullName = mergeNsAndName(prefix, tagName);
-    if (this._fullNameStack.length === 0 || this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+    if (this._fullNameStack.length === 0 ||
+        this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
       this._fullNameStack.push(fullName);
     }
   }
 
   private _handleFullNameStackForTagClose(prefix: string, tagName: string) {
     const fullName = mergeNsAndName(prefix, tagName);
-    if (this._fullNameStack.length !== 0 && this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+    if (this._fullNameStack.length !== 0 &&
+        this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
       this._fullNameStack.pop();
     }
   }
@@ -941,6 +953,11 @@ function isNameEnd(code: number): boolean {
   return chars.isWhitespace(code) || code === chars.$GT || code === chars.$LT ||
       code === chars.$SLASH || code === chars.$SQ || code === chars.$DQ || code === chars.$EQ ||
       code === chars.$EOF;
+}
+
+function isUnquotedEnd(code: number): boolean {
+  return chars.isWhitespace(code) || code === chars.$GT || code === chars.$LT ||
+      code === chars.$SQ || code === chars.$DQ || code === chars.$EQ || code === chars.$EOF;
 }
 
 function isPrefixEnd(code: number): boolean {
