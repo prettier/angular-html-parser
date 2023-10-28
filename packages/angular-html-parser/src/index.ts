@@ -41,6 +41,10 @@ export interface ParseOptions {
     hasParent: boolean,
     attrs: Array<{prefix: string, name: string, value?: string}>
   ) => void | TagContentType,
+  /**
+   * tokenize blocks (Angular Control Flow Syntax)
+   */
+  tokenizeBlocks?: boolean,
 }
 
 export function parse(
@@ -52,6 +56,7 @@ export function parse(
     allowHtmComponentClosingTags = false,
     isTagNameCaseSensitive = false,
     getTagContentType,
+    tokenizeBlocks = false,
   } = options;
   return getParser().parse(
     input,
@@ -61,7 +66,7 @@ export function parse(
       interpolationConfig: undefined,
       canSelfClose,
       allowHtmComponentClosingTags,
-      tokenizeBlocks: false,
+      tokenizeBlocks,
     },
     isTagNameCaseSensitive,
     getTagContentType,
