@@ -67,4 +67,29 @@ describe("AST format", () => {
       jasmine.objectContaining({ type: "cdata" }),
     ]);
   });
+
+  it("should have `type` property when tokenizeBlocks is enabled", () => {
+    const input = `@if (user.isHuman) { <p>Hello human</p> }`;
+    const ast = parse(input, { tokenizeBlocks: true });
+    expect(ast.rootNodes).toEqual([
+      jasmine.objectContaining({
+        name: "if",
+        type: "block",
+        parameters: [
+          jasmine.objectContaining({ type: 'blockParameter', expression: 'user.isHuman' })
+        ],
+        children: [
+          jasmine.objectContaining({ type: 'text', value: ' ' }),
+          jasmine.objectContaining({
+            type: 'element',
+            name: 'p',
+            children: [
+              jasmine.objectContaining({ type: 'text', value: 'Hello human' })
+            ]
+          }),
+          jasmine.objectContaining({ type: 'text', value: ' ' }),
+        ]
+      }),
+    ]);
+  });
 });

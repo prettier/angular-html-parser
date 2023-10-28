@@ -126,6 +126,8 @@ export class Block implements BaseNode {
   visit(visitor: Visitor, context: any) {
     return visitor.visitBlock(this, context);
   }
+
+  readonly type = 'block';
 }
 
 export class BlockParameter implements BaseNode {
@@ -134,6 +136,8 @@ export class BlockParameter implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitBlockParameter(this, context);
   }
+
+  readonly type = 'blockParameter';
 }
 
 export interface Visitor {
