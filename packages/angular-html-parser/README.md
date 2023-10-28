@@ -69,6 +69,10 @@ interface Options {
     hasParent: boolean,
     attrs: Array<{prefix: string; name: string; value?: string | undefined}>
   ) => void | ng.TagContentType;
+  /**
+   * tokenize blocks (Angular Control Flow Syntax)
+   */
+  tokenizeBlocks?: boolean,
 }
 ```
 
