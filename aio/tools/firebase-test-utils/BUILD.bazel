@@ -1,28 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "ts_library")
-
-package(default_visibility = ["//aio/tests/deployment:__subpackages__"])
-
-ts_library(
-    name = "firebase-test-utils",
-    srcs = glob(
-        ["*.ts"],
-        exclude = ["*.spec.ts"],
-    ),
-    deps = [
-        "@npm//xregexp",
-    ],
-)
-
-ts_library(
-    name = "test_lib",
-    testonly = True,
-    srcs = glob(
-        ["*.spec.ts"],
-    ),
-    deps = [
-        ":firebase-test-utils",
-    ],
-)
+load("//tools:defaults.bzl", "nodejs_test")
 
 filegroup(
     name = "sources",
@@ -30,9 +6,19 @@ filegroup(
     visibility = ["//aio/tests/deployment/unit:__pkg__"],
 )
 
-jasmine_node_test(
+nodejs_test(
     name = "test",
-    deps = [
-        ":test_lib",
+    data = [
+        "tsconfig.json",
+        ":sources",
+        "//aio:tsconfig.json",
+        "@aio_npm//@types/jasmine",
+        "@aio_npm//jasmine",
+        "@aio_npm//ts-node",
+        "@aio_npm//xregexp",
     ],
+    # This test script runs ts-node which seems to bypass rules_nodejs require
+    # patching and cannot find deps. Enable the linker for this target.
+    enable_linker = True,
+    entry_point = "test.js",
 )

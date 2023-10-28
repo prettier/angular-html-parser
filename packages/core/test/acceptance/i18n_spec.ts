@@ -1835,8 +1835,8 @@ describe('runtime i18n', () => {
 
       const fixture = TestBed.createComponent(Cmp);
       fixture.detectChanges();
-      expect(fixture.debugElement.children[0].children[0].references['ref'].test).toBe('Set');
-      expect(fixture.debugElement.children[1].children[0].references['ref'].test).toBe('Set');
+      expect(fixture.debugElement.children[0].children[0].references.ref.test).toBe('Set');
+      expect(fixture.debugElement.children[1].children[0].references.ref.test).toBe('Set');
     });
 
     it('with complex expressions', () => {
@@ -2441,16 +2441,20 @@ describe('runtime i18n', () => {
     it('detached nodes should still be part of query', () => {
       @Directive({selector: '[text]', inputs: ['text'], exportAs: 'textDir'})
       class TextDirective {
-        text: string|undefined;
+        // TODO(issue/24571): remove '!'.
+        text!: string;
         constructor() {}
       }
 
       @Component({selector: 'div-query', template: '<ng-container #vc></ng-container>'})
       class DivQuery {
+        // TODO(issue/24571): remove '!'.
         @ContentChild(TemplateRef, {static: true}) template!: TemplateRef<any>;
 
+        // TODO(issue/24571): remove '!'.
         @ViewChild('vc', {read: ViewContainerRef, static: true}) vc!: ViewContainerRef;
 
+        // TODO(issue/24571): remove '!'.
         @ContentChildren(TextDirective, {descendants: true}) query!: QueryList<TextDirective>;
 
         create() {
@@ -2483,7 +2487,7 @@ describe('runtime i18n', () => {
             </ng-template>
           </div-query>
         `);
-      const q = fixture.debugElement.children[0].references['q'];
+      const q = fixture.debugElement.children[0].references.q;
       expect(q.query.length).toEqual(0);
 
       // Create embedded view
@@ -2832,13 +2836,13 @@ describe('runtime i18n', () => {
         child = this;
       }
     }
-    let child: Child|undefined;
+    let child!: Child;
 
 
     TestBed.configureTestingModule({declarations: [MyApp, Parent, Middle, Child]});
     const fixture = TestBed.createComponent(MyApp);
     fixture.detectChanges();
-    expect(child?.middle).toBeInstanceOf(Middle);
+    expect(child.middle).toBeInstanceOf(Middle);
   });
 
   it('should allow container in gotClosestRElement', () => {

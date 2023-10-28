@@ -12,15 +12,7 @@ import * as html from './ast';
 import {NAMED_ENTITIES} from './entities';
 import {tokenize, TokenizeOptions} from './lexer';
 import {getNsPrefix, mergeNsAndName, splitNsName, TagContentType, TagDefinition} from './tags';
-import {AttributeNameToken, AttributeQuoteToken, BlockCloseToken, BlockOpenStartToken, BlockParameterToken, CdataStartToken, CommentStartToken, ExpansionCaseExpressionEndToken, ExpansionCaseExpressionStartToken, ExpansionCaseValueToken, ExpansionFormStartToken, IncompleteBlockOpenToken, IncompleteTagOpenToken, InterpolatedAttributeToken, InterpolatedTextToken, TagCloseToken, TagOpenStartToken, TextToken, Token, TokenType} from './tokens';
-
-/** Nodes that can contain other nodes. */
-type NodeContainer = html.Element|html.Block;
-
-/** Class that can construct a `NodeContainer`. */
-interface NodeContainerConstructor extends Function {
-  new(...args: any[]): NodeContainer;
-}
+import {AttributeNameToken, AttributeQuoteToken, CdataStartToken, CommentStartToken, ExpansionCaseExpressionEndToken, ExpansionCaseExpressionStartToken, ExpansionCaseValueToken, ExpansionFormStartToken, IncompleteTagOpenToken, InterpolatedAttributeToken, InterpolatedTextToken, TagCloseToken, TagOpenStartToken, TextToken, Token, TokenType} from './tokens';
 
 export class TreeError extends ParseError {
   static create(elementName: string|null, span: ParseSourceSpan, msg: string): TreeError {
@@ -39,37 +31,23 @@ export class ParseTreeResult {
 export class Parser {
   constructor(public getTagDefinition: (tagName: string) => TagDefinition) {}
 
-  parse(
-      source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false,
-      getTagContentType?:
-          (tagName: string, prefix: string, hasParent: boolean,
-           attrs: Array<{prefix: string, name: string, value?: string}>) => void|
-      TagContentType): ParseTreeResult {
-    const lowercasify = <T, U extends any[]>(fn: (x: string, ...args: U) => T) =>
-        (x: string, ...args: U): T => fn(x.toLowerCase(), ...args);
-    const getTagDefinition =
-        isTagNameCaseSensitive ? this.getTagDefinition : lowercasify(this.getTagDefinition);
-    const getDefaultTagContentType = (tagName: string) =>
-        getTagDefinition(tagName).getContentType();
-    const getTagContentTypeWithProcessedTagName =
-        isTagNameCaseSensitive ? getTagContentType! : lowercasify(getTagContentType!);
-    const _getTagContentType = getTagContentType ?
-        (tagName: string, prefix: string, hasParent: boolean,
-         attrs: Array<{prefix: string, name: string, value?: string}>) => {
-          const contentType = getTagContentTypeWithProcessedTagName(
-                                  tagName, prefix, hasParent, attrs) as undefined |
-              TagContentType;
+  parse(source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => void | TagContentType): ParseTreeResult {
+    const lowercasify = <T, U extends any[]>(fn: (x: string, ...args: U) => T) => (x: string, ...args: U): T => fn(x.toLowerCase(), ...args);
+    const getTagDefinition = isTagNameCaseSensitive ? this.getTagDefinition : lowercasify(this.getTagDefinition);
+    const getDefaultTagContentType = (tagName: string) => getTagDefinition(tagName).getContentType();
+    const getTagContentTypeWithProcessedTagName = isTagNameCaseSensitive ? getTagContentType! : lowercasify(getTagContentType!);
+    const _getTagContentType = getTagContentType
+      ? (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => {
+          const contentType = getTagContentTypeWithProcessedTagName(tagName, prefix, hasParent, attrs) as undefined | TagContentType;
           return contentType !== undefined ? contentType : getDefaultTagContentType(tagName);
-        } :
-        getDefaultTagContentType;
+        }
+      : getDefaultTagContentType;
 
     const tokenizeResult = tokenize(source, url, _getTagContentType, options);
 
     const canSelfClose = (options && options.canSelfClose) || false;
     const allowHtmComponentClosingTags = (options && options.allowHtmComponentClosingTags) || false;
-    const parser = new _TreeBuilder(
-        tokenizeResult.tokens, getTagDefinition, canSelfClose, allowHtmComponentClosingTags,
-        isTagNameCaseSensitive);
+    const parser = new _TreeBuilder(tokenizeResult.tokens, getTagDefinition, canSelfClose, allowHtmComponentClosingTags, isTagNameCaseSensitive);
     parser.build();
     return new ParseTreeResult(
         parser.rootNodes,
@@ -82,15 +60,14 @@ class _TreeBuilder {
   private _index: number = -1;
   // `_peek` will be initialized by the call to `_advance()` in the constructor.
   private _peek!: Token;
-  private _containerStack: NodeContainer[] = [];
+  private _elementStack: html.Element[] = [];
 
   rootNodes: html.Node[] = [];
   errors: TreeError[] = [];
 
   constructor(
       private tokens: Token[], private getTagDefinition: (tagName: string) => TagDefinition,
-      private canSelfClose: boolean, private allowHtmComponentClosingTags: boolean,
-      private isTagNameCaseSensitive: boolean) {
+      private canSelfClose: boolean, private allowHtmComponentClosingTags: boolean, private isTagNameCaseSensitive: boolean) {
     this._advance();
   }
 
@@ -98,46 +75,28 @@ class _TreeBuilder {
     while (this._peek.type !== TokenType.EOF) {
       if (this._peek.type === TokenType.TAG_OPEN_START ||
           this._peek.type === TokenType.INCOMPLETE_TAG_OPEN) {
-        this._consumeStartTag(this._advance());
+        this._consumeStartTag(this._advance<TagOpenStartToken|IncompleteTagOpenToken>());
       } else if (this._peek.type === TokenType.TAG_CLOSE) {
         this._closeVoidElement();
-        this._consumeEndTag(this._advance());
+        this._consumeEndTag(this._advance<TagCloseToken>());
       } else if (this._peek.type === TokenType.CDATA_START) {
         this._closeVoidElement();
-        this._consumeCdata(this._advance());
+        this._consumeCdata(this._advance<CdataStartToken>());
       } else if (this._peek.type === TokenType.COMMENT_START) {
         this._closeVoidElement();
-        this._consumeComment(this._advance());
+        this._consumeComment(this._advance<CommentStartToken>());
       } else if (
           this._peek.type === TokenType.TEXT || this._peek.type === TokenType.RAW_TEXT ||
           this._peek.type === TokenType.ESCAPABLE_RAW_TEXT) {
         this._closeVoidElement();
-        this._consumeText(this._advance());
+        this._consumeText(this._advance<TextToken>());
       } else if (this._peek.type === TokenType.EXPANSION_FORM_START) {
-        this._consumeExpansion(this._advance());
-      } else if (this._peek.type === TokenType.BLOCK_OPEN_START) {
-        this._closeVoidElement();
-        this._consumeBlockOpen(this._advance());
-      } else if (this._peek.type === TokenType.BLOCK_CLOSE) {
-        this._closeVoidElement();
-        this._consumeBlockClose(this._advance());
-      } else if (this._peek.type === TokenType.INCOMPLETE_BLOCK_OPEN) {
-        this._closeVoidElement();
-        this._consumeIncompleteBlock(this._advance());
+        this._consumeExpansion(this._advance<ExpansionFormStartToken>());
       } else if (this._peek.type === TokenType.DOC_TYPE_START) {
         this._consumeDocType(this._advance());
       } else {
         // Skip all other tokens...
         this._advance();
-      }
-    }
-
-    for (const leftoverContainer of this._containerStack) {
-      // Unlike HTML elements, blocks aren't closed implicitly by the end of the file.
-      if (leftoverContainer instanceof html.Block) {
-        this.errors.push(TreeError.create(
-            leftoverContainer.name, leftoverContainer.sourceSpan,
-            `Unclosed block "${leftoverContainer.name}"`));
       }
     }
   }
@@ -163,9 +122,8 @@ class _TreeBuilder {
     const text = this._advance<TextToken>();
     const value = this._getText(text);
     const endToken = this._advanceIf(TokenType.CDATA_END);
-    this._addToParent(new html.CDATA(
-        value, new ParseSourceSpan(startToken.sourceSpan.start, (endToken || text).sourceSpan.end),
-        [text]));
+    this._addToParent(new html.CDATA(value, new ParseSourceSpan(
+        startToken.sourceSpan.start, (endToken || text).sourceSpan.end), [text]));
   }
 
   private _consumeComment(startToken: CommentStartToken) {
@@ -233,9 +191,7 @@ class _TreeBuilder {
     exp.push({type: TokenType.EOF, parts: [], sourceSpan: end.sourceSpan});
 
     // parse everything in between { and }
-    const expansionCaseParser = new _TreeBuilder(
-        exp, this.getTagDefinition, this.canSelfClose, this.allowHtmComponentClosingTags,
-        this.isTagNameCaseSensitive);
+    const expansionCaseParser = new _TreeBuilder(exp, this.getTagDefinition, this.canSelfClose, this.allowHtmComponentClosingTags, this.isTagNameCaseSensitive);
     expansionCaseParser.build();
     if (expansionCaseParser.errors.length > 0) {
       this.errors = this.errors.concat(expansionCaseParser.errors);
@@ -295,7 +251,7 @@ class _TreeBuilder {
   private _getText(token: InterpolatedTextToken) {
     let text = token.parts[0];
     if (text.length > 0 && text[0] == '\n') {
-      const parent = this._getClosestParentElement();
+      const parent = this._getParentElement();
       if (parent != null && parent.children.length == 0 &&
           this.getTagDefinition(parent.name).ignoreFirstLf) {
         text = text.substring(1);
@@ -309,8 +265,7 @@ class _TreeBuilder {
     const startSpan = token.sourceSpan;
     let text = token.parts[0];
     if (text.length > 0 && text[0] === '\n') {
-      const parent = this._getContainer();
-
+      const parent = this._getParentElement();
       if (parent != null && parent.children.length === 0 &&
           this.getTagDefinition(parent.name).ignoreFirstLf) {
         text = text.substring(1);
@@ -345,9 +300,9 @@ class _TreeBuilder {
   }
 
   private _closeVoidElement(): void {
-    const el = this._getContainer();
-    if (el instanceof html.Element && this.getTagDefinition(el.name).isVoid) {
-      this._containerStack.pop();
+    const el = this._getParentElement();
+    if (el && this.getTagDefinition(el.name).isVoid) {
+      this._elementStack.pop();
     }
   }
 
@@ -357,7 +312,7 @@ class _TreeBuilder {
     while (this._peek.type === TokenType.ATTR_NAME) {
       attrs.push(this._consumeAttr(this._advance<AttributeNameToken>()));
     }
-    const fullName = this._getElementFullName(prefix, name, this._getClosestParentElement());
+    const fullName = this._getElementFullName(prefix, name, this._getParentElement());
     let selfClosing = false;
     // Note: There could have been a tokenizer error
     // so that we don't get a token for the end tag...
@@ -365,8 +320,7 @@ class _TreeBuilder {
       this._advance();
       selfClosing = true;
       const tagDef = this.getTagDefinition(fullName);
-      if (!(this.canSelfClose || tagDef.canSelfClose || getNsPrefix(fullName) !== null ||
-            tagDef.isVoid)) {
+      if (!(this.canSelfClose || tagDef.canSelfClose || getNsPrefix(fullName) !== null || tagDef.isVoid)) {
         this.errors.push(TreeError.create(
             fullName, startTagToken.sourceSpan,
             `Only void, custom and foreign elements can be self closed "${
@@ -382,49 +336,44 @@ class _TreeBuilder {
     // Create a separate `startSpan` because `span` will be modified when there is an `end` span.
     const startSpan = new ParseSourceSpan(
         startTagToken.sourceSpan.start, end, startTagToken.sourceSpan.fullStart);
-    const nameSpan =
-        new ParseSourceSpan(startTagToken.sourceSpan.start.moveBy(1), startTagToken.sourceSpan.end);
+    const nameSpan = new ParseSourceSpan(startTagToken.sourceSpan.start.moveBy(1), startTagToken.sourceSpan.end);
     const el = new html.Element(fullName, attrs, [], span, startSpan, undefined, nameSpan);
-    const parentEl = this._getContainer();
-    this._pushContainer(
-        el,
-        parentEl instanceof html.Element &&
-            this.getTagDefinition(parentEl.name).isClosedByChild(el.name));
+    this._pushElement(el);
     if (selfClosing) {
       // Elements that are self-closed have their `endSourceSpan` set to the full span, as the
       // element start tag also represents the end tag.
-      this._popContainer(fullName, html.Element, span);
+      this._popElement(fullName, span);
     } else if (startTagToken.type === TokenType.INCOMPLETE_TAG_OPEN) {
       // We already know the opening tag is not complete, so it is unlikely it has a corresponding
       // close tag. Let's optimistically parse it as a full element and emit an error.
-      this._popContainer(fullName, html.Element, null);
+      this._popElement(fullName, null);
       this.errors.push(
           TreeError.create(fullName, span, `Opening tag "${fullName}" not terminated.`));
     }
   }
 
-  private _pushContainer(node: NodeContainer, isClosedByChild: boolean) {
-    if (isClosedByChild) {
-      this._containerStack.pop();
+  private _pushElement(el: html.Element) {
+    const parentEl = this._getParentElement();
+
+    if (parentEl && this.getTagDefinition(parentEl.name).isClosedByChild(el.name)) {
+      this._elementStack.pop();
     }
 
-    this._addToParent(node);
-    this._containerStack.push(node);
+    this._addToParent(el);
+    this._elementStack.push(el);
   }
 
   private _consumeEndTag(endTagToken: TagCloseToken) {
-    // @ts-expect-error -- in angular-html-parser endTagToken.parts.length can be 0 (HTM component
-    // end-tags)
-    const fullName = this.allowHtmComponentClosingTags && endTagToken.parts.length === 0 ?
-        null :
-        this._getElementFullName(
-            endTagToken.parts[0], endTagToken.parts[1], this._getClosestParentElement());
+    // @ts-expect-error -- in angular-html-parser endTagToken.parts.length can be 0 (HTM component end-tags)
+    const fullName = this.allowHtmComponentClosingTags && endTagToken.parts.length === 0
+      ? null
+      : this._getElementFullName(endTagToken.parts[0], endTagToken.parts[1], this._getParentElement());
 
     if (fullName && this.getTagDefinition(fullName).isVoid) {
       this.errors.push(TreeError.create(
           fullName, endTagToken.sourceSpan,
           `Void elements do not have end tags "${endTagToken.parts[1]}"`));
-    } else if (!this._popContainer(fullName, html.Element, endTagToken.sourceSpan)) {
+    } else if (!this._popElement(fullName, endTagToken.sourceSpan)) {
       const errMsg = `Unexpected closing tag "${
           fullName}". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags`;
       this.errors.push(TreeError.create(fullName, endTagToken.sourceSpan, errMsg));
@@ -437,29 +386,27 @@ class _TreeBuilder {
    * not have a closing tag (for example, this happens when an incomplete
    * opening tag is recovered).
    */
-  private _popContainer(
-      expectedName: string|null, expectedType: NodeContainerConstructor,
-      endSourceSpan: ParseSourceSpan|null): boolean {
+  private _popElement(fullName: string|null, endSourceSpan: ParseSourceSpan|null): boolean {
     let unexpectedCloseTagDetected = false;
-    for (let stackIndex = this._containerStack.length - 1; stackIndex >= 0; stackIndex--) {
-      const node = this._containerStack[stackIndex];
-
-      if ((/* isForeignElement */ getNsPrefix(node.name) ?
-               node.name === expectedName :
-               (expectedName == null || node.name.toLowerCase() === expectedName.toLowerCase()) &&
-                   node instanceof expectedType)) {
+    for (let stackIndex = this._elementStack.length - 1; stackIndex >= 0; stackIndex--) {
+      const el = this._elementStack[stackIndex];
+      if (
+        !fullName ||
+        (/* isForeignElement */ getNsPrefix(el.name)
+          ? el.name == fullName
+          : el.name.toLowerCase() == fullName.toLowerCase())
+      ) {
         // Record the parse span with the element that is being closed. Any elements that are
         // removed from the element stack at this point are closed implicitly, so they won't get
         // an end source span (as there is no explicit closing element).
-        node.endSourceSpan = endSourceSpan;
-        node.sourceSpan.end = endSourceSpan !== null ? endSourceSpan.end : node.sourceSpan.end;
-        this._containerStack.splice(stackIndex, this._containerStack.length - stackIndex);
+        el.endSourceSpan = endSourceSpan;
+        el.sourceSpan.end = endSourceSpan !== null ? endSourceSpan.end : el.sourceSpan.end;
+
+        this._elementStack.splice(stackIndex, this._elementStack.length - stackIndex);
         return !unexpectedCloseTagDetected;
       }
 
-      // Blocks and most elements are not self closing.
-      if (node instanceof html.Block ||
-          node instanceof html.Element && !this.getTagDefinition(node.name).closedByParent) {
+      if (!this.getTagDefinition(el.name).closedByParent) {
         // Note that we encountered an unexpected close tag but continue processing the element
         // stack so we can assign an `endSourceSpan` if there is a corresponding start tag for this
         // end tag in the stack.
@@ -520,9 +467,7 @@ class _TreeBuilder {
     }
 
     const valueSpan = valueStartSpan && valueEnd &&
-        new ParseSourceSpan(
-                          startQuoteToken?.sourceSpan.start ?? valueStartSpan.start, valueEnd,
-                          startQuoteToken?.sourceSpan.fullStart ?? valueStartSpan.fullStart);
+        new ParseSourceSpan(startQuoteToken?.sourceSpan.start ?? valueStartSpan.start, valueEnd, startQuoteToken?.sourceSpan.fullStart ?? valueStartSpan.fullStart);
     return new html.Attribute(
         fullName, value,
         new ParseSourceSpan(attrName.sourceSpan.start, attrEnd, attrName.sourceSpan.fullStart),
@@ -530,82 +475,16 @@ class _TreeBuilder {
         undefined);
   }
 
-  private _consumeBlockOpen(token: BlockOpenStartToken) {
-    const parameters: html.BlockParameter[] = [];
-
-    while (this._peek.type === TokenType.BLOCK_PARAMETER) {
-      const paramToken = this._advance<BlockParameterToken>();
-      parameters.push(new html.BlockParameter(paramToken.parts[0], paramToken.sourceSpan));
-    }
-
-    if (this._peek.type === TokenType.BLOCK_OPEN_END) {
-      this._advance();
-    }
-
-    const end = this._peek.sourceSpan.fullStart;
-    const span = new ParseSourceSpan(token.sourceSpan.start, end, token.sourceSpan.fullStart);
-    // Create a separate `startSpan` because `span` will be modified when there is an `end` span.
-    const startSpan = new ParseSourceSpan(token.sourceSpan.start, end, token.sourceSpan.fullStart);
-    const block = new html.Block(token.parts[0], parameters, [], span, startSpan);
-    this._pushContainer(block, false);
-  }
-
-  private _consumeBlockClose(token: BlockCloseToken) {
-    if (!this._popContainer(null, html.Block, token.sourceSpan)) {
-      this.errors.push(TreeError.create(
-          null, token.sourceSpan,
-          `Unexpected closing block. The block may have been closed earlier. ` +
-              `If you meant to write the } character, you should use the "&#125;" ` +
-              `HTML entity instead.`));
-    }
-  }
-
-  private _consumeIncompleteBlock(token: IncompleteBlockOpenToken) {
-    const parameters: html.BlockParameter[] = [];
-
-    while (this._peek.type === TokenType.BLOCK_PARAMETER) {
-      const paramToken = this._advance<BlockParameterToken>();
-      parameters.push(new html.BlockParameter(paramToken.parts[0], paramToken.sourceSpan));
-    }
-
-    const end = this._peek.sourceSpan.fullStart;
-    const span = new ParseSourceSpan(token.sourceSpan.start, end, token.sourceSpan.fullStart);
-    // Create a separate `startSpan` because `span` will be modified when there is an `end` span.
-    const startSpan = new ParseSourceSpan(token.sourceSpan.start, end, token.sourceSpan.fullStart);
-    const block = new html.Block(token.parts[0], parameters, [], span, startSpan);
-    this._pushContainer(block, false);
-
-    // Incomplete blocks don't have children so we close them immediately and report an error.
-    this._popContainer(null, html.Block, null);
-
-    this.errors.push(TreeError.create(
-        token.parts[0], span,
-        `Incomplete block "${token.parts[0]}". If you meant to write the @ character, ` +
-            `you should use the "&#64;" HTML entity instead.`));
-  }
-
-  private _getContainer(): NodeContainer|null {
-    return this._containerStack.length > 0 ? this._containerStack[this._containerStack.length - 1] :
-                                             null;
-  }
-
-  private _getClosestParentElement(): html.Element|null {
-    for (let i = this._containerStack.length - 1; i > -1; i--) {
-      if (this._containerStack[i] instanceof html.Element) {
-        return this._containerStack[i] as html.Element;
-      }
-    }
-
-    return null;
+  private _getParentElement(): html.Element|null {
+    return this._elementStack.length > 0 ? this._elementStack[this._elementStack.length - 1] : null;
   }
 
   private _addToParent(node: html.Node) {
-    const parent = this._getContainer();
-
-    if (parent === null) {
-      this.rootNodes.push(node);
-    } else {
+    const parent = this._getParentElement();
+    if (parent != null) {
       parent.children.push(node);
+    } else {
+      this.rootNodes.push(node);
     }
   }
 

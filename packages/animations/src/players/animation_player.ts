@@ -5,6 +5,7 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.io/license
  */
+import {scheduleMicroTask} from '../util';
 
 /**
  * Provides programmatic control of a reusable animation sequence,
@@ -13,9 +14,9 @@
  * <code>[create](api/animations/AnimationFactory#create)()</code> method instantiates and
  * initializes this interface.
  *
- * @see {@link AnimationBuilder}
- * @see {@link AnimationFactory}
- * @see {@link animate}
+ * @see `AnimationBuilder`
+ * @see `AnimationFactory`
+ * @see `animate()`
  *
  * @publicApi
  */
@@ -23,20 +24,20 @@ export interface AnimationPlayer {
   /**
    * Provides a callback to invoke when the animation finishes.
    * @param fn The callback function.
-   * @see {@link #finish}
+   * @see `finish()`
    */
   onDone(fn: () => void): void;
   /**
    * Provides a callback to invoke when the animation starts.
    * @param fn The callback function.
-   * @see {@link #play}
+   * @see `run()`
    */
   onStart(fn: () => void): void;
   /**
    * Provides a callback to invoke after the animation is destroyed.
    * @param fn The callback function.
-   * @see {@link #destroy}
-   * @see {@link #beforeDestroy}
+   * @see `destroy()`
+   * @see `beforeDestroy()`
    */
   onDestroy(fn: () => void): void;
   /**
@@ -77,7 +78,7 @@ export interface AnimationPlayer {
    * Sets the position of the animation.
    * @param position A 0-based offset into the duration, in milliseconds.
    */
-  setPosition(position: number): void;
+  setPosition(position: any /** TODO #9100 */): void;
   /**
    * Reports the current position of the animation.
    * @returns A 0-based offset into the duration, in milliseconds.
@@ -112,9 +113,9 @@ export interface AnimationPlayer {
  * Used internally when animations are disabled, to avoid
  * checking for the null case when an animation player is expected.
  *
- * @see {@link animate}
- * @see {@link AnimationPlayer}
- * @see {@link ɵAnimationGroupPlayer AnimationGroupPlayer}
+ * @see `animate()`
+ * @see `AnimationPlayer`
+ * @see `GroupPlayer`
  *
  * @publicApi
  */
@@ -165,7 +166,7 @@ export class NoopAnimationPlayer implements AnimationPlayer {
 
   /** @internal */
   triggerMicrotask() {
-    queueMicrotask(() => this._onFinish());
+    scheduleMicroTask(() => this._onFinish());
   }
 
   private _onStart() {

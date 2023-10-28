@@ -211,7 +211,7 @@ MyComponent.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "14.0.0", version: "
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyComponent, decorators: [{
             type: Component,
             args: [{ selector: 'my-component', template: '' }]
-        }], ctorParameters: () => [{ type: i0.ElementRef }, { type: i0.ViewContainerRef }, { type: i0.ChangeDetectorRef }] });
+        }], ctorParameters: function () { return [{ type: i0.ElementRef }, { type: i0.ViewContainerRef }, { type: i0.ChangeDetectorRef }]; } });
 export class MyModule {
 }
 MyModule.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyModule, deps: [], target: i0.ɵɵFactoryTarget.NgModule });
@@ -254,7 +254,7 @@ IfDirective.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: IfDirective, decorators: [{
             type: Directive,
             args: [{ selector: '[if]' }]
-        }], ctorParameters: () => [{ type: i0.TemplateRef }] });
+        }], ctorParameters: function () { return [{ type: i0.TemplateRef }]; } });
 export class MyComponent {
     constructor() {
         this.salutation = 'Hello';
@@ -356,7 +356,7 @@ import * as i0 from "@angular/core";
 export declare class MyComp {
     names: string[];
     static ɵfac: i0.ɵɵFactoryDeclaration<MyComp, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<MyComp, "my-comp", never, { "names": { "alias": "names"; "required": false; }; }, {}, never, never, false, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<MyComp, "my-comp", never, { "names": "names"; }, {}, never, never, false, never>;
 }
 export declare class MyApp {
     customName: string;
@@ -456,7 +456,7 @@ import * as i0 from "@angular/core";
 export declare class MyComp {
     names: string[];
     static ɵfac: i0.ɵɵFactoryDeclaration<MyComp, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<MyComp, "my-comp", never, { "names": { "alias": "names"; "required": false; }; }, {}, never, never, false, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<MyComp, "my-comp", never, { "names": "names"; }, {}, never, never, false, never>;
 }
 export declare class MyApp {
     n0: string;
@@ -538,7 +538,7 @@ export declare class ObjectComp {
         [key: string]: any;
     };
     static ɵfac: i0.ɵɵFactoryDeclaration<ObjectComp, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<ObjectComp, "object-comp", never, { "config": { "alias": "config"; "required": false; }; }, {}, never, never, false, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<ObjectComp, "object-comp", never, { "config": "config"; }, {}, never, never, false, never>;
 }
 export declare class MyApp {
     name: string;
@@ -617,7 +617,7 @@ export declare class NestedComp {
         [key: string]: any;
     };
     static ɵfac: i0.ɵɵFactoryDeclaration<NestedComp, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<NestedComp, "nested-comp", never, { "config": { "alias": "config"; "required": false; }; }, {}, never, never, false, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<NestedComp, "nested-comp", never, { "config": "config"; }, {}, never, never, false, never>;
 }
 export declare class MyApp {
     name: string;

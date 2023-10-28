@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "api_golden_test", "api_golden_test_npm_package", "ng_module", "ng_package", "tsec_test")
-load("@npm//@angular/build-tooling/bazel/api-gen:generate_api_docs.bzl", "generate_api_docs")
+load("//tools:defaults.bzl", "api_golden_test_npm_package", "ng_module", "ng_package", "tsec_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -15,7 +14,6 @@ ng_module(
     deps = [
         "//packages:types",
         "//packages/common",
-        "//packages/common/http",
         "//packages/core",
         "//packages/zone.js/lib:zone_d_ts",
         "@npm//@types/hammerjs",
@@ -49,7 +47,6 @@ ng_package(
     deps = [
         ":platform-browser",
         "//packages/platform-browser/animations",
-        "//packages/platform-browser/animations/async",
         "//packages/platform-browser/testing",
     ],
 )
@@ -64,27 +61,10 @@ api_golden_test_npm_package(
     npm_package = "angular/packages/platform-browser/npm_package",
 )
 
-api_golden_test(
-    name = "platform-browser_errors",
-    data = [
-        "//goldens:public-api",
-        "//packages/platform-browser",
-    ],
-    entry_point = "angular/packages/platform-browser/src/errors.d.ts",
-    golden = "angular/goldens/public-api/platform-browser/errors.md",
-)
-
 filegroup(
     name = "files_for_docgen",
     srcs = glob([
         "*.ts",
         "src/**/*.ts",
     ]) + ["PACKAGE.md"],
-)
-
-generate_api_docs(
-    name = "platform-browser_docs",
-    srcs = [":files_for_docgen"],
-    entry_point = ":index.ts",
-    module_name = "@angular/platform-browser",
 )

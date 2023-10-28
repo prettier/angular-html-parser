@@ -42,7 +42,7 @@ describe(browser.baseUrl, () => {
       const textPerUrl: { [key: string]: string } = {
         api: 'api list',
         'guide/architecture': 'architecture',
-        'guide/understanding-communicating-with-http': 'httpclient',
+        'guide/http': 'httpclient',
         'guide/security': 'security',
         tutorial: 'tutorial',
         start: 'getting started',

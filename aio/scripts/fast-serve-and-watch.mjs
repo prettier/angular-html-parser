@@ -3,11 +3,8 @@
     and runs a fast dgeni build on any changed files.
 */
 
-import {createRequire} from 'node:module';
 import spawn from 'cross-spawn';
-import {watch} from '../tools/transforms/authors-package/watchr.js';
-
-const require = createRequire(import.meta.url);
+import watchr from '../tools/transforms/authors-package/watchr.js';
 const architectCli = require.resolve('@angular-devkit/architect-cli/bin/architect');
 
 const serve = spawn(
@@ -33,4 +30,4 @@ serve.on('close', (code) => {
   process.exit(1);
 });
 
-watch(true);
+watchr.watch(true);

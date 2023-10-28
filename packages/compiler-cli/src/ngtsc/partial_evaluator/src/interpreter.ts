@@ -11,12 +11,13 @@ import ts from 'typescript';
 import {Reference} from '../../imports';
 import {OwningModule} from '../../imports/src/references';
 import {DependencyTracker} from '../../incremental/api';
-import {Declaration, DeclarationNode, FunctionDefinition, ReflectionHost} from '../../reflection';
+import {Declaration, DeclarationKind, DeclarationNode, EnumMember, FunctionDefinition, isConcreteDeclaration, ReflectionHost, SpecialDeclarationKind} from '../../reflection';
 import {isDeclaration} from '../../util/src/typescript';
 
 import {ArrayConcatBuiltinFn, ArraySliceBuiltinFn, StringConcatBuiltinFn} from './builtin';
 import {DynamicValue} from './dynamic';
 import {ForeignFunctionResolver} from './interface';
+import {resolveKnownDeclaration} from './known_declaration';
 import {EnumValue, KnownFn, ResolvedModule, ResolvedValue, ResolvedValueArray, ResolvedValueMap} from './result';
 import {SyntheticValue} from './synthetic';
 
@@ -216,7 +217,7 @@ export class StaticInterpreter {
   private visitIdentifier(node: ts.Identifier, context: Context): ResolvedValue {
     const decl = this.host.getDeclarationOfIdentifier(node);
     if (decl === null) {
-      if (ts.identifierToKeywordKind(node) === ts.SyntaxKind.UndefinedKeyword) {
+      if (node.originalKeywordKind === ts.SyntaxKind.UndefinedKeyword) {
         return undefined;
       } else {
         // Check if the symbol here is imported.
@@ -231,8 +232,15 @@ export class StaticInterpreter {
         return DynamicValue.fromUnknownIdentifier(node);
       }
     }
+    if (decl.known !== null) {
+      return resolveKnownDeclaration(decl.known);
+    } else if (
+        isConcreteDeclaration(decl) && decl.identity !== null &&
+        decl.identity.kind === SpecialDeclarationKind.DownleveledEnum) {
+      return this.getResolvedEnum(decl.node, decl.identity.enumMembers, context);
+    }
     const declContext = {...context, ...joinModuleContext(context, node, decl)};
-    const result = this.visitDeclaration(decl.node, declContext);
+    const result = this.visitAmbiguousDeclaration(decl, declContext);
     if (result instanceof Reference) {
       // Only record identifiers to non-synthetic references. Synthetic references may not have the
       // same value at runtime as they do at compile time, so it's not legal to refer to them by the
@@ -344,14 +352,28 @@ export class StaticInterpreter {
     }
 
     return new ResolvedModule(declarations, decl => {
+      if (decl.known !== null) {
+        return resolveKnownDeclaration(decl.known);
+      }
+
       const declContext = {
         ...context,
         ...joinModuleContext(context, node, decl),
       };
 
       // Visit both concrete and inline declarations.
-      return this.visitDeclaration(decl.node, declContext);
+      return this.visitAmbiguousDeclaration(decl, declContext);
     });
+  }
+
+  private visitAmbiguousDeclaration(decl: Declaration, declContext: Context) {
+    return decl.kind === DeclarationKind.Inline && decl.implementation !== undefined &&
+            !isDeclaration(decl.implementation) ?
+        // Inline declarations whose `implementation` is a `ts.Expression` should be visited as
+        // an expression.
+        this.visitExpression(decl.implementation, declContext) :
+        // Otherwise just visit the `node` as a declaration.
+        this.visitDeclaration(decl.node, declContext);
   }
 
   private accessHelper(node: ts.Node, lhs: ResolvedValue, rhs: string|number, context: Context):
@@ -656,6 +678,20 @@ export class StaticInterpreter {
     }
   }
 
+  private getResolvedEnum(node: ts.Declaration, enumMembers: EnumMember[], context: Context):
+      ResolvedValue {
+    const enumRef = this.getReference(node, context);
+    const map = new Map<string, EnumValue>();
+    enumMembers.forEach(member => {
+      const name = this.stringNameFromPropertyName(member.name, context);
+      if (name !== undefined) {
+        const resolved = this.visit(member.initializer, context);
+        map.set(name, new EnumValue(enumRef, name, resolved));
+      }
+    });
+    return map;
+  }
+
   private getReference<T extends DeclarationNode>(node: T, context: Context): Reference<T> {
     return new Reference(node, owningModule(context));
   }
@@ -697,7 +733,7 @@ export class StaticInterpreter {
     }
 
     const declContext: Context = {...context, ...joinModuleContext(context, node, decl)};
-    return this.visitDeclaration(decl.node, declContext);
+    return this.visitAmbiguousDeclaration(decl, declContext);
   }
 }
 

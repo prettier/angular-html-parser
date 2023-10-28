@@ -7,17 +7,8 @@
  */
 
 import {AST} from '../../expression_parser/ast';
-import {BoundAttribute, BoundEvent, DeferredBlock, DeferredBlockError, DeferredBlockLoading, DeferredBlockPlaceholder, DeferredTrigger, Element, ForLoopBlock, ForLoopBlockEmpty, IfBlockBranch, Node, Reference, SwitchBlockCase, Template, TextAttribute, Variable} from '../r3_ast';
+import {BoundAttribute, BoundEvent, Element, Node, Reference, Template, TextAttribute, Variable} from '../r3_ast';
 
-/** Node that has a `Scope` associated with it. */
-export type ScopedNode = Template|SwitchBlockCase|IfBlockBranch|ForLoopBlock|ForLoopBlockEmpty|
-    DeferredBlock|DeferredBlockError|DeferredBlockLoading|DeferredBlockPlaceholder;
-
-/** Possible values that a reference can be resolved to. */
-export type ReferenceTarget<DirectiveT> = {
-  directive: DirectiveT,
-  node: Element|Template
-}|Element|Template;
 
 /*
  * t2 is the replacement for the `TemplateDefinitionBuilder`. It handles the operations of
@@ -136,7 +127,8 @@ export interface BoundTarget<DirectiveT extends DirectiveMeta> {
    * For a given `Reference`, get the reference's target - either an `Element`, a `Template`, or
    * a directive on a particular node.
    */
-  getReferenceTarget(ref: Reference): ReferenceTarget<DirectiveT>|null;
+  getReferenceTarget(ref: Reference): {directive: DirectiveT, node: Element|Template}|Element
+      |Template|null;
 
   /**
    * For a given binding, get the entity to which the binding is being made.
@@ -158,60 +150,35 @@ export interface BoundTarget<DirectiveT extends DirectiveMeta> {
   getExpressionTarget(expr: AST): Reference|Variable|null;
 
   /**
-   * Given a particular `Reference` or `Variable`, get the `ScopedNode` which created it.
+   * Given a particular `Reference` or `Variable`, get the `Template` which created it.
    *
-   * All `Variable`s are defined on node, so this will always return a value for a `Variable`
-   * from the `Target`. Returns `null` otherwise.
+   * All `Variable`s are defined on templates, so this will always return a value for a `Variable`
+   * from the `Target`. For `Reference`s this only returns a value if the `Reference` points to a
+   * `Template`. Returns `null` otherwise.
    */
-  getDefinitionNodeOfSymbol(symbol: Reference|Variable): ScopedNode|null;
+  getTemplateOfSymbol(symbol: Reference|Variable): Template|null;
 
   /**
-   * Get the nesting level of a particular `ScopedNode`.
+   * Get the nesting level of a particular `Template`.
    *
-   * This starts at 1 for top-level nodes within the `Target` and increases for nodes
+   * This starts at 1 for top-level `Template`s within the `Target` and increases for `Template`s
    * nested at deeper levels.
    */
-  getNestingLevel(node: ScopedNode): number;
+  getNestingLevel(template: Template): number;
 
   /**
-   * Get all `Reference`s and `Variables` visible within the given `ScopedNode` (or at the top
-   * level, if `null` is passed).
+   * Get all `Reference`s and `Variables` visible within the given `Template` (or at the top level,
+   * if `null` is passed).
    */
-  getEntitiesInScope(node: ScopedNode|null): ReadonlySet<Reference|Variable>;
+  getEntitiesInTemplateScope(template: Template|null): ReadonlySet<Reference|Variable>;
 
   /**
-   * Get a list of all the directives used by the target,
-   * including directives from `@defer` blocks.
+   * Get a list of all the directives used by the target.
    */
   getUsedDirectives(): DirectiveT[];
 
   /**
-   * Get a list of eagerly used directives from the target.
-   * Note: this list *excludes* directives from `@defer` blocks.
-   */
-  getEagerlyUsedDirectives(): DirectiveT[];
-
-  /**
-   * Get a list of all the pipes used by the target,
-   * including pipes from `@defer` blocks.
+   * Get a list of all the pipes used by the target.
    */
   getUsedPipes(): string[];
-
-  /**
-   * Get a list of eagerly used pipes from the target.
-   * Note: this list *excludes* pipes from `@defer` blocks.
-   */
-  getEagerlyUsedPipes(): string[];
-
-  /**
-   * Get a list of all `@defer` blocks used by the target.
-   */
-  getDeferBlocks(): DeferredBlock[];
-
-  /**
-   * Gets the element that a specific deferred block trigger is targeting.
-   * @param block Block that the trigger belongs to.
-   * @param trigger Trigger whose target is being looked up.
-   */
-  getDeferredTriggerTarget(block: DeferredTrigger, trigger: DeferredTrigger): Element|null;
 }

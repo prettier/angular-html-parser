@@ -6,16 +6,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Sanitizer, Type, ɵAfterRenderEventManager as AfterRenderEventManager} from '@angular/core';
+import {Sanitizer, Type} from '@angular/core';
 import {stringifyElement} from '@angular/platform-browser/testing/src/browser_util';
 
 import {extractDirectiveDef} from '../../src/render3/definition';
-import {refreshView} from '../../src/render3/instructions/change_detection';
-import {renderView} from '../../src/render3/instructions/render';
-import {createLView, createTNode, createTView} from '../../src/render3/instructions/shared';
+import {createLView, createTNode, createTView, refreshView, renderView} from '../../src/render3/instructions/shared';
 import {DirectiveDef, DirectiveDefList, DirectiveTypesOrFactory, PipeDef, PipeDefList, PipeTypesOrFactory, RenderFlags} from '../../src/render3/interfaces/definition';
 import {TConstants, TElementNode, TNodeType} from '../../src/render3/interfaces/node';
-import {HEADER_OFFSET, LView, LViewFlags, TView, TViewType} from '../../src/render3/interfaces/view';
+import {LView, LViewFlags, TView, TViewType} from '../../src/render3/interfaces/view';
 import {enterView, leaveView, specOnlyIsInstructionStateEmpty} from '../../src/render3/state';
 import {noop} from '../../src/util/noop';
 
@@ -68,16 +66,10 @@ export class ViewFixture {
 
     const hostRenderer = rendererFactory.createRenderer(null, null);
     this.host = hostRenderer.createElement('host-element') as HTMLElement;
-    const hostTView =
-        createTView(TViewType.Root, null, null, 1, 0, null, null, null, null, null, null);
+    const hostTView = createTView(TViewType.Root, null, null, 1, 0, null, null, null, null, null);
     const hostLView = createLView(
-        null, hostTView, {}, LViewFlags.CheckAlways | LViewFlags.IsRoot, null, null, {
-          rendererFactory,
-          sanitizer: sanitizer || null,
-          afterRenderEventManager: new AfterRenderEventManager(),
-          inlineEffectRunner: null,
-        },
-        hostRenderer, null, null, null);
+        null, hostTView, {}, LViewFlags.CheckAlways | LViewFlags.IsRoot, null, null,
+        rendererFactory, hostRenderer, sanitizer || null, null, null);
 
     let template = noop;
     if (create) {
@@ -95,14 +87,12 @@ export class ViewFixture {
     this.tView = createTView(
         TViewType.Component, null, template, decls || 0, vars || 0,
         directives ? toDefs(directives, dir => extractDirectiveDef(dir)!) : null, null, null, null,
-        consts || null, null);
+        consts || null);
     const hostTNode =
         createTNode(hostTView, null, TNodeType.Element, 0, 'host-element', null) as TElementNode;
-    // Store TNode at the first slot right after the header part
-    hostTView.data[HEADER_OFFSET] = hostTNode;
     this.lView = createLView(
-        hostLView, this.tView, context || {}, LViewFlags.CheckAlways, this.host, hostTNode, null,
-        hostRenderer, null, null, null);
+        hostLView, this.tView, context || {}, LViewFlags.CheckAlways, this.host, hostTNode,
+        rendererFactory, hostRenderer, null, null, null);
 
     if (this.createFn) {
       renderView(this.tView, this.lView, this.context);

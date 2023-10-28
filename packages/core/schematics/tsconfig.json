@@ -3,11 +3,10 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "noFallthroughCasesInSwitch": true,
-    "noPropertyAccessFromIndexSignature": true,
     "esModuleInterop": true,
     "strict": true,
     "moduleResolution": "node",
-    "target": "es2022",
+    "target": "es2019",
     "lib": [
       "es2019"
     ],

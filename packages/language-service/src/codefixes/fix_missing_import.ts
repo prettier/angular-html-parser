@@ -74,33 +74,11 @@ function getCodeActions(
     const currMatchSymbol = currMatch.tsSymbol.valueDeclaration!;
     const potentialImports =
         checker.getPotentialImportsFor(currMatch.ref, importOn, PotentialImportMode.Normal);
-    for (const potentialImport of potentialImports) {
-      const fileImportChanges: ts.TextChange[] = [];
-      let importName: string;
-      let forwardRefName: string|null = null;
-
-      if (potentialImport.moduleSpecifier) {
-        const [importChanges, generatedImportName] = updateImportsForTypescriptFile(
-            tsChecker, importOn.getSourceFile(), potentialImport.symbolName,
-            potentialImport.moduleSpecifier, currMatchSymbol.getSourceFile());
-        importName = generatedImportName;
-        fileImportChanges.push(...importChanges);
-      } else {
-        if (potentialImport.isForwardReference) {
-          // Note that we pass the `importOn` file twice since we know that the potential import
-          // is within the same file, because it doesn't have a `moduleSpecifier`.
-          const [forwardRefImports, generatedForwardRefName] = updateImportsForTypescriptFile(
-              tsChecker, importOn.getSourceFile(), 'forwardRef', '@angular/core',
-              importOn.getSourceFile());
-          fileImportChanges.push(...forwardRefImports);
-          forwardRefName = generatedForwardRefName;
-        }
-        importName = potentialImport.symbolName;
-      }
-
+    for (let potentialImport of potentialImports) {
+      let [fileImportChanges, importName] = updateImportsForTypescriptFile(
+          tsChecker, importOn.getSourceFile(), potentialImport, currMatchSymbol.getSourceFile());
       // Always update the trait import, although the TS import might already be present.
-      const traitImportChanges =
-          updateImportsForAngularTrait(checker, importOn, importName, forwardRefName);
+      let traitImportChanges = updateImportsForAngularTrait(checker, importOn, importName);
       if (traitImportChanges.length === 0) continue;
 
       let description = `Import ${importName}`;

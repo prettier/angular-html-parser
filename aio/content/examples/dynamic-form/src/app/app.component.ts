@@ -1,15 +1,11 @@
 // #docregion
-import {Component} from '@angular/core';
-import {AsyncPipe} from '@angular/common';
+import { Component } from '@angular/core';
 
-import {DynamicFormComponent} from './dynamic-form.component';
-
-import {QuestionService} from './question.service';
-import {QuestionBase} from './question-base';
-import {Observable} from 'rxjs';
+import { QuestionService } from './question.service';
+import { QuestionBase } from './question-base';
+import { Observable } from 'rxjs';
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   template: `
     <div>
@@ -17,8 +13,7 @@ import {Observable} from 'rxjs';
       <app-dynamic-form [questions]="questions$ | async"></app-dynamic-form>
     </div>
   `,
-  providers: [QuestionService],
-  imports: [AsyncPipe, DynamicFormComponent],
+  providers:  [QuestionService]
 })
 export class AppComponent {
   questions$: Observable<QuestionBase<any>[]>;

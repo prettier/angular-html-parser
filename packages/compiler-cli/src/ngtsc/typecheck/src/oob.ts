@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {BindingPipe, PropertyRead, PropertyWrite, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstElement, TmplAstForLoopBlock, TmplAstHoverDeferredTrigger, TmplAstInteractionDeferredTrigger, TmplAstReference, TmplAstTemplate, TmplAstVariable, TmplAstViewportDeferredTrigger} from '@angular/compiler';
+import {BindingPipe, PropertyWrite, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstElement, TmplAstReference, TmplAstVariable} from '@angular/compiler';
 import ts from 'typescript';
 
 import {ErrorCode, makeDiagnostic, makeRelatedInformation, ngErrorCode} from '../../diagnostics';
@@ -81,25 +81,6 @@ export interface OutOfBandDiagnosticRecorder {
   splitTwoWayBinding(
       templateId: TemplateId, input: TmplAstBoundAttribute, output: TmplAstBoundEvent,
       inputConsumer: ClassDeclaration, outputConsumer: ClassDeclaration|TmplAstElement): void;
-
-  /** Reports required inputs that haven't been bound. */
-  missingRequiredInputs(
-      templateId: TemplateId, element: TmplAstElement|TmplAstTemplate, directiveName: string,
-      isComponent: boolean, inputAliases: string[]): void;
-
-  /**
-   * Reports accesses of properties that aren't available in a `for` block's tracking expression.
-   */
-  illegalForLoopTrackAccess(
-      templateId: TemplateId, block: TmplAstForLoopBlock, access: PropertyRead): void;
-
-  /**
-   * Reports deferred triggers that cannot access the element they're referring to.
-   */
-  inaccessibleDeferredTriggerElement(
-      templateId: TemplateId,
-      trigger: TmplAstHoverDeferredTrigger|TmplAstInteractionDeferredTrigger|
-      TmplAstViewportDeferredTrigger): void;
 }
 
 export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecorder {
@@ -285,60 +266,6 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
     this._diagnostics.push(makeTemplateDiagnostic(
         templateId, mapping, input.keySpan, ts.DiagnosticCategory.Error,
         ngErrorCode(ErrorCode.SPLIT_TWO_WAY_BINDING), errorMsg, relatedMessages));
-  }
-
-  missingRequiredInputs(
-      templateId: TemplateId, element: TmplAstElement|TmplAstTemplate, directiveName: string,
-      isComponent: boolean, inputAliases: string[]): void {
-    const message = `Required input${inputAliases.length === 1 ? '' : 's'} ${
-        inputAliases.map(n => `'${n}'`).join(', ')} from ${
-        isComponent ? 'component' : 'directive'} ${directiveName} must be specified.`;
-
-    this._diagnostics.push(makeTemplateDiagnostic(
-        templateId, this.resolver.getSourceMapping(templateId), element.startSourceSpan,
-        ts.DiagnosticCategory.Error, ngErrorCode(ErrorCode.MISSING_REQUIRED_INPUTS), message));
-  }
-
-  illegalForLoopTrackAccess(
-      templateId: TemplateId, block: TmplAstForLoopBlock, access: PropertyRead): void {
-    const sourceSpan = this.resolver.toParseSourceSpan(templateId, access.sourceSpan);
-    if (sourceSpan === null) {
-      throw new Error(`Assertion failure: no SourceLocation found for property read.`);
-    }
-
-    const message =
-        `Cannot access '${access.name}' inside of a track expression. ` +
-        `Only '${block.item.name}', '${
-            block.contextVariables.$index
-                .name}' and properties on the containing component are available to this expression.`;
-
-    this._diagnostics.push(makeTemplateDiagnostic(
-        templateId, this.resolver.getSourceMapping(templateId), sourceSpan,
-        ts.DiagnosticCategory.Error, ngErrorCode(ErrorCode.ILLEGAL_FOR_LOOP_TRACK_ACCESS),
-        message));
-  }
-
-  inaccessibleDeferredTriggerElement(
-      templateId: TemplateId,
-      trigger: TmplAstHoverDeferredTrigger|TmplAstInteractionDeferredTrigger|
-      TmplAstViewportDeferredTrigger): void {
-    let message: string;
-
-    if (trigger.reference === null) {
-      message = `Trigger cannot find reference. Make sure that the @defer block has a ` +
-          `@placeholder with at least one root element node.`;
-    } else {
-      message =
-          `Trigger cannot find reference "${trigger.reference}".\nCheck that an element with #${
-              trigger.reference} exists in the same template and it's accessible from the ` +
-          `@defer block.\nDeferred blocks can only access triggers in same view, a parent ` +
-          `embedded view or the root view of the @placeholder block.`;
-    }
-
-    this._diagnostics.push(makeTemplateDiagnostic(
-        templateId, this.resolver.getSourceMapping(templateId), trigger.sourceSpan,
-        ts.DiagnosticCategory.Error, ngErrorCode(ErrorCode.INACCESSIBLE_DEFERRED_TRIGGER_ELEMENT),
-        message));
   }
 }
 

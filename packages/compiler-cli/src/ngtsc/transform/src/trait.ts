@@ -7,9 +7,7 @@
  */
 
 import ts from 'typescript';
-
 import {SemanticSymbol} from '../../incremental/semantic_graph';
-
 import {DecoratorHandler, DetectResult} from './api';
 
 export enum TraitState {
@@ -196,7 +194,6 @@ class TraitImpl<D, A, S extends SemanticSymbol|null, R> {
   resolution: Readonly<R>|null = null;
   analysisDiagnostics: ts.Diagnostic[]|null = null;
   resolveDiagnostics: ts.Diagnostic[]|null = null;
-  typeCheckDiagnostics: ts.Diagnostic[]|null = null;
 
   constructor(handler: DecoratorHandler<D, A, S, R>, detected: DetectResult<D>) {
     this.handler = handler;
@@ -223,7 +220,6 @@ class TraitImpl<D, A, S extends SemanticSymbol|null, R> {
     this.resolution = resolution;
     this.state = TraitState.Resolved;
     this.resolveDiagnostics = diagnostics;
-    this.typeCheckDiagnostics = null;
     return this as ResolvedTrait<D, A, S, R>;
   }
 

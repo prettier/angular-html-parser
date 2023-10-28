@@ -4,8 +4,6 @@
 
 ```ts
 
-import * as i0 from '@angular/core';
-
 // @public
 export function animate(timings: string | number, styles?: AnimationStyleMetadata | AnimationKeyframesSequenceMetadata | null): AnimationAnimateMetadata;
 
@@ -48,10 +46,6 @@ export interface AnimationAnimateRefMetadata extends AnimationMetadata {
 // @public
 export abstract class AnimationBuilder {
     abstract build(animation: AnimationMetadata | AnimationMetadata[]): AnimationFactory;
-    // (undocumented)
-    static ɵfac: i0.ɵɵFactoryDeclaration<AnimationBuilder, never>;
-    // (undocumented)
-    static ɵprov: i0.ɵɵInjectableDeclaration<AnimationBuilder>;
 }
 
 // @public
@@ -129,7 +123,7 @@ export interface AnimationPlayer {
     play(): void;
     reset(): void;
     restart(): void;
-    setPosition(position: number): void;
+    setPosition(position: any /** TODO #9100 */): void;
     readonly totalTime: number;
 }
 

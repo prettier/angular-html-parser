@@ -70,8 +70,8 @@ export function jsonpCallbackContext(): Object {
 /**
  * Processes an `HttpRequest` with the JSONP method,
  * by performing JSONP style requests.
- * @see {@link HttpHandler}
- * @see {@link HttpXhrBackend}
+ * @see `HttpHandler`
+ * @see `HttpXhrBackend`
  *
  * @publicApi
  */
@@ -262,7 +262,7 @@ export function jsonpInterceptorFn(
  * Identifies requests with the method JSONP and
  * shifts them to the `JsonpClientBackend`.
  *
- * @see {@link HttpInterceptor}
+ * @see `HttpInterceptor`
  *
  * @publicApi
  */

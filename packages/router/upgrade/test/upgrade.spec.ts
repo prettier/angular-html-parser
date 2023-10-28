@@ -9,7 +9,8 @@
 import {Location} from '@angular/common';
 import {$locationShim, UrlCodec} from '@angular/common/upgrade';
 import {fakeAsync, flush, TestBed} from '@angular/core/testing';
-import {Router, RouterModule} from '@angular/router';
+import {Router} from '@angular/router';
+import {RouterTestingModule} from '@angular/router/testing';
 import {setUpLocationSync} from '@angular/router/upgrade';
 import {UpgradeModule} from '@angular/upgrade/static';
 
@@ -75,7 +76,7 @@ describe('setUpLocationSync', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [
-        RouterModule.forRoot([{path: '1', children: []}, {path: '2', children: []}]),
+        RouterTestingModule.withRoutes([{path: '1', children: []}, {path: '2', children: []}]),
         UpgradeModule,
         LocationUpgradeTestModule.config(),
       ],
@@ -125,6 +126,9 @@ describe('setUpLocationSync', () => {
     const callback = $rootScope.$on.calls.argsFor(0)[1];
     callback({}, url + pathname + query + hash, '');
 
+    expect(location.normalize).toHaveBeenCalledTimes(1);
+    expect(location.normalize).toHaveBeenCalledWith(pathname);
+
     expect(router.navigateByUrl).toHaveBeenCalledTimes(1);
     expect(router.navigateByUrl).toHaveBeenCalledWith(normalizedPathname + query + hash);
   });
@@ -144,6 +148,9 @@ describe('setUpLocationSync', () => {
 
     const callback = $rootScope.$on.calls.argsFor(0)[1];
     callback({}, combinedUrl, '');
+
+    expect(location.normalize).toHaveBeenCalledTimes(1);
+    expect(location.normalize).toHaveBeenCalledWith(pathname);
 
     expect(router.navigateByUrl).toHaveBeenCalledTimes(1);
     expect(router.navigateByUrl).toHaveBeenCalledWith(normalizedPathname + query + hash);

@@ -4,7 +4,6 @@
 
 ```ts
 
-import { EnvironmentProviders } from '@angular/core';
 import * as i0 from '@angular/core';
 import { ModuleWithProviders } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -20,12 +19,9 @@ export interface NoNewVersionDetectedEvent {
     };
 }
 
-// @public
-export function provideServiceWorker(script: string, options?: SwRegistrationOptions): EnvironmentProviders;
-
 // @public (undocumented)
 export class ServiceWorkerModule {
-    static register(script: string, options?: SwRegistrationOptions): ModuleWithProviders<ServiceWorkerModule>;
+    static register(script: string, opts?: SwRegistrationOptions): ModuleWithProviders<ServiceWorkerModule>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<ServiceWorkerModule, never>;
     // (undocumented)
@@ -66,7 +62,11 @@ export abstract class SwRegistrationOptions {
 // @public
 export class SwUpdate {
     constructor(sw: NgswCommChannel);
+    // @deprecated
+    readonly activated: Observable<UpdateActivatedEvent>;
     activateUpdate(): Promise<boolean>;
+    // @deprecated
+    readonly available: Observable<UpdateAvailableEvent>;
     checkForUpdate(): Promise<boolean>;
     get isEnabled(): boolean;
     readonly unrecoverable: Observable<UnrecoverableStateEvent>;
@@ -83,6 +83,38 @@ export interface UnrecoverableStateEvent {
     reason: string;
     // (undocumented)
     type: 'UNRECOVERABLE_STATE';
+}
+
+// @public @deprecated
+export interface UpdateActivatedEvent {
+    // (undocumented)
+    current: {
+        hash: string;
+        appData?: Object;
+    };
+    // (undocumented)
+    previous?: {
+        hash: string;
+        appData?: Object;
+    };
+    // (undocumented)
+    type: 'UPDATE_ACTIVATED';
+}
+
+// @public @deprecated
+export interface UpdateAvailableEvent {
+    // (undocumented)
+    available: {
+        hash: string;
+        appData?: Object;
+    };
+    // (undocumented)
+    current: {
+        hash: string;
+        appData?: Object;
+    };
+    // (undocumented)
+    type: 'UPDATE_AVAILABLE';
 }
 
 // @public

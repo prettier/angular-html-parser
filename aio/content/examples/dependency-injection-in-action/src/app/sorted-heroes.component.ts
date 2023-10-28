@@ -4,16 +4,13 @@ import { Component, OnInit } from '@angular/core';
 
 import { Hero } from './hero';
 import { HeroService } from './hero.service';
-import { NgFor } from '@angular/common';
 
 /////// HeroesBaseComponent /////
 // #docregion heroes-base
 @Component({
-  standalone: true,
   selector: 'app-unsorted-heroes',
   template: '<div *ngFor="let hero of heroes">{{hero.name}}</div>',
-  providers: [HeroService],
-  imports: [NgFor]
+  providers: [HeroService]
 })
 export class HeroesBaseComponent implements OnInit {
   constructor(private heroService: HeroService) { }
@@ -34,11 +31,9 @@ export class HeroesBaseComponent implements OnInit {
 /////// SortedHeroesComponent /////
 // #docregion sorted-heroes
 @Component({
-  standalone: true,
   selector: 'app-sorted-heroes',
   template: '<div *ngFor="let hero of heroes">{{hero.name}}</div>',
-  providers: [HeroService],
-  imports: [NgFor]
+  providers: [HeroService]
 })
 export class SortedHeroesComponent extends HeroesBaseComponent {
   constructor(heroService: HeroService) {

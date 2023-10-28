@@ -447,13 +447,15 @@ class TemplateTargetVisitor implements t.Visitor {
 
   visitBoundAttribute(attribute: t.BoundAttribute) {
     if (attribute.valueSpan !== undefined) {
-      this.visitBinding(attribute.value);
+      const visitor = new ExpressionVisitor(this.position);
+      visitor.visit(attribute.value, this.path);
     }
   }
 
   visitBoundEvent(event: t.BoundEvent) {
     if (!isBoundEventWithSyntheticHandler(event)) {
-      this.visitBinding(event.handler);
+      const visitor = new ExpressionVisitor(this.position);
+      visitor.visit(event.handler, this.path);
     }
   }
 
@@ -462,7 +464,8 @@ class TemplateTargetVisitor implements t.Visitor {
   }
 
   visitBoundText(text: t.BoundText) {
-    this.visitBinding(text.value);
+    const visitor = new ExpressionVisitor(this.position);
+    visitor.visit(text.value, this.path);
   }
 
   visitIcu(icu: t.Icu) {
@@ -474,73 +477,10 @@ class TemplateTargetVisitor implements t.Visitor {
     }
   }
 
-  visitDeferredBlock(deferred: t.DeferredBlock) {
-    deferred.visitAll(this);
-  }
-
-  visitDeferredBlockPlaceholder(block: t.DeferredBlockPlaceholder) {
-    this.visitAll(block.children);
-  }
-
-  visitDeferredBlockError(block: t.DeferredBlockError) {
-    this.visitAll(block.children);
-  }
-
-  visitDeferredBlockLoading(block: t.DeferredBlockLoading) {
-    this.visitAll(block.children);
-  }
-
-  visitDeferredTrigger(trigger: t.DeferredTrigger) {
-    if (trigger instanceof t.BoundDeferredTrigger) {
-      this.visitBinding(trigger.value);
-    }
-  }
-
-  visitSwitchBlock(block: t.SwitchBlock) {
-    this.visitBinding(block.expression);
-    this.visitAll(block.cases);
-    this.visitAll(block.unknownBlocks);
-  }
-
-  visitSwitchBlockCase(block: t.SwitchBlockCase) {
-    block.expression && this.visitBinding(block.expression);
-    this.visitAll(block.children);
-  }
-
-  visitForLoopBlock(block: t.ForLoopBlock) {
-    this.visit(block.item);
-    this.visitAll(Object.values(block.contextVariables));
-    this.visitBinding(block.expression);
-    this.visitBinding(block.trackBy);
-    this.visitAll(block.children);
-    block.empty && this.visit(block.empty);
-  }
-
-  visitForLoopBlockEmpty(block: t.ForLoopBlockEmpty) {
-    this.visitAll(block.children);
-  }
-
-  visitIfBlock(block: t.IfBlock) {
-    this.visitAll(block.branches);
-  }
-
-  visitIfBlockBranch(block: t.IfBlockBranch) {
-    block.expression && this.visitBinding(block.expression);
-    block.expressionAlias && this.visit(block.expressionAlias);
-    this.visitAll(block.children);
-  }
-
-  visitUnknownBlock(block: t.UnknownBlock) {}
-
   visitAll(nodes: t.Node[]) {
     for (const node of nodes) {
       this.visit(node);
     }
-  }
-
-  private visitBinding(expression: e.AST) {
-    const visitor = new ExpressionVisitor(this.position);
-    visitor.visit(expression, this.path);
   }
 }
 
@@ -554,7 +494,7 @@ class ExpressionVisitor extends e.RecursiveAstVisitor {
     if (node instanceof e.ASTWithSource) {
       // In order to reduce noise, do not include `ASTWithSource` in the path.
       // For the purpose of source spans, there is no difference between
-      // `ASTWithSource` and underlying node that it wraps.
+      // `ASTWithSource` and and underlying node that it wraps.
       node = node.ast;
     }
     // The third condition is to account for the implicit receiver, which should

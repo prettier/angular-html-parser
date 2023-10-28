@@ -27,7 +27,7 @@ export function makeProgram(
   const compilerOptions = {
     noLib: true,
     experimentalDecorators: true,
-    moduleResolution: ts.ModuleResolutionKind.Node10,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
     ...options
   };
   const compilerHost = new NgtscCompilerHost(fs, compilerOptions);
@@ -130,8 +130,7 @@ enum TsStructureIsReused {
 export function expectCompleteReuse(program: ts.Program): void {
   // Assert complete reuse using TypeScript's private API.
   expect((program as any).structureIsReused)
-      .withContext(COMPLETE_REUSE_FAILURE_MESSAGE)
-      .toBe(TsStructureIsReused.Completely);
+      .toBe(TsStructureIsReused.Completely, COMPLETE_REUSE_FAILURE_MESSAGE);
 }
 
 function bindingNameEquals(node: ts.BindingName, name: string): boolean {

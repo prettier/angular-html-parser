@@ -55,8 +55,8 @@ export class ModuleWithComponentFactories<T> {
 @Injectable({providedIn: 'root'})
 export class Compiler {
   /**
-   * Compiles the given NgModule and all of its components. All templates of the components
-   * have to be inlined.
+   * Compiles the given NgModule and all of its components. All templates of the components listed
+   * in `entryComponents` have to be inlined.
    */
   compileModuleSync<T>(moduleType: Type<T>): NgModuleFactory<T> {
     return new NgModuleFactoryR3(moduleType);
@@ -120,8 +120,16 @@ export class Compiler {
  * @publicApi
  */
 export type CompilerOptions = {
+  /**
+   * @deprecated not used at all in Ivy, providing this config option has no effect.
+   */
+  useJit?: boolean,
   defaultEncapsulation?: ViewEncapsulation,
   providers?: StaticProvider[],
+  /**
+   * @deprecated not used at all in Ivy, providing this config option has no effect.
+   */
+  missingTranslation?: MissingTranslationStrategy,
   preserveWhitespaces?: boolean,
 };
 

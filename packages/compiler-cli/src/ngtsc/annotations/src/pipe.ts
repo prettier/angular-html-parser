@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {compileClassMetadata, compileDeclareClassMetadata, compileDeclarePipeFromMetadata, compilePipeFromMetadata, FactoryTarget, R3ClassMetadata, R3PipeMetadata, WrappedNodeExpr,} from '@angular/compiler';
+import {compileClassMetadata, compileDeclareClassMetadata, compileDeclarePipeFromMetadata, compilePipeFromMetadata, FactoryTarget, R3ClassMetadata, R3PipeMetadata, WrappedNodeExpr} from '@angular/compiler';
 import ts from 'typescript';
 
 import {ErrorCode, FatalDiagnosticError} from '../../diagnostics';
@@ -17,7 +17,7 @@ import {PartialEvaluator} from '../../partial_evaluator';
 import {PerfEvent, PerfRecorder} from '../../perf';
 import {ClassDeclaration, Decorator, ReflectionHost, reflectObjectLiteral} from '../../reflection';
 import {LocalModuleScopeRegistry} from '../../scope';
-import {AnalysisOutput, CompilationMode, CompileResult, DecoratorHandler, DetectResult, HandlerPrecedence, ResolveResult,} from '../../transform';
+import {AnalysisOutput, CompileResult, DecoratorHandler, DetectResult, HandlerPrecedence, ResolveResult} from '../../transform';
 import {compileDeclareFactory, compileNgFactoryDefField, compileResults, createValueHasWrongTypeError, extractClassMetadata, findAngularDecorator, getValidConstructorDependencies, InjectableClassRegistry, makeDuplicateDeclarationError, toFactoryMetadata, unwrapExpression, wrapTypeReference,} from '../common';
 
 export interface PipeHandlerData {
@@ -54,11 +54,10 @@ export class PipeDecoratorHandler implements
       private reflector: ReflectionHost, private evaluator: PartialEvaluator,
       private metaRegistry: MetadataRegistry, private scopeRegistry: LocalModuleScopeRegistry,
       private injectableRegistry: InjectableClassRegistry, private isCore: boolean,
-      private perf: PerfRecorder, private includeClassMetadata: boolean,
-      private readonly compilationMode: CompilationMode) {}
+      private perf: PerfRecorder) {}
 
   readonly precedence = HandlerPrecedence.PRIMARY;
-  readonly name = 'PipeDecoratorHandler';
+  readonly name = PipeDecoratorHandler.name;
 
   detect(node: ClassDeclaration, decorators: Decorator[]|null): DetectResult<Decorator>|undefined {
     if (!decorators) {
@@ -82,14 +81,17 @@ export class PipeDecoratorHandler implements
 
     const name = clazz.name.text;
     const type = wrapTypeReference(this.reflector, clazz);
+    const internalType = new WrappedNodeExpr(this.reflector.getInternalNameOfClass(clazz));
 
     if (decorator.args === null) {
       throw new FatalDiagnosticError(
-          ErrorCode.DECORATOR_NOT_CALLED, decorator.node, `@Pipe must be called`);
+          ErrorCode.DECORATOR_NOT_CALLED, Decorator.nodeForError(decorator),
+          `@Pipe must be called`);
     }
     if (decorator.args.length !== 1) {
       throw new FatalDiagnosticError(
-          ErrorCode.DECORATOR_ARITY_WRONG, decorator.node, '@Pipe must have exactly one argument');
+          ErrorCode.DECORATOR_ARITY_WRONG, Decorator.nodeForError(decorator),
+          '@Pipe must have exactly one argument');
     }
     const meta = unwrapExpression(decorator.args[0]);
     if (!ts.isObjectLiteralExpression(meta)) {
@@ -133,16 +135,14 @@ export class PipeDecoratorHandler implements
         meta: {
           name,
           type,
+          internalType,
           typeArgumentCount: this.reflector.getGenericArityOfClass(clazz) || 0,
           pipeName,
-          deps: getValidConstructorDependencies(
-              clazz, this.reflector, this.isCore, this.compilationMode),
+          deps: getValidConstructorDependencies(clazz, this.reflector, this.isCore),
           pure,
           isStandalone,
         },
-        classMetadata: this.includeClassMetadata ?
-            extractClassMetadata(clazz, this.reflector, this.isCore) :
-            null,
+        classMetadata: extractClassMetadata(clazz, this.reflector, this.isCore),
         pipeNameExpr,
         decorator: decorator?.node as ts.Decorator | null ?? null,
       },
@@ -187,7 +187,7 @@ export class PipeDecoratorHandler implements
     const classMetadata = analysis.classMetadata !== null ?
         compileClassMetadata(analysis.classMetadata).toStmt() :
         null;
-    return compileResults(fac, def, classMetadata, 'ɵpipe', null, null /* deferrableImports */);
+    return compileResults(fac, def, classMetadata, 'ɵpipe');
   }
 
   compilePartial(node: ClassDeclaration, analysis: Readonly<PipeHandlerData>): CompileResult[] {
@@ -196,15 +196,6 @@ export class PipeDecoratorHandler implements
     const classMetadata = analysis.classMetadata !== null ?
         compileDeclareClassMetadata(analysis.classMetadata).toStmt() :
         null;
-    return compileResults(fac, def, classMetadata, 'ɵpipe', null, null /* deferrableImports */);
-  }
-
-  compileLocal(node: ClassDeclaration, analysis: Readonly<PipeHandlerData>): CompileResult[] {
-    const fac = compileNgFactoryDefField(toFactoryMetadata(analysis.meta, FactoryTarget.Pipe));
-    const def = compilePipeFromMetadata(analysis.meta);
-    const classMetadata = analysis.classMetadata !== null ?
-        compileClassMetadata(analysis.classMetadata).toStmt() :
-        null;
-    return compileResults(fac, def, classMetadata, 'ɵpipe', null, null /* deferrableImports */);
+    return compileResults(fac, def, classMetadata, 'ɵpipe');
   }
 }

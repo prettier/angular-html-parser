@@ -9,7 +9,7 @@ function MyComponent_0_Template(rf, ctx) {
   }
 }
 …
-consts: () => {
+consts: function() {
   __i18nMsg__('Hello', [], {}, {})
   return [
     // NOTE: AttributeMarker.Template = 4

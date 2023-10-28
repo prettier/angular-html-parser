@@ -18,12 +18,11 @@ import {assertDefined, assertEqual, assertIndexInRange} from '../util/assert';
 import {noSideEffects} from '../util/closure';
 
 import {assertDirectiveDef, assertNodeInjector, assertTNodeForLView} from './assert';
-import {emitInstanceCreatedByInjectorEvent, InjectorProfilerContext, runInInjectorProfilerContext, setInjectorProfilerContext} from './debug/injector_profiler';
-import {getFactoryDef} from './definition_factory';
+import {FactoryFn, getFactoryDef} from './definition_factory';
 import {throwCyclicDependencyError, throwProviderNotFoundError} from './errors_di';
 import {NG_ELEMENT_ID, NG_FACTORY_DEF} from './fields';
 import {registerPreOrderHooks} from './hooks';
-import {ComponentDef, DirectiveDef} from './interfaces/definition';
+import {DirectiveDef} from './interfaces/definition';
 import {isFactory, NO_PARENT_INJECTOR, NodeInjectorFactory, NodeInjectorOffset, RelativeInjectorLocation, RelativeInjectorLocationFlags} from './interfaces/injector';
 import {AttributeMarker, TContainerNode, TDirectiveHostNode, TElementContainerNode, TElementNode, TNode, TNodeProviderIndexes, TNodeType} from './interfaces/node';
 import {isComponentDef, isComponentHost} from './interfaces/type_checks';
@@ -213,7 +212,7 @@ export function getParentInjectorLocation(tNode: TNode, lView: LView): RelativeI
   if (tNode.parent && tNode.parent.injectorIndex !== -1) {
     // If we have a parent `TNode` and there is an injector associated with it we are done, because
     // the parent injector is within the current `LView`.
-    return tNode.parent.injectorIndex as RelativeInjectorLocation;  // ViewOffset is 0
+    return tNode.parent.injectorIndex as any;  // ViewOffset is 0
   }
 
   // When parent injector location is computed it may be outside of the current view. (ie it could
@@ -242,8 +241,7 @@ export function getParentInjectorLocation(tNode: TNode, lView: LView): RelativeI
     if (parentTNode.injectorIndex !== -1) {
       // We found a NodeInjector which points to something.
       return (parentTNode.injectorIndex |
-              (declarationViewOffset << RelativeInjectorLocationFlags.ViewOffsetShift)) as
-          RelativeInjectorLocation;
+              (declarationViewOffset << RelativeInjectorLocationFlags.ViewOffsetShift)) as any;
     }
   }
   return NO_PARENT_INJECTOR;
@@ -401,10 +399,7 @@ export function getOrCreateInjectable<T>(
   if (tNode !== null) {
     // If the view or any of its ancestors have an embedded
     // view injector, we have to look it up there first.
-    if (lView[FLAGS] & LViewFlags.HasEmbeddedViewInjector &&
-        // The token must be present on the current node injector when the `Self`
-        // flag is set, so the lookup on embedded view injector(s) can be skipped.
-        !(flags & InjectFlags.Self)) {
+    if (lView[FLAGS] & LViewFlags.HasEmbeddedViewInjector) {
       const embeddedInjectorValue =
           lookupTokenUsingEmbeddedInjector(tNode, lView, token, flags, NOT_FOUND);
       if (embeddedInjectorValue !== NOT_FOUND) {
@@ -448,22 +443,7 @@ function lookupTokenUsingNodeInjector<T>(
           lookupTokenUsingModuleInjector<T>(lView, token, flags, notFoundValue);
     }
     try {
-      let value: unknown;
-
-      if (ngDevMode) {
-        runInInjectorProfilerContext(
-            new NodeInjector(getCurrentTNode() as TElementNode, getLView()), token as Type<T>,
-            () => {
-              value = bloomHash(flags);
-
-              if (value != null) {
-                emitInstanceCreatedByInjectorEvent(value);
-              }
-            });
-      } else {
-        value = bloomHash(flags);
-      }
-
+      const value = bloomHash(flags);
       if (value == null && !(flags & InjectFlags.Optional)) {
         throwProviderNotFoundError(token);
       } else {
@@ -478,7 +458,7 @@ function lookupTokenUsingNodeInjector<T>(
     // injector.
     let previousTView: TView|null = null;
     let injectorIndex = getInjectorIndex(tNode, lView);
-    let parentLocation = NO_PARENT_INJECTOR;
+    let parentLocation: RelativeInjectorLocation = NO_PARENT_INJECTOR;
     let hostTElementNode: TNode|null =
         flags & InjectFlags.Host ? lView[DECLARATION_COMPONENT_VIEW][T_HOST] : null;
 
@@ -635,19 +615,6 @@ export function getNodeInjectable(
     }
     const previousIncludeViewProviders = setIncludeViewProviders(factory.canSeeViewProviders);
     factory.resolving = true;
-
-    let prevInjectContext: InjectorProfilerContext|undefined;
-    if (ngDevMode) {
-      // tData indexes mirror the concrete instances in its corresponding LView.
-      // lView[index] here is either the injectable instace itself or a factory,
-      // therefore tData[index] is the constructor of that injectable or a
-      // definition object that contains the constructor in a `.type` field.
-      const token =
-          (tData[index] as (DirectiveDef<unknown>| ComponentDef<unknown>)).type || tData[index];
-      const injector = new NodeInjector(tNode, lView);
-      prevInjectContext = setInjectorProfilerContext({injector, token});
-    }
-
     const previousInjectImplementation =
         factory.injectImpl ? setInjectImplementation(factory.injectImpl) : null;
     const success = enterDI(lView, tNode, InjectFlags.Default);
@@ -657,9 +624,6 @@ export function getNodeInjectable(
             'Because flags do not contain \`SkipSelf\' we expect this to always succeed.');
     try {
       value = lView[index] = factory.factory(undefined, tData, lView, tNode);
-
-      ngDevMode && emitInstanceCreatedByInjectorEvent(value);
-
       // This code path is hit for both directives and providers.
       // For perf reasons, we want to avoid searching for hooks on providers.
       // It does no harm to try (the hooks just won't exist), but the extra
@@ -671,8 +635,6 @@ export function getNodeInjectable(
         registerPreOrderHooks(index, tData[index] as DirectiveDef<any>, tView);
       }
     } finally {
-      ngDevMode && setInjectorProfilerContext(prevInjectContext!);
-
       previousInjectImplementation !== null &&
           setInjectImplementation(previousInjectImplementation);
       setIncludeViewProviders(previousIncludeViewProviders);
@@ -738,16 +700,6 @@ function shouldSearchParent(flags: InjectFlags, isFirstHostTNode: boolean): bool
   return !(flags & InjectFlags.Self) && !(flags & InjectFlags.Host && isFirstHostTNode);
 }
 
-export function getNodeInjectorLView(nodeInjector: NodeInjector): LView {
-  return (nodeInjector as any)._lView as LView;
-}
-
-export function getNodeInjectorTNode(nodeInjector: NodeInjector): TElementNode|TContainerNode|
-    TElementContainerNode|null {
-  return (nodeInjector as any)._tNode as TElementNode | TContainerNode | TElementContainerNode |
-      null;
-}
-
 export class NodeInjector implements Injector {
   constructor(
       private _tNode: TElementNode|TContainerNode|TElementContainerNode|null,
@@ -794,7 +746,7 @@ export function ɵɵgetInheritedFactory<T>(type: Type<any>): (type: Type<T>) => 
     // (no Angular decorator on the superclass) or there is no constructor at all
     // in the inheritance chain. Since the two cases cannot be distinguished, the
     // latter has to be assumed.
-    return (t: Type<T>) => new t();
+    return t => new t();
   });
 }
 

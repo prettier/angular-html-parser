@@ -16,7 +16,7 @@
     "prepublish": "yarn run build",
     "prebuild": "del-cli ./lib",
     "build": "tsc -p tsconfig.build.json",
-    "postbuild": "node ./node_modules/.bin/jscodeshift -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
+    "postbuild": "jscodeshift -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
     "test": "ts-node --project tsconfig.test.json -r tsconfig-paths/register node_modules/jasmine/bin/jasmine.js ../compiler/test/ml_parser/*_spec.ts ./test/*_spec.ts",
     "release": "standard-version"
   },

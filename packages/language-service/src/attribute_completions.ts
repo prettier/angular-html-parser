@@ -220,16 +220,16 @@ export function buildAttributeCompletionTable(
         continue;
       }
 
-      for (const {classPropertyName, bindingPropertyName} of meta.inputs) {
+      for (const [classPropertyName, rawProperyName] of meta.inputs) {
         let propertyName: string;
 
         if (dirSymbol.isHostDirective) {
-          if (!dirSymbol.exposedInputs?.hasOwnProperty(bindingPropertyName)) {
+          if (!dirSymbol.exposedInputs?.hasOwnProperty(rawProperyName)) {
             continue;
           }
-          propertyName = dirSymbol.exposedInputs[bindingPropertyName];
+          propertyName = dirSymbol.exposedInputs[rawProperyName];
         } else {
-          propertyName = bindingPropertyName;
+          propertyName = rawProperyName;
         }
 
         if (table.has(propertyName)) {
@@ -245,16 +245,16 @@ export function buildAttributeCompletionTable(
         });
       }
 
-      for (const {classPropertyName, bindingPropertyName} of meta.outputs) {
+      for (const [classPropertyName, rawProperyName] of meta.outputs) {
         let propertyName: string;
 
         if (dirSymbol.isHostDirective) {
-          if (!dirSymbol.exposedOutputs?.hasOwnProperty(bindingPropertyName)) {
+          if (!dirSymbol.exposedOutputs?.hasOwnProperty(rawProperyName)) {
             continue;
           }
-          propertyName = dirSymbol.exposedOutputs[bindingPropertyName];
+          propertyName = dirSymbol.exposedOutputs[rawProperyName];
         } else {
-          propertyName = bindingPropertyName;
+          propertyName = rawProperyName;
         }
 
         if (table.has(propertyName)) {
@@ -405,7 +405,7 @@ function buildSnippet(insertSnippet: true|undefined, text: string): string|undef
  * This sort priority is based on the ASCII table. Other than `space`, the `!` is the first
  * printable character in the ASCII ordering.
  */
-export enum AsciiSortPriority {
+enum AsciiSortPriority {
   First = '!',
   Second = '"',
 }

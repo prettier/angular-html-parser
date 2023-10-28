@@ -26,7 +26,7 @@ class AsyncValidatorDirective implements AsyncValidator {
   constructor(private expected: string, private error: any) {}
 
   validate(c: any): Observable<ValidationErrors> {
-    return new Observable((obs: any) => {
+    return Observable.create((obs: any) => {
       const error = this.expected !== c.value ? this.error : null;
       obs.next(error);
       obs.complete();
@@ -561,9 +561,8 @@ describe('Validators', () => {
                `Expected errors not to be set until all validators came back.`);
 
            tick(100);
-           expect(errorMap!)
-               .withContext(`Expected errors to merge once all validators resolved.`)
-               .toEqual({one: true, two: true});
+           expect(errorMap!).toEqual(
+               {one: true, two: true}, `Expected errors to merge once all validators resolved.`);
          }));
     });
   });

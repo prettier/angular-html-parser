@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { SwUpdate, VersionReadyEvent } from '@angular/service-worker';
 
 // #docregion sw-update
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class LogUpdateService {
 
   constructor(updates: SwUpdate) {

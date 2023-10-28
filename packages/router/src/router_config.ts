@@ -11,6 +11,7 @@ import {InjectionToken} from '@angular/core';
 import {OnSameUrlNavigation} from './models';
 import {UrlSerializer, UrlTree} from './url_tree';
 
+const NG_DEV_MODE = typeof ngDevMode === 'undefined' || !!ngDevMode;
 
 /**
  * Error handler that is invoked when a navigation error occurs.
@@ -39,7 +40,7 @@ export type ErrorHandler = (error: any) => any;
  * more control over when the router starts its initial navigation due to some complex
  * initialization logic.
  *
- * @see {@link forRoot()}
+ * @see `forRoot()`
  *
  * @publicApi
  */
@@ -79,17 +80,14 @@ export interface RouterConfigOptions {
    *
    * If unset, the `Router` will use `'ignore'`.
    *
-   * @see {@link OnSameUrlNavigation}
+   * @see `OnSameUrlNavigation`
    */
   onSameUrlNavigation?: OnSameUrlNavigation;
 
   /**
    * Defines how the router merges parameters, data, and resolved data from parent to child
-   * routes.
-   *
-   * By default ('emptyOnly'), a route inherits the parent route's parameters when the route itself
-   * has an empty path (meaning its configured with path: '') or when the parent route doesn't have
-   * any component set.
+   * routes. By default ('emptyOnly'), inherits parent parameters only for
+   * path-less or component-less routes.
    *
    * Set to 'always' to enable unconditional inheritance of parent parameters.
    *
@@ -169,7 +167,7 @@ export interface InMemoryScrollingOptions {
  * A set of configuration options for a router module, provided in the
  * `forRoot()` method.
  *
- * @see {@link forRoot()}
+ * @see `forRoot()`
  *
  *
  * @publicApi
@@ -201,22 +199,6 @@ export interface ExtraOptions extends InMemoryScrollingOptions, RouterConfigOpti
   initialNavigation?: InitialNavigation;
 
   /**
-   * When true, enables binding information from the `Router` state directly to the inputs of the
-   * component in `Route` configurations.
-   */
-  bindToComponentInputs?: boolean;
-
-  /**
-   * When true, enables view transitions in the Router by running the route activation and
-   * deactivation inside of `document.startViewTransition`.
-   *
-   * @see https://developer.chrome.com/docs/web-platform/view-transitions/
-   * @see https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API
-   * @experimental
-   */
-  enableViewTransitions?: boolean;
-
-  /**
    * A custom error handler for failed navigations.
    * If the handler returns a value, the navigation Promise is resolved with this value.
    * If the handler throws an exception, the navigation Promise is rejected with the exception.
@@ -240,6 +222,21 @@ export interface ExtraOptions extends InMemoryScrollingOptions, RouterConfigOpti
    * it restores scroll position.
    */
   scrollOffset?: [number, number]|(() => [number, number]);
+
+  /**
+   * A custom handler for malformed URI errors. The handler is invoked when `encodedURI` contains
+   * invalid character sequences.
+   * The default implementation is to redirect to the root URL, dropping
+   * any path or parameter information. The function takes three parameters:
+   *
+   * - `'URIError'` - Error thrown when parsing a bad URL.
+   * - `'UrlSerializer'` - UrlSerializer that’s configured with the router.
+   * - `'url'` -  The malformed URL that caused the URIError
+   *
+   * @deprecated URI parsing errors should be handled in the `UrlSerializer` instead.
+   * */
+  malformedUriErrorHandler?:
+      (error: URIError, urlSerializer: UrlSerializer, url: string) => UrlTree;
 }
 
 /**
@@ -247,8 +244,8 @@ export interface ExtraOptions extends InMemoryScrollingOptions, RouterConfigOpti
  *
  * @publicApi
  */
-export const ROUTER_CONFIGURATION = new InjectionToken<ExtraOptions>(
-    (typeof ngDevMode === 'undefined' || ngDevMode) ? 'router config' : '', {
+export const ROUTER_CONFIGURATION =
+    new InjectionToken<ExtraOptions>(NG_DEV_MODE ? 'router config' : '', {
       providedIn: 'root',
       factory: () => ({}),
     });

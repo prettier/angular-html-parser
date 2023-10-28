@@ -1,5 +1,5 @@
 
-const $ff$ = $v$ => ["red", $v$];
+const $ff$ = function ($v$) { return ["red", $v$]; };
 …
 HostBindingComp.ɵcmp = /*@__PURE__*/ $r3$.ɵɵdefineComponent({
   type: HostBindingComp,

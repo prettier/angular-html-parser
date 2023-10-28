@@ -293,12 +293,6 @@ describe('AsyncTestZoneSpec', function() {
            }, emptyRun));
 
   describe('XHRs', ifEnvSupports('XMLHttpRequest', () => {
-             beforeEach(() => {
-               jasmine.DEFAULT_TIMEOUT_INTERVAL = 200000;
-             });
-             beforeEach(() => {
-               jasmine.DEFAULT_TIMEOUT_INTERVAL = 50000;
-             });
              it('should wait for XHRs to complete', function(done) {
                let req: XMLHttpRequest;
                let finished = false;

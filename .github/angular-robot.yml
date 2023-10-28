@@ -1,8 +1,8 @@
 # Configuration for angular-robot
 
-# options for the size plugin
+#options for the size plugin
 size:
-  disabled: true
+  disabled: false
   maxSizeIncrease: 2000
   circleCiStatusName: 'ci/circleci: test'
 
@@ -68,6 +68,9 @@ merge:
 
     # list of PR statuses that need to be successful
     requiredStatuses:
+      - 'ci/circleci: build'
+      - 'ci/circleci: lint'
+      - 'ci/angular: size'
       - 'google-internal-tests'
       - 'pullapprove'
 

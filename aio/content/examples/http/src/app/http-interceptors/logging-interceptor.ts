@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import {
-  HttpInterceptor, HttpHandler, HttpRequest, HttpResponse
+  HttpEvent, HttpInterceptor, HttpHandler,
+  HttpRequest, HttpResponse
 } from '@angular/common/http';
 
 // #docregion excerpt
-import { finalize, tap } from 'rxjs';
+import { finalize, tap } from 'rxjs/operators';
 import { MessageService } from '../message.service';
 
 @Injectable()
@@ -22,7 +23,7 @@ export class LoggingInterceptor implements HttpInterceptor {
           // Succeeds when there is a response; ignore other events
           next: (event) => (ok = event instanceof HttpResponse ? 'succeeded' : ''),
           // Operation failed; error is an HttpErrorResponse
-          error: (_error) => (ok = 'failed')
+          error: (error) => (ok = 'failed')
         }),
         // Log when response observable either completes or errors
         finalize(() => {

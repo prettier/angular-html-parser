@@ -10,6 +10,8 @@ import {AnimationPlayer, ɵStyleDataMap} from '@angular/animations';
 import {computeStyle} from '../../util';
 import {SpecialCasedStyles} from '../special_cased_styles';
 
+import {DOMAnimation} from './dom_animation';
+
 export class WebAnimationsPlayer implements AnimationPlayer {
   private _onDoneFns: Function[] = [];
   private _onStartFns: Function[] = [];
@@ -28,8 +30,8 @@ export class WebAnimationsPlayer implements AnimationPlayer {
   private _originalOnDoneFns: Function[] = [];
   private _originalOnStartFns: Function[] = [];
 
-  // using non-null assertion because it's re(set) by init();
-  public readonly domPlayer!: Animation;
+  // TODO(issue/24571): remove '!'.
+  public readonly domPlayer!: DOMAnimation;
   public time = 0;
 
   public parentPlayer: AnimationPlayer|null = null;
@@ -62,8 +64,8 @@ export class WebAnimationsPlayer implements AnimationPlayer {
     this._initialized = true;
 
     const keyframes = this.keyframes;
-    // @ts-expect-error overwriting a readonly property
-    this.domPlayer = this._triggerWebAnimation(this.element, keyframes, this.options);
+    (this as {domPlayer: DOMAnimation}).domPlayer =
+        this._triggerWebAnimation(this.element, keyframes, this.options);
     this._finalKeyframe = keyframes.length ? keyframes[keyframes.length - 1] : new Map();
     this.domPlayer.addEventListener('finish', () => this._onFinish());
   }
@@ -86,9 +88,10 @@ export class WebAnimationsPlayer implements AnimationPlayer {
   }
 
   /** @internal */
-  _triggerWebAnimation(element: HTMLElement, keyframes: Array<ɵStyleDataMap>, options: any):
-      Animation {
-    return element.animate(this._convertKeyframesToObject(keyframes), options);
+  _triggerWebAnimation(element: any, keyframes: Array<ɵStyleDataMap>, options: any): DOMAnimation {
+    // jscompiler doesn't seem to know animate is a native property because it's not fully
+    // supported yet across common browsers (we polyfill it for Edge/Safari) [CL #143630929]
+    return element['animate'](this._convertKeyframesToObject(keyframes), options) as DOMAnimation;
   }
 
   onStart(fn: () => void): void {
@@ -177,8 +180,7 @@ export class WebAnimationsPlayer implements AnimationPlayer {
   }
 
   getPosition(): number {
-    // tsc is complaining with TS2362 without the conversion to number
-    return +(this.domPlayer.currentTime ?? 0) / this.time;
+    return this.domPlayer.currentTime / this.time;
   }
 
   get totalTime(): number {

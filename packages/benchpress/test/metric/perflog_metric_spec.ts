@@ -62,7 +62,7 @@ function createMetric(
   if (ignoreNavigation != null) {
     providers.push({provide: PerflogMetric.IGNORE_NAVIGATION, useValue: ignoreNavigation});
   }
-  return Injector.create({providers}).get(PerflogMetric);
+  return Injector.create(providers).get(PerflogMetric);
 }
 
 describe('perflog metric', () => {
@@ -80,19 +80,18 @@ describe('perflog metric', () => {
 
     expect(
         sortedKeys(createMetric([[]], new PerfLogFeatures({render: true, gc: false})).describe()))
-        .toEqual(['pureScriptTime', 'renderTime', 'renderTimeInScript', 'scriptTime']);
+        .toEqual(['pureScriptTime', 'renderTime', 'scriptTime']);
 
     expect(sortedKeys(createMetric([[]], null!).describe())).toEqual([
-      'gcAmount', 'gcTime', 'gcTimeInScript', 'majorGcTime', 'pureScriptTime', 'renderTime',
-      'renderTimeInScript', 'scriptTime'
+      'gcAmount', 'gcTime', 'majorGcTime', 'pureScriptTime', 'renderTime', 'scriptTime'
     ]);
 
     expect(sortedKeys(createMetric([[]], new PerfLogFeatures({render: true, gc: true}), {
                         forceGc: true
                       }).describe()))
         .toEqual([
-          'forcedGcAmount', 'forcedGcTime', 'gcAmount', 'gcTime', 'gcTimeInScript', 'majorGcTime',
-          'pureScriptTime', 'renderTime', 'renderTimeInScript', 'scriptTime'
+          'forcedGcAmount', 'forcedGcTime', 'gcAmount', 'gcTime', 'majorGcTime', 'pureScriptTime',
+          'renderTime', 'scriptTime'
         ]);
 
 
@@ -529,21 +528,6 @@ describe('perflog metric', () => {
       });
     });
 
-    it('should support renderTimeInScript metric', done => {
-      aggregate([
-        eventFactory.start('script', 0),
-        eventFactory.start('render', 1),
-        eventFactory.end('render', 3),
-        eventFactory.end('script', 5),
-      ]).then((data) => {
-        expect(data['renderTimeInScript']).toBe(2);
-        expect(data['renderTime']).toBe(2);
-        expect(data['pureScriptTime']).toBe(3);
-        expect(data['scriptTime']).toBe(5);
-        done();
-      });
-    });
-
     it('should support gcTime/gcAmount metric', done => {
       aggregate([
         eventFactory.start('gc', 0, {'usedHeapSize': 2500}),
@@ -563,22 +547,6 @@ describe('perflog metric', () => {
       ]).then((data) => {
         expect(data['gcTime']).toBe(5);
         expect(data['majorGcTime']).toBe(5);
-        done();
-      });
-    });
-
-    it('should support gcTimeInScript metric', done => {
-      aggregate([
-        eventFactory.start('script', 0),
-        eventFactory.start('gc', 1, {'usedHeapSize': 2500}),
-        eventFactory.end('gc', 3, {'usedHeapSize': 1000, 'majorGc': false}),
-        eventFactory.end('script', 5),
-
-      ]).then((data) => {
-        expect(data['gcTimeInScript']).toBe(2);
-        expect(data['gcTime']).toBe(2);
-        expect(data['pureScriptTime']).toBe(3);
-        expect(data['scriptTime']).toBe(5);
         done();
       });
     });

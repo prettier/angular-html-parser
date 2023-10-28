@@ -10,7 +10,7 @@ import {Identifiers as R3} from '../r3_identifiers';
 import {convertFromMaybeForwardRefExpression, generateForwardRef, R3CompiledExpression} from '../util';
 import {R3DirectiveMetadata, R3HostMetadata, R3QueryMetadata} from '../view/api';
 import {createDirectiveType, createHostDirectivesMappingArray} from '../view/compiler';
-import {asLiteral, conditionallyCreateDirectiveBindingLiteral, DefinitionMap} from '../view/util';
+import {asLiteral, conditionallyCreateMapObjectLiteral, DefinitionMap} from '../view/util';
 
 import {R3DeclareDirectiveMetadata, R3DeclareQueryMetadata} from './api';
 import {toOptionalLiteralMap} from './util';
@@ -22,7 +22,7 @@ import {toOptionalLiteralMap} from './util';
  *
  * Do not include any prerelease in these versions as they are ignored.
  */
-const MINIMUM_PARTIAL_LINKER_VERSION = '16.1.0';
+const MINIMUM_PARTIAL_LINKER_VERSION = '14.0.0';
 
 /**
  * Compile a directive declaration defined by the `R3DirectiveMetadata`.
@@ -45,24 +45,14 @@ export function createDirectiveDefinitionMap(meta: R3DirectiveMetadata):
     DefinitionMap<R3DeclareDirectiveMetadata> {
   const definitionMap = new DefinitionMap<R3DeclareDirectiveMetadata>();
 
-  const hasTransformFunctions =
-      Object.values(meta.inputs).some(input => input.transformFunction !== null);
-  // Note: in order to allow consuming Angular libraries that have been compiled with 16.1+ in
-  // Angular 16.0, we only force a minimum version of 16.1 if input transform feature as introduced
-  // in 16.1 is actually used.
-  const minVersion = hasTransformFunctions ? MINIMUM_PARTIAL_LINKER_VERSION : '14.0.0';
-
-  definitionMap.set('minVersion', o.literal(minVersion));
+  definitionMap.set('minVersion', o.literal(MINIMUM_PARTIAL_LINKER_VERSION));
   definitionMap.set('version', o.literal('0.0.0-PLACEHOLDER'));
 
   // e.g. `type: MyDirective`
-  definitionMap.set('type', meta.type.value);
+  definitionMap.set('type', meta.internalType);
 
   if (meta.isStandalone) {
     definitionMap.set('isStandalone', o.literal(meta.isStandalone));
-  }
-  if (meta.isSignal) {
-    definitionMap.set('isSignal', o.literal(meta.isSignal));
   }
 
   // e.g. `selector: 'some-dir'`
@@ -70,8 +60,8 @@ export function createDirectiveDefinitionMap(meta: R3DirectiveMetadata):
     definitionMap.set('selector', o.literal(meta.selector));
   }
 
-  definitionMap.set('inputs', conditionallyCreateDirectiveBindingLiteral(meta.inputs, true));
-  definitionMap.set('outputs', conditionallyCreateDirectiveBindingLiteral(meta.outputs));
+  definitionMap.set('inputs', conditionallyCreateMapObjectLiteral(meta.inputs, true));
+  definitionMap.set('outputs', conditionallyCreateMapObjectLiteral(meta.outputs));
 
   definitionMap.set('host', compileHostMetadata(meta.host));
 

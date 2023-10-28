@@ -16,7 +16,7 @@ import {Directive, ElementRef, InjectionToken, Renderer2} from '@angular/core';
  * Implement this interface to create a custom form control directive
  * that integrates with Angular forms.
  *
- * @see {@link DefaultValueAccessor}
+ * @see DefaultValueAccessor
  *
  * @publicApi
  */

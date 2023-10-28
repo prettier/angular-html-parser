@@ -4,7 +4,6 @@ import { trigger, transition, state, animate, style, AnimationEvent } from '@ang
 
 // #docregion component, events1
 @Component({
-  standalone: true,
   selector: 'app-open-close',
 // #docregion trigger-wildcard1, trigger-transition
   animations: [

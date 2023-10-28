@@ -2,7 +2,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 
 @Component({
-  standalone: true,
   selector: 'app-sizer',
   template: `
   <div>

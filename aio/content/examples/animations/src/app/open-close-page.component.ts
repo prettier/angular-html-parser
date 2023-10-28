@@ -1,8 +1,6 @@
 import { Component } from '@angular/core';
-import { OpenCloseComponent } from './open-close.component';
 
 @Component({
-  standalone: true,
   selector: 'app-open-close-page',
   template: `
     <section>
@@ -12,8 +10,7 @@ import { OpenCloseComponent } from './open-close.component';
 
       <app-open-close [logging]="logging"></app-open-close>
     </section>
-  `,
-  imports: [OpenCloseComponent]
+  `
 })
 export class OpenClosePageComponent {
   logging = false;

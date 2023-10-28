@@ -14,10 +14,8 @@ import {
 } from '@angular/animations';
 
 import { Hero } from './hero';
-import { NgFor } from '@angular/common';
 
 @Component({
-  standalone: true,
   selector: 'app-hero-list-groups',
   template: `
     <ul class="heroes">
@@ -30,7 +28,6 @@ import { NgFor } from '@angular/common';
     </ul>
   `,
   styleUrls: ['./hero-list-page.component.css'],
-  imports: [NgFor],
   // #docregion animationdef
   animations: [
     trigger('flyInOut', [

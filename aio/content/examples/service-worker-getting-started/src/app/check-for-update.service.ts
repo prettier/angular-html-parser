@@ -3,7 +3,7 @@ import { SwUpdate } from '@angular/service-worker';
 import { concat, interval } from 'rxjs';
 import { first } from 'rxjs/operators';
 
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class CheckForUpdateService {
 
   constructor(appRef: ApplicationRef, updates: SwUpdate) {

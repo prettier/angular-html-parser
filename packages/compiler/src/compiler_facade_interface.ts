@@ -75,19 +75,17 @@ export type ResourceLoader = {
   get(url: string): Promise<string>|string;
 };
 
-export type InputMap = {
-  [key: string]: {
-    bindingPropertyName: string,
-    classPropertyName: string,
-    required: boolean,
-    transformFunction: InputTransformFunction,
-  };
+export type StringMap = {
+  [key: string]: string;
+};
+
+export type StringMapWithRename = {
+  [key: string]: string|[string, string];
 };
 
 export type Provider = unknown;
 export type Type = Function;
 export type OpaqueValue = unknown;
-export type InputTransformFunction = any;
 
 export enum FactoryTarget {
   Directive = 0,
@@ -167,7 +165,7 @@ export interface R3DirectiveMetadataFacade {
   host: {[key: string]: string};
   propMetadata: {[key: string]: OpaqueValue[]};
   lifecycle: {usesOnChanges: boolean;};
-  inputs: (string|{name: string, alias?: string, required?: boolean})[];
+  inputs: string[];
   outputs: string[];
   usesInheritance: boolean;
   exportAs: string[]|null;
@@ -175,7 +173,6 @@ export interface R3DirectiveMetadataFacade {
   viewQueries: R3QueryMetadataFacade[];
   isStandalone: boolean;
   hostDirectives: R3HostDirectiveMetadataFacade[]|null;
-  isSignal: boolean;
 }
 
 export interface R3ComponentMetadataFacade extends R3DirectiveMetadataFacade {
@@ -193,11 +190,7 @@ export interface R3ComponentMetadataFacade extends R3DirectiveMetadataFacade {
 export interface R3DeclareDirectiveFacade {
   selector?: string;
   type: Type;
-  inputs?: {
-    [classPropertyName: string]: string|
-    [bindingPropertyName: string,
-        classPropertyName: string, transformFunction?: InputTransformFunction]
-  };
+  inputs?: {[classPropertyName: string]: string|[string, string]};
   outputs?: {[classPropertyName: string]: string};
   host?: {
     attributes?: {[key: string]: OpaqueValue};
@@ -213,7 +206,6 @@ export interface R3DeclareDirectiveFacade {
   usesInheritance?: boolean;
   usesOnChanges?: boolean;
   isStandalone?: boolean;
-  isSignal?: boolean;
   hostDirectives?: R3HostDirectiveMetadataFacade[]|null;
 }
 

@@ -11,7 +11,7 @@ import {ParseError, ParseLocation, ParseSourceFile, ParseSourceSpan} from '../pa
 
 import {NAMED_ENTITIES} from './entities';
 import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from './interpolation_config';
-import {mergeNsAndName, TagContentType, TagDefinition} from './tags';
+import {TagContentType, TagDefinition, mergeNsAndName} from './tags';
 import {IncompleteTagOpenToken, TagOpenStartToken, Token, TokenType} from './tokens';
 
 export class TokenError extends ParseError {
@@ -89,21 +89,13 @@ export interface TokenizeOptions {
    * If true, do not convert CRLF to LF.
    */
   preserveLineEndings?: boolean;
-  /**
-   * Whether to tokenize @ block syntax. Otherwise considered text,
-   * or ICU tokens if `tokenizeExpansionForms` is enabled.
-   */
-  tokenizeBlocks?: boolean;
 
   canSelfClose?: boolean;
   allowHtmComponentClosingTags?: boolean;
 }
 
 export function tokenize(
-    source: string, url: string,
-    getTagContentType: (
-        tagName: string, prefix: string, hasParent: boolean,
-        attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
+    source: string, url: string, getTagContentType: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
     options: TokenizeOptions = {}): TokenizeResult {
   const tokenizer = new _Tokenizer(new ParseSourceFile(source, url), getTagContentType, options);
   tokenizer.tokenize();
@@ -149,24 +141,20 @@ class _Tokenizer {
   private _expansionCaseStack: TokenType[] = [];
   private _inInterpolation: boolean = false;
   private readonly _preserveLineEndings: boolean;
+  private readonly _escapedString: boolean;
   private readonly _i18nNormalizeLineEndingsInICUs: boolean;
   private _fullNameStack: string[] = [];
-  private readonly _tokenizeBlocks: boolean;
   tokens: Token[] = [];
   errors: TokenError[] = [];
   nonNormalizedIcuExpressions: Token[] = [];
 
   /**
    * @param _file The html source file being tokenized.
-   * @param _getTagContentType A function that will retrieve a tag content type for a given tag
-   *     name.
+   * @param _getTagContentType A function that will retrieve a tag content type for a given tag name.
    * @param options Configuration of the tokenization.
    */
   constructor(
-      _file: ParseSourceFile,
-      private _getTagContentType:
-          (tagName: string, prefix: string, hasParent: boolean,
-           attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
+      _file: ParseSourceFile, private _getTagContentType: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
       options: TokenizeOptions) {
     this._tokenizeIcu = options.tokenizeExpansionForms || false;
     this._interpolationConfig = options.interpolationConfig || DEFAULT_INTERPOLATION_CONFIG;
@@ -179,8 +167,8 @@ class _Tokenizer {
     this._cursor = options.escapedString ? new EscapedCharacterCursor(_file, range) :
                                            new PlainCharacterCursor(_file, range);
     this._preserveLineEndings = options.preserveLineEndings || false;
+    this._escapedString = options.escapedString || false;
     this._i18nNormalizeLineEndingsInICUs = options.i18nNormalizeLineEndingsInICUs || false;
-    this._tokenizeBlocks = options.tokenizeBlocks ?? true;
     try {
       this._cursor.init();
     } catch (e) {
@@ -225,12 +213,6 @@ class _Tokenizer {
               this._consumeTagOpen(start);
             }
           }
-        } else if (this._tokenizeBlocks && this._attemptCharCode(chars.$AT)) {
-          this._consumeBlockStart(start);
-        } else if (
-            this._tokenizeBlocks && !this._inInterpolation && !this._isInExpansionCase() &&
-            !this._isInExpansionForm() && this._attemptCharCode(chars.$RBRACE)) {
-          this._consumeBlockEnd(start);
         } else if (!(this._tokenizeIcu && this._tokenizeExpansionForm())) {
           // In (possibly interpolated) text the end of the text is given by `isTextEnd()`, while
           // the premature end of an interpolation is given by the start of a new HTML element.
@@ -244,101 +226,6 @@ class _Tokenizer {
     }
     this._beginToken(TokenType.EOF);
     this._endToken([]);
-  }
-
-  private _getBlockName(): string {
-    // This allows us to capture up something like `@else if`, but not `@ if`.
-    let spacesInNameAllowed = false;
-    const nameCursor = this._cursor.clone();
-
-    this._attemptCharCodeUntilFn(code => {
-      if (chars.isWhitespace(code)) {
-        return !spacesInNameAllowed;
-      }
-      if (isBlockNameChar(code)) {
-        spacesInNameAllowed = true;
-        return false;
-      }
-      return true;
-    });
-    return this._cursor.getChars(nameCursor).trim();
-  }
-
-  private _consumeBlockStart(start: CharacterCursor) {
-    this._beginToken(TokenType.BLOCK_OPEN_START, start);
-    const startToken = this._endToken([this._getBlockName()]);
-
-    if (this._cursor.peek() === chars.$LPAREN) {
-      // Advance past the opening paren.
-      this._cursor.advance();
-      // Capture the parameters.
-      this._consumeBlockParameters();
-      // Allow spaces before the closing paren.
-      this._attemptCharCodeUntilFn(isNotWhitespace);
-
-      if (this._attemptCharCode(chars.$RPAREN)) {
-        // Allow spaces after the paren.
-        this._attemptCharCodeUntilFn(isNotWhitespace);
-      } else {
-        startToken.type = TokenType.INCOMPLETE_BLOCK_OPEN;
-        return;
-      }
-    }
-
-    if (this._attemptCharCode(chars.$LBRACE)) {
-      this._beginToken(TokenType.BLOCK_OPEN_END);
-      this._endToken([]);
-    } else {
-      startToken.type = TokenType.INCOMPLETE_BLOCK_OPEN;
-    }
-  }
-
-  private _consumeBlockEnd(start: CharacterCursor) {
-    this._beginToken(TokenType.BLOCK_CLOSE, start);
-    this._endToken([]);
-  }
-
-  private _consumeBlockParameters() {
-    // Trim the whitespace until the first parameter.
-    this._attemptCharCodeUntilFn(isBlockParameterChar);
-
-    while (this._cursor.peek() !== chars.$RPAREN && this._cursor.peek() !== chars.$EOF) {
-      this._beginToken(TokenType.BLOCK_PARAMETER);
-      const start = this._cursor.clone();
-      let inQuote: number|null = null;
-      let openParens = 0;
-
-      // Consume the parameter until the next semicolon or brace.
-      // Note that we skip over semicolons/braces inside of strings.
-      while ((this._cursor.peek() !== chars.$SEMICOLON && this._cursor.peek() !== chars.$EOF) ||
-             inQuote !== null) {
-        const char = this._cursor.peek();
-
-        // Skip to the next character if it was escaped.
-        if (char === chars.$BACKSLASH) {
-          this._cursor.advance();
-        } else if (char === inQuote) {
-          inQuote = null;
-        } else if (inQuote === null && chars.isQuote(char)) {
-          inQuote = char;
-        } else if (char === chars.$LPAREN && inQuote === null) {
-          openParens++;
-        } else if (char === chars.$RPAREN && inQuote === null) {
-          if (openParens === 0) {
-            break;
-          } else if (openParens > 0) {
-            openParens--;
-          }
-        }
-
-        this._cursor.advance();
-      }
-
-      this._endToken([this._cursor.getChars(start)]);
-
-      // Skip to the next parameter.
-      this._attemptCharCodeUntilFn(isBlockParameterChar);
-    }
   }
 
   /**
@@ -481,8 +368,7 @@ class _Tokenizer {
   private _requireStrCaseInsensitive(chars: string) {
     const location = this._cursor.clone();
     if (!this._attemptStrCaseInsensitive(chars)) {
-      throw this._createError(
-          _unexpectedCharacterErrorMsg(this._cursor.peek()), this._cursor.getSpan(location));
+      throw this._createError(_unexpectedCharacterErrorMsg(this._cursor.peek()), this._cursor.getSpan(location));
     }
   }
 
@@ -686,13 +572,11 @@ class _Tokenizer {
       throw e;
     }
 
-    if (this._canSelfClose &&
-        this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID) {
+    if (this._canSelfClose && this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID) {
       return;
     }
 
-    const contentTokenType =
-        this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0, attrs);
+    const contentTokenType = this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0, attrs);
     this._handleFullNameStackForTagOpen(prefix, tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
@@ -981,11 +865,6 @@ class _Tokenizer {
       }
     }
 
-    if (this._tokenizeBlocks && !this._inInterpolation && !this._isInExpansion() &&
-        (this._isBlockStart() || this._cursor.peek() === chars.$RBRACE)) {
-      return true;
-    }
-
     return false;
   }
 
@@ -1008,27 +887,10 @@ class _Tokenizer {
     return false;
   }
 
-  private _isBlockStart(): boolean {
-    if (this._tokenizeBlocks && this._cursor.peek() === chars.$AT) {
-      const tmp = this._cursor.clone();
-
-      // If it is, also verify that the next character is a valid block identifier.
-      tmp.advance();
-      if (isBlockNameChar(tmp.peek())) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   private _readUntil(char: number): string {
     const start = this._cursor.clone();
     this._attemptUntilChar(char);
     return this._cursor.getChars(start);
-  }
-
-  private _isInExpansion(): boolean {
-    return this._isInExpansionCase() || this._isInExpansionForm();
   }
 
   private _isInExpansionCase(): boolean {
@@ -1058,16 +920,14 @@ class _Tokenizer {
 
   private _handleFullNameStackForTagOpen(prefix: string, tagName: string) {
     const fullName = mergeNsAndName(prefix, tagName);
-    if (this._fullNameStack.length === 0 ||
-        this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+    if (this._fullNameStack.length === 0 || this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
       this._fullNameStack.push(fullName);
     }
   }
 
   private _handleFullNameStackForTagClose(prefix: string, tagName: string) {
     const fullName = mergeNsAndName(prefix, tagName);
-    if (this._fullNameStack.length !== 0 &&
-        this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+    if (this._fullNameStack.length !== 0 && this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
       this._fullNameStack.pop();
     }
   }
@@ -1106,14 +966,6 @@ function compareCharCodeCaseInsensitive(code1: number, code2: number): boolean {
 
 function toUpperCaseCharCode(code: number): number {
   return code >= chars.$a && code <= chars.$z ? code - chars.$a + chars.$A : code;
-}
-
-function isBlockNameChar(code: number): boolean {
-  return chars.isAsciiLetter(code) || chars.isDigit(code) || code === chars.$_;
-}
-
-function isBlockParameterChar(code: number): boolean {
-  return code !== chars.$SEMICOLON && isNotWhitespace(code);
 }
 
 function mergeTextTokens(srcTokens: Token[]): Token[] {

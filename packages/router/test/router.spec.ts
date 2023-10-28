@@ -9,7 +9,7 @@
 import {Location} from '@angular/common';
 import {EnvironmentInjector} from '@angular/core';
 import {inject, TestBed} from '@angular/core/testing';
-import {RouterModule} from '@angular/router';
+import {RouterTestingModule} from '@angular/router/testing';
 import {of} from 'rxjs';
 
 import {ChildActivationStart} from '../src/events';
@@ -31,7 +31,7 @@ describe('Router', () => {
     class TestComponent {}
 
     beforeEach(() => {
-      TestBed.configureTestingModule({imports: [RouterModule.forRoot([])]});
+      TestBed.configureTestingModule({imports: [RouterTestingModule]});
     });
 
     it('should copy config to avoid mutations of user-provided objects', () => {
@@ -67,7 +67,7 @@ describe('Router', () => {
     class NewRootComponent {}
 
     beforeEach(() => {
-      TestBed.configureTestingModule({imports: [RouterModule.forRoot([])]});
+      TestBed.configureTestingModule({imports: [RouterTestingModule]});
     });
 
     it('should not change root route when updating the root component', () => {
@@ -82,20 +82,20 @@ describe('Router', () => {
 
   describe('setUpLocationChangeListener', () => {
     beforeEach(() => {
-      TestBed.configureTestingModule({imports: [RouterModule.forRoot([])]});
+      TestBed.configureTestingModule({imports: [RouterTestingModule]});
     });
 
     it('should be idempotent', inject([Router, Location], (r: Router, location: Location) => {
          r.setUpLocationChangeListener();
-         const a = (<any>r).nonRouterCurrentEntryChangeSubscription;
+         const a = (<any>r).locationSubscription;
          r.setUpLocationChangeListener();
-         const b = (<any>r).nonRouterCurrentEntryChangeSubscription;
+         const b = (<any>r).locationSubscription;
 
          expect(a).toBe(b);
 
          r.dispose();
          r.setUpLocationChangeListener();
-         const c = (<any>r).nonRouterCurrentEntryChangeSubscription;
+         const c = (<any>r).locationSubscription;
 
          expect(c).not.toBe(b);
        }));
@@ -125,7 +125,7 @@ describe('Router', () => {
 
     beforeEach(() => {
       TestBed.configureTestingModule({
-        imports: [RouterModule],
+        imports: [RouterTestingModule],
         providers: [
           Logger, provideTokenLogger(CA_CHILD), provideTokenLogger(CA_CHILD_FALSE, false),
           provideTokenLogger(CA_CHILD_REDIRECT, serializer.parse('/canActivate_child_redirect')),

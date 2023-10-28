@@ -1,6 +1,5 @@
 load("//tools:defaults.bzl", "api_golden_test_npm_package", "ng_package", "ts_library")
 load("//packages/bazel:index.bzl", "types_bundle")
-load("@npm//@angular/build-tooling/bazel/api-gen:generate_api_docs.bzl", "generate_api_docs")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -39,7 +38,7 @@ ng_package(
     ],
     skip_type_bundling = [
         # For the primary entry-point we disable automatic type bundling because API extractor
-        # does not properly handle module augmentation.
+        # does not properly handle module augumentation.
         # To workaround this issue, type bundling is done as a separate step for all types
         # except the main `index.d.ts` file which contains the module augmentation. The main
         # file is reference in the package.json and also imports the bundle types. The bundled
@@ -78,11 +77,4 @@ filegroup(
         "*.ts",
         "src/**/*.ts",
     ]) + ["PACKAGE.md"],
-)
-
-generate_api_docs(
-    name = "localize_docs",
-    srcs = [":files_for_docgen"],
-    entry_point = ":index.ts",
-    module_name = "@angular/localize",
 )

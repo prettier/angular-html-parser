@@ -15,13 +15,7 @@
     {
       "name": "browser-target",
       "type": "string",
-      "deprecated": "Use 'buildTarget' instead.",
       "description": "A browser builder target to serve in the format of `project:target[:configuration]`. You can also pass in more than one configuration name as a comma-separated list. Example: `project:target:production,staging`."
-    },
-    {
-      "name": "build-target",
-      "type": "string",
-      "description": "A build builder target to serve in the format of `project:target[:configuration]`. You can also pass in more than one configuration name as a comma-separated list. Example: `project:target:production,staging`."
     },
     {
       "name": "configuration",
@@ -36,12 +30,6 @@
       "type": "boolean",
       "default": false,
       "description": "Don't verify connected clients are part of allowed hosts."
-    },
-    {
-      "name": "force-esbuild",
-      "type": "boolean",
-      "default": false,
-      "description": "Force the development server to use the 'browser-esbuild' builder when building. This is a developer preview option for the esbuild-based build system."
     },
     {
       "name": "help",

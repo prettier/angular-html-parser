@@ -61,7 +61,6 @@ export function parse(
       interpolationConfig: undefined,
       canSelfClose,
       allowHtmComponentClosingTags,
-      tokenizeBlocks: false,
     },
     isTagNameCaseSensitive,
     getTagContentType,

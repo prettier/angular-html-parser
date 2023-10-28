@@ -1,15 +1,20 @@
 // #docplaster
 // #docregion
-import { timer } from 'rxjs';
+import { of, pipe, range, throwError, timer, zip } from 'rxjs';
 import { ajax } from 'rxjs/ajax';
-import { retry } from 'rxjs/operators';
+import { map, mergeMap, retryWhen } from 'rxjs/operators';
 
-export function backoff(maxTries: number, initialDelay: number) {
-    return retry({
-        count: maxTries,
-        delay: (error, retryCount) => timer(initialDelay * retryCount ** 2),
-      });
-  }
+export function backoff(maxTries: number, delay: number) {
+  return pipe(
+    retryWhen(attempts =>
+      zip(range(1, maxTries + 1), attempts).pipe(
+        mergeMap(([i, err]) => (i > maxTries) ? throwError(err) : of(i)),
+        map(i => i * i),
+        mergeMap(v => timer(v * delay)),
+      ),
+    ),
+  );
+}
 
 // #enddocregion
 /*

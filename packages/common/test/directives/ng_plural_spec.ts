@@ -162,7 +162,7 @@ import {expect} from '@angular/platform-browser/testing/src/matchers';
 
 @Injectable()
 class TestLocalization extends NgLocalization {
-  override getPluralCategory(value: number): string {
+  getPluralCategory(value: number): string {
     if (value > 1 && value < 4) {
       return 'few';
     }

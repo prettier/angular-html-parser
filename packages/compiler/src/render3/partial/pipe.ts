@@ -46,7 +46,7 @@ export function createPipeDefinitionMap(meta: R3PipeMetadata):
   definitionMap.set('ngImport', o.importExpr(R3.core));
 
   // e.g. `type: MyPipe`
-  definitionMap.set('type', meta.type.value);
+  definitionMap.set('type', meta.internalType);
 
   if (meta.isStandalone) {
     definitionMap.set('isStandalone', o.literal(meta.isStandalone));

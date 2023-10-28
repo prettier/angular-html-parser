@@ -76,8 +76,8 @@ export const enum TNodeType {
   // if `TNode.type` is one of several choices.
 
   // See: https://github.com/microsoft/TypeScript/issues/35875 why we can't refer to existing enum.
-  AnyRNode = 0b11,        // Text | Element
-  AnyContainer = 0b1100,  // Container | ElementContainer
+  AnyRNode = 0b11,        // Text | Element,
+  AnyContainer = 0b1100,  // Container | ElementContainer, // See:
 }
 
 /**
@@ -94,22 +94,6 @@ export function toTNodeTypeAsString(tNodeType: TNodeType): string {
   (tNodeType & TNodeType.Icu) && (text += '|IcuContainer');
   (tNodeType & TNodeType.Placeholder) && (text += '|Placeholder');
   return text.length > 0 ? text.substring(1) : text;
-}
-
-/**
- * Helper function to detect if a given value matches a `TNode` shape.
- *
- * The logic uses the `insertBeforeIndex` and its possible values as
- * a way to differentiate a TNode shape from other types of objects
- * within the `TView.data`. This is not a perfect check, but it can
- * be a reasonable differentiator, since we control the shapes of objects
- * within `TView.data`.
- */
-export function isTNodeShape(value: unknown): value is TNode {
-  return value != null && typeof value === 'object' &&
-      ((value as TNode).insertBeforeIndex === null ||
-       typeof (value as TNode).insertBeforeIndex === 'number' ||
-       Array.isArray((value as TNode).insertBeforeIndex));
 }
 
 /**
@@ -131,7 +115,7 @@ export const enum TNodeFlags {
   /** Bit #5 - This bit is set if the node has any "style" inputs */
   hasStyleInput = 0x10,
 
-  /** Bit #6 - This bit is set if the node has been detached by i18n */
+  /** Bit #6 This bit is set if the node has been detached by i18n */
   isDetached = 0x20,
 
   /**
@@ -141,11 +125,6 @@ export const enum TNodeFlags {
    * that actually have directives with host bindings.
    */
   hasHostBindings = 0x40,
-
-  /**
-   * Bit #8 - This bit is set if the node is a located inside skip hydration block.
-   */
-  inSkipHydrationBlock = 0x80,
 }
 
 /**
@@ -553,26 +532,32 @@ export interface TNode {
   outputs: PropertyAliases|null;
 
   /**
-   * The TView attached to this node.
+   * The TView or TViews attached to this node.
+   *
+   * If this TNode corresponds to an LContainer with inline views, the container will
+   * need to store separate static data for each of its view blocks (TView[]). Otherwise,
+   * nodes in inline views with the same index as nodes in their parent views will overwrite
+   * each other, as they are in the same template.
+   *
+   * Each index in this array corresponds to the static data for a certain
+   * view. So if you had V(0) and V(1) in a container, you might have:
+   *
+   * [
+   *   [{tagName: 'div', attrs: ...}, null],     // V(0) TView
+   *   [{tagName: 'button', attrs ...}, null]    // V(1) TView
    *
    * If this TNode corresponds to an LContainer with a template (e.g. structural
    * directive), the template's TView will be stored here.
    *
-   * If this TNode corresponds to an element, tView will be `null`.
+   * If this TNode corresponds to an element, tViews will be null .
    */
-  tView: TView|null;
+  tViews: TView|TView[]|null;
 
   /**
    * The next sibling node. Necessary so we can propagate through the root nodes of a view
    * to insert them or remove them from the DOM.
    */
   next: TNode|null;
-
-  /**
-   * The previous sibling node.
-   * This simplifies operations when we need a pointer to the previous node.
-   */
-  prev: TNode|null;
 
   /**
    * The next projected sibling. Since in Angular content projection works on the node-by-node
@@ -783,7 +768,7 @@ export interface TElementNode extends TNode {
    * retrieved using viewData[HOST_NODE]).
    */
   parent: TElementNode|TElementContainerNode|null;
-  tView: null;
+  tViews: null;
 
   /**
    * If this is a component TNode with projection, this will be an array of projected
@@ -809,7 +794,7 @@ export interface TTextNode extends TNode {
    * retrieved using LView.node).
    */
   parent: TElementNode|TElementContainerNode|null;
-  tView: null;
+  tViews: null;
   projection: null;
 }
 
@@ -831,7 +816,7 @@ export interface TContainerNode extends TNode {
    * - They are dynamically created
    */
   parent: TElementNode|TElementContainerNode|null;
-  tView: TView|null;
+  tViews: TView|TView[]|null;
   projection: null;
   value: null;
 }
@@ -842,7 +827,7 @@ export interface TElementContainerNode extends TNode {
   index: number;
   child: TElementNode|TTextNode|TContainerNode|TElementContainerNode|TProjectionNode|null;
   parent: TElementNode|TElementContainerNode|null;
-  tView: null;
+  tViews: null;
   projection: null;
 }
 
@@ -852,7 +837,7 @@ export interface TIcuContainerNode extends TNode {
   index: number;
   child: null;
   parent: TElementNode|TElementContainerNode|null;
-  tView: null;
+  tViews: null;
   projection: null;
   value: TIcu;
 }
@@ -867,7 +852,7 @@ export interface TProjectionNode extends TNode {
    * retrieved using LView.node).
    */
   parent: TElementNode|TElementContainerNode|null;
-  tView: null;
+  tViews: null;
 
   /** Index of the projection node. (See TNode.projection for more info.) */
   projection: number;
@@ -935,6 +920,10 @@ export type InitialInputData = (InitialInputs|null)[];
  * e.g. ['role-min', 'minified-input', 'button']
  */
 export type InitialInputs = string[];
+
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+export const unusedValueExportToPlacateAjd = 1;
 
 /**
  * Type representing a set of TNodes that can have local refs (`#foo`) placed on them.

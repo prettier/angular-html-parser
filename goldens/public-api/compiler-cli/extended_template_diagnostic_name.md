@@ -7,8 +7,6 @@
 // @public
 export enum ExtendedTemplateDiagnosticName {
     // (undocumented)
-    INTERPOLATED_SIGNAL_NOT_INVOKED = "interpolatedSignalNotInvoked",
-    // (undocumented)
     INVALID_BANANA_IN_BOX = "invalidBananaInBox",
     // (undocumented)
     MISSING_CONTROL_FLOW_DIRECTIVE = "missingControlFlowDirective",
@@ -18,8 +16,6 @@ export enum ExtendedTemplateDiagnosticName {
     NULLISH_COALESCING_NOT_NULLABLE = "nullishCoalescingNotNullable",
     // (undocumented)
     OPTIONAL_CHAIN_NOT_NULLABLE = "optionalChainNotNullable",
-    // (undocumented)
-    SKIP_HYDRATION_NOT_STATIC = "skipHydrationNotStatic",
     // (undocumented)
     SUFFIX_NOT_SUPPORTED = "suffixNotSupported",
     // (undocumented)

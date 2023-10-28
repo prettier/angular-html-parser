@@ -1,12 +1,9 @@
 // #docregion
-import {Component} from '@angular/core';
-import {HighlightDirective} from './highlight.directive';
+import { Component } from '@angular/core';
 
 @Component({
-  standalone: true,
   selector: 'app-root',
-  templateUrl: './app.component.html',
-  imports: [HighlightDirective],
+  templateUrl: './app.component.html'
 })
 // #docregion class
 export class AppComponent {

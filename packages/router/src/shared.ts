@@ -22,12 +22,12 @@ export const PRIMARY_OUTLET = 'primary';
  * static string or `Route.resolve` if anything else. This allows us to reuse the existing route
  * data/resolvers to support the title feature without new instrumentation in the `Router` pipeline.
  */
-export const RouteTitleKey = /* @__PURE__ */ Symbol('RouteTitle');
+export const RouteTitleKey = Symbol('RouteTitle');
 
 /**
  * A collection of matrix and query URL parameters.
- * @see {@link convertToParamMap}
- * @see {@link ParamMap}
+ * @see `convertToParamMap()`
+ * @see `ParamMap`
  *
  * @publicApi
  */
@@ -127,8 +127,8 @@ export function convertToParamMap(params: Params): ParamMap {
  * @param segmentGroup The current segment group being matched
  * @param route The `Route` to match against.
  *
- * @see {@link UrlMatchResult}
- * @see {@link Route}
+ * @see UrlMatchResult
+ * @see Route
  *
  * @returns The resulting match information or `null` if the `route` should not match.
  * @publicApi

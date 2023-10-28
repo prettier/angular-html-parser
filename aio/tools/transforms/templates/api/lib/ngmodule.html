@@ -6,10 +6,10 @@
   <li>
     {%- if ngModule.path %}
     <a href="{$ ngModule.path $}">
-      <code>{$ ngModule.name | escape $}</code>
+      <code-example language="ts" hideCopy="true" class="no-box">{$ ngModule.name | escape $}</code-example>
     </a>
     {%- else %}
-    <code>'{$ ngModule | escape $}'</code>
+    <code-example language="ts" hideCopy="true" class="no-box">'{$ ngModule | escape $}'</code-example>
     {%- endif %}
   </li>
   {%- endfor %}

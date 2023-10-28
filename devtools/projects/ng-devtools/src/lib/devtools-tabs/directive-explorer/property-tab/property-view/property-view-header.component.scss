@@ -14,26 +14,14 @@ mat-toolbar {
   line-height: 10px;
 }
 
-button {
-  padding: 0;
-  background: none;
-  border: none;
-  height: 24px;
-  width: 24px;
-  cursor: pointer;
-  opacity: 0.5;
-
-  &:hover {
-    opacity: 0.75;
-  }
-
-  &:active {
-    opacity: 1;
-  }
+.button {
+  height: 20px;
+  width: 20px;
+  float: right;
 }
 
 :host-context(.dark-theme) {
-  button {
-    color: #fff;
+  .mat-icon-button {
+    fill: #fff;
   }
 }

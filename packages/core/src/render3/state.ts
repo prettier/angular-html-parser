@@ -14,7 +14,7 @@ import {DirectiveDef} from './interfaces/definition';
 import {TNode, TNodeType} from './interfaces/node';
 import {CONTEXT, DECLARATION_VIEW, HEADER_OFFSET, LView, OpaqueViewState, T_HOST, TData, TVIEW, TView, TViewType} from './interfaces/view';
 import {MATH_ML_NAMESPACE, SVG_NAMESPACE} from './namespaces';
-import {getTNode, walkUpViews} from './util/view_utils';
+import {getTNode} from './util/view_utils';
 
 
 /**
@@ -172,24 +172,11 @@ interface InstructionState {
    * ```
    */
   bindingsEnabled: boolean;
-
-  /**
-   * Stores the root TNode that has the 'ngSkipHydration' attribute on it for later reference.
-   *
-   * Example:
-   * ```
-   * <my-comp ngSkipHydration>
-   *   Should reference this root node
-   * </my-comp>
-   * ```
-   */
-  skipHydrationRootTNode: TNode|null;
 }
 
 const instructionState: InstructionState = {
   lFrame: createLFrame(null),
   bindingsEnabled: true,
-  skipHydrationRootTNode: null,
 };
 
 /**
@@ -228,22 +215,6 @@ export function getBindingsEnabled(): boolean {
   return instructionState.bindingsEnabled;
 }
 
-/**
- * Returns true if currently inside a skip hydration block.
- * @returns boolean
- */
-export function isInSkipHydrationBlock(): boolean {
-  return instructionState.skipHydrationRootTNode !== null;
-}
-
-/**
- * Returns true if this is the root TNode of the skip hydration block.
- * @param tNode the current TNode
- * @returns boolean
- */
-export function isSkipHydrationRootTNode(tNode: TNode): boolean {
-  return instructionState.skipHydrationRootTNode === tNode;
-}
 
 /**
  * Enables directive matching on elements.
@@ -269,14 +240,6 @@ export function ɵɵenableBindings(): void {
 }
 
 /**
- * Sets a flag to specify that the TNode is in a skip hydration block.
- * @param tNode the current TNode
- */
-export function enterSkipHydrationBlock(tNode: TNode): void {
-  instructionState.skipHydrationRootTNode = tNode;
-}
-
-/**
  * Disables directive matching on element.
  *
  *  * Example:
@@ -297,13 +260,6 @@ export function enterSkipHydrationBlock(tNode: TNode): void {
  */
 export function ɵɵdisableBindings(): void {
   instructionState.bindingsEnabled = false;
-}
-
-/**
- * Clears the root skip hydration node when leaving a skip hydration block.
- */
-export function leaveSkipHydrationBlock(): void {
-  instructionState.skipHydrationRootTNode = null;
 }
 
 /**
@@ -699,6 +655,18 @@ export function nextContextImpl<T = any>(level: number): T {
   return contextLView[CONTEXT] as unknown as T;
 }
 
+function walkUpViews(nestingLevel: number, currentView: LView): LView {
+  while (nestingLevel > 0) {
+    ngDevMode &&
+        assertDefined(
+            currentView[DECLARATION_VIEW],
+            'Declaration view should be defined if nesting level is greater than 0.');
+    currentView = currentView[DECLARATION_VIEW]!;
+    nestingLevel--;
+  }
+  return currentView;
+}
+
 /**
  * Gets the currently selected element index.
  *
@@ -773,22 +741,4 @@ export function namespaceHTMLInternal() {
 
 export function getNamespace(): string|null {
   return instructionState.lFrame.currentNamespace;
-}
-
-let _wasLastNodeCreated = true;
-
-/**
- * Retrieves a global flag that indicates whether the most recent DOM node
- * was created or hydrated.
- */
-export function wasLastNodeCreated(): boolean {
-  return _wasLastNodeCreated;
-}
-
-/**
- * Sets a global flag to indicate whether the most recent DOM node
- * was created or hydrated.
- */
-export function lastNodeWasCreated(flag: boolean): void {
-  _wasLastNodeCreated = flag;
 }

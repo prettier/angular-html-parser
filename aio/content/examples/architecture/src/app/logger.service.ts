@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-@Injectable({providedIn: 'root'})
+@Injectable()
 // #docregion class
 export class Logger {
   log(msg: any)   { console.log(msg); }

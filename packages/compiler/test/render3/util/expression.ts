@@ -138,7 +138,6 @@ class ExpressionSourceHumanizer extends e.RecursiveAstVisitor implements t.Visit
   }
   visitContent(ast: t.Content) {}
   visitText(ast: t.Text) {}
-  visitUnknownBlock(block: t.UnknownBlock) {}
   visitIcu(ast: t.Icu) {
     for (const key of Object.keys(ast.vars)) {
       ast.vars[key].visit(this);
@@ -146,60 +145,6 @@ class ExpressionSourceHumanizer extends e.RecursiveAstVisitor implements t.Visit
     for (const key of Object.keys(ast.placeholders)) {
       ast.placeholders[key].visit(this);
     }
-  }
-
-  visitDeferredBlock(deferred: t.DeferredBlock) {
-    deferred.visitAll(this);
-  }
-
-  visitDeferredTrigger(trigger: t.DeferredTrigger): void {
-    if (trigger instanceof t.BoundDeferredTrigger) {
-      this.recordAst(trigger.value);
-    }
-  }
-
-  visitDeferredBlockPlaceholder(block: t.DeferredBlockPlaceholder) {
-    t.visitAll(this, block.children);
-  }
-
-  visitDeferredBlockError(block: t.DeferredBlockError) {
-    t.visitAll(this, block.children);
-  }
-
-  visitDeferredBlockLoading(block: t.DeferredBlockLoading) {
-    t.visitAll(this, block.children);
-  }
-
-  visitSwitchBlock(block: t.SwitchBlock) {
-    block.expression.visit(this);
-    t.visitAll(this, block.cases);
-  }
-
-  visitSwitchBlockCase(block: t.SwitchBlockCase) {
-    block.expression?.visit(this);
-    t.visitAll(this, block.children);
-  }
-
-  visitForLoopBlock(block: t.ForLoopBlock) {
-    block.item.visit(this);
-    t.visitAll(this, Object.values(block.contextVariables));
-    block.expression.visit(this);
-    t.visitAll(this, block.children);
-    block.empty?.visit(this);
-  }
-
-  visitForLoopBlockEmpty(block: t.ForLoopBlockEmpty) {
-    t.visitAll(this, block.children);
-  }
-
-  visitIfBlock(block: t.IfBlock) {
-    t.visitAll(this, block.branches);
-  }
-
-  visitIfBlockBranch(block: t.IfBlockBranch) {
-    block.expression?.visit(this);
-    block.expressionAlias?.visit(this);
-    t.visitAll(this, block.children);
   }
 }
 

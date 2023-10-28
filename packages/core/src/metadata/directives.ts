@@ -148,19 +148,13 @@ export interface Directive {
    * Enumerates the set of data-bound input properties for a directive
    *
    * Angular automatically updates input properties during change detection.
-   * The `inputs` property accepts either strings or object literals that configure the directive
-   * properties that should be exposed as inputs.
+   * The `inputs` property defines a set of `directiveProperty` to `bindingProperty`
+   * configuration:
    *
-   * When an object literal is passed in, the `name` property indicates which property on the
-   * class the input should write to, while the `alias` determines the name under
-   * which the input will be available in template bindings. The `required` property indicates that
-   * the input is required which will trigger a compile-time error if it isn't passed in when the
-   * directive is used.
+   * - `directiveProperty` specifies the component property where the value is written.
+   * - `bindingProperty` specifies the DOM property where the value is read from.
    *
-   * When a string is passed into the `inputs` array, it can have a format of `'name'` or
-   * `'name: alias'` where `name` is the property on the class that the directive should write
-   * to, while the `alias` determines the name under which the input will be available in
-   * template bindings. String-based input definitions are assumed to be optional.
+   * When `bindingProperty` is not provided, it is assumed to be equal to `directiveProperty`.
    *
    * @usageNotes
    *
@@ -169,7 +163,7 @@ export interface Directive {
    * ```typescript
    * @Component({
    *   selector: 'bank-account',
-   *   inputs: ['bankName', {name: 'id', alias: 'account-id'}],
+   *   inputs: ['bankName', 'id: account-id'],
    *   template: `
    *     Bank Name: {{bankName}}
    *     Account Id: {{id}}
@@ -182,12 +176,7 @@ export interface Directive {
    * ```
    *
    */
-  inputs?: ({
-    name: string,
-    alias?: string,
-    required?: boolean,
-    transform?: (value: any) => any,
-  }|string)[];
+  inputs?: string[];
 
   /**
    * Enumerates the set of event-bound output properties.
@@ -195,18 +184,18 @@ export interface Directive {
    * When an output property emits an event, an event handler attached to that event
    * in the template is invoked.
    *
-   * The `outputs` property defines a set of `directiveProperty` to `alias`
+   * The `outputs` property defines a set of `directiveProperty` to `bindingProperty`
    * configuration:
    *
    * - `directiveProperty` specifies the component property that emits events.
-   * - `alias` specifies the DOM property the event handler is attached to.
+   * - `bindingProperty` specifies the DOM property the event handler is attached to.
    *
    * @usageNotes
    *
    * ```typescript
    * @Component({
    *   selector: 'child-dir',
-   *   outputs: [ 'bankNameChange' ],
+   *   outputs: [ 'bankNameChange' ]
    *   template: `<input (input)="bankNameChange.emit($event.target.value)" />`
    * })
    * class ChildDir {
@@ -308,7 +297,7 @@ export interface Directive {
    * If a binding changes, Angular updates the directive's host element.
    *
    * When the key is a property of the host element, the property value is
-   * propagated to the specified DOM property.
+   * the propagated to the specified DOM property.
    *
    * When the key is a static attribute in the DOM, the attribute value
    * is propagated to the specified property in the host element.
@@ -341,13 +330,6 @@ export interface Directive {
    * guide](guide/standalone-components).
    */
   standalone?: boolean;
-
-  /**
-   * // TODO(signals): Remove internal and add public documentation
-   *
-   * @internal
-   */
-  signals?: boolean;
 
   /**
    * Standalone directives that should be applied to the host whenever the directive is matched.
@@ -555,7 +537,6 @@ export interface Component extends Directive {
    * SystemJS exposes the `__moduleName` variable within each module.
    * In CommonJS, this can  be set to `module.id`.
    *
-   * @deprecated This option does not have any effect. Will be removed in Angular v17.
    */
   moduleId?: string;
 
@@ -574,13 +555,8 @@ export interface Component extends Directive {
   template?: string;
 
   /**
-   * One relative paths or an absolute URL for files containing CSS stylesheet to use
+   * One or more relative paths or absolute URLs for files containing CSS stylesheets to use
    * in this component.
-   */
-  styleUrl?: string;
-
-  /**
-   * Relative paths or absolute URLs for files containing CSS stylesheets to use in this component.
    */
   styleUrls?: string[];
 
@@ -588,7 +564,7 @@ export interface Component extends Directive {
    * One or more inline CSS stylesheets to use
    * in this component.
    */
-  styles?: string|string[];
+  styles?: string[];
 
   /**
    * One or more animation `trigger()` calls, containing
@@ -621,6 +597,15 @@ export interface Component extends Directive {
   interpolation?: [string, string];
 
   /**
+   * A set of components that should be compiled along with
+   * this component. For each component listed here,
+   * Angular creates a {@link ComponentFactory} and stores it in the
+   * {@link ComponentFactoryResolver}.
+   * @deprecated Since 9.0.0. With Ivy, this property is no longer necessary.
+   */
+  entryComponents?: Array<Type<any>|any[]>;
+
+  /**
    * True to preserve or false to remove potentially superfluous whitespace characters
    * from the compiled template. Whitespace characters are those matching the `\s`
    * character class in JavaScript regular expressions. Default is false, unless
@@ -637,12 +622,6 @@ export interface Component extends Directive {
    * guide](guide/standalone-components).
    */
   standalone?: boolean;
-
-  /**
-   * // TODO(signals): Remove internal and add public documentation.
-   * @internal
-   */
-  signals?: boolean;
 
   /**
    * The imports property specifies the standalone component's template dependencies — those
@@ -779,26 +758,20 @@ export interface InputDecorator {
    * one of which is given a special binding name.
    *
    * ```typescript
-   * import { Component, Input, numberAttribute, booleanAttribute } from '@angular/core';
    * @Component({
    *   selector: 'bank-account',
    *   template: `
    *     Bank Name: {{bankName}}
    *     Account Id: {{id}}
-   *     Account Status: {{status ? 'Active' : 'InActive'}}
    *   `
    * })
    * class BankAccount {
    *   // This property is bound using its original name.
-   *   // Defining argument required as true inside the Input Decorator
-   *   // makes this property deceleration as mandatory
-   *   @Input({ required: true }) bankName!: string;
-   *   // Argument alias makes this property value is bound to a different property name
+   *   @Input() bankName: string;
+   *   // this property value is bound to a different property name
    *   // when this component is instantiated in a template.
-   *   // Argument transform convert the input value from string to number
-   *   @Input({ alias:'account-id', transform: numberAttribute }) id: number;
-   *   // Argument transform the input value from string to boolean
-   *   @Input({ transform: booleanAttribute }) status: boolean;
+   *   @Input('account-id') id: string;
+   *
    *   // this property is not bound, and is not automatically updated by Angular
    *   normalizedBankName: string;
    * }
@@ -806,7 +779,7 @@ export interface InputDecorator {
    * @Component({
    *   selector: 'app',
    *   template: `
-   *     <bank-account bankName="RBC" account-id="4747" status="true"></bank-account>
+   *     <bank-account bankName="RBC" account-id="4747"></bank-account>
    *   `
    * })
    * class App {}
@@ -814,8 +787,8 @@ export interface InputDecorator {
    *
    * @see [Input and Output properties](guide/inputs-outputs)
    */
-  (arg?: string|Input): any;
-  new(arg?: string|Input): any;
+  (bindingPropertyName?: string): any;
+  new(bindingPropertyName?: string): any;
 }
 
 /**
@@ -827,17 +800,7 @@ export interface Input {
   /**
    * The name of the DOM property to which the input property is bound.
    */
-  alias?: string;
-
-  /**
-   * Whether the input is required for the directive to function.
-   */
-  required?: boolean;
-
-  /**
-   * Function with which to transform the input value before assigning it to the directive instance.
-   */
-  transform?: (value: any) => any;
+  bindingPropertyName?: string;
 }
 
 /**
@@ -845,12 +808,7 @@ export interface Input {
  * @publicApi
  */
 export const Input: InputDecorator =
-    makePropDecorator('Input', (arg?: string|{alias?: string, required?: boolean}) => {
-      if (!arg) {
-        return {};
-      }
-      return typeof arg === 'string' ? {alias: arg} : arg;
-    });
+    makePropDecorator('Input', (bindingPropertyName?: string) => ({bindingPropertyName}));
 
 /**
  * Type of the Output decorator / constructor function.
@@ -874,8 +832,8 @@ export interface OutputDecorator {
    * @see [Input and Output properties](guide/inputs-outputs)
    *
    */
-  (alias?: string): any;
-  new(alias?: string): any;
+  (bindingPropertyName?: string): any;
+  new(bindingPropertyName?: string): any;
 }
 
 /**
@@ -887,14 +845,15 @@ export interface Output {
   /**
    * The name of the DOM property to which the output property is bound.
    */
-  alias?: string;
+  bindingPropertyName?: string;
 }
 
 /**
  * @Annotation
  * @publicApi
  */
-export const Output: OutputDecorator = makePropDecorator('Output', (alias?: string) => ({alias}));
+export const Output: OutputDecorator =
+    makePropDecorator('Output', (bindingPropertyName?: string) => ({bindingPropertyName}));
 
 
 
@@ -905,35 +864,23 @@ export const Output: OutputDecorator = makePropDecorator('Output', (alias?: stri
  */
 export interface HostBindingDecorator {
   /**
-   * Decorator that marks a DOM property or an element class, style or attribute as a host-binding
-   * property and supplies configuration metadata. Angular automatically checks host bindings during
-   * change detection, and if a binding changes it updates the host element of the directive.
+   * Decorator that marks a DOM property as a host-binding property and supplies configuration
+   * metadata.
+   * Angular automatically checks host property bindings during change detection, and
+   * if a binding changes it updates the host element of the directive.
    *
    * @usageNotes
    *
    * The following example creates a directive that sets the `valid` and `invalid`
-   * class, a style color, and an id on the DOM element that has an `ngModel` directive on it.
+   * properties on the DOM element that has an `ngModel` directive on it.
    *
    * ```typescript
    * @Directive({selector: '[ngModel]'})
    * class NgModelStatus {
    *   constructor(public control: NgModel) {}
-   *   // class bindings
    *   @HostBinding('class.valid') get valid() { return this.control.valid; }
    *   @HostBinding('class.invalid') get invalid() { return this.control.invalid; }
-   *
-   *   // style binding
-   *   @HostBinding('style.color') get color() { return this.control.valid ? 'green': 'red'; }
-   *
-   *   // style binding also supports a style unit extension
-   *   @HostBinding('style.width.px') @Input() width: number = 500;
-   *
-   *   // attribute binding
-   *   @HostBinding('attr.aria-required')
-   *   @Input() required: boolean = false;
-   *
-   *   // property binding
-   *   @HostBinding('id') get id() { return this.control.value?.length ? 'odd':  'even'; }
+   * }
    *
    * @Component({
    *   selector: 'app',
@@ -957,10 +904,6 @@ export interface HostBindingDecorator {
 export interface HostBinding {
   /**
    * The DOM property that is bound to a data property.
-   * This field also accepts:
-   *   * classes, prefixed by `class.`
-   *   * styles, prefixed by `style.`
-   *   * attributes, prefixed by `attr.`
    */
   hostPropertyName?: string;
 }

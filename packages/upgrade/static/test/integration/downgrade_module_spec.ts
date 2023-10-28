@@ -608,8 +608,7 @@ withEachNg1Version(() => {
                    .directive(
                        'ng2', downgradeComponent({component: Ng2AComponent, propagateDigest}))
                    .run([
-                     '$rootScope',
-                     ($rootScope: angular.IRootScopeService) => $rootScope['value'] = 0
+                     '$rootScope', ($rootScope: angular.IRootScopeService) => $rootScope.value = 0
                    ]);
 
            const element = html('<div><ng2 [value]="value" ng-if="loadNg2"></ng2></div>');
@@ -798,8 +797,8 @@ withEachNg1Version(() => {
                    .run([
                      '$rootScope',
                      ($rootScope: angular.IRootScopeService) => {
-                       $rootScope['attrVal'] = 'bar';
-                       $rootScope['propVal'] = 'bar';
+                       $rootScope.attrVal = 'bar';
+                       $rootScope.propVal = 'bar';
                      }
                    ]);
 
@@ -1057,7 +1056,7 @@ withEachNg1Version(() => {
                    .directive('ng2', downgradeComponent({component: Ng2Component, propagateDigest}))
                    .run(($rootScope: angular.IRootScopeService) => {
                      rootScope = $rootScope;
-                     rootScope['value'] = 'bar';
+                     rootScope.value = 'bar';
                    });
 
            const element =

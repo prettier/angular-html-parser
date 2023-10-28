@@ -45,7 +45,6 @@ const chromeWindowExtensions = {
       return node.component.instance.constructor;
     } else {
       console.error('This component has no instance and therefore no constructor');
-      return;
     }
   },
   findDomElementByPosition: (serializedId: string): Node | undefined => {

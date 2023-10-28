@@ -71,14 +71,6 @@ export class BabelAstFactory implements AstFactory<t.Statement, t.Expression> {
         t.identifier(functionName), parameters.map(param => t.identifier(param)), body);
   }
 
-  createArrowFunctionExpression(parameters: string[], body: t.Statement|t.Expression):
-      t.Expression {
-    if (t.isStatement(body)) {
-      assert(body, t.isBlockStatement, 'a block');
-    }
-    return t.arrowFunctionExpression(parameters.map(param => t.identifier(param)), body);
-  }
-
   createFunctionExpression(functionName: string|null, parameters: string[], body: t.Statement):
       t.Expression {
     assert(body, t.isBlockStatement, 'a block');
@@ -89,10 +81,6 @@ export class BabelAstFactory implements AstFactory<t.Statement, t.Expression> {
   createIdentifier = t.identifier;
 
   createIfStatement = t.ifStatement;
-
-  createDynamicImport(url: string): t.Expression {
-    return this.createCallExpression(t.import(), [t.stringLiteral(url)], false /* pure */);
-  }
 
   createLiteral(value: string|number|boolean|null|undefined): t.Expression {
     if (typeof value === 'string') {

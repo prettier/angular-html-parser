@@ -21,7 +21,6 @@ ts_library(
         "//packages/common/http/testing",
         "//packages/core",
         "//packages/core/testing",
-        "//packages/private/testing",
         "@npm//rxjs",
     ],
 )

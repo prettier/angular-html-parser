@@ -10,11 +10,7 @@
         {
           "failureMessage": "Incorrect handling of local refs for host element",
           "files": [
-            {
-              "generated": "local_ref_on_host.js",
-              "expected": "local_ref_on_host.template.js",
-              "templatePipelineExpected": "local_ref_on_host.pipeline.js"
-            }
+            "local_ref_on_host.js"
           ]
         }
       ]

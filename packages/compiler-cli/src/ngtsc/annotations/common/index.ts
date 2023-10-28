@@ -13,8 +13,6 @@ export * from './src/evaluation';
 export * from './src/factory';
 export * from './src/injectable_registry';
 export * from './src/metadata';
-export * from './src/debug_info';
 export * from './src/references_registry';
 export * from './src/schema';
 export * from './src/util';
-export * from './src/input_transforms';

@@ -9,3 +9,4 @@
 export {inject} from './test_bed';
 
 export * from './logger';
+export * from './ng_zone_mock';

@@ -49,7 +49,7 @@ export abstract class ComponentRef<C> {
   abstract get instance(): C;
 
   /**
-   * The [host view](guide/glossary#view-hierarchy) defined by the template
+   * The [host view](guide/glossary#view-tree) defined by the template
    * for this component instance.
    */
   abstract get hostView(): ViewRef;
@@ -106,11 +106,7 @@ export abstract class ComponentFactory<C> {
   /**
    * The inputs of the component.
    */
-  abstract get inputs(): {
-    propName: string,
-    templateName: string,
-    transform?: (value: any) => any,
-  }[];
+  abstract get inputs(): {propName: string, templateName: string}[];
   /**
    * The outputs of the component.
    */

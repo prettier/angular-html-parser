@@ -35,7 +35,6 @@ function addTypeScriptConfigTypes(projectName: string): Rule {
         case Builders.Karma:
         case Builders.Server:
         case Builders.Browser:
-        case Builders.Application:
           const value = target.options?.['tsConfig'];
           if (typeof value === 'string') {
             tsConfigFiles.add(value);
@@ -46,11 +45,6 @@ function addTypeScriptConfigTypes(projectName: string): Rule {
 
       if (target.builder === Builders.Browser) {
         const value = target.options?.['main'];
-        if (typeof value === 'string') {
-          addTripleSlashType(host, value);
-        }
-      } else if (target.builder === Builders.Application) {
-        const value = target.options?.['browser'];
         if (typeof value === 'string') {
           addTripleSlashType(host, value);
         }

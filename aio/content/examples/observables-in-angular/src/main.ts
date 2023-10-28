@@ -8,7 +8,6 @@ import { Observable } from 'rxjs';
 // #docregion eventemitter
 
 @Component({
-  standalone: true,
   selector: 'app-zippy',
   template: `
     <div class="zippy">
@@ -39,11 +38,9 @@ export class ZippyComponent {
 // #docregion pipe
 
 @Component({
-  standalone: true,
   selector: 'async-observable-pipe',
   template: `<div><code>observable|async</code>:
-       Time: {{ time | async }}</div>`,
-  imports: [CommonModule]
+       Time: {{ time | async }}</div>`
 })
 export class AsyncObservablePipeComponent {
   time = new Observable<string>(observer => {
@@ -56,10 +53,9 @@ export class AsyncObservablePipeComponent {
 // #docregion router
 
 import { Router, NavigationStart } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 @Component({
-  standalone: true,
   selector: 'app-routable',
   template: 'Routable1Component template'
 })
@@ -87,12 +83,11 @@ export class Routable1Component implements OnInit {
 import { ActivatedRoute } from '@angular/router';
 
 @Component({
-  standalone: true,
   selector: 'app-routable',
   template: 'Routable2Component template'
 })
 export class Routable2Component implements OnInit {
-  constructor(private activatedRoute: ActivatedRoute) { }
+  constructor(private activatedRoute: ActivatedRoute) {}
 
   ngOnInit() {
     this.activatedRoute.url
@@ -108,11 +103,10 @@ export class Routable2Component implements OnInit {
 import { FormGroup } from '@angular/forms';
 
 @Component({
-  standalone: true,
-  selector: 'app-hero-form',
-  template: 'Hero Form Template'
+  selector: 'my-component',
+  template: 'MyComponent Template'
 })
-export class HeroFormComponent implements OnInit {
+export class MyComponent implements OnInit {
   nameChangeLog: string[] = [];
   heroForm!: FormGroup;
 
@@ -129,3 +123,12 @@ export class HeroFormComponent implements OnInit {
 
 // #enddocregion forms
 
+
+
+@NgModule({
+  imports: [CommonModule],
+  declarations:
+      [ZippyComponent, AsyncObservablePipeComponent, Routable1Component, Routable2Component, MyComponent]
+})
+export class AppModule {
+}

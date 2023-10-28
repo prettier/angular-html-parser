@@ -28,7 +28,7 @@ export function children(): any {
 
 @NgModule({
   imports: [
-    BrowserModule,
+    BrowserModule.withServerTransition({appId: 'id-app'}),
     ServerModule,
     RouterModule.forRoot(
         [

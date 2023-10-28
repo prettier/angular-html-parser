@@ -19,11 +19,11 @@ export class AppComponent {
   }
 }
 
-// #docregion imports, module
+// #docregion module
 import { NgModule } from '@angular/core';
 // #docregion import-browser-module
 import { BrowserModule } from '@angular/platform-browser';
-// #enddocregion imports, import-browser-module
+// #enddocregion import-browser-module
 @NgModule({
 // #docregion ngmodule-imports
   imports:      [ BrowserModule ],
@@ -33,9 +33,8 @@ import { BrowserModule } from '@angular/platform-browser';
   exports:      [ AppComponent ],
   bootstrap:    [ AppComponent ]
 })
-// #docregion export
 export class AppModule { }
-// #enddocregion export,module
+// #enddocregion module
 
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 

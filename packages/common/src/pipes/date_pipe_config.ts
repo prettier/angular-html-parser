@@ -10,13 +10,13 @@
  * An interface that describes the date pipe configuration, which can be provided using the
  * `DATE_PIPE_DEFAULT_OPTIONS` token.
  *
- * @see {@link DATE_PIPE_DEFAULT_OPTIONS}
+ * @see `DATE_PIPE_DEFAULT_OPTIONS`
  *
  * @publicApi
  */
 export interface DatePipeConfig {
-  dateFormat?: string;
-  timezone?: string;
+  dateFormat: string;
+  timezone: string;
 }
 
 /**

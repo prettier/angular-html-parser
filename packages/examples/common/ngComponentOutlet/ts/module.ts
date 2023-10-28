@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Component, Injectable, Injector, Input, NgModule, OnInit, TemplateRef, ViewChild, ViewContainerRef} from '@angular/core';
+import {Component, Injectable, Injector, NgModule} from '@angular/core';
 import {BrowserModule} from '@angular/platform-browser';
 
 
@@ -33,46 +33,29 @@ export class Greeter {
 
 @Component({
   selector: 'complete-component',
-  template: `{{ label }}: <ng-content></ng-content> <ng-content></ng-content>{{ greeter.suffix }}`
+  template: `Complete: <ng-content></ng-content> <ng-content></ng-content>{{ greeter.suffix }}`
 })
 export class CompleteComponent {
-  @Input() label!: string;
-
   constructor(public greeter: Greeter) {}
 }
 
 @Component({
   selector: 'ng-component-outlet-complete-example',
   template: `
-    <ng-template #ahoj>Ahoj</ng-template>
-    <ng-template #svet>Svet</ng-template>
     <ng-container *ngComponentOutlet="CompleteComponent;
-                                      inputs: myInputs;
                                       injector: myInjector;
                                       content: myContent"></ng-container>`
 })
-export class NgComponentOutletCompleteExample implements OnInit {
+export class NgComponentOutletCompleteExample {
   // This field is necessary to expose CompleteComponent to the template.
   CompleteComponent = CompleteComponent;
-
-  myInputs = {'label': 'Complete'};
-
   myInjector: Injector;
-  @ViewChild('ahoj', {static: true}) ahojTemplateRef!: TemplateRef<any>;
-  @ViewChild('svet', {static: true}) svetTemplateRef!: TemplateRef<any>;
-  myContent?: any[][];
 
-  constructor(injector: Injector, private vcr: ViewContainerRef) {
+  myContent = [[document.createTextNode('Ahoj')], [document.createTextNode('Svet')]];
+
+  constructor(injector: Injector) {
     this.myInjector =
         Injector.create({providers: [{provide: Greeter, deps: []}], parent: injector});
-  }
-
-  ngOnInit() {
-    // Create the projectable content from the templates
-    this.myContent = [
-      this.vcr.createEmbeddedView(this.ahojTemplateRef).rootNodes,
-      this.vcr.createEmbeddedView(this.svetTemplateRef).rootNodes
-    ];
   }
 }
 // #enddocregion

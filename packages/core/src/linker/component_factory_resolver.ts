@@ -12,7 +12,8 @@ import {stringify} from '../util/stringify';
 import {ComponentFactory} from './component_factory';
 
 export function noComponentFactoryError(component: Function) {
-  const error = Error(`No component factory found for ${stringify(component)}.`);
+  const error = Error(`No component factory found for ${
+      stringify(component)}. Did you add it to @NgModule.entryComponents?`);
   (error as any)[ERROR_COMPONENT] = component;
   return error;
 }

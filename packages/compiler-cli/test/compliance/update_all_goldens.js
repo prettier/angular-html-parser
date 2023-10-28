@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 /**
  * @license
  * Copyright Google LLC All Rights Reserved.
@@ -14,7 +13,7 @@ const {exec} = shelljs;
 
 process.stdout.write('Gathering all partial golden update targets');
 const queryCommand =
-    `yarn bazel query --output label 'filter('golden.update', kind(nodejs_binary, //packages/compiler-cli/test/compliance/test_cases:*))'`;
+    `yarn -s bazel query --output label 'filter('golden.update', kind(nodejs_binary, //packages/compiler-cli/test/compliance/test_cases:*))'`;
 const allUpdateTargets =
     exec(queryCommand, {silent: true}).trim().split('\n').map(test => test.trim());
 process.stdout.clearLine();
@@ -23,7 +22,7 @@ process.stdout.cursorTo(0);
 for (const [index, target] of allUpdateTargets.entries()) {
   const progress = `${index + 1} / ${allUpdateTargets.length}`;
   process.stdout.write(`[${progress}] Running: ${target}`);
-  const commandResult = exec(`yarn bazel run ${target}`, {silent: true});
+  const commandResult = exec(`yarn -s bazel run ${target}`, {silent: true});
   process.stdout.clearLine();
   process.stdout.cursorTo(0);
   if (commandResult.code) {

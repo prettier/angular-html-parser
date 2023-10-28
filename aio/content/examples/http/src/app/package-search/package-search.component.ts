@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 import { Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -7,10 +6,8 @@ import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { NpmPackageInfo, PackageSearchService } from './package-search.service';
 
 @Component({
-  standalone: true,
   selector: 'app-package-search',
   templateUrl: './package-search.component.html',
-  imports: [ CommonModule ],
   styles: ['input { margin-bottom: .5rem; }'],
   providers: [ PackageSearchService ]
 })

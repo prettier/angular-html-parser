@@ -46,29 +46,28 @@ import {assertComponentDef} from './errors';
  * const applicationRef = await bootstrapApplication(RootComponent);
  *
  * // Locate a DOM node that would be used as a host.
- * const hostElement = document.getElementById('hello-component-host');
+ * const host = document.getElementById('hello-component-host');
  *
  * // Get an `EnvironmentInjector` instance from the `ApplicationRef`.
  * const environmentInjector = applicationRef.injector;
  *
  * // We can now create a `ComponentRef` instance.
- * const componentRef = createComponent(HelloComponent, {hostElement, environmentInjector});
+ * const componentRef = createComponent(HelloComponent, {host, environmentInjector});
  *
  * // Last step is to register the newly created ref using the `ApplicationRef` instance
  * // to include the component view into change detection cycles.
  * applicationRef.attachView(componentRef.hostView);
- * componentRef.changeDetectorRef.detectChanges();
  * ```
  *
  * @param component Component class reference.
  * @param options Set of options to use:
  *  * `environmentInjector`: An `EnvironmentInjector` instance to be used for the component, see
- * additional info about it [here](/guide/standalone-components#environment-injectors).
+ * additional info about it at https://angular.io/guide/standalone-components#environment-injectors.
  *  * `hostElement` (optional): A DOM node that should act as a host node for the component. If not
  * provided, Angular creates one based on the tag name used in the component selector (and falls
  * back to using `div` if selector doesn't have tag name info).
- *  * `elementInjector` (optional): An `ElementInjector` instance, see additional info about it
- * [here](/guide/hierarchical-dependency-injection#elementinjector).
+ *  * `elementInjector` (optional): An `ElementInjector` instance, see additional info about it at
+ * https://angular.io/guide/hierarchical-dependency-injection#elementinjector.
  *  * `projectableNodes` (optional): A list of DOM nodes that should be projected through
  *                      [`<ng-content>`](api/core/ng-content) of the new component instance.
  * @returns ComponentRef instance that represents a given Component.
@@ -107,11 +106,7 @@ export interface ComponentMirror<C> {
   /**
    * The inputs of the component.
    */
-  get inputs(): ReadonlyArray<{
-    readonly propName: string,
-    readonly templateName: string,
-    readonly transform?: (value: any) => any,
-  }>;
+  get inputs(): ReadonlyArray<{readonly propName: string, readonly templateName: string}>;
   /**
    * The outputs of the component.
    */
@@ -125,11 +120,6 @@ export interface ComponentMirror<C> {
    * Note: an extra flag, not present in `ComponentFactory`.
    */
   get isStandalone(): boolean;
-  /**
-   * // TODO(signals): Remove internal and add public documentation
-   * @internal
-   */
-  get isSignal(): boolean;
 }
 
 /**
@@ -183,11 +173,7 @@ export function reflectComponentType<C>(component: Type<C>): ComponentMirror<C>|
     get type(): Type<C> {
       return factory.componentType;
     },
-    get inputs(): ReadonlyArray<{
-      propName: string,
-      templateName: string,
-      transform?: (value: any) => any,
-    }> {
+    get inputs(): ReadonlyArray<{propName: string, templateName: string}> {
       return factory.inputs;
     },
     get outputs(): ReadonlyArray<{propName: string, templateName: string}> {
@@ -198,9 +184,6 @@ export function reflectComponentType<C>(component: Type<C>): ComponentMirror<C>|
     },
     get isStandalone(): boolean {
       return componentDef.standalone;
-    },
-    get isSignal(): boolean {
-      return componentDef.signals;
     },
   };
 }

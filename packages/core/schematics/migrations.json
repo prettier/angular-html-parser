@@ -1,19 +1,14 @@
 {
   "schematics": {
-    "block-template-entities": {
-      "version": "17.0.0",
-      "description": "Angular v17 introduces a new control flow syntax that uses the @ and } characters. This migration replaces the existing usages with their corresponding HTML entities.",
-      "factory": "./migrations/block-template-entities/bundle"
+    "migration-v15-router-link-with-href": {
+      "version": "15.0.0",
+      "description": "Since Angular v15, the `RouterLink` contains the logic of the `RouterLinkWithHref` directive. This migration replaces all `RouterLinkWithHref` references with `RouterLink`.",
+      "factory": "./migrations/router-link-with-href/bundle"
     },
-    "migration-v17-compiler-options": {
-      "version": "17.0.0",
-      "description": "CompilerOption.useJit and CompilerOption.missingTranslation are unused under Ivy. This migration removes their usage",
-      "factory": "./migrations/compiler-options/bundle"
-    },
-    "migration-transfer-state": {
-      "version": "17.0.0",
-      "description": "Updates `TransferState`, `makeStateKey`, `StateKey` imports from `@angular/platform-browser` to `@angular/core`.",
-      "factory": "./migrations/transfer-state/bundle"
+    "migration-v15-relative-link-resolution": {
+      "version": "15.0.0",
+      "description": "In Angular version 15, the deprecated `relativeLinkResolution` config parameter of the Router is removed. This migration removes all `relativeLinkResolution` fields from the Router config objects.",
+      "factory": "./migrations/relative-link-resolution/bundle"
     }
   }
 }

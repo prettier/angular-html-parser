@@ -21,7 +21,7 @@
             "index": "src/index.html",
             "main": "src/main.ts",
             "polyfills": [
-              "zone.js"
+              "zone.js/dist/zone"
             ],
             "tsConfig": "tsconfig.app.json",
             "aot": true,
@@ -33,12 +33,16 @@
               "src/styles.css"
             ],
             "scripts": [],
-            "progress": false,
-            "buildOptimizer": false,
-            "optimization": false
+            "progress": false
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "optimization": true,
               "outputHashing": "all",
               "sourceMap": false,
@@ -83,7 +87,7 @@
           "options": {
             "main": "src/test.ts",
             "polyfills": [
-              "zone.js"
+              "zone.js/dist/zone"
             ],
             "tsConfig": "tsconfig.spec.json",
             "karmaConfig": "karma.conf.js",
@@ -131,12 +135,17 @@
             "outputPath": "dist/cli-elements-universal/server",
             "main": "src/main.server.ts",
             "tsConfig": "tsconfig.server.json",
-            "progress": false,
-            "optimization": false
+            "progress": false
           },
           "configurations": {
             "production": {
               "outputHashing": "media",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "sourceMap": false,
               "optimization": true
             }

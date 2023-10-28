@@ -9,7 +9,6 @@ import 'zone.js/plugins/zone-patch-canvas';
 import { Component, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 
 @Component({
-  standalone: true,
   selector: 'sample-canvas',
   template: '<canvas #sampleCanvas width="200" height="200"></canvas>',
 })
@@ -25,7 +24,7 @@ export class CanvasComponent implements AfterViewInit {
     context.fillStyle = '#FF1122';
     context.fillRect(0, 0, 200, 200);
 
-    canvas.toBlob((blob) => {
+    canvas.toBlob(blob => {
       this.blobSize = blob?.size ?? 0;
     });
   }

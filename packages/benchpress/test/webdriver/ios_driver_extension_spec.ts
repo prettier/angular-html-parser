@@ -23,12 +23,10 @@ import {TraceEventFactory} from '../trace_event_factory';
       log = [];
       extension =
           Injector
-              .create({
-                providers: [
-                  IOsDriverExtension.PROVIDERS,
-                  {provide: WebDriverAdapter, useValue: new MockDriverAdapter(log, perfRecords)}
-                ]
-              })
+              .create([
+                IOsDriverExtension.PROVIDERS,
+                {provide: WebDriverAdapter, useValue: new MockDriverAdapter(log, perfRecords)}
+              ])
               .get(IOsDriverExtension);
       return extension;
     }

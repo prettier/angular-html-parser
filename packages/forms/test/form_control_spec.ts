@@ -1131,24 +1131,26 @@ describe('FormControl', () => {
          ]);
        }));
 
-    it('should update set errors and status before emitting an event', fakeAsync(() => {
-         c.setValue('');
+    // TODO: remove the if statement after making observable delivery sync
+    it('should update set errors and status before emitting an event', done => {
+      c.valueChanges.subscribe(() => {
+        expect(c.valid).toEqual(false);
+        expect(c.errors).toEqual({'required': true});
+        done();
+      });
+      c.setValue('');
+    });
 
-         tick();
-         expect(c.valid).toEqual(false);
-         expect(c.errors).toEqual({'required': true});
-       }));
-
-    it('should return a cold observable', fakeAsync(() => {
-         let value: string|null = null;
-         c.setValue('will be ignored');
-         c.valueChanges.subscribe((v) => value = v);
-         c.setValue('new');
-         tick();
-
-         // @ts-expect-error see microsoft/TypeScript#9998
-         expect(value).toEqual('new');
-       }));
+    it('should return a cold observable', done => {
+      c.setValue('will be ignored');
+      c.valueChanges.subscribe({
+        next: (value: any) => {
+          expect(value).toEqual('new');
+          done();
+        }
+      });
+      c.setValue('new');
+    });
   });
 
   describe('setErrors', () => {

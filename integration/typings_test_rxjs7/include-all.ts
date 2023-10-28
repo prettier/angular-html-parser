@@ -14,8 +14,9 @@ import * as animationsBrowserTesting from '@angular/animations/browser/testing';
 import * as common from '@angular/common';
 import * as commonHttp from '@angular/common/http';
 import * as commonTesting from '@angular/common/testing';
-import * as commonHttpTesting from '@angular/common/http/testing';
+import * as commonHttpTesting from '@angular/common/testing';
 import * as compiler from '@angular/compiler';
+import * as compilerTesting from '@angular/compiler/testing';
 import * as core from '@angular/core';
 import * as coreTesting from '@angular/core/testing';
 import * as elements from '@angular/elements';
@@ -45,6 +46,7 @@ export default {
   commonHttp,
   commonHttpTesting,
   compiler,
+  compilerTesting,
   core,
   coreTesting,
   elements,

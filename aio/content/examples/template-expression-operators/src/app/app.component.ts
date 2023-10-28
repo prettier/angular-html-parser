@@ -1,6 +1,4 @@
-// Archived: see only referencing guide, `template-expression-operators.md`.
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
 
 
 interface Item {
@@ -11,10 +9,8 @@ interface Item {
 }
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
-  imports: [ CommonModule ], // no need to enumerate pipes as they are all in CommonModule
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {

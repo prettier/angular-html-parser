@@ -8,12 +8,11 @@
 
 import {PLATFORM_ID} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
-import {NgswCommChannel, NoNewVersionDetectedEvent, VersionDetectedEvent, VersionEvent, VersionReadyEvent} from '@angular/service-worker/src/low_level';
-import {ngswCommChannelFactory, SwRegistrationOptions} from '@angular/service-worker/src/provider';
+import {NgswCommChannel, NoNewVersionDetectedEvent, VersionDetectedEvent} from '@angular/service-worker/src/low_level';
+import {ngswCommChannelFactory, SwRegistrationOptions} from '@angular/service-worker/src/module';
 import {SwPush} from '@angular/service-worker/src/push';
 import {SwUpdate} from '@angular/service-worker/src/update';
 import {MockPushManager, MockPushSubscription, MockServiceWorkerContainer, MockServiceWorkerRegistration, patchDecodeBase64} from '@angular/service-worker/testing/mock';
-import {filter} from 'rxjs/operators';
 
 {
   describe('ServiceWorker library', () => {
@@ -420,14 +419,12 @@ import {filter} from 'rxjs/operators';
         mock.setupSw();
       });
       it('processes update availability notifications when sent', done => {
-        update.versionUpdates
-            .pipe(filter(
-                (evt: VersionEvent): evt is VersionReadyEvent => evt.type === 'VERSION_READY'))
-            .subscribe(event => {
-              expect(event.currentVersion).toEqual({hash: 'A'});
-              expect(event.latestVersion).toEqual({hash: 'B'});
-              done();
-            });
+        update.available.subscribe(event => {
+          expect(event.current).toEqual({hash: 'A'});
+          expect(event.available).toEqual({hash: 'B'});
+          expect(event.type).toEqual('UPDATE_AVAILABLE');
+          done();
+        });
         mock.sendMessage({
           type: 'VERSION_READY',
           currentVersion: {
@@ -446,7 +443,23 @@ import {filter} from 'rxjs/operators';
         });
         mock.sendMessage({type: 'UNRECOVERABLE_STATE', reason: 'Invalid Resource'});
       });
-
+      it('processes update activation notifications when sent', done => {
+        update.activated.subscribe(event => {
+          expect(event.previous).toEqual({hash: 'A'});
+          expect(event.current).toEqual({hash: 'B'});
+          expect(event.type).toEqual('UPDATE_ACTIVATED');
+          done();
+        });
+        mock.sendMessage({
+          type: 'UPDATE_ACTIVATED',
+          previous: {
+            hash: 'A',
+          },
+          current: {
+            hash: 'B',
+          },
+        });
+      });
       it('processes a no new version event when sent', done => {
         update.versionUpdates.subscribe(event => {
           expect(event.type).toEqual('NO_NEW_VERSION_DETECTED');
@@ -513,6 +526,8 @@ import {filter} from 'rxjs/operators';
         });
         it('does not crash on subscription to observables', () => {
           update = new SwUpdate(comm);
+          update.available.toPromise().catch(err => fail(err));
+          update.activated.toPromise().catch(err => fail(err));
           update.unrecoverable.toPromise().catch(err => fail(err));
           update.versionUpdates.toPromise().catch(err => fail(err));
         });

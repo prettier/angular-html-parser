@@ -18,25 +18,27 @@ import { HousingLocation } from '../housinglocation';
       </form>
     </section>
     <section class="results">
-      // #docregion add-property-binding
-      <app-housing-location [housingLocation]="housingLocation"></app-housing-location>
-      // #enddocregion
+      <app-housing-location [housingLocation]="this.onlyHouse"></app-housing-location>
     </section>
   `,
   styleUrls: ['./home.component.css'],
 })
+
 export class HomeComponent {
-  readonly baseUrl = 'https://angular.io/assets/images/tutorials/faa';
+  private img_server = "https://storage.googleapis.com/angular-tutorial-assets/first-app/";
+  onlyHouse: HousingLocation;
 
-  housingLocation: HousingLocation = {
-    id: 9999,
-    name: 'Test Home',
-    city: 'Test city',
-    state: 'ST',
-    photo: `${this.baseUrl}/example-house.jpg`,
-    availableUnits: 99,
-    wifi: true,
-    laundry: false,
-  };
+  constructor() {
+    this.onlyHouse = {
+      id: 9999,
+      name: 'Test Home',
+      city: 'Test city',
+      state: 'ST',
+      photo: this.img_server + 'house_0.png',
+      availableUnits: 99,
+      wifi: true,
+      laundry: false,
+    };
+  }
+
 }
-

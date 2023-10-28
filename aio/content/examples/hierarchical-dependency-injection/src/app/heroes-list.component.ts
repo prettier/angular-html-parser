@@ -4,11 +4,8 @@ import { Observable } from 'rxjs';
 
 import { Hero, HeroTaxReturn } from './hero';
 import { HeroesService } from './heroes.service';
-import { HeroTaxReturnComponent } from './hero-tax-return.component';
-import { AsyncPipe, NgFor } from '@angular/common';
 
 @Component({
-  standalone: true,
   selector: 'app-heroes-list',
   template: `
     <div>
@@ -31,8 +28,7 @@ import { AsyncPipe, NgFor } from '@angular/common';
       margin: 0.3rem;
       padding: 0.5rem;
     }
-  `],
-  imports: [HeroTaxReturnComponent, NgFor, AsyncPipe]
+  `]
 })
 export class HeroesListComponent {
   heroes: Observable<Hero[]>;

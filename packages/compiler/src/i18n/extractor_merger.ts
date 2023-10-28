@@ -56,33 +56,44 @@ enum _VisitorMode {
  * @internal
  */
 class _Visitor implements html.Visitor {
-  // Using non-null assertions because all variables are (re)set in init()
-
+  // TODO(issue/24571): remove '!'.
   private _depth!: number;
 
   // <el i18n>...</el>
+  // TODO(issue/24571): remove '!'.
   private _inI18nNode!: boolean;
+  // TODO(issue/24571): remove '!'.
   private _inImplicitNode!: boolean;
 
   // <!--i18n-->...<!--/i18n-->
+  // TODO(issue/24571): remove '!'.
   private _inI18nBlock!: boolean;
+  // TODO(issue/24571): remove '!'.
   private _blockMeaningAndDesc!: string;
+  // TODO(issue/24571): remove '!'.
   private _blockChildren!: html.Node[];
+  // TODO(issue/24571): remove '!'.
   private _blockStartDepth!: number;
 
   // {<icu message>}
+  // TODO(issue/24571): remove '!'.
   private _inIcu!: boolean;
 
   // set to void 0 when not in a section
   private _msgCountAtSectionStart: number|undefined;
+  // TODO(issue/24571): remove '!'.
   private _errors!: I18nError[];
+  // TODO(issue/24571): remove '!'.
   private _mode!: _VisitorMode;
 
   // _VisitorMode.Extract only
+  // TODO(issue/24571): remove '!'.
   private _messages!: i18n.Message[];
 
   // _VisitorMode.Merge only
+  // TODO(issue/24571): remove '!'.
   private _translations!: TranslationBundle;
+  // TODO(issue/24571): remove '!'.
   private _createI18nMessage!: I18nMessageFactory;
 
 
@@ -291,12 +302,6 @@ class _Visitor implements html.Visitor {
   visitAttribute(attribute: html.Attribute, context: any): any {
     throw new Error('unreachable code');
   }
-
-  visitBlock(block: html.Block, context: any) {
-    html.visitAll(this, block.children, context);
-  }
-
-  visitBlockParameter(parameter: html.BlockParameter, context: any) {}
 
   private _init(mode: _VisitorMode, interpolationConfig: InterpolationConfig): void {
     this._mode = mode;

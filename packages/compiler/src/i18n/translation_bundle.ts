@@ -62,10 +62,11 @@ export class TranslationBundle {
 }
 
 class I18nToHtmlVisitor implements i18n.Visitor {
-  // using non-null assertions because they're (re)set by convert()
+  // TODO(issue/24571): remove '!'.
   private _srcMsg!: i18n.Message;
-  private _errors: I18nError[] = [];
   private _contextStack: {msg: i18n.Message, mapper: (name: string) => string}[] = [];
+  private _errors: I18nError[] = [];
+  // TODO(issue/24571): remove '!'.
   private _mapper!: (name: string) => string;
 
   constructor(

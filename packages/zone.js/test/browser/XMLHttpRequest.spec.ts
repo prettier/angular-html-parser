@@ -50,7 +50,6 @@ describe('XMLHttpRequest', function() {
         if ((req as any)[zoneSymbol('loadfalse')]) {
           expect(logs).toEqual(['onload']);
         }
-        onStable = null;
         done();
       };
 

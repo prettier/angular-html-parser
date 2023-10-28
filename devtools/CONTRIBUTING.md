@@ -226,4 +226,4 @@ A detailed explanation can be found in this [document][commit-message-format].
 
 [github]: https://github.com/angular/angular
 [gitter]: https://gitter.im/angular/angular
-[stackoverflow]: https://stackoverflow.com/questions/tagged/angular-devtools
+[stackoverflow]: http://stackoverflow.com/questions/tagged/angular-devtools

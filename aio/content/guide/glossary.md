@@ -500,6 +500,11 @@ Install Angular libraries with the [npm package manager][NpmjsDocsAboutNpm] and 
 
 Compare to [NgModule][AioGuideGlossaryNgmodule].
 
+## ngcc
+
+Angular compatibility compiler.
+If you build your application using [Ivy][AioGuideGlossaryIvy], but it depends on libraries that have not been compiled with Ivy, the Angular CLI uses `ngcc` to automatically update the dependent libraries to use Ivy.
+
 ## NgModule
 
 A class definition preceded by the `@NgModule()` [decorator][AioGuideGlossaryDecoratorDecoration], which declares and serves as a manifest for a block of code dedicated to an application domain, a workflow, or a closely related set of capabilities.
@@ -702,7 +707,7 @@ You can also use the `schematics` command to add a new schematic to an existing 
 ## scoped package
 
 A way to group related [npm packages][AioGuideNpmPackages].
-Angular objects are delivered from npm packages whose names begin with the Angular *scope name* `@angular`.
+NgModules are delivered within scoped packages whose names begin with the Angular *scope name* `@angular`.
 For example, `@angular/core`, `@angular/common`, `@angular/forms`, and `@angular/router`.
 
 Import a scoped package in the same way that you import a normal package.
@@ -924,7 +929,7 @@ View Engine was deprecated in version 9 and removed in version 13.
 ## view hierarchy
 
 A tree of related views that can be acted on as a unit.
-The root view is referenced as the *host view* of a component.
+The root view referenced as the *host view* of a component.
 A host view is the root of a tree of *embedded views*, collected in a `ViewContainerRef` view container attached to an anchor element in the hosting component.
 The view hierarchy is a key part of Angular [change detection][AioGuideGlossaryChangeDetection].
 
@@ -1080,7 +1085,7 @@ Learn more about zones in this [Brian Ford video][YoutubeWatchV3iqtmusceU].
 [AioGuideGlossaryLibrary]: guide/glossary#library "library - Glossary | Angular"
 [AioGuideGlossaryM]: guide/glossary#module "M - Glossary | Angular"
 [AioGuideGlossaryModule]: guide/glossary#module "module - Glossary | Angular"
-[AioGuideGlossaryN]: guide/glossary#ngmodule "N - Glossary | Angular"
+[AioGuideGlossaryN]: guide/glossary#ngcc "N - Glossary | Angular"
 [AioGuideGlossaryNgmodule]: guide/glossary#ngmodule "NgModule - Glossary | Angular"
 [AioGuideGlossaryNpmPackage]: guide/glossary#npm-package "npm package - Glossary | Angular"
 [AioGuideGlossaryO]: guide/glossary#observable "O - Glossary | Angular"
@@ -1140,7 +1145,7 @@ Learn more about zones in this [Brian Ford video][YoutubeWatchV3iqtmusceU].
 
 [AioGuideObservables]: guide/observables "Using observables to pass values | Angular"
 
-[AioGuidePipes]: guide/pipes-overview "Transforming Data Using Pipes | Angular"
+[AioGuidePipes]: guide/pipes "Transforming Data Using Pipes | Angular"
 
 [AioGuidePropertyBinding]: guide/property-binding "Property binding | Angular"
 
@@ -1207,4 +1212,4 @@ Learn more about zones in this [Brian Ford video][YoutubeWatchV3iqtmusceU].
 
 <!-- end links -->
 
-@reviewed 2023-08-14
+@reviewed 2022-02-28

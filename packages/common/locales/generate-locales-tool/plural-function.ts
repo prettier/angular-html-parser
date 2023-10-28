@@ -12,9 +12,6 @@ import {CldrLocaleData} from './cldr-data';
 // There are no types available for `cldr`.
 const {load: createCldr} = await import('cldr' as any);
 
-// Load once to avoid re-parsing CLDR XML data on every invocation.
-const cldr = createCldr(runfiles.resolve('cldr_xml_data'));
-
 /**
  * Returns the plural function for a locale.
  */
@@ -24,6 +21,7 @@ export function getPluralFunction(localeData: CldrLocaleData, withTypes = true) 
   // we follow the CLDR-specified bundle lookup algorithm. A language does not necessarily
   // resolve directly to a bundle CLDR provides data for.
   const bundleName = localeData.attributes.bundle;
+  const cldr = createCldr(runfiles.resolve('cldr_xml_data'));
   let fn = cldr.extractPluralRuleFunction(bundleName).toString();
 
   const numberType = withTypes ? ': number' : '';

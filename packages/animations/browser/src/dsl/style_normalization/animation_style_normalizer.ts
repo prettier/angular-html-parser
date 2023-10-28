@@ -6,6 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+/**
+ * @publicApi
+ */
 export abstract class AnimationStyleNormalizer {
   abstract normalizePropertyName(propertyName: string, errors: Error[]): string;
   abstract normalizeStyleValue(
@@ -13,6 +16,9 @@ export abstract class AnimationStyleNormalizer {
       errors: Error[]): string;
 }
 
+/**
+ * @publicApi
+ */
 export class NoopAnimationStyleNormalizer {
   normalizePropertyName(propertyName: string, errors: Error[]): string {
     return propertyName;

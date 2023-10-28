@@ -1,4 +1,4 @@
-consts: () => {
+consts: function() {
   __i18nMsg__('Element title', [], {}, {meaning: 'm', desc: 'd'})
   __i18nMsg__('Some content', [], {}, {})
   return [

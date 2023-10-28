@@ -114,7 +114,8 @@ export class Xliff2 extends Serializer {
 }
 
 class _WriteVisitor implements i18n.Visitor {
-  private _nextPlaceholderId = 0;
+  // TODO(issue/24571): remove '!'.
+  private _nextPlaceholderId!: number;
 
   visitText(text: i18n.Text, context?: any): xml.Node[] {
     return [new xml.Text(text.value)];
@@ -194,9 +195,11 @@ class _WriteVisitor implements i18n.Visitor {
 
 // Extract messages as xml nodes from the xliff file
 class Xliff2Parser implements ml.Visitor {
-  // using non-null assertions because they're all (re)set by parse()
+  // TODO(issue/24571): remove '!'.
   private _unitMlString!: string|null;
+  // TODO(issue/24571): remove '!'.
   private _errors!: I18nError[];
+  // TODO(issue/24571): remove '!'.
   private _msgIdToHtml!: {[msgId: string]: string};
   private _locale: string|null = null;
 
@@ -283,10 +286,6 @@ class Xliff2Parser implements ml.Visitor {
 
   visitExpansionCase(expansionCase: ml.ExpansionCase, context: any): any {}
 
-  visitBlock(block: ml.Block, context: any) {}
-
-  visitBlockParameter(parameter: ml.BlockParameter, context: any) {}
-
   private _addError(node: ml.Node, message: string): void {
     this._errors.push(new I18nError(node.sourceSpan, message));
   }
@@ -294,7 +293,7 @@ class Xliff2Parser implements ml.Visitor {
 
 // Convert ml nodes (xliff syntax) to i18n nodes
 class XmlToI18n implements ml.Visitor {
-  // using non-null assertion because re(set) by convert()
+  // TODO(issue/24571): remove '!'.
   private _errors!: I18nError[];
 
   convert(message: string, url: string) {
@@ -374,10 +373,6 @@ class XmlToI18n implements ml.Visitor {
   visitComment(comment: ml.Comment, context: any) {}
 
   visitAttribute(attribute: ml.Attribute, context: any) {}
-
-  visitBlock(block: ml.Block, context: any) {}
-
-  visitBlockParameter(parameter: ml.BlockParameter, context: any) {}
 
   private _addError(node: ml.Node, message: string): void {
     this._errors.push(new I18nError(node.sourceSpan, message));

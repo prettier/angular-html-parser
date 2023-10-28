@@ -486,9 +486,8 @@ describe('FormGroup', () => {
          () => {
            const logEvent = () => logger.push('valueChanges event');
 
-           const [formArrayControl1, formArrayControl2] =
-               (g2.controls['array'] as FormArray).controls;
-           const formGroupControl = (g2.controls['group'] as FormGroup).controls['one'];
+           const [formArrayControl1, formArrayControl2] = (g2.controls.array as FormArray).controls;
+           const formGroupControl = (g2.controls.group as FormGroup).controls.one;
 
            formArrayControl1.valueChanges.subscribe(logEvent);
            formArrayControl2.valueChanges.subscribe(logEvent);
@@ -694,19 +693,6 @@ describe('FormGroup', () => {
       expect(g.disabled).toBe(false);
     });
 
-    it('should be able to reset a nested control with null', () => {
-      const g = new FormGroup({
-        id: new FormControl(2),
-        nested: new FormGroup<any>({
-          id: new FormControl(3),
-        }),
-      });
-
-      g.reset({id: 1, nested: null});
-      expect(g.get('nested')?.value).toEqual({id: null});
-      expect(g.get('nested.id')?.value).toBe(null);
-    });
-
     describe('reset() events', () => {
       let form: FormGroup, c3: FormControl, logger: any[];
 
@@ -830,7 +816,7 @@ describe('FormGroup', () => {
     let group: FormGroup;
 
     beforeEach(waitForAsync(() => {
-      control = new FormControl('', null, asyncValidatorReturningObservable);
+      control = new FormControl('', asyncValidatorReturningObservable);
       group = new FormGroup({'one': control});
     }));
 
@@ -850,14 +836,20 @@ describe('FormGroup', () => {
          expect(statuses).toEqual(['VALID']);
        }));
 
-    it('should fire a statusChange if child has async validation change', fakeAsync(() => {
-         const loggedValues: string[] = [];
-         group.statusChanges.subscribe((status) => loggedValues.push(status));
-
-         control.setValue('');
-         tick();
-         expect(loggedValues).toEqual(['PENDING', 'INVALID']);
-       }));
+    // TODO(kara): update these tests to use fake Async
+    it('should fire a statusChange if child has async validation change', done => {
+      const loggedValues: string[] = [];
+      group.statusChanges.subscribe({
+        next: (status: string) => {
+          loggedValues.push(status);
+          if (loggedValues.length === 2) {
+            expect(loggedValues).toEqual(['PENDING', 'INVALID']);
+          }
+          done();
+        }
+      });
+      control.setValue('');
+    });
   });
 
   describe('getError', () => {

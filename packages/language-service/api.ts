@@ -58,7 +58,6 @@ export interface NgLanguageService extends ts.LanguageService {
   getComponentLocationsForTemplate(fileName: string): GetComponentLocationsForTemplateResponse;
   getTemplateLocationForComponent(fileName: string, position: number):
       GetTemplateLocationForComponentResponse;
-  getTypescriptLanguageService(): ts.LanguageService;
 }
 
 export function isNgLanguageService(ls: ts.LanguageService|

@@ -31,8 +31,6 @@ following products on your development machine:
 
 * [Yarn](https://yarnpkg.com) (version specified in the engines field of [`package.json`](../package.json)) which is used to install dependencies.
 
-* On Windows: [MSYS2](https://www.msys2.org/) which is used by Bazel. Follow the [instructions](https://bazel.build/install/windows#installing-compilers-and-language-runtimes)
-
 * Optional: [Java](https://openjdk.java.net/) version 7 or higher than required by [Closure Compiler](https://developers.google.com/closure/compiler). Most developers will not need this. Java is required for running some integration tests.
 
 ## Getting the Sources
@@ -112,9 +110,13 @@ When making changes to Angular packages and testing in a local library/project y
 
 The Angular CLI needs to be invoked using Node.js [`--preserve-symlinks`](https://nodejs.org/api/cli.html#--preserve-symlinks) flag. Otherwise the symbolic links will be resolved using their real path which causes node module resolution to fail.
 
-```sh
-node --preserve-symlinks --preserve-symlinks-main node_modules/@angular/cli/lib/init.js serve
-```
+##### Windows
+
+`set BAZEL_TARGET="1" && node --preserve-symlinks node_modules/@angular/cli/lib/init.js serve`
+
+##### Unix Systems
+
+`BAZEL_TARGET="1" node --preserve-symlinks node_modules/.bin/ng serve`
 
 ## Formatting your source code
 
@@ -239,7 +241,7 @@ and create it if it doesn't exist.
 
 #### VS Code
 
-1. Install [Bazel](https://marketplace.visualstudio.com/items?itemName=BazelBuild.vscode-bazel) extension for VS Code.
+1. Install [Bazel](https://marketplace.visualstudio.com/items?itemName=DevonDCarew.bazel-code) extension for VS Code.
 
 #### WebStorm / IntelliJ
 1. Install the [Bazel](https://plugins.jetbrains.com/plugin/8609-bazel) plugin

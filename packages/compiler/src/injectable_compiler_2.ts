@@ -15,6 +15,7 @@ import {DefinitionMap} from './render3/view/util';
 export interface R3InjectableMetadata {
   name: string;
   type: R3Reference;
+  internalType: o.Expression;
   typeArgumentCount: number;
   providedIn: MaybeForwardRefExpression;
   useClass?: MaybeForwardRefExpression;
@@ -31,6 +32,7 @@ export function compileInjectable(
   const factoryMeta: R3FactoryMetadata = {
     name: meta.name,
     type: meta.type,
+    internalType: meta.internalType,
     typeArgumentCount: meta.typeArgumentCount,
     deps: [],
     target: FactoryTarget.Injectable,
@@ -44,7 +46,7 @@ export function compileInjectable(
     // A special case exists for useClass: Type where Type is the injectable type itself and no
     // deps are specified, in which case 'useClass' is effectively ignored.
 
-    const useClassOnSelf = meta.useClass.expression.isEquivalent(meta.type.value);
+    const useClassOnSelf = meta.useClass.expression.isEquivalent(meta.internalType);
     let deps: R3DependencyMetadata[]|undefined = undefined;
     if (meta.deps !== undefined) {
       deps = meta.deps;
@@ -77,7 +79,10 @@ export function compileInjectable(
         delegateType: R3FactoryDelegateType.Function,
       });
     } else {
-      result = {statements: [], expression: o.arrowFn([], meta.useFactory.callFn([]))};
+      result = {
+        statements: [],
+        expression: o.fn([], [new o.ReturnStatement(meta.useFactory.callFn([]))])
+      };
     }
   } else if (meta.useValue !== undefined) {
     // Note: it's safe to use `meta.useValue` instead of the `USE_VALUE in meta` check used for
@@ -97,12 +102,12 @@ export function compileInjectable(
     result = {
       statements: [],
       expression: delegateToFactory(
-          meta.type.value as o.WrappedNodeExpr<any>, meta.type.value as o.WrappedNodeExpr<any>,
+          meta.type.value as o.WrappedNodeExpr<any>, meta.internalType as o.WrappedNodeExpr<any>,
           resolveForwardRefs)
     };
   }
 
-  const token = meta.type.value;
+  const token = meta.internalType;
 
   const injectableProps =
       new DefinitionMap<{token: o.Expression, factory: o.Expression, providedIn: o.Expression}>();
@@ -130,35 +135,36 @@ export function createInjectableType(meta: R3InjectableMetadata) {
 }
 
 function delegateToFactory(
-    type: o.WrappedNodeExpr<any>, useType: o.WrappedNodeExpr<any>,
+    type: o.WrappedNodeExpr<any>, internalType: o.WrappedNodeExpr<any>,
     unwrapForwardRefs: boolean): o.Expression {
-  if (type.node === useType.node) {
+  if (type.node === internalType.node) {
     // The types are the same, so we can simply delegate directly to the type's factory.
     // ```
     // factory: type.ɵfac
     // ```
-    return useType.prop('ɵfac');
+    return internalType.prop('ɵfac');
   }
 
   if (!unwrapForwardRefs) {
     // The type is not wrapped in a `forwardRef()`, so we create a simple factory function that
     // accepts a sub-type as an argument.
     // ```
-    // factory: function(t) { return useType.ɵfac(t); }
+    // factory: function(t) { return internalType.ɵfac(t); }
     // ```
-    return createFactoryFunction(useType);
+    return createFactoryFunction(internalType);
   }
 
-  // The useType is actually wrapped in a `forwardRef()` so we need to resolve that before
+  // The internalType is actually wrapped in a `forwardRef()` so we need to resolve that before
   // calling its factory.
   // ```
   // factory: function(t) { return core.resolveForwardRef(type).ɵfac(t); }
   // ```
-  const unwrappedType = o.importExpr(Identifiers.resolveForwardRef).callFn([useType]);
+  const unwrappedType = o.importExpr(Identifiers.resolveForwardRef).callFn([internalType]);
   return createFactoryFunction(unwrappedType);
 }
 
-function createFactoryFunction(type: o.Expression): o.ArrowFunctionExpr {
-  return o.arrowFn(
-      [new o.FnParam('t', o.DYNAMIC_TYPE)], type.prop('ɵfac').callFn([o.variable('t')]));
+function createFactoryFunction(type: o.Expression): o.FunctionExpr {
+  return o.fn(
+      [new o.FnParam('t', o.DYNAMIC_TYPE)],
+      [new o.ReturnStatement(type.prop('ɵfac').callFn([o.variable('t')]))]);
 }

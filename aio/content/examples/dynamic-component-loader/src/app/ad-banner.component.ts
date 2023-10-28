@@ -1,40 +1,54 @@
 // #docregion
-import { Component, inject } from '@angular/core';
-import { AsyncPipe, NgComponentOutlet } from '@angular/common';
+import { Component, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
 
-import { AdService } from './ad.service';
+import { AdDirective } from './ad.directive';
+import { AdItem } from './ad-item';
+import { AdComponent } from './ad.component';
 
-// #docregion component
 @Component({
   selector: 'app-ad-banner',
-  standalone: true,
-  imports: [NgComponentOutlet, AsyncPipe],
+  // #docregion ad-host
   template: `
     <div class="ad-banner-example">
       <h3>Advertisements</h3>
-      <ng-container *ngComponentOutlet="
-        currentAd.component;
-        inputs: currentAd.inputs;
-      " />
-      <button (click)="displayNextAd()">Next</button>
+      <ng-template adHost></ng-template>
     </div>
   `
+  // #enddocregion ad-host
 })
-export class AdBannerComponent {
-  private adList = inject(AdService).getAds();
+// #docregion class
+export class AdBannerComponent implements OnInit, OnDestroy {
+  @Input() ads: AdItem[] = [];
 
-  private currentAdIndex = 0;
+  currentAdIndex = -1;
 
-  get currentAd() {
-    return this.adList[this.currentAdIndex];
+  @ViewChild(AdDirective, {static: true}) adHost!: AdDirective;
+  interval: number|undefined;
+
+  ngOnInit(): void {
+    this.loadComponent();
+    this.getAds();
   }
 
-  displayNextAd() {
-    this.currentAdIndex++;
-    // Reset the current ad index back to `0` when we reach the end of an array.
-    if (this.currentAdIndex === this.adList.length) {
-      this.currentAdIndex = 0;
-    }
+  ngOnDestroy() {
+    clearInterval(this.interval);
+  }
+
+  loadComponent() {
+    this.currentAdIndex = (this.currentAdIndex + 1) % this.ads.length;
+    const adItem = this.ads[this.currentAdIndex];
+
+    const viewContainerRef = this.adHost.viewContainerRef;
+    viewContainerRef.clear();
+
+    const componentRef = viewContainerRef.createComponent<AdComponent>(adItem.component);
+    componentRef.instance.data = adItem.data;
+  }
+
+  getAds() {
+    this.interval = setInterval(() => {
+      this.loadComponent();
+    }, 3000);
   }
 }
-// #enddocregion component
+// #enddocregion class

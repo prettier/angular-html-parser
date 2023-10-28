@@ -6,21 +6,24 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {getSymbolIterator} from './symbol';
+
+
 export function isIterable(obj: any): obj is Iterable<any> {
-  return obj !== null && typeof obj === 'object' && obj[Symbol.iterator] !== undefined;
+  return obj !== null && typeof obj === 'object' && (obj as any)[getSymbolIterator()] !== undefined;
 }
 
 export function isListLikeIterable(obj: any): boolean {
   if (!isJsObject(obj)) return false;
   return Array.isArray(obj) ||
-      (!(obj instanceof Map) &&  // JS Map are iterables but return entries as [k, v]
-       Symbol.iterator in obj);  // JS Iterable have a Symbol.iterator prop
+      (!(obj instanceof Map) &&      // JS Map are iterables but return entries as [k, v]
+       getSymbolIterator() in obj);  // JS Iterable have a Symbol.iterator prop
 }
 
-export function areIterablesEqual<T>(
-    a: Iterable<T>, b: Iterable<T>, comparator: (a: T, b: T) => boolean): boolean {
-  const iterator1 = a[Symbol.iterator]();
-  const iterator2 = b[Symbol.iterator]();
+export function areIterablesEqual(
+    a: any, b: any, comparator: (a: any, b: any) => boolean): boolean {
+  const iterator1 = a[getSymbolIterator()]();
+  const iterator2 = b[getSymbolIterator()]();
 
   while (true) {
     const item1 = iterator1.next();
@@ -31,14 +34,14 @@ export function areIterablesEqual<T>(
   }
 }
 
-export function iterateListLike<T>(obj: Iterable<T>, fn: (p: T) => void) {
+export function iterateListLike(obj: any, fn: (p: any) => any) {
   if (Array.isArray(obj)) {
     for (let i = 0; i < obj.length; i++) {
       fn(obj[i]);
     }
   } else {
-    const iterator = obj[Symbol.iterator]();
-    let item: IteratorResult<T, any>;
+    const iterator = obj[getSymbolIterator()]();
+    let item: any;
     while (!((item = iterator.next()).done)) {
       fn(item.value);
     }

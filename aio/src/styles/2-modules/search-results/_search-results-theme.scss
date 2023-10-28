@@ -12,7 +12,7 @@
       background-color: constants.$darkgray;
       box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.3);
 
-      $item-color: if($is-dark-theme, constants.$lightgray, constants.$offwhite);
+      $item-color: if($is-dark-theme, constants.$offwhite, constants.$lightgray);
 
       .search-area {
         .search-section-header {
@@ -47,7 +47,7 @@
       .search-results {
         .search-area {
           .search-section-header {
-            color: if($is-dark-theme, constants.$offwhite, constants.$darkgray);
+            color: constants.$darkgray;
           }
 
           .search-result-item {

@@ -14,7 +14,7 @@ import {ResolveData, Route} from '../models';
 import {NavigationTransition} from '../navigation_transition';
 import {ActivatedRouteSnapshot, inheritedParamsDataResolve, RouterStateSnapshot} from '../router_state';
 import {RouteTitleKey} from '../shared';
-import {getDataKeys, wrapIntoObservable} from '../utils/collection';
+import {wrapIntoObservable} from '../utils/collection';
 import {getClosestRouteInjector} from '../utils/config';
 import {getTokenOrFunctionIdentity} from '../utils/preactivation';
 import {isEmptyError} from '../utils/type_guards';
@@ -77,6 +77,10 @@ function resolveNode(
       mapTo(data),
       catchError((e: unknown) => isEmptyError(e as Error) ? EMPTY : throwError(e)),
   );
+}
+
+function getDataKeys(obj: Object): Array<string|symbol> {
+  return [...Object.keys(obj), ...Object.getOwnPropertySymbols(obj)];
 }
 
 function getResolver(

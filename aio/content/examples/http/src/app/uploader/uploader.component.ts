@@ -1,14 +1,9 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-
 import { UploaderService } from './uploader.service';
 
 @Component({
-  standalone: true,
   selector: 'app-uploader',
   templateUrl: './uploader.component.html',
-  imports: [ CommonModule, FormsModule ],
   styles: ['input[type=file] { font-size: 1.2rem; margin-top: 1rem; display: block; }'],
   providers: [ UploaderService ]
 })

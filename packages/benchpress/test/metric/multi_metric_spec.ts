@@ -11,12 +11,10 @@ import {Injector, Metric, MultiMetric} from '../../index';
 (function() {
 function createMetric(ids: any[]) {
   const m = Injector
-                .create({
-                  providers: [
-                    ids.map(id => ({provide: id, useValue: new MockMetric(id)})),
-                    MultiMetric.provideWith(ids)
-                  ]
-                })
+                .create([
+                  ids.map(id => ({provide: id, useValue: new MockMetric(id)})),
+                  MultiMetric.provideWith(ids)
+                ])
                 .get<MultiMetric>(MultiMetric);
   return Promise.resolve(m);
 }

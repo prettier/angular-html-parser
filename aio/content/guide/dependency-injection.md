@@ -25,7 +25,6 @@ The next step is to make it available in the DI by providing it.  A dependency c
 
 <code-example language="typescript">
 @Component({
-  standalone: true,
   selector: 'hero-list',
   template: '...',
   providers: [HeroService]
@@ -35,27 +34,18 @@ class HeroListComponent {}
 
 When you register a provider at the component level, you get a new instance of the service with each new instance of that component.
 
-
-* Use the `providers` field of the `ApplicationConfig` object passed to the `bootstrapApplication` function to provide a service or other `Injectable` at the application level. In this scenario, the `HeroService` is available to all components, directives, and pipes declared in this NgModule or other NgModule which is within the same ModuleInjector applicable for this NgModule. When you register a provider in the `ApplicationConfig`, the same instance of a service is available to all applicable components, directives and pipes.
-
-* For `NgModule` based applications, use the `providers` field of the `@NgModule` decorator to provide a service or other `Injectable` available at the application level.
-
-To understand all edge-cases, see [Hierarchical injectors](guide/hierarchical-dependency-injection). For example:
+* At the NgModule level, using the `providers` field of the `@NgModule` decorator. In this scenario, the `HeroService` is available to all components, directives, and pipes declared in this NgModule. For example:
 
 <code-example language="typescript">
-export const appConfig: ApplicationConfig = {
-    providers: [
-      { provide: HeroService },
-    ]
-};
+@NgModule({
+  declarations: [HeroListComponent]
+  providers: [HeroService]
+})
+class HeroListModule {}
 </code-example>
 
-Then, in `main.ts`:
-<code-example language="typescript">
-bootstrapApplication(AppComponent, appConfig)
-</code-example>
-
-
+When you register a provider with a specific NgModule, the same instance of a service is available to all components in that NgModule.
+To understand all edge-cases, see [Hierarchical injectors](guide/hierarchical-dependency-injection).
 
 * At the application root level, which allows injecting it into other classes in the application. This can be done by adding the `providedIn: 'root'` field to the `@Injectable` decorator:
 
@@ -79,15 +69,6 @@ class HeroListComponent {
 }
 </code-example>
 
-Another option is to use the [inject](api/core/inject) method:
-
-<code-example language="typescript">
-@Component({ … })
-class HeroListComponent {
-  private service = inject(HeroService);
-}
-</code-example>
-
 When Angular discovers that a component depends on a service, it first checks if the injector has any existing instances of that service. If a requested service instance doesn't yet exist, the injector creates one using the registered provider, and adds it to the injector before returning the service to Angular.
 
 When all requested services have been resolved and returned, Angular can call the component's constructor with those services as arguments.
@@ -101,4 +82,4 @@ When all requested services have been resolved and returned, Angular can call th
 * [Creating and injecting services](guide/creating-injectable-service)
 * [Dependency Injection in Action](guide/dependency-injection-in-action)
 
-@reviewed 2023-08-29
+@reviewed 2022-08-02

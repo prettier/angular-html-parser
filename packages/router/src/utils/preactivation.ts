@@ -12,7 +12,7 @@ import {RunGuardsAndResolvers} from '../models';
 import {ChildrenOutletContexts, OutletContext} from '../router_outlet_context';
 import {ActivatedRouteSnapshot, equalParamsAndUrlSegments, RouterStateSnapshot} from '../router_state';
 import {equalPath} from '../url_tree';
-import {shallowEqual} from '../utils/collection';
+import {forEach, shallowEqual} from '../utils/collection';
 import {nodeChildrenAsMap, TreeNode} from '../utils/tree';
 
 export class CanActivate {
@@ -78,10 +78,10 @@ function getChildRouteGuards(
   });
 
   // Process any children left from the current route (not active for the future route)
-  Object.entries(prevChildren)
-      .forEach(
-          ([k, v]: [string, TreeNode<ActivatedRouteSnapshot>]) =>
-              deactivateRouteAndItsChildren(v, contexts!.getContext(k), checks));
+  forEach(
+      prevChildren,
+      (v: TreeNode<ActivatedRouteSnapshot>, k: string) =>
+          deactivateRouteAndItsChildren(v, contexts!.getContext(k), checks));
 
   return checks;
 }
@@ -173,7 +173,7 @@ function deactivateRouteAndItsChildren(
   const children = nodeChildrenAsMap(route);
   const r = route.value;
 
-  Object.entries(children).forEach(([childName, node]) => {
+  forEach(children, (node: TreeNode<ActivatedRouteSnapshot>, childName: string) => {
     if (!r.component) {
       deactivateRouteAndItsChildren(node, context, checks);
     } else if (context) {

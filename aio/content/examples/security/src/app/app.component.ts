@@ -1,16 +1,13 @@
 // #docregion
-import {Component} from '@angular/core';
-import {BypassSecurityComponent} from './bypass-security.component';
-import {InnerHtmlBindingComponent} from './inner-html-binding.component';
+import { Component } from '@angular/core';
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   template: `
-    <h1>Security</h1>
-    <app-inner-html-binding></app-inner-html-binding>
-    <app-bypass-security></app-bypass-security>
-  `,
-  imports: [BypassSecurityComponent, InnerHtmlBindingComponent],
+  <h1>Security</h1>
+  <app-inner-html-binding></app-inner-html-binding>
+  <app-bypass-security></app-bypass-security>
+  `
 })
-export class AppComponent {}
+export class AppComponent {
+}

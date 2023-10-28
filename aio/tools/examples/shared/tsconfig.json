@@ -16,8 +16,5 @@
   },
   "include": [
     "../../../content/examples/*/e2e-spec.ts"
-  ],
-  "angularCompilerOptions": {
-    "disableTypeScriptVersionCheck": true
-  }
+  ]
 }

@@ -2,22 +2,23 @@
 import { Observable } from 'rxjs';
 // #docregion
 
-// Create an Observable that will start listening to browser geolocation updates
+// Create an Observable that will start listening to geolocation updates
 // when a consumer subscribes.
 const locations = new Observable((observer) => {
   let watchId: number;
 
-  // The geolocation API (if it exists) provides values to publish
+  // Simple geolocation API check provides values to publish
   if ('geolocation' in navigator) {
-    watchId = navigator.geolocation.watchPosition(
-      (position: GeolocationPosition) => observer.next(position),
-      (error: GeolocationPositionError) => observer.error(error)
-    );
+    watchId = navigator.geolocation.watchPosition((position: GeolocationPosition) => {
+      observer.next(position);
+    }, (error: GeolocationPositionError) => {
+      observer.error(error);
+    });
   } else {
     observer.error('Geolocation not available');
   }
 
-  // When the consumer unsubscribes, stop listening to geolocation changes.
+  // When the consumer unsubscribes, clean up data ready for next subscription.
   return {
     unsubscribe() {
       navigator.geolocation.clearWatch(watchId);
@@ -25,7 +26,7 @@ const locations = new Observable((observer) => {
   };
 });
 
-// Call subscribe() to start listening for geolocation updates.
+// Call subscribe() to start listening for updates.
 const locationsSubscription = locations.subscribe({
   next(position) {
     console.log('Current Position: ', position);

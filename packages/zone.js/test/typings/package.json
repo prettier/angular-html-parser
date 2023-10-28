@@ -9,11 +9,11 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@types/node": "^16.11.7",
-    "domino": "https://github.com/angular/domino.git#f2435fe1f9f7c91ade0bd472c4723e5eacd7d19a",
+    "@types/node": "12.11.1",
+    "domino": "^2.1.6",
     "zone.js": "file:../../../../dist/bin/packages/zone.js/npm_package"
   },
   "devDependencies": {
-    "typescript": "5.2.2"
+    "typescript": "~4.9.2-rc"
   }
 }

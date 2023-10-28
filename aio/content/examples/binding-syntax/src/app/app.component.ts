@@ -1,12 +1,13 @@
-import {Component, ViewChild, ElementRef} from '@angular/core';
+import { Component, ViewChild, ElementRef } from '@angular/core';
+
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent {
+
   @ViewChild('bindingInput') bindingInput!: ElementRef;
 
   isUnchanged = true;
@@ -24,6 +25,7 @@ export class AppComponent {
   }
 
   toggleDisabled(): any {
+
     const testButton = document.getElementById('testButton') as HTMLInputElement;
     testButton.disabled = !testButton.disabled;
     console.warn(testButton.disabled);

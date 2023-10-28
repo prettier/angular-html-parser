@@ -14,13 +14,9 @@ To understand the benefits of `NgZone`, it is important to have a clear grasp of
 
 ### Displaying and updating data in Angular
 
-In Angular, you can display data by projecting the values of Angular component properties into an HTML template.
+In Angular, you can display data by binding controls in an HTML template to the properties of an Angular component.
 
-<code-example format="html" language="html">
-
-&lt;label&gt;My favorite hero is {{hero.name}}&lt;/label&gt;
-
-</code-example>
+<code-example header="src/app/app.component.ts" path="displaying-data/src/app/app.component.1.ts"></code-example>
 
 You can also bind DOM events to a method of an Angular component.
 In such methods, you can also update a property of the Angular component, which updates the corresponding data displayed in the template.
@@ -90,7 +86,7 @@ To clarify how changes are detected and values updated, consider the following c
       value = v;
       // call detectChange manually
       detectChange();
-    });
+    }, 100);
 
     // Example 5: some other asynchronous APIs
     document.getElementById('canvas').toBlob(blob =&gt; {
@@ -500,4 +496,4 @@ To remove Zone.js, make the following changes.
 
 <!-- end links -->
 
-@reviewed 2023-09-26
+@reviewed 2022-02-28

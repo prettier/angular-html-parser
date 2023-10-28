@@ -1,5 +1,5 @@
 // #docplaster ...
-/* To learn more about this file see: https://angular.io/guide/typescript-configuration. */
+/* To learn more about this file see: https://angular.io/config/tsconfig. */
 // #docregion angular-compiler-options-app
 {
     "extends": "./tsconfig.json",
@@ -36,9 +36,8 @@
       "preserveWhitespaces": true,
       // #enddocregion angular-compiler-options-app
       "sourceMap": true,
-      "declaration": false,
+      "declaration": false
       // #docregion angular-compiler-options-app
-      "disableTypeScriptVersionCheck": true
     }
   }
   // #enddocregion angular-compiler-options-app

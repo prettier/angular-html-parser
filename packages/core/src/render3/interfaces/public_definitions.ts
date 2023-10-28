@@ -18,8 +18,7 @@ export type ɵɵDirectiveDeclaration<
   T,
   Selector extends string,
   ExportAs extends string[],
-  // `string` keys are for backwards compatibility with pre-16 versions.
-  InputMap extends {[key: string]: string|{alias: string|null, required: boolean}},
+  InputMap extends {[key: string]: string},
   OutputMap extends {[key: string]: string},
   QueryFields extends string[],
   // Optional as this was added to align the `IsStandalone` parameters
@@ -28,8 +27,7 @@ export type ɵɵDirectiveDeclaration<
   // Optional as this was added in Angular v14. All pre-existing directives
   // are not standalone.
   IsStandalone extends boolean = false,
-  HostDirectives = never,
-  IsSignal extends boolean = false> = unknown;
+  HostDirectives = never> = unknown;
 
 /**
  * @publicApi
@@ -38,16 +36,14 @@ export type ɵɵComponentDeclaration<
   T,
   Selector extends String,
   ExportAs extends string[],
-  // `string` keys are for backwards compatibility with pre-16 versions.
-  InputMap extends {[key: string]: string|{alias: string|null, required: boolean}},
+  InputMap extends {[key: string]: string},
   OutputMap extends {[key: string]: string},
   QueryFields extends string[],
   NgContentSelectors extends string[],
   // Optional as this was added in Angular v14. All pre-existing components
   // are not standalone.
   IsStandalone extends boolean = false,
-  HostDirectives = never,
-  IsSignal extends boolean = false> = unknown;
+  HostDirectives = never> = unknown;
 
 /**
  * @publicApi

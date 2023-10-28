@@ -2,7 +2,6 @@ import { Component } from '@angular/core';
 import { trigger, transition, state, animate, style, keyframes } from '@angular/animations';
 
 @Component({
-  standalone: true,
   selector: 'app-open-close',
   animations: [
 // #docregion trigger
@@ -12,7 +11,7 @@ import { trigger, transition, state, animate, style, keyframes } from '@angular/
         opacity: 1,
         backgroundColor: 'yellow'
       })),
-      state('closed', style({
+      state('close', style({
         height: '100px',
         opacity: 0.5,
         backgroundColor: 'green'

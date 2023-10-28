@@ -5,16 +5,18 @@
   "author": "angular",
   "license": "MIT",
   "engines": {
-    "node": ">=18.13.0"
+    "node": "^14.20.0 || ^16.13.0 || >=18.10.0"
   },
   "peerDependencies": {
     "@angular/animations": "0.0.0-PLACEHOLDER",
     "@angular/common": "0.0.0-PLACEHOLDER",
     "@angular/compiler": "0.0.0-PLACEHOLDER",
     "@angular/core": "0.0.0-PLACEHOLDER",
-    "@angular/platform-browser": "0.0.0-PLACEHOLDER"
+    "@angular/platform-browser": "0.0.0-PLACEHOLDER",
+    "@angular/platform-browser-dynamic": "0.0.0-PLACEHOLDER"
   },
   "dependencies": {
+    "domino": "^2.1.2",
     "tslib": "^2.3.0",
     "xhr2": "^0.2.0"
   },
@@ -27,7 +29,8 @@
     "packageGroup": "NG_UPDATE_PACKAGE_GROUP"
   },
   "sideEffects": [
-    "./esm2022/init/**",
-    "./fesm2022/init.mjs"
+    "./esm2020/init/**",
+    "./fesm2015/init.mjs",
+    "./fesm2020/init.mjs"
   ]
 }

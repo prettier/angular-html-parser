@@ -20,7 +20,7 @@ runInEachFileSystem(() => {
     let env!: NgtscTestEnvironment;
 
     beforeEach(() => {
-      env = NgtscTestEnvironment.setup(testFiles);
+      env = NgtscTestEnvironment.setup(testFiles, absoluteFrom('/app'));
       const tsconfig: {[key: string]: any} = {
         extends: '../tsconfig-base.json',
         compilerOptions: {

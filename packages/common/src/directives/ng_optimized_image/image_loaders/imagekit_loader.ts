@@ -13,7 +13,7 @@ import {createImageLoader, ImageLoaderConfig, ImageLoaderInfo} from './image_loa
  */
 export const imageKitLoaderInfo: ImageLoaderInfo = {
   name: 'ImageKit',
-  testUrl: isImageKitUrl,
+  testUrl: isImageKitUrl
 };
 
 const IMAGE_KIT_LOADER_REGEX = /https?\:\/\/[^\/]+\.imagekit\.io\/.+/;
@@ -39,18 +39,12 @@ export const provideImageKitLoader = createImageLoader(
     createImagekitUrl,
     ngDevMode ? ['https://ik.imagekit.io/mysite', 'https://subdomain.mysite.com'] : undefined);
 
-export function createImagekitUrl(path: string, config: ImageLoaderConfig): string {
+export function createImagekitUrl(path: string, config: ImageLoaderConfig) {
   // Example of an ImageKit image URL:
   // https://ik.imagekit.io/demo/tr:w-300,h-300/medium_cafe_B1iTdD0C.jpg
-  const {src, width} = config;
-  let urlSegments: string[];
-
-  if (width) {
-    const params = `tr:w-${width}`;
-    urlSegments = [path, params, src];
-  } else {
-    urlSegments = [path, src];
+  let params = `tr:q-auto`;  // applies the "auto quality" transformation
+  if (config.width) {
+    params += `,w-${config.width}`;
   }
-
-  return urlSegments.join('/');
+  return `${path}/${params}/${config.src}`;
 }

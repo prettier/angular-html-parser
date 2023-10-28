@@ -23,11 +23,6 @@
                 preview</a>
             </label>
             {% endif %}
-            {%- if option.experimental %}
-            <label class="api-status-label experimental" title="This API is experimental">
-              experimental
-            </label>
-            {% endif %}
             {$ github.githubLinks(option, versionInfo) $}
           </div>
         </th>
@@ -47,7 +42,6 @@
           </code-example>
         </td>
       </tr>
-      {%- if option.description or option.usageNotes %}
       <tr>
         <td>
           {%- if option.description %}
@@ -59,7 +53,6 @@
           {% endif %}
         </td>
       </tr>
-      {% endif %}
     </tbody>
   </table>
   {% endfor %}

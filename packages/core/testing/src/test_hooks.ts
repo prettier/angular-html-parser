@@ -15,17 +15,21 @@
 import {resetFakeAsyncZone} from './fake_async';
 import {TestBedImpl} from './test_bed';
 
+declare var global: any;
+
+const _global = <any>(typeof window === 'undefined' ? global : window);
+
 // Reset the test providers and the fake async zone before each test.
-// We keep a guard because somehow this file can make it into a bundle and be executed
-// beforeEach is only defined when executing the tests
-globalThis.beforeEach?.(getCleanupHook(false));
+if (_global.beforeEach) {
+  _global.beforeEach(getCleanupHook(false));
+}
 
 // We provide both a `beforeEach` and `afterEach`, because the updated behavior for
 // tearing down the module is supposed to run after the test so that we can associate
 // teardown errors with the correct test.
-// We keep a guard because somehow this file can make it into a bundle and be executed
-// afterEach is only defined when executing the tests
-globalThis.afterEach?.(getCleanupHook(true));
+if (_global.afterEach) {
+  _global.afterEach(getCleanupHook(true));
+}
 
 function getCleanupHook(expectedTeardownValue: boolean) {
   return () => {

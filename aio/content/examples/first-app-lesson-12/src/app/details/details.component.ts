@@ -3,19 +3,15 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { HousingService } from '../housing.service';
 import { HousingLocation } from '../housinglocation';
-// #docregion form-imports
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
-// #enddocregion
+
 @Component({
   selector: 'app-details',
   standalone: true,
-// #docregion component-imports
   imports: [
     CommonModule,
     ReactiveFormsModule
   ],
-// #enddocregion
-// #docregion component-template
   template: `
     <article>
       <img class="listing-photo" [src]="housingLocation?.photo"
@@ -48,7 +44,6 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
       </section>
     </article>
   `,
-// #enddocregion
   styleUrls: ['./details.component.css'],
 })
 export class DetailsComponent {
@@ -56,25 +51,21 @@ export class DetailsComponent {
   route: ActivatedRoute = inject(ActivatedRoute);
   housingService = inject(HousingService);
   housingLocation: HousingLocation | undefined;
-// #docregion form-code
+
   applyForm = new FormGroup({
     firstName: new FormControl(''),
     lastName: new FormControl(''),
     email: new FormControl('')
   });
-// #enddocregion
 
   constructor() {
     const housingLocationId = parseInt(this.route.snapshot.params['id'], 10);
     this.housingLocation = this.housingService.getHousingLocationById(housingLocationId);
   }
-// #docregion form-submit
+
   submitApplication() {
-    this.housingService.submitApplication(
-      this.applyForm.value.firstName ?? '',
-      this.applyForm.value.lastName ?? '',
-      this.applyForm.value.email ?? ''
-    );
+    const { firstName, lastName, email } = this.applyForm.value;
+      this.housingService.submitApplication(firstName ?? '', lastName ?? '', email ?? '');
   }
-// #enddocregion
+
 }

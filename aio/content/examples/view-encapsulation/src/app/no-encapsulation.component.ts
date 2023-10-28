@@ -1,8 +1,7 @@
-import {Component, ViewEncapsulation} from '@angular/core';
+import { Component, ViewEncapsulation } from '@angular/core';
 
 // #docregion
 @Component({
-  standalone: true,
   selector: 'app-no-encapsulation',
   template: `
     <h2>None</h2>
@@ -11,4 +10,4 @@ import {Component, ViewEncapsulation} from '@angular/core';
   styles: ['h2, .none-message { color: red; }'],
   encapsulation: ViewEncapsulation.None,
 })
-export class NoEncapsulationComponent {}
+export class NoEncapsulationComponent { }

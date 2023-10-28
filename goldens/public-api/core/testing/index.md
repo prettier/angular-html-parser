@@ -8,8 +8,6 @@ import { ChangeDetectorRef } from '@angular/core';
 import { Component } from '@angular/core';
 import { ComponentRef } from '@angular/core';
 import { DebugElement } from '@angular/core';
-import { ɵDeferBlockBehavior as DeferBlockBehavior } from '@angular/core';
-import { ɵDeferBlockState as DeferBlockState } from '@angular/core';
 import { Directive } from '@angular/core';
 import { ElementRef } from '@angular/core';
 import { InjectFlags } from '@angular/core';
@@ -22,8 +20,6 @@ import { PlatformRef } from '@angular/core';
 import { ProviderToken } from '@angular/core';
 import { SchemaMetadata } from '@angular/core';
 import { Type } from '@angular/core';
-import { ɵDeferBlockDetails } from '@angular/core';
-import { ɵFlushableEffectRunner } from '@angular/core';
 
 // @public
 export const __core_private_testing_placeholder__ = "";
@@ -33,7 +29,7 @@ export function async(fn: Function): (done: any) => any;
 
 // @public
 export class ComponentFixture<T> {
-    constructor(componentRef: ComponentRef<T>, ngZone: NgZone | null, effectRunner: ɵFlushableEffectRunner | null, _autoDetect: boolean);
+    constructor(componentRef: ComponentRef<T>, ngZone: NgZone | null, _autoDetect: boolean);
     autoDetectChanges(autoDetect?: boolean): void;
     changeDetectorRef: ChangeDetectorRef;
     checkNoChanges(): void;
@@ -44,7 +40,6 @@ export class ComponentFixture<T> {
     destroy(): void;
     detectChanges(checkNoChanges?: boolean): void;
     elementRef: ElementRef;
-    getDeferBlocks(): Promise<DeferBlockFixture[]>;
     isStable(): boolean;
     nativeElement: any;
     // (undocumented)
@@ -54,21 +49,10 @@ export class ComponentFixture<T> {
 }
 
 // @public (undocumented)
-export const ComponentFixtureAutoDetect: InjectionToken<boolean>;
+export const ComponentFixtureAutoDetect: InjectionToken<boolean[]>;
 
 // @public (undocumented)
-export const ComponentFixtureNoNgZone: InjectionToken<boolean>;
-
-export { DeferBlockBehavior }
-
-// @public
-export class DeferBlockFixture {
-    constructor(block: ɵDeferBlockDetails, componentFixture: ComponentFixture<unknown>);
-    getDeferBlocks(): Promise<DeferBlockFixture[]>;
-    render(state: DeferBlockState): Promise<void>;
-}
-
-export { DeferBlockState }
+export const ComponentFixtureNoNgZone: InjectionToken<boolean[]>;
 
 // @public
 export function discardPeriodicTasks(): void;
@@ -126,7 +110,6 @@ export interface TestBed {
     createComponent<T>(component: Type<T>): ComponentFixture<T>;
     // (undocumented)
     execute(tokens: any[], fn: Function, context?: any): any;
-    flushEffects(): void;
     // @deprecated (undocumented)
     get<T>(token: ProviderToken<T>, notFoundValue?: T, flags?: InjectFlags): any;
     // @deprecated (undocumented)
@@ -211,7 +194,6 @@ export interface TestEnvironmentOptions {
 export interface TestModuleMetadata {
     // (undocumented)
     declarations?: any[];
-    deferBlockBehavior?: DeferBlockBehavior;
     errorOnUnknownElements?: boolean;
     errorOnUnknownProperties?: boolean;
     // (undocumented)

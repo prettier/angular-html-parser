@@ -38,8 +38,8 @@ const formControlBinding: Provider = {
  * For details, see [Deprecated features](guide/deprecations#ngmodel-with-reactive-forms).
  *
  * @see [Reactive Forms Guide](guide/reactive-forms)
- * @see {@link FormControl}
- * @see {@link AbstractControl}
+ * @see `FormControl`
+ * @see `AbstractControl`
  *
  * @usageNotes
  *

@@ -8,7 +8,7 @@
 
 import ts from 'typescript';
 
-import {absoluteFrom, AbsoluteFsPath, FileSystem, getFileSystem, ReadonlyFileSystem} from '../src/ngtsc/file_system';
+import {absoluteFrom, AbsoluteFsPath, FileSystem, getFileSystem, ReadonlyFileSystem, relative, resolve} from '../src/ngtsc/file_system';
 
 import {NgCompilerOptions} from './ngtsc/core/api';
 import {replaceTsWithNgInErrors} from './ngtsc/diagnostics';
@@ -57,7 +57,6 @@ export function calcProjectFileAndBasePath(
   const projectFile = projectIsDir ? host.join(absProject, 'tsconfig.json') : absProject;
   const projectDir = projectIsDir ? absProject : host.dirname(absProject);
   const basePath = host.resolve(projectDir);
-
   return {projectFile, basePath};
 }
 
@@ -80,34 +79,25 @@ export function readConfiguration(
 
           // we are only interested into merging 'angularCompilerOptions' as
           // other options like 'compilerOptions' are merged by TS
-          let existingNgCompilerOptions = {...config.angularCompilerOptions, ...parentOptions};
-          if (!config.extends) {
-            return existingNgCompilerOptions;
-          }
+          const existingNgCompilerOptions = {...config.angularCompilerOptions, ...parentOptions};
 
-          const extendsPaths: string[] =
-              typeof config.extends === 'string' ? [config.extends] : config.extends;
-
-          // Call readAngularCompilerOptions recursively to merge NG Compiler options
-          // Reverse the array so the overrides happen from right to left.
-          return [...extendsPaths].reverse().reduce((prevOptions, extendsPath) => {
+          if (config.extends && typeof config.extends === 'string') {
             const extendedConfigPath = getExtendedConfigPath(
-                configFile,
-                extendsPath,
-                host,
-                fs,
+                configFile, config.extends, host, fs,
             );
 
-            return extendedConfigPath === null ?
-                prevOptions :
-                readAngularCompilerOptions(extendedConfigPath, prevOptions);
-          }, existingNgCompilerOptions);
+            if (extendedConfigPath !== null) {
+              // Call readAngularCompilerOptions recursively to merge NG Compiler options
+              return readAngularCompilerOptions(extendedConfigPath, existingNgCompilerOptions);
+            }
+          }
+
+          return existingNgCompilerOptions;
         };
 
     const {projectFile, basePath} = calcProjectFileAndBasePath(project, host);
     const configFileName = host.resolve(host.pwd(), projectFile);
     const {config, error} = readConfigFile(projectFile);
-
     if (error) {
       return {
         project,
@@ -117,7 +107,6 @@ export function readConfiguration(
         emitFlags: api.EmitFlags.Default
       };
     }
-
     const existingCompilerOptions: api.CompilerOptions = {
       genDir: basePath,
       basePath,
@@ -131,10 +120,10 @@ export function readConfiguration(
             config, parseConfigHost, basePath, existingCompilerOptions, configFileName);
 
     let emitFlags = api.EmitFlags.Default;
-    if (!(options['skipMetadataEmit'] || options['flatModuleOutFile'])) {
+    if (!(options.skipMetadataEmit || options.flatModuleOutFile)) {
       emitFlags |= api.EmitFlags.Metadata;
     }
-    if (options['skipTemplateCodegen']) {
+    if (options.skipTemplateCodegen) {
       emitFlags = emitFlags & ~api.EmitFlags.Codegen;
     }
     return {project: projectFile, rootNames, projectReferences, options, errors, emitFlags};
@@ -192,7 +181,7 @@ function getExtendedConfigPathWorker(
     } =
         ts.nodeModuleNameResolver(
             extendsValue, configFile,
-            {moduleResolution: ts.ModuleResolutionKind.Node10, resolveJsonModule: true},
+            {moduleResolution: ts.ModuleResolutionKind.NodeJs, resolveJsonModule: true},
             parseConfigHost);
     if (resolvedModule) {
       return absoluteFrom(resolvedModule.resolvedFileName);

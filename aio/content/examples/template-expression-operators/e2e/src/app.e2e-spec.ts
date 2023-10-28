@@ -1,4 +1,3 @@
-// Archived: see only referencing guide, `template-expression-operators.md`.
 import { browser, element, by } from 'protractor';
 
 describe('Template Expression Operators', () => {

@@ -15,7 +15,7 @@ import {NodeJSFileSystem, setFileSystem} from '../src/ngtsc/file_system';
 import {getAngularPackagesFromRunfiles, resolveFromRunfiles} from '../src/ngtsc/testing';
 
 // TEST_TMPDIR is always set by Bazel.
-const tmpdir = process.env['TEST_TMPDIR']!;
+const tmpdir = process.env.TEST_TMPDIR!;
 
 export function makeTempDir(): string {
   let dir: string;
@@ -40,7 +40,7 @@ export interface TestSupport {
 function createTestSupportFor(basePath: string) {
   // Typescript uses identity comparison on `paths` and other arrays in order to determine
   // if program structure can be reused for incremental compilation, so we reuse the default
-  // values unless overriden, and freeze them so that they can't be accidentally changed somewhere
+  // values unless overriden, and freeze them so that they can't be accidentaly changed somewhere
   // in tests.
   const defaultCompilerOptions = {
     basePath,
@@ -56,7 +56,7 @@ function createTestSupportFor(basePath: string) {
     'target': ts.ScriptTarget.ES5,
     'newLine': ts.NewLineKind.LineFeed,
     'module': ts.ModuleKind.ES2015,
-    'moduleResolution': ts.ModuleResolutionKind.Node10,
+    'moduleResolution': ts.ModuleResolutionKind.NodeJs,
     'lib': Object.freeze([
       path.resolve(basePath, 'node_modules/typescript/lib/lib.es6.d.ts'),
     ]) as string[],

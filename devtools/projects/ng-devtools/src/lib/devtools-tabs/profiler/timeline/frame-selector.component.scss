@@ -2,7 +2,6 @@
   padding: 2px;
   height: 54px;
   display: flex;
-  flex-direction: row;
   align-items: flex-end;
   justify-content: center;
   align-items: center;
@@ -73,9 +72,4 @@
       border: 2px solid #073d69;
     }
   }
-}
-
-
-cdk-virtual-scroll-viewport {
-  height: 50px;
 }

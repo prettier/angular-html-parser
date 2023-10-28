@@ -25,17 +25,17 @@
  * but restricted to the API surface used within Angular.
  */
 
-export type TrustedHTML = string&{
+export declare interface TrustedHTML {
   __brand__: 'TrustedHTML';
-};
-export type TrustedScript = string&{
+}
+export declare interface TrustedScript {
   __brand__: 'TrustedScript';
-};
-export type TrustedScriptURL = string&{
+}
+export declare interface TrustedScriptURL {
   __brand__: 'TrustedScriptURL';
-};
+}
 
-export interface TrustedTypePolicyFactory {
+export declare interface TrustedTypePolicyFactory {
   createPolicy(policyName: string, policyOptions: {
     createHTML?: (input: string) => string,
     createScript?: (input: string) => string,
@@ -44,7 +44,7 @@ export interface TrustedTypePolicyFactory {
   getAttributeType(tagName: string, attribute: string): string|null;
 }
 
-export interface TrustedTypePolicy {
+export declare interface TrustedTypePolicy {
   createHTML(input: string): TrustedHTML;
   createScript(input: string): TrustedScript;
   createScriptURL(input: string): TrustedScriptURL;

@@ -4,7 +4,7 @@ import { SwUpdate } from '@angular/service-worker';
 function notifyUser(message: string): void { }
 
 // #docregion sw-unrecoverable-state
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class HandleUnrecoverableStateService {
   constructor(updates: SwUpdate) {
     updates.unrecoverable.subscribe(event => {

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {SimpleChange, ɵWritable as Writable} from '@angular/core';
+import {SimpleChange} from '@angular/core';
 import {fakeAsync, flushMicrotasks, tick} from '@angular/core/testing';
 import {AbstractControl, CheckboxControlValueAccessor, ControlValueAccessor, DefaultValueAccessor, FormArray, FormArrayName, FormControl, FormControlDirective, FormControlName, FormGroup, FormGroupDirective, FormGroupName, NgControl, NgForm, NgModel, NgModelGroup, SelectControlValueAccessor, SelectMultipleControlValueAccessor, ValidationErrors, Validator, Validators} from '@angular/forms';
 import {selectValueAccessor} from '@angular/forms/src/directives/shared';
@@ -360,7 +360,7 @@ class CustomValidatorDirective implements Validator {
 
              flushMicrotasks();
 
-             expect(formModel.get(['person', 'login'])).not.toBeNull();
+             expect(formModel.get(['person', 'login'])).not.toBeNull;
            }));
 
         // should update the form's value and validity
@@ -658,7 +658,7 @@ class CustomValidatorDirective implements Validator {
         parent.form = new FormGroup({'name': formModel});
         controlNameDir = new FormControlName(parent, [], [], [defaultAccessor], null);
         controlNameDir.name = 'name';
-        (controlNameDir as Writable<FormControlName>).control = formModel;
+        (controlNameDir as {control: FormControl}).control = formModel;
       });
 
       it('should reexport control properties', () => {

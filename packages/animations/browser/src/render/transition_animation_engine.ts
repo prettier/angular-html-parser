@@ -6,7 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import {AnimationOptions, AnimationPlayer, AUTO_STYLE, NoopAnimationPlayer, ɵAnimationGroupPlayer as AnimationGroupPlayer, ɵPRE_STYLE as PRE_STYLE, ɵStyleDataMap} from '@angular/animations';
-import {ɵWritable as Writable} from '@angular/core';
 
 import {AnimationTimelineInstruction} from '../dsl/animation_timeline_instruction';
 import {AnimationTransitionFactory} from '../dsl/animation_transition_factory';
@@ -49,7 +48,7 @@ interface TriggerListener {
   callback: (event: any) => any;
 }
 
-interface QueueInstruction {
+export interface QueueInstruction {
   element: any;
   triggerName: string;
   fromState: StateValue;
@@ -59,9 +58,9 @@ interface QueueInstruction {
   isFallbackTransition: boolean;
 }
 
-const REMOVAL_FLAG = '__ng_removed';
+export const REMOVAL_FLAG = '__ng_removed';
 
-interface ElementAnimationState {
+export interface ElementAnimationState {
   setForRemoval: boolean;
   setForMove: boolean;
   hasAnimation: boolean;
@@ -70,7 +69,7 @@ interface ElementAnimationState {
   previousTriggersValues?: Map<string, string>;
 }
 
-class StateValue {
+export class StateValue {
   public value: string;
   public options: AnimationOptions;
 
@@ -107,10 +106,10 @@ class StateValue {
   }
 }
 
-const VOID_VALUE = 'void';
-const DEFAULT_STATE_VALUE = new StateValue(VOID_VALUE);
+export const VOID_VALUE = 'void';
+export const DEFAULT_STATE_VALUE = new StateValue(VOID_VALUE);
 
-class AnimationTransitionNamespace {
+export class AnimationTransitionNamespace {
   public players: TransitionAnimationPlayer[] = [];
 
   private _triggers = new Map<string, AnimationTrigger>();
@@ -509,9 +508,17 @@ class AnimationTransitionNamespace {
     this.players.forEach(p => p.destroy());
     this._signalRemovalForInnerTriggers(this.hostElement, context);
   }
+
+  elementContainsData(element: any): boolean {
+    let containsData = false;
+    if (this._elementListeners.has(element)) containsData = true;
+    containsData =
+        (this._queue.find(entry => entry.element === element) ? true : false) || containsData;
+    return containsData;
+  }
 }
 
-interface QueuedTransition {
+export interface QueuedTransition {
   element: any;
   instruction: AnimationTransitionInstruction;
   player: TransitionAnimationPlayer;
@@ -633,18 +640,19 @@ export class TransitionAnimationEngine {
 
   destroy(namespaceId: string, context: any) {
     if (!namespaceId) return;
-    this.afterFlush(() => {});
 
-    this.afterFlushAnimationsDone(() => {
-      const ns = this._fetchNamespace(namespaceId);
+    const ns = this._fetchNamespace(namespaceId);
+
+    this.afterFlush(() => {
       this.namespacesByHostElement.delete(ns.hostElement);
+      delete this._namespaceLookup[namespaceId];
       const index = this._namespaceList.indexOf(ns);
       if (index >= 0) {
         this._namespaceList.splice(index, 1);
       }
-      ns.destroy(context);
-      delete this._namespaceLookup[namespaceId];
     });
+
+    this.afterFlushAnimationsDone(() => ns.destroy(context));
   }
 
   private _fetchNamespace(id: string) {
@@ -736,7 +744,7 @@ export class TransitionAnimationEngine {
     }
   }
 
-  removeNode(namespaceId: string, element: any, context: any): void {
+  removeNode(namespaceId: string, element: any, isHostElement: boolean, context: any): void {
     if (isElementNode(element)) {
       const ns = namespaceId ? this._fetchNamespace(namespaceId) : null;
       if (ns) {
@@ -745,9 +753,11 @@ export class TransitionAnimationEngine {
         this.markElementAsRemoved(namespaceId, element, false, context);
       }
 
-      const hostNS = this.namespacesByHostElement.get(element);
-      if (hostNS && hostNS.id !== namespaceId) {
-        hostNS.removeNode(element, context);
+      if (isHostElement) {
+        const hostNS = this.namespacesByHostElement.get(element);
+        if (hostNS && hostNS.id !== namespaceId) {
+          hostNS.removeNode(element, context);
+        }
       }
     } else {
       this._onRemovalComplete(element, context);
@@ -1158,7 +1168,9 @@ export class TransitionAnimationEngine {
     replaceNodes.forEach(node => {
       const post = postStylesMap.get(node);
       const pre = preStylesMap.get(node);
-      postStylesMap.set(node, new Map([...(post?.entries() ?? []), ...(pre?.entries() ?? [])]));
+      postStylesMap.set(
+          node,
+          new Map([...Array.from(post?.entries() ?? []), ...Array.from(pre?.entries() ?? [])]));
     });
 
     const rootPlayers: TransitionAnimationPlayer[] = [];
@@ -1306,6 +1318,16 @@ export class TransitionAnimationEngine {
     return rootPlayers;
   }
 
+  elementContainsData(namespaceId: string, element: any) {
+    let containsData = false;
+    const details = element[REMOVAL_FLAG] as ElementAnimationState;
+    if (details && details.setForRemoval) containsData = true;
+    if (this.playersByElement.has(element)) containsData = true;
+    if (this.playersByQueriedElement.has(element)) containsData = true;
+    if (this.statesByElement.has(element)) containsData = true;
+    return this._fetchNamespace(namespaceId).elementContainsData(element) || containsData;
+  }
+
   afterFlush(callback: () => any) {
     this._flushFns.push(callback);
   }
@@ -1416,7 +1438,8 @@ export class TransitionAnimationEngine {
       const postStyles = postStylesMap.get(element);
 
       const keyframes = normalizeKeyframes(
-          this._normalizer, timelineInstruction.keyframes, preStyles, postStyles);
+          this.driver, this._normalizer, element, timelineInstruction.keyframes, preStyles,
+          postStyles);
       const player = this._buildPlayer(timelineInstruction, keyframes, previousPlayers);
 
       // this means that this particular player belongs to a sub trigger. It is
@@ -1476,7 +1499,8 @@ export class TransitionAnimationPlayer implements AnimationPlayer {
 
   private _queuedCallbacks = new Map<string, ((event: any) => any)[]>();
   public readonly destroyed = false;
-  public parentPlayer: AnimationPlayer|null = null;
+  // TODO(issue/24571): remove '!'.
+  public parentPlayer!: AnimationPlayer;
 
   public markedForDestroy: boolean = false;
   public disabled = false;
@@ -1497,7 +1521,7 @@ export class TransitionAnimationPlayer implements AnimationPlayer {
     this._queuedCallbacks.clear();
     this._containsRealPlayer = true;
     this.overrideTotalTime(player.totalTime);
-    (this as Writable<this>).queued = false;
+    (this as {queued: boolean}).queued = false;
   }
 
   getRealPlayer() {
@@ -1575,7 +1599,7 @@ export class TransitionAnimationPlayer implements AnimationPlayer {
     !this.queued && this._player.reset();
   }
 
-  setPosition(p: number): void {
+  setPosition(p: any): void {
     if (!this.queued) {
       this._player.setPosition(p);
     }

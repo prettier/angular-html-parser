@@ -38,7 +38,6 @@ module.exports = new Package('angular-base', [
   .processor(require('./processors/checkContentRules'))
   .processor(require('./processors/splitDescription'))
   .processor(require('./processors/disambiguateDocPaths'))
-  .processor(require('./processors/checkAbsoluteAioLinks'))
 
   // overrides base packageInfo and returns the one for the 'angular/angular' repo.
   .factory('packageInfo', function() { return require(path.resolve(PROJECT_ROOT, 'package.json')); })
@@ -78,7 +77,7 @@ module.exports = new Package('angular-base', [
 
   // Target environments
   .config(function(targetEnvironments) {
-    const ALLOWED_LANGUAGES = ['ts', 'js'];
+    const ALLOWED_LANGUAGES = ['ts', 'js', 'dart'];
     const TARGET_LANGUAGE = 'ts';
 
     ALLOWED_LANGUAGES.forEach(target => targetEnvironments.addAllowed(target));
@@ -95,17 +94,11 @@ module.exports = new Package('angular-base', [
 
     // Standard patterns for matching docs to templates
     templateFinder.templatePatterns = [
-      '${ doc.template }',
-      '${ doc.id }.${ doc.docType }.template.html',
-      '${ doc.id }.template.html',
-      '${ doc.docType }.template.html',
-      '${ doc.id }.${ doc.docType }.template.js',
-      '${ doc.id }.template.js',
-      '${ doc.docType }.template.js',
-      '${ doc.id }.${ doc.docType }.template.json',
-      '${ doc.id }.template.json',
-      '${ doc.docType }.template.json',
-      'common.template.html',
+      '${ doc.template }', '${ doc.id }.${ doc.docType }.template.html',
+      '${ doc.id }.template.html', '${ doc.docType }.template.html',
+      '${ doc.id }.${ doc.docType }.template.js', '${ doc.id }.template.js',
+      '${ doc.docType }.template.js', '${ doc.id }.${ doc.docType }.template.json',
+      '${ doc.id }.template.json', '${ doc.docType }.template.json', 'common.template.html'
     ];
 
     // Nunjucks and Angular conflict in their template bindings so change Nunjucks

@@ -11,10 +11,9 @@ import '../util/ng_dev_mode';
 import {RuntimeError, RuntimeErrorCode} from '../errors';
 import {OnDestroy} from '../interface/lifecycle_hooks';
 import {Type} from '../interface/type';
-import {emitInstanceCreatedByInjectorEvent, emitProviderConfiguredEvent, InjectorProfilerContext, runInInjectorProfilerContext, setInjectorProfilerContext} from '../render3/debug/injector_profiler';
+import {getComponentDef} from '../render3/definition';
 import {FactoryFn, getFactoryDef} from '../render3/definition_factory';
 import {throwCyclicDependencyError, throwInvalidProviderError, throwMixedMultiProviderError} from '../render3/errors_di';
-import {NG_ENV_ID} from '../render3/fields';
 import {newArray} from '../util/array_utils';
 import {EMPTY_ARRAY} from '../util/empty';
 import {stringify} from '../util/stringify';
@@ -113,13 +112,12 @@ export abstract class EnvironmentInjector implements Injector {
   /**
    * Runs the given function in the context of this `EnvironmentInjector`.
    *
-   * Within the function's stack frame, [`inject`](api/core/inject) can be used to inject
-   * dependencies from this injector. Note that `inject` is only usable synchronously, and cannot be
-   * used in any asynchronous callbacks or after any `await` points.
+   * Within the function's stack frame, `inject` can be used to inject dependencies from this
+   * injector. Note that `inject` is only usable synchronously, and cannot be used in any
+   * asynchronous callbacks or after any `await` points.
    *
    * @param fn the closure to be run in the context of this injector
    * @returns the return value of the function, if any
-   * @deprecated use the standalone function `runInInjectionContext` instead
    */
   abstract runInContext<ReturnT>(fn: () => ReturnT): ReturnT;
 
@@ -128,7 +126,7 @@ export abstract class EnvironmentInjector implements Injector {
   /**
    * @internal
    */
-  abstract onDestroy(callback: () => void): () => void;
+  abstract onDestroy(callback: () => void): void;
 }
 
 export class R3Injector extends EnvironmentInjector {
@@ -180,7 +178,8 @@ export class R3Injector extends EnvironmentInjector {
       this.scopes.add(record.value as InjectorScope);
     }
 
-    this.injectorDefTypes = new Set(this.get(INJECTOR_DEF_TYPES, EMPTY_ARRAY, InjectFlags.Self));
+    this.injectorDefTypes =
+        new Set(this.get(INJECTOR_DEF_TYPES.multi, EMPTY_ARRAY, InjectFlags.Self));
   }
 
   /**
@@ -199,11 +198,7 @@ export class R3Injector extends EnvironmentInjector {
       for (const service of this._ngOnDestroyHooks) {
         service.ngOnDestroy();
       }
-      const onDestroyHooks = this._onDestroyHooks;
-      // Reset the _onDestroyHooks array before iterating over it to prevent hooks that unregister
-      // themselves from mutating the array during iteration.
-      this._onDestroyHooks = [];
-      for (const hook of onDestroyHooks) {
+      for (const hook of this._onDestroyHooks) {
         hook();
       }
     } finally {
@@ -211,13 +206,12 @@ export class R3Injector extends EnvironmentInjector {
       this.records.clear();
       this._ngOnDestroyHooks.clear();
       this.injectorDefTypes.clear();
+      this._onDestroyHooks.length = 0;
     }
   }
 
-  override onDestroy(callback: () => void): () => void {
-    this.assertNotDestroyed();
+  override onDestroy(callback: () => void): void {
     this._onDestroyHooks.push(callback);
-    return () => this.removeOnDestroy(callback);
   }
 
   override runInContext<ReturnT>(fn: () => ReturnT): ReturnT {
@@ -225,18 +219,11 @@ export class R3Injector extends EnvironmentInjector {
 
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
-
-    let prevInjectContext: InjectorProfilerContext|undefined;
-    if (ngDevMode) {
-      prevInjectContext = setInjectorProfilerContext({injector: this, token: null});
-    }
-
     try {
       return fn();
     } finally {
       setCurrentInjector(previousInjector);
       setInjectImplementation(previousInjectImplementation);
-      ngDevMode && setInjectorProfilerContext(prevInjectContext!);
     }
   }
 
@@ -244,18 +231,9 @@ export class R3Injector extends EnvironmentInjector {
       token: ProviderToken<T>, notFoundValue: any = THROW_IF_NOT_FOUND,
       flags: InjectFlags|InjectOptions = InjectFlags.Default): T {
     this.assertNotDestroyed();
-
-    if (token.hasOwnProperty(NG_ENV_ID)) {
-      return (token as any)[NG_ENV_ID](this);
-    }
-
     flags = convertToBitFlags(flags) as InjectFlags;
 
     // Set the injection context.
-    let prevInjectContext: InjectorProfilerContext;
-    if (ngDevMode) {
-      prevInjectContext = setInjectorProfilerContext({injector: this, token: token as Type<T>});
-    }
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
     try {
@@ -309,7 +287,6 @@ export class R3Injector extends EnvironmentInjector {
       // Lastly, restore the previous injection context.
       setInjectImplementation(previousInjectImplementation);
       setCurrentInjector(previousInjector);
-      ngDevMode && setInjectorProfilerContext(prevInjectContext!);
     }
   }
 
@@ -317,13 +294,8 @@ export class R3Injector extends EnvironmentInjector {
   resolveInjectorInitializers() {
     const previousInjector = setCurrentInjector(this);
     const previousInjectImplementation = setInjectImplementation(undefined);
-    let prevInjectContext: InjectorProfilerContext|undefined;
-    if (ngDevMode) {
-      prevInjectContext = setInjectorProfilerContext({injector: this, token: null});
-    }
-
     try {
-      const initializers = this.get(ENVIRONMENT_INITIALIZER, EMPTY_ARRAY, InjectFlags.Self);
+      const initializers = this.get(ENVIRONMENT_INITIALIZER.multi, EMPTY_ARRAY, InjectFlags.Self);
       if (ngDevMode && !Array.isArray(initializers)) {
         throw new RuntimeError(
             RuntimeErrorCode.INVALID_MULTI_PROVIDER,
@@ -338,7 +310,6 @@ export class R3Injector extends EnvironmentInjector {
     } finally {
       setCurrentInjector(previousInjector);
       setInjectImplementation(previousInjectImplementation);
-      ngDevMode && setInjectorProfilerContext(prevInjectContext!);
     }
   }
 
@@ -351,7 +322,7 @@ export class R3Injector extends EnvironmentInjector {
     return `R3Injector[${tokens.join(', ')}]`;
   }
 
-  assertNotDestroyed(): void {
+  private assertNotDestroyed(): void {
     if (this._destroyed) {
       throw new RuntimeError(
           RuntimeErrorCode.INJECTOR_ALREADY_DESTROYED,
@@ -371,18 +342,6 @@ export class R3Injector extends EnvironmentInjector {
 
     // Construct a `Record` for the provider.
     const record = providerToRecord(provider);
-    if (ngDevMode) {
-      runInInjectorProfilerContext(this, token, () => {
-        // Emit InjectorProfilerEventType.Create if provider is a value provider because
-        // these are the only providers that do not go through the value hydration logic
-        // where this event would normally be emitted from.
-        if (isValueProvider(provider)) {
-          emitInstanceCreatedByInjectorEvent(provider.useValue);
-        }
-
-        emitProviderConfiguredEvent(provider);
-      });
-    }
 
     if (!isTypeProvider(provider) && provider.multi === true) {
       // If the provider indicates that it's a multi-provider, process it specially.
@@ -414,15 +373,7 @@ export class R3Injector extends EnvironmentInjector {
       throwCyclicDependencyError(stringify(token));
     } else if (record.value === NOT_YET) {
       record.value = CIRCULAR;
-
-      if (ngDevMode) {
-        runInInjectorProfilerContext(this, token as Type<T>, () => {
-          record.value = record.factory!();
-          emitInstanceCreatedByInjectorEvent(record.value);
-        });
-      } else {
-        record.value = record.factory!();
-      }
+      record.value = record.factory!();
     }
     if (typeof record.value === 'object' && record.value && hasOnDestroy(record.value)) {
       this._ngOnDestroyHooks.add(record.value);
@@ -439,13 +390,6 @@ export class R3Injector extends EnvironmentInjector {
       return providedIn === 'any' || (this.scopes.has(providedIn));
     } else {
       return this.injectorDefTypes.has(providedIn);
-    }
-  }
-
-  private removeOnDestroy(callback: () => void): void {
-    const destroyCBIdx = this._onDestroyHooks.indexOf(callback);
-    if (destroyCBIdx !== -1) {
-      this._onDestroyHooks.splice(destroyCBIdx, 1);
     }
   }
 }

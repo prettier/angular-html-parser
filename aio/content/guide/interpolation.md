@@ -29,4 +29,4 @@ In the following example, Angular evaluates the `title` and `itemImageUrl` prope
 * [Property binding](guide/property-binding)
 * [Event binding](guide/event-binding)
 
-@reviewed 2023-09-01
+@reviewed 2022-04-14

@@ -46,7 +46,8 @@ const POOL_INCLUSION_LENGTH_THRESHOLD_FOR_STRINGS = 50;
 class FixupExpression extends o.Expression {
   private original: o.Expression;
 
-  shared = false;
+  // TODO(issue/24571): remove '!'.
+  shared!: boolean;
 
   constructor(public resolved: o.Expression) {
     super(resolved.type);
@@ -71,10 +72,6 @@ class FixupExpression extends o.Expression {
     return true;
   }
 
-  override clone(): FixupExpression {
-    throw new Error(`Not supported.`);
-  }
-
   fixup(expression: o.Expression) {
     this.resolved = expression;
     this.shared = true;
@@ -90,7 +87,6 @@ export class ConstantPool {
   statements: o.Statement[] = [];
   private literals = new Map<string, FixupExpression>();
   private literalFactories = new Map<string, o.Expression>();
-  private sharedConstants = new Map<string, o.Expression>();
 
   private nextNameIndex = 0;
 
@@ -103,7 +99,7 @@ export class ConstantPool {
       // reference to a constant.
       return literal;
     }
-    const key = GenericKeyFn.INSTANCE.keyOf(literal);
+    const key = this.keyOf(literal);
     let fixup = this.literals.get(key);
     let newValue = false;
     if (!fixup) {
@@ -153,22 +149,12 @@ export class ConstantPool {
     return fixup;
   }
 
-  getSharedConstant(def: SharedConstantDefinition, expr: o.Expression): o.Expression {
-    const key = def.keyOf(expr);
-    if (!this.sharedConstants.has(key)) {
-      const id = this.freshName();
-      this.sharedConstants.set(key, o.variable(id));
-      this.statements.push(def.toSharedConstantDeclaration(id, expr));
-    }
-    return this.sharedConstants.get(key)!;
-  }
-
   getLiteralFactory(literal: o.LiteralArrayExpr|o.LiteralMapExpr):
       {literalFactory: o.Expression, literalFactoryArguments: o.Expression[]} {
     // Create a pure function that builds an array of a mix of constant and variable expressions
     if (literal instanceof o.LiteralArrayExpr) {
       const argumentsForKey = literal.entries.map(e => e.isConstant() ? e : UNKNOWN_VALUE_KEY);
-      const key = GenericKeyFn.INSTANCE.keyOf(o.literalArr(argumentsForKey));
+      const key = this.keyOf(o.literalArr(argumentsForKey));
       return this._getLiteralFactory(key, literal.entries, entries => o.literalArr(entries));
     } else {
       const expressionForKey = o.literalMap(
@@ -177,7 +163,7 @@ export class ConstantPool {
                                 value: e.value.isConstant() ? e.value : UNKNOWN_VALUE_KEY,
                                 quoted: e.quoted
                               })));
-      const key = GenericKeyFn.INSTANCE.keyOf(expressionForKey);
+      const key = this.keyOf(expressionForKey);
       return this._getLiteralFactory(
           key, literal.entries.map(e => e.value),
           entries => o.literalMap(entries.map((value, index) => ({
@@ -186,29 +172,6 @@ export class ConstantPool {
                                                 quoted: literal.entries[index].quoted
                                               }))));
     }
-  }
-
-  getSharedFunctionReference(fn: o.FunctionExpr|o.ArrowFunctionExpr, prefix: string): o.Expression {
-    const isArrow = fn instanceof o.ArrowFunctionExpr;
-
-    for (const current of this.statements) {
-      // Arrow functions are saved as variables so we check if the
-      // value of the variable is the same as the arrow function.
-      if (isArrow && current instanceof o.DeclareVarStmt && current.value?.isEquivalent(fn)) {
-        return o.variable(current.name);
-      }
-
-      // Function declarations are saved as function statements
-      // so we compare them directly to the passed-in function.
-      if (!isArrow && current instanceof o.DeclareFunctionStmt && fn.isEquivalent(current)) {
-        return o.variable(current.name);
-      }
-    }
-
-    // Otherwise declare the function.
-    const name = this.uniqueName(prefix);
-    this.statements.push(fn.toDeclStmt(name, o.StmtModifier.Final));
-    return o.variable(name);
   }
 
   private _getLiteralFactory(
@@ -222,7 +185,7 @@ export class ConstantPool {
       const parameters =
           resultExpressions.filter(isVariable).map(e => new o.FnParam(e.name!, o.DYNAMIC_TYPE));
       const pureFunctionDeclaration =
-          o.arrowFn(parameters, resultMap(resultExpressions), o.INFERRED_TYPE);
+          o.fn(parameters, [new o.ReturnStatement(resultMap(resultExpressions))], o.INFERRED_TYPE);
       const name = this.freshName();
       this.statements.push(o.variable(name)
                                .set(pureFunctionDeclaration)
@@ -247,51 +210,73 @@ export class ConstantPool {
   private freshName(): string {
     return this.uniqueName(CONSTANT_PREFIX);
   }
-}
 
-export interface ExpressionKeyFn {
-  keyOf(expr: o.Expression): string;
-}
-
-export interface SharedConstantDefinition extends ExpressionKeyFn {
-  toSharedConstantDeclaration(declName: string, keyExpr: o.Expression): o.Statement;
-}
-
-export class GenericKeyFn implements ExpressionKeyFn {
-  static readonly INSTANCE = new GenericKeyFn();
-
-  keyOf(expr: o.Expression): string {
-    if (expr instanceof o.LiteralExpr && typeof expr.value === 'string') {
-      return `"${expr.value}"`;
-    } else if (expr instanceof o.LiteralExpr) {
-      return String(expr.value);
-    } else if (expr instanceof o.LiteralArrayExpr) {
-      const entries: string[] = [];
-      for (const entry of expr.entries) {
-        entries.push(this.keyOf(entry));
-      }
-      return `[${entries.join(',')}]`;
-    } else if (expr instanceof o.LiteralMapExpr) {
-      const entries: string[] = [];
-      for (const entry of expr.entries) {
-        let key = entry.key;
-        if (entry.quoted) {
-          key = `"${key}"`;
-        }
-        entries.push(key + ':' + this.keyOf(entry.value));
-      }
-      return `{${entries.join(',')}}`;
-    } else if (expr instanceof o.ExternalExpr) {
-      return `import("${expr.value.moduleName}", ${expr.value.name})`;
-    } else if (expr instanceof o.ReadVarExpr) {
-      return `read(${expr.name})`;
-    } else if (expr instanceof o.TypeofExpr) {
-      return `typeof(${this.keyOf(expr.expr)})`;
-    } else {
-      throw new Error(
-          `${this.constructor.name} does not handle expressions of type ${expr.constructor.name}`);
-    }
+  private keyOf(expression: o.Expression) {
+    return expression.visitExpression(new KeyVisitor(), KEY_CONTEXT);
   }
+}
+
+/**
+ * Visitor used to determine if 2 expressions are equivalent and can be shared in the
+ * `ConstantPool`.
+ *
+ * When the id (string) generated by the visitor is equal, expressions are considered equivalent.
+ */
+class KeyVisitor implements o.ExpressionVisitor {
+  visitLiteralExpr(ast: o.LiteralExpr): string {
+    return `${typeof ast.value === 'string' ? '"' + ast.value + '"' : ast.value}`;
+  }
+
+  visitLiteralArrayExpr(ast: o.LiteralArrayExpr, context: object): string {
+    return `[${ast.entries.map(entry => entry.visitExpression(this, context)).join(',')}]`;
+  }
+
+  visitLiteralMapExpr(ast: o.LiteralMapExpr, context: object): string {
+    const mapKey = (entry: o.LiteralMapEntry) => {
+      const quote = entry.quoted ? '"' : '';
+      return `${quote}${entry.key}${quote}`;
+    };
+    const mapEntry = (entry: o.LiteralMapEntry) =>
+        `${mapKey(entry)}:${entry.value.visitExpression(this, context)}`;
+    return `{${ast.entries.map(mapEntry).join(',')}`;
+  }
+
+  visitExternalExpr(ast: o.ExternalExpr): string {
+    return ast.value.moduleName ? `EX:${ast.value.moduleName}:${ast.value.name}` :
+                                  `EX:${ast.value.runtime.name}`;
+  }
+
+  visitReadVarExpr(node: o.ReadVarExpr) {
+    return `VAR:${node.name}`;
+  }
+
+  visitTypeofExpr(node: o.TypeofExpr, context: any): string {
+    return `TYPEOF:${node.expr.visitExpression(this, context)}`;
+  }
+
+  visitWrappedNodeExpr = invalid;
+  visitWriteVarExpr = invalid;
+  visitWriteKeyExpr = invalid;
+  visitWritePropExpr = invalid;
+  visitInvokeFunctionExpr = invalid;
+  visitTaggedTemplateExpr = invalid;
+  visitInstantiateExpr = invalid;
+  visitConditionalExpr = invalid;
+  visitNotExpr = invalid;
+  visitAssertNotNullExpr = invalid;
+  visitCastExpr = invalid;
+  visitFunctionExpr = invalid;
+  visitUnaryOperatorExpr = invalid;
+  visitBinaryOperatorExpr = invalid;
+  visitReadPropExpr = invalid;
+  visitReadKeyExpr = invalid;
+  visitCommaExpr = invalid;
+  visitLocalizedString = invalid;
+}
+
+function invalid<T>(this: o.ExpressionVisitor, arg: o.Expression|o.Statement): never {
+  throw new Error(
+      `Invalid state: Visitor ${this.constructor.name} doesn't handle ${arg.constructor.name}`);
 }
 
 function isVariable(e: o.Expression): e is o.ReadVarExpr {

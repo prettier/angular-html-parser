@@ -872,28 +872,31 @@ describe('inheritance', () => {
       });
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of a directive by another directive', () => {
@@ -1438,28 +1441,31 @@ describe('inheritance', () => {
       expect(foundQueryList!.length).toBe(2);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of a directive by a bare class then by another directive', () => {
@@ -2047,28 +2053,31 @@ describe('inheritance', () => {
       expect(foundChildDir2s!.length).toBe(2);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of bare super class by a component', () => {
@@ -2598,28 +2607,31 @@ describe('inheritance', () => {
       expect(foundQueryList!.length).toBe(2);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of a directive inherited by a component', () => {
@@ -3214,28 +3226,31 @@ describe('inheritance', () => {
       expect(foundQueryList!.length).toBe(5);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of a directive inherited by a bare class and then by a component', () => {
@@ -3854,28 +3869,31 @@ describe('inheritance', () => {
       expect(foundQueryList!.length).toBe(5);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of a component inherited by a component', () => {
@@ -4647,28 +4665,31 @@ describe('inheritance', () => {
           ['BaseComponent.clicked', 'ChildComponent.clicked', 'GrandChildComponent.clicked']);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 
   describe('of a component inherited by a bare class then by a component', () => {
@@ -5368,27 +5389,30 @@ describe('inheritance', () => {
       expect(foundQueryList!.length).toBe(5);
     });
 
-
-    // TODO: sub has Input and super has Output on same property
-    // TODO: sub has Input and super has HostBinding on same property
-    // TODO: sub has Input and super has ViewChild on same property
-    // TODO: sub has Input and super has ViewChildren on same property
-    // TODO: sub has Input and super has ContentChild on same property
-    // TODO: sub has Input and super has ContentChildren on same property
-    // TODO: sub has Output and super has HostBinding on same property
-    // TODO: sub has Output and super has ViewChild on same property
-    // TODO: sub has Output and super has ViewChildren on same property
-    // TODO: sub has Output and super has ContentChild on same property
-    // TODO: sub has Output and super has ContentChildren on same property
-    // TODO: sub has HostBinding and super has ViewChild on same property
-    // TODO: sub has HostBinding and super has ViewChildren on same property
-    // TODO: sub has HostBinding and super has ContentChild on same property
-    // TODO: sub has HostBinding and super has ContentChildren on same property
-    // TODO: sub has ViewChild and super has ViewChildren on same property
-    // TODO: sub has ViewChild and super has ContentChild on same property
-    // TODO: sub has ViewChild and super has ContentChildren on same property
-    // TODO: sub has ViewChildren and super has ContentChild on same property
-    // TODO: sub has ViewChildren and super has ContentChildren on same property
-    // TODO: sub has ContentChild and super has ContentChildren on same property
+    xdescribe(
+        'what happens when...',
+        () => {
+            // TODO: sub has Input and super has Output on same property
+            // TODO: sub has Input and super has HostBinding on same property
+            // TODO: sub has Input and super has ViewChild on same property
+            // TODO: sub has Input and super has ViewChildren on same property
+            // TODO: sub has Input and super has ContentChild on same property
+            // TODO: sub has Input and super has ContentChildren on same property
+            // TODO: sub has Output and super has HostBinding on same property
+            // TODO: sub has Output and super has ViewChild on same property
+            // TODO: sub has Output and super has ViewChildren on same property
+            // TODO: sub has Output and super has ContentChild on same property
+            // TODO: sub has Output and super has ContentChildren on same property
+            // TODO: sub has HostBinding and super has ViewChild on same property
+            // TODO: sub has HostBinding and super has ViewChildren on same property
+            // TODO: sub has HostBinding and super has ContentChild on same property
+            // TODO: sub has HostBinding and super has ContentChildren on same property
+            // TODO: sub has ViewChild and super has ViewChildren on same property
+            // TODO: sub has ViewChild and super has ContentChild on same property
+            // TODO: sub has ViewChild and super has ContentChildren on same property
+            // TODO: sub has ViewChildren and super has ContentChild on same property
+            // TODO: sub has ViewChildren and super has ContentChildren on same property
+            // TODO: sub has ContentChild and super has ContentChildren on same property
+        });
   });
 });

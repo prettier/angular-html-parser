@@ -8,7 +8,7 @@
 
 
 import {CommonModule} from '@angular/common';
-import {ApplicationRef, ChangeDetectionStrategy, ChangeDetectorRef, Component, ComponentRef, createComponent, Directive, DoCheck, EmbeddedViewRef, ErrorHandler, EventEmitter, inject, Input, NgModule, OnInit, Output, QueryList, TemplateRef, Type, ViewChild, ViewChildren, ViewContainerRef} from '@angular/core';
+import {ApplicationRef, ChangeDetectionStrategy, ChangeDetectorRef, Component, ComponentFactoryResolver, ComponentRef, Directive, DoCheck, EmbeddedViewRef, ErrorHandler, EventEmitter, Input, NgModule, OnInit, Output, QueryList, TemplateRef, Type, ViewChild, ViewChildren, ViewContainerRef} from '@angular/core';
 import {ComponentFixture, fakeAsync, TestBed, tick} from '@angular/core/testing';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
 import {BehaviorSubject} from 'rxjs';
@@ -64,39 +64,6 @@ describe('change detection', () => {
       fixture.detectChanges();
 
       expect(viewRef.rootNodes[0]).toHaveText('change-detected');
-    });
-
-    it('should not detect changes for OnPush embedded views when they are not dirty', () => {
-      @Component({
-        selector: 'onpush',
-        template: '',
-        standalone: true,
-        changeDetection: ChangeDetectionStrategy.OnPush
-      })
-      class OnPushComponent {
-        checks = 0;
-        cdRef = inject(ChangeDetectorRef);
-        ngDoCheck() {
-          this.checks++;
-        }
-      }
-
-      @Component({template: '<ng-template #template></ng-template>', standalone: true})
-      class Container {
-        @ViewChild('template', {read: ViewContainerRef, static: true}) vcr!: ViewContainerRef;
-      }
-      const fixture = TestBed.createComponent(Container);
-      const ref = fixture.componentInstance.vcr!.createComponent(OnPushComponent);
-
-      fixture.detectChanges(false);
-      expect(ref.instance.checks).toBe(1);
-
-      fixture.detectChanges(false);
-      expect(ref.instance.checks).toBe(1);
-
-      ref.instance.cdRef.markForCheck();
-      fixture.detectChanges(false);
-      expect(ref.instance.checks).toBe(2);
     });
 
     it('should not detect changes in child embedded views while they are detached', () => {
@@ -171,7 +138,8 @@ describe('change detection', () => {
       TestBed.configureTestingModule({declarations: [App, ViewManipulation, DynamicComp]});
       const fixture = TestBed.createComponent(App);
       const vm: ViewManipulation = fixture.debugElement.childNodes[0].references['vm'];
-      const componentRef = vm.vcRef.createComponent(DynamicComp);
+      const factory = TestBed.get(ComponentFactoryResolver).resolveComponentFactory(DynamicComp);
+      const componentRef = vm.vcRef.createComponent(factory);
       const button = fixture.nativeElement.querySelector('button');
       fixture.detectChanges();
 
@@ -207,10 +175,11 @@ describe('change detection', () => {
         counter = 0;
         @ViewChild('vc', {read: ViewContainerRef}) vcRef!: ViewContainerRef;
 
-        constructor() {}
+        constructor(private _cfr: ComponentFactoryResolver) {}
 
         createComponentView<T>(cmptType: Type<T>): ComponentRef<T> {
-          return this.vcRef.createComponent(cmptType);
+          const cf = this._cfr.resolveComponentFactory(cmptType);
+          return this.vcRef.createComponent(cf);
         }
       }
 

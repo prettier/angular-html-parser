@@ -8,7 +8,7 @@
 
 
 import {TestBed} from '@angular/core/testing';
-import {RouterModule} from '@angular/router';
+import {RouterTestingModule} from '@angular/router/testing';
 import {TestScheduler} from 'rxjs/testing';
 
 import {prioritizedGuardValue} from '../../src/operators/prioritized_guard_value';
@@ -21,7 +21,7 @@ describe('prioritizedGuardValue operator', () => {
   const TF = {T: true, F: false};
 
   beforeEach(() => {
-    TestBed.configureTestingModule({imports: [RouterModule.forRoot([])]});
+    TestBed.configureTestingModule({imports: [RouterTestingModule]});
   });
   beforeEach(() => {
     testScheduler = new TestScheduler(assertDeepEquals);

@@ -75,7 +75,7 @@ let TAG_DEFINITIONS!: {[key: string]: HtmlTagDefinition};
 export function getHtmlTagDefinition(tagName: string): HtmlTagDefinition {
   if (!TAG_DEFINITIONS) {
     DEFAULT_TAG_DEFINITION = new HtmlTagDefinition({canSelfClose: true});
-    TAG_DEFINITIONS = Object.assign(Object.create(null), {
+    TAG_DEFINITIONS = {
       'base': new HtmlTagDefinition({isVoid: true}),
       'meta': new HtmlTagDefinition({isVoid: true}),
       'area': new HtmlTagDefinition({isVoid: true}),
@@ -142,17 +142,16 @@ export function getHtmlTagDefinition(tagName: string): HtmlTagDefinition {
       }),
       'textarea': new HtmlTagDefinition(
           {contentType: TagContentType.ESCAPABLE_RAW_TEXT, ignoreFirstLf: true}),
-    });
+    };
 
     new DomElementSchemaRegistry().allKnownElementNames().forEach(knownTagName => {
-      if (!TAG_DEFINITIONS[knownTagName] && getNsPrefix(knownTagName) === null) {
+      if (!TAG_DEFINITIONS.hasOwnProperty(knownTagName) && getNsPrefix(knownTagName) === null) {
         TAG_DEFINITIONS[knownTagName] = new HtmlTagDefinition({canSelfClose: false});
       }
     });
   }
   // We have to make both a case-sensitive and a case-insensitive lookup, because
   // HTML tag names are case insensitive, whereas some SVG tags are case sensitive.
-  return TAG_DEFINITIONS[tagName] ??  // TAG_DEFINITIONS[tagName.toLowerCase()] ?? --
-                                      // angular-html-parser modification
+  return TAG_DEFINITIONS[tagName] ?? // TAG_DEFINITIONS[tagName.toLowerCase()] ?? -- angular-html-parser modification
       DEFAULT_TAG_DEFINITION;
 }

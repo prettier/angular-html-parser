@@ -28,7 +28,7 @@ import {OptimizeFor} from './typecheck/api';
  * Currently mirrored from @bazel/concatjs/internal/tsc_wrapped/plugin_api (with the naming of
  * `fileNameToModuleName` corrected).
  */
-export interface PluginCompilerHost extends ts.CompilerHost, Partial<UnifiedModulesHost> {
+interface PluginCompilerHost extends ts.CompilerHost, Partial<UnifiedModulesHost> {
   readonly inputFiles: ReadonlyArray<string>;
 }
 

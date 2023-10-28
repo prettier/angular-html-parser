@@ -76,8 +76,7 @@
           ],
           "failureMessage": "Incorrect factory"
         }
-      ],
-      "skipForTemplatePipeline": true
+      ]
     },
     {
       "description": "should chain multiple listeners on the same element",
@@ -210,7 +209,8 @@
               "expected": "event_explicit_access_template.js",
               "generated": "event_explicit_access.js"
             }
-          ]
+          ],
+          "failureMessage": "Incorrect event listener"
         }
       ]
     },
@@ -297,8 +297,7 @@
           ],
           "failureMessage": "Incorrect template"
         }
-      ],
-      "skipForTemplatePipeline": true
+      ]
     }
   ]
 }

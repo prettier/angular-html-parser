@@ -11,9 +11,8 @@
   {% if doc.videoUrl.length %}
   <div class="video-container">
     <iframe
-    title="videoUrl"
     src="{$ doc.videoUrl $}"
-    style="border: 0"
+    frameborder="0"
     allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
     allowfullscreen></iframe>
   </div>
@@ -25,13 +24,11 @@
     {$ doc.description | marked $}
   </div>
 
-
-  {% if doc.debugging %}
   <br>
 
   <div class="debugging">
     <h2>Debugging the error</h2>
     {$ doc.debugging | marked $}
   </div>
-  {% endif%}
+
 </div>

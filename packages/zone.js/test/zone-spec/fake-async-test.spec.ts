@@ -1089,15 +1089,21 @@ describe('FakeAsyncTestZoneSpec', () => {
            }, emptyRun));
 });
 
-class Log<T> {
-  logItems: T[];
+class Log {
+  logItems: any[];
 
   constructor() {
     this.logItems = [];
   }
 
-  add(value: T): void {
+  add(value: any /** TODO #9100 */): void {
     this.logItems.push(value);
+  }
+
+  fn(value: any /** TODO #9100 */) {
+    return (a1: any = null, a2: any = null, a3: any = null, a4: any = null, a5: any = null) => {
+      this.logItems.push(value);
+    };
   }
 
   clear(): void {
@@ -1126,7 +1132,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
     });
 
     it('should pass arguments to the wrapped function', () => {
-      fakeAsync((foo: string, bar: string) => {
+      fakeAsync((foo: any /** TODO #9100 */, bar: any /** TODO #9100 */) => {
         expect(foo).toEqual('foo');
         expect(bar).toEqual('bar');
       })('foo', 'bar');
@@ -1136,7 +1142,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
     it('should throw on nested calls', () => {
       expect(() => {
         fakeAsync(() => {
-          fakeAsync((): null => null)();
+          fakeAsync((): any /** TODO #9100 */ => null)();
         })();
       }).toThrowError('fakeAsync() calls can not be nested');
     });
@@ -1172,7 +1178,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
          }));
 
       it('should run chained thens', fakeAsync(() => {
-           const log = new Log<number>();
+           const log = new Log();
 
            resolvedPromise.then((_) => log.add(1)).then((_) => log.add(2));
 
@@ -1183,7 +1189,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
          }));
 
       it('should run Promise created in Promise', fakeAsync(() => {
-           const log = new Log<number>();
+           const log = new Log();
 
            resolvedPromise.then((_) => {
              log.add(1);
@@ -1316,7 +1322,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
 
       it('should be able to cancel periodic timers from a callback', fakeAsync(() => {
            let cycles = 0;
-           let id: NodeJS.Timer;
+           let id: any /** TODO #9100 */;
 
            id = setInterval(() => {
              cycles++;
@@ -1351,7 +1357,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
          }));
 
       it('should process microtasks before timers', fakeAsync(() => {
-           const log = new Log<string>();
+           const log = new Log();
 
            resolvedPromise.then((_) => log.add('microtask'));
 
@@ -1367,7 +1373,7 @@ const {fakeAsync, tick, discardPeriodicTasks, flush, flushMicrotasks} = fakeAsyn
          }));
 
       it('should process micro-tasks created in timers before next timers', fakeAsync(() => {
-           const log = new Log<string>();
+           const log = new Log();
 
            resolvedPromise.then((_) => log.add('microtask'));
 

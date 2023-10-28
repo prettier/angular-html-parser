@@ -5,7 +5,7 @@
   "author": "angular",
   "license": "MIT",
   "engines": {
-    "node": ">=18.13.0"
+    "node": "^14.20.0 || ^16.13.0 || >=18.10.0"
   },
   "locales": "locales",
   "dependencies": {
@@ -16,7 +16,6 @@
       "default": "./locales/global/*.js"
     },
     "./locales/*": {
-      "types": "./locales/*.d.ts",
       "default": "./locales/*.mjs"
     }
   },

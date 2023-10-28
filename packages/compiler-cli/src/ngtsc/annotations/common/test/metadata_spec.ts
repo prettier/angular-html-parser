@@ -25,7 +25,7 @@ runInEachFileSystem(() => {
     @Component('metadata') class Target {}
     `);
       expect(res).toEqual(
-          `(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(Target, [{ type: Component, args: ['metadata'] }], null, null); })();`);
+          `(function () { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(Target, [{ type: Component, args: ['metadata'] }], null, null); })();`);
     });
 
     it('should convert namespaced decorated class metadata', () => {
@@ -35,7 +35,7 @@ runInEachFileSystem(() => {
     @core.Component('metadata') class Target {}
     `);
       expect(res).toEqual(
-          `(() => { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(Target, [{ type: core.Component, args: ['metadata'] }], null, null); })();`);
+          `(function () { (typeof ngDevMode === "undefined" || ngDevMode) && i0.ɵsetClassMetadata(Target, [{ type: core.Component, args: ['metadata'] }], null, null); })();`);
     });
 
     it('should convert decorated class constructor parameter metadata', () => {
@@ -48,7 +48,7 @@ runInEachFileSystem(() => {
     }
     `);
       expect(res).toContain(
-          `() => [{ type: undefined, decorators: [{ type: Inject, args: [FOO] }] }, { type: i0.Injector }], null);`);
+          `function () { return [{ type: undefined, decorators: [{ type: Inject, args: [FOO] }] }, { type: i0.Injector }]; }, null);`);
     });
 
     it('should convert decorated field metadata', () => {

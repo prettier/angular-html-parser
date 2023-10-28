@@ -1,4 +1,3 @@
-<!-- Archived and no longer in the left nav. Still accessible to 3rd parties who linked to it. -->
 # Understanding template expressions
 
 This topic explores some aspects of Angular text interpolation.
@@ -116,4 +115,4 @@ When using template expressions, follow these best practices:
 
 * Property bindings
 
-@reviewed 2023-09-01
+@reviewed 2022-03-31

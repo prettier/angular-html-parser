@@ -1,7 +1,7 @@
 import { Component, Input } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { RouterModule } from '@angular/router';
+import { RouterTestingModule } from '@angular/router/testing';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
@@ -12,7 +12,7 @@ describe('AppComponent', () => {
         TestTitleComponent,
       ],
       imports: [
-        RouterModule.forRoot([]),
+        RouterTestingModule,
       ],
     });
     await TestBed.compileComponents();

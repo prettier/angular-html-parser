@@ -65,7 +65,7 @@ function findHostDirectiveDefs(
       const hostDirectiveDef = getDirectiveDef(hostDirectiveConfig.directive)!;
 
       if (typeof ngDevMode === 'undefined' || ngDevMode) {
-        validateHostDirective(hostDirectiveConfig, hostDirectiveDef);
+        validateHostDirective(hostDirectiveConfig, hostDirectiveDef, matchedDefs);
       }
 
       // We need to patch the `declaredInputs` so that
@@ -144,10 +144,11 @@ function patchDeclaredInputs(
  * Verifies that the host directive has been configured correctly.
  * @param hostDirectiveConfig Host directive configuration object.
  * @param directiveDef Directive definition of the host directive.
+ * @param matchedDefs Directives that have been matched so far.
  */
 function validateHostDirective(
-    hostDirectiveConfig: HostDirectiveDef<unknown>,
-    directiveDef: DirectiveDef<any>|null): asserts directiveDef is DirectiveDef<unknown> {
+    hostDirectiveConfig: HostDirectiveDef<unknown>, directiveDef: DirectiveDef<any>|null,
+    matchedDefs: DirectiveDef<unknown>[]): asserts directiveDef is DirectiveDef<unknown> {
   const type = hostDirectiveConfig.directive;
 
   if (directiveDef === null) {
@@ -167,6 +168,13 @@ function validateHostDirective(
     throw new RuntimeError(
         RuntimeErrorCode.HOST_DIRECTIVE_NOT_STANDALONE,
         `Host directive ${directiveDef.type.name} must be standalone.`);
+  }
+
+  if (matchedDefs.indexOf(directiveDef) > -1) {
+    throw new RuntimeError(
+        RuntimeErrorCode.DUPLICATE_DIRECTITVE,
+        `Directive ${directiveDef.type.name} matches multiple times on the same element. ` +
+            `Directives can only match an element once.`);
   }
 
   validateMappings('input', directiveDef, hostDirectiveConfig.inputs);
@@ -196,7 +204,7 @@ function validateMappings(
 
       const remappedPublicName = hostDirectiveBindings[publicName];
 
-      if (bindings.hasOwnProperty(remappedPublicName) && remappedPublicName !== publicName &&
+      if (bindings.hasOwnProperty(remappedPublicName) &&
           bindings[remappedPublicName] !== publicName) {
         throw new RuntimeError(
             RuntimeErrorCode.HOST_DIRECTIVE_CONFLICTING_ALIAS,

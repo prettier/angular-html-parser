@@ -1,14 +1,11 @@
-import {Component} from '@angular/core';
-import {ExampleProgressbarComponent} from './progress-bar.component';
+import { Component } from '@angular/core';
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
-  imports: [ExampleProgressbarComponent],
+  styleUrls: [ './app.component.css' ]
 })
-export class AppComponent {
+export class AppComponent  {
   progress = 0;
 
   setProgress($event: Event) {

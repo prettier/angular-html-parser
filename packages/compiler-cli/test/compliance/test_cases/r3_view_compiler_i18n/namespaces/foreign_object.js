@@ -1,21 +1,21 @@
 
-consts: () => {
+consts: function() {
   let $I18N_0$;
   if (typeof ngI18nClosureMode !== "undefined" && ngI18nClosureMode) {
     /**
      * @suppress {msgDescriptions}
      */
     const $MSG_EXTERNAL_7128002169381370313$$APP_SPEC_TS_1$ = goog.getMsg("{$startTagXhtmlDiv} Count: {$startTagXhtmlSpan}5{$closeTagXhtmlSpan}{$closeTagXhtmlDiv}", {
-      "closeTagXhtmlDiv": "\uFFFD/#3\uFFFD",
-      "closeTagXhtmlSpan": "\uFFFD/#4\uFFFD",
       "startTagXhtmlDiv": "\uFFFD#3\uFFFD",
-      "startTagXhtmlSpan": "\uFFFD#4\uFFFD"
+      "startTagXhtmlSpan": "\uFFFD#4\uFFFD",
+      "closeTagXhtmlSpan": "\uFFFD/#4\uFFFD",
+      "closeTagXhtmlDiv": "\uFFFD/#3\uFFFD"
     }, {
       original_code: {
-        "closeTagXhtmlDiv": "</xhtml:div>",
-        "closeTagXhtmlSpan": "</span>",
         "startTagXhtmlDiv": "<xhtml:div xmlns=\"http://www.w3.org/1999/xhtml\">",
-        "startTagXhtmlSpan": "<span>"
+        "startTagXhtmlSpan": "<span>",
+        "closeTagXhtmlSpan": "</span>",
+        "closeTagXhtmlDiv": "</xhtml:div>"
       }
     });
     $I18N_0$ = $MSG_EXTERNAL_7128002169381370313$$APP_SPEC_TS_1$;

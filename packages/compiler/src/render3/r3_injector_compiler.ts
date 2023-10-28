@@ -7,7 +7,6 @@
  */
 
 import * as o from '../output/output_ast';
-
 import {Identifiers as R3} from './r3_identifiers';
 import {R3CompiledExpression, R3Reference} from './util';
 import {DefinitionMap} from './view/util';
@@ -15,6 +14,7 @@ import {DefinitionMap} from './view/util';
 export interface R3InjectorMetadata {
   name: string;
   type: R3Reference;
+  internalType: o.Expression;
   providers: o.Expression|null;
   imports: o.Expression[];
 }

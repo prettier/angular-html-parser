@@ -45,6 +45,7 @@ const MODIFIER_KEY_GETTERS: {[key: string]: (event: KeyboardEvent) => boolean} =
 };
 
 /**
+ * @publicApi
  * A browser plug-in that provides support for handling of key events in Angular.
  */
 @Injectable()
@@ -187,6 +188,12 @@ export class KeyEventsPlugin extends EventManagerPlugin {
 
   /** @internal */
   static _normalizeKey(keyName: string): string {
-    return keyName === 'esc' ? 'escape' : keyName;
+    // TODO: switch to a Map if the mapping grows too much
+    switch (keyName) {
+      case 'esc':
+        return 'escape';
+      default:
+        return keyName;
+    }
   }
 }

@@ -11,7 +11,7 @@ import ts from 'typescript';
 
 import {ErrorCode} from '../../diagnostics';
 import {Reference} from '../../imports';
-import {ClassPropertyMapping, DirectiveTypeCheckMeta, HostDirectiveMeta, InputMapping} from '../../metadata';
+import {ClassPropertyMapping, DirectiveTypeCheckMeta, HostDirectiveMeta} from '../../metadata';
 import {ClassDeclaration} from '../../reflection';
 
 
@@ -22,10 +22,9 @@ import {ClassDeclaration} from '../../reflection';
 export interface TypeCheckableDirectiveMeta extends DirectiveMeta, DirectiveTypeCheckMeta {
   ref: Reference<ClassDeclaration>;
   queries: string[];
-  inputs: ClassPropertyMapping<InputMapping>;
+  inputs: ClassPropertyMapping;
   outputs: ClassPropertyMapping;
   isStandalone: boolean;
-  isSignal: boolean;
   hostDirectives: HostDirectiveMeta[]|null;
   decorator: ts.Decorator|null;
 }
@@ -100,7 +99,7 @@ export interface TypeCtorMetadata {
   /**
    * Input, output, and query field names in the type which should be included as constructor input.
    */
-  fields: {inputs: ClassPropertyMapping<InputMapping>; queries: string[];};
+  fields: {inputs: string[]; outputs: string[]; queries: string[];};
 
   /**
    * `Set` of field names which have type coercion enabled.

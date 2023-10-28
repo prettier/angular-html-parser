@@ -71,3 +71,8 @@ export interface RendererFactory {
   begin?(): void;
   end?(): void;
 }
+
+
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+export const unusedValueExportToPlacateAjd = 1;

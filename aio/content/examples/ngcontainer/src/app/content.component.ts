@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 
 @Component({
-  standalone: true,
   selector: 'content-comp',
   template:
     `<div>

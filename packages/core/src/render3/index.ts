@@ -6,17 +6,15 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import {LifecycleHooksFeature} from './component_ref';
-import {ɵɵdefineComponent, ɵɵdefineDirective, ɵɵdefineNgModule, ɵɵdefinePipe} from './definition';
+import {ɵɵdefineComponent, ɵɵdefineDirective, ɵɵdefineNgModule, ɵɵdefinePipe, ɵɵsetComponentScope, ɵɵsetNgModuleScope} from './definition';
 import {ɵɵCopyDefinitionFeature} from './features/copy_definition_feature';
 import {ɵɵHostDirectivesFeature} from './features/host_directives_feature';
 import {ɵɵInheritDefinitionFeature} from './features/inherit_definition_feature';
-import {ɵɵInputTransformsFeature} from './features/input_transforms_feature';
 import {ɵɵNgOnChangesFeature} from './features/ng_onchanges_feature';
 import {ɵɵProvidersFeature} from './features/providers_feature';
 import {ɵɵStandaloneFeature} from './features/standalone_feature';
 import {ComponentDef, ComponentTemplate, ComponentType, DirectiveDef, DirectiveType, PipeDef} from './interfaces/definition';
 import {ɵɵComponentDeclaration, ɵɵDirectiveDeclaration, ɵɵFactoryDeclaration, ɵɵInjectorDeclaration, ɵɵNgModuleDeclaration, ɵɵPipeDeclaration} from './interfaces/public_definitions';
-import {ɵɵsetComponentScope, ɵɵsetNgModuleScope} from './scope';
 import {ComponentDebugMetadata, DirectiveDebugMetadata, getComponent, getDirectiveMetadata, getDirectives, getHostElement, getRenderedText} from './util/discovery_utils';
 
 export {NgModuleType} from '../metadata/ng_module_def';
@@ -52,8 +50,6 @@ export {
   ɵɵclassMapInterpolateV,
 
   ɵɵclassProp,
-
-  ɵɵcomponentInstance,
 
   ɵɵdirectiveInject,
 
@@ -94,11 +90,6 @@ export {
 
   ɵɵreference,
 
-  ɵɵrepeater,
-  ɵɵrepeaterCreate,
-  ɵɵrepeaterTrackByIdentity,
-  ɵɵrepeaterTrackByIndex,
-
   ɵɵstyleMap,
   ɵɵstyleMapInterpolate1,
   ɵɵstyleMapInterpolate2,
@@ -126,25 +117,6 @@ export {
 
   ɵɵtemplate,
 
-  ɵɵconditional,
-
-  ɵɵdefer,
-  ɵɵdeferWhen,
-  ɵɵdeferOnIdle,
-  ɵɵdeferOnImmediate,
-  ɵɵdeferOnTimer,
-  ɵɵdeferOnHover,
-  ɵɵdeferOnInteraction,
-  ɵɵdeferOnViewport,
-  ɵɵdeferPrefetchWhen,
-  ɵɵdeferPrefetchOnIdle,
-  ɵɵdeferPrefetchOnImmediate,
-  ɵɵdeferPrefetchOnTimer,
-  ɵɵdeferPrefetchOnHover,
-  ɵɵdeferPrefetchOnInteraction,
-  ɵɵdeferPrefetchOnViewport,
-  ɵɵdeferEnableTimerScheduling,
-
   ɵɵtext,
   ɵɵtextInterpolate,
   ɵɵtextInterpolate1,
@@ -159,15 +131,8 @@ export {
   ɵgetUnknownElementStrictMode,
   ɵsetUnknownElementStrictMode,
   ɵgetUnknownPropertyStrictMode,
-  ɵsetUnknownPropertyStrictMode,
+  ɵsetUnknownPropertyStrictMode
 } from './instructions/all';
-export {
-  DEFER_BLOCK_DEPENDENCY_INTERCEPTOR as ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
-  DEFER_BLOCK_CONFIG as ɵDEFER_BLOCK_CONFIG,
-} from '../defer/instructions';
-export {
-  DeferBlockDependencyInterceptor as ɵDeferBlockDependencyInterceptor,
-} from '../defer/interfaces';
 export {ɵɵi18n, ɵɵi18nApply, ɵɵi18nAttributes, ɵɵi18nEnd, ɵɵi18nExp,ɵɵi18nPostprocess, ɵɵi18nStart} from './instructions/i18n';
 export {RenderFlags} from './interfaces/definition';
 export {
@@ -176,7 +141,6 @@ export {
 export {CssSelectorList, ProjectionSlots} from './interfaces/projection';
 export {
   setClassMetadata,
-  setClassMetadataAsync,
 } from './metadata';
 export {NgModuleFactory, NgModuleRef, createEnvironmentInjector} from './ng_module_ref';
 export {
@@ -214,8 +178,6 @@ export {
 export {NO_CHANGE} from './tokens';
 export { ɵɵresolveBody, ɵɵresolveDocument,ɵɵresolveWindow} from './util/misc_utils';
 export { ɵɵtemplateRefExtractor} from './view_engine_compatibility_prebound';
-export {ɵɵgetComponentDepsFactory} from './local_compilation';
-export {ɵsetClassDebugInfo} from './debug/set_debug_info';
 // clang-format on
 
 export {
@@ -244,7 +206,6 @@ export {
   ɵɵHostDirectivesFeature,
   ɵɵInheritDefinitionFeature,
   ɵɵInjectorDeclaration,
-  ɵɵInputTransformsFeature,
   ɵɵNgModuleDeclaration,
   ɵɵNgOnChangesFeature,
   ɵɵPipeDeclaration,

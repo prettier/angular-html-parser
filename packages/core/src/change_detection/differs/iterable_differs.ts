@@ -195,7 +195,13 @@ export class IterableDiffers {
   static ɵprov = /** @pureOrBreakMyCode */ ɵɵdefineInjectable(
       {token: IterableDiffers, providedIn: 'root', factory: defaultIterableDiffersFactory});
 
-  constructor(private factories: IterableDifferFactory[]) {}
+  /**
+   * @deprecated v4.0.0 - Should be private
+   */
+  factories: IterableDifferFactory[];
+  constructor(factories: IterableDifferFactory[]) {
+    this.factories = factories;
+  }
 
   static create(factories: IterableDifferFactory[], parent?: IterableDiffers): IterableDiffers {
     if (parent != null) {

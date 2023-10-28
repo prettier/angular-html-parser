@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 
 import { TaxRateService } from './tax-rate.service';
 
-@Injectable({providedIn: 'root'})
+@Injectable()
 export class SalesTaxService {
   constructor(private rateService: TaxRateService) { }
 

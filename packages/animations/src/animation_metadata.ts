@@ -20,7 +20,7 @@ export type ɵStyleDataMap = Map<string, string|number>;
 
 /**
  * Represents animation-step timing parameters for an animation step.
- * @see {@link animate}
+ * @see `animate()`
  *
  * @publicApi
  */
@@ -84,7 +84,7 @@ export declare interface AnimationOptions {
 /**
  * Adds duration options to control animation styling and timing for a child animation.
  *
- * @see {@link animateChild}
+ * @see `animateChild()`
  *
  * @publicApi
  */

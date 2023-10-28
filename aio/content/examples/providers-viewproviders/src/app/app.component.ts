@@ -1,16 +1,12 @@
 import { Component } from '@angular/core';
 import { FlowerService } from './flower.service';
 import { AnimalService } from './animal.service';
-import { ChildComponent } from './child/child.component';
-import { InspectorComponent } from './inspector/inspector.component';
 
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: [ './app.component.css' ],
-  imports: [ChildComponent, InspectorComponent]
+  styleUrls: [ './app.component.css' ]
 })
 // #docregion inject-animal-service
 export class AppComponent  {
@@ -24,7 +20,7 @@ export class AppComponent  {
 
 // viewProviders: [{ provide: AnimalService, useValue: { emoji: '🦔' } }]
 
-// So, the entire ChildComponent @Component() decorator and its
+// So, the entire @ChildComponent() decorator and its
 // metadata should be as follows:
 
 // @Component({

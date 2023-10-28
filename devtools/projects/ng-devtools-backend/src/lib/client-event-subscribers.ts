@@ -6,12 +6,12 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ComponentExplorerViewQuery, ComponentType, DevToolsNode, DirectivePosition, DirectiveType, ElementPosition, Events, MessageBus, ProfilerFrame, SerializedInjector, SerializedProviderRecord} from 'protocol';
+import {ComponentExplorerViewQuery, ComponentType, DevToolsNode, DirectivePosition, DirectiveType, ElementPosition, Events, MessageBus, ProfilerFrame,} from 'protocol';
 import {debounceTime} from 'rxjs/operators';
 
 import {appIsAngularInDevMode, appIsAngularIvy, appIsSupportedAngularVersion, getAngularVersion,} from './angular-check';
 import {ComponentInspector} from './component-inspector/component-inspector';
-import {getInjectorFromElementNode, getInjectorProviders, getInjectorResolutionPath, getLatestComponentState, hasDiDebugAPIs, idToInjector, injectorsSeen, isElementInjector, queryDirectiveForest, serializeElementInjectorWithId, serializeEnvironmentInjectorWithId, serializeProviderRecord, updateState} from './component-tree';
+import {getLatestComponentState, queryDirectiveForest, updateState} from './component-tree';
 import {unHighlight} from './highlighter';
 import {disableTimingAPI, enableTimingAPI, initializeOrGetDirectiveForestHooks} from './hooks';
 import {start as startProfiling, stop as stopProfiling} from './hooks/capture';
@@ -40,8 +40,6 @@ export const subscribeToClientEvents = (messageBus: MessageBus<Events>): void =>
 
   messageBus.on('enableTimingAPI', enableTimingAPI);
   messageBus.on('disableTimingAPI', disableTimingAPI);
-
-  messageBus.on('getInjectorProviders', getInjectorProvidersCallback(messageBus));
 
   if (appIsAngularInDevMode() && appIsSupportedAngularVersion() && appIsAngularIvy()) {
     setupInspector(messageBus);
@@ -72,35 +70,23 @@ const getLatestComponentExplorerViewCallback = (messageBus: MessageBus<Events>) 
 
       initializeOrGetDirectiveForestHooks().indexForest();
 
-      let forest: SerializableComponentTreeNode[];
-
-      if (hasDiDebugAPIs()) {
-        forest = prepareForestForSerialization(
-            initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest(), true);
-
-        // cleanup injector id mappings
-        for (const injectorId of idToInjector.keys()) {
-          if (!injectorsSeen.has(injectorId)) {
-            idToInjector.delete(injectorId);
-          }
-        }
-        injectorsSeen.clear();
-      } else {
-        forest = prepareForestForSerialization(
-            initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest());
-      }
-
       if (!query) {
-        messageBus.emit('latestComponentExplorerView', [{forest}]);
+        messageBus.emit('latestComponentExplorerView', [
+          {
+            forest: prepareForestForSerialization(
+                initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest()),
+          },
+        ]);
         return;
       }
-
-      const state = getLatestComponentState(
-          query, initializeOrGetDirectiveForestHooks().getDirectiveForest());
-      if (state) {
-        const {directiveProperties} = state;
-        messageBus.emit('latestComponentExplorerView', [{forest, properties: directiveProperties}]);
-      }
+      messageBus.emit('latestComponentExplorerView', [
+        {
+          forest: prepareForestForSerialization(
+              initializeOrGetDirectiveForestHooks().getIndexedDirectiveForest()),
+          properties: getLatestComponentState(
+              query, initializeOrGetDirectiveForestHooks().getDirectiveForest()),
+        },
+      ]);
     };
 
 const checkForAngularCallback = (messageBus: MessageBus<Events>) => () =>
@@ -143,7 +129,6 @@ const getNestedPropertiesCallback = (messageBus: MessageBus<Events>) => (
     }
   }
   messageBus.emit('nestedProperties', [position, {props: serializeDirectiveState(data)}, propPath]);
-  return;
 };
 
 //
@@ -211,11 +196,10 @@ export interface SerializableComponentTreeNode extends
 // Here we drop properties to prepare the tree for serialization.
 // We don't need the component instance, so we just traverse the tree
 // and leave the component name.
-const prepareForestForSerialization = (roots: ComponentTreeNode[], includeResolutionPath = false):
-    SerializableComponentTreeNode[] => {
-      const serializedNodes: SerializableComponentTreeNode[] = [];
-      for (const node of roots) {
-        const serializedNode = {
+const prepareForestForSerialization =
+    (roots: ComponentTreeNode[]): SerializableComponentTreeNode[] => {
+      return roots.map((node) => {
+        return {
           element: node.element,
           component: node.component ? {
             name: node.component.name,
@@ -228,63 +212,7 @@ const prepareForestForSerialization = (roots: ComponentTreeNode[], includeResolu
                 name: d.name,
                 id: initializeOrGetDirectiveForestHooks().getDirectiveId(d.instance),
               })),
-          children: prepareForestForSerialization(node.children, includeResolutionPath),
+          children: prepareForestForSerialization(node.children),
         } as SerializableComponentTreeNode;
-
-        if (includeResolutionPath) {
-          const nodeInjector = getInjectorFromElementNode(node.nativeElement!);
-          if (!nodeInjector) {
-            serializedNode['resolutionPath'] = [];
-            serializedNodes.push(serializedNode);
-            continue;
-          }
-
-          const serializedResolutionPath: SerializedInjector[] = [];
-
-          for (const injector of getInjectorResolutionPath(nodeInjector!)) {
-            let serializedInjectorWithId: SerializedInjector|null = null;
-
-            if (isElementInjector(injector)) {
-              serializedInjectorWithId = serializeElementInjectorWithId(injector);
-            } else {
-              serializedInjectorWithId = serializeEnvironmentInjectorWithId(injector);
-            }
-
-            if (serializedInjectorWithId === null) {
-              continue;
-            }
-
-            serializedResolutionPath.push(serializedInjectorWithId);
-          }
-
-          serializedNode.resolutionPath = serializedResolutionPath;
-        }
-
-        serializedNodes.push(serializedNode);
-      }
-
-      return serializedNodes;
-    };
-
-
-const getInjectorProvidersCallback = (messageBus: MessageBus<Events>) =>
-    (injector: SerializedInjector) => {
-      if (!idToInjector.has(injector.id)) {
-        return;
-      }
-
-      const providerRecords = getInjectorProviders(idToInjector.get(injector.id)!);
-      let serializedProviderRecords: SerializedProviderRecord[] = [];
-
-      if (injector.type === 'environment') {
-        serializedProviderRecords = providerRecords.map((providerRecord) => {
-          return serializeProviderRecord(providerRecord, true);
-        });
-      } else {
-        serializedProviderRecords = providerRecords.map((providerRecord) => {
-          return serializeProviderRecord(providerRecord);
-        });
-      }
-
-      messageBus.emit('latestInjectorProviders', [injector, serializedProviderRecords]);
+      });
     };

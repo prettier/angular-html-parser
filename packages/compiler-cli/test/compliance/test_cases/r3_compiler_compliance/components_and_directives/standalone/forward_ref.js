@@ -12,6 +12,8 @@ TestComponent.ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({
       i0.ɵɵelement(0, "other-standalone");
     }
   },
-  dependencies: () => [StandaloneComponent],
+  dependencies: function () {
+    return [StandaloneComponent];
+  },
   encapsulation: 2
 });

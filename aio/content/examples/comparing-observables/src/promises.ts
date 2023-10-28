@@ -24,24 +24,20 @@ export function docRegionPromise(console: Console, inputValue: number) {
   // #enddocregion promise
   promise =
   // #docregion chain
-  promise
-    .then(value => 2 * value)
-    .then(value => -value);
+  promise.then(v => 2 * v);
   // #enddocregion chain
 
   return promise;
 }
 
-export function docRegionError(console = window.console) {
+export function docRegionError() {
+  let promise = Promise.resolve();
+  promise =
   // #docregion error
-  const promise = Promise.reject('my error') // promise that errors
-    .catch(error => 42) // recover from error
-    .then(() => { throw new Error('another error'); }) // oops
-    .then(null, error => { throw new Error('revised error'); }) // modify and rethrow
-    .catch(error => {
-      console.error(error.toString()); // report error ...
-      throw error; // and rethrow so promise remains "rejected"
-    });
+
+  promise.then(() => {
+    throw new Error('my error');
+  });
 
   // #enddocregion error
   return promise;

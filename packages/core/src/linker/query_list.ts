@@ -9,12 +9,11 @@
 import {Observable} from 'rxjs';
 
 import {EventEmitter} from '../event_emitter';
-import {Writable} from '../interface/type';
 import {arrayEquals, flatten} from '../util/array_utils';
+import {getSymbolIterator} from '../util/symbol';
 
 function symbolIterator<T>(this: QueryList<T>): Iterator<T> {
-  // @ts-expect-error accessing a private member
-  return this._results[Symbol.iterator]();
+  return ((this as any as {_results: Array<T>})._results as any)[getSymbolIterator()]();
 }
 
 /**
@@ -69,9 +68,10 @@ export class QueryList<T> implements Iterable<T> {
     // This function should be declared on the prototype, but doing so there will cause the class
     // declaration to have side-effects and become not tree-shakable. For this reason we do it in
     // the constructor.
-    // [Symbol.iterator](): Iterator<T> { ... }
-    const proto = QueryList.prototype;
-    if (!proto[Symbol.iterator]) proto[Symbol.iterator] = symbolIterator;
+    // [getSymbolIterator()](): Iterator<T> { ... }
+    const symbol = getSymbolIterator();
+    const proto = QueryList.prototype as any;
+    if (!proto[symbol]) proto[symbol] = symbolIterator;
   }
 
   /**
@@ -93,8 +93,6 @@ export class QueryList<T> implements Iterable<T> {
    * See
    * [Array.filter](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter)
    */
-  filter<S extends T>(predicate: (value: T, index: number, array: readonly T[]) => value is S): S[];
-  filter(predicate: (value: T, index: number, array: readonly T[]) => unknown): T[];
   filter(fn: (item: T, index: number, array: T[]) => boolean): T[] {
     return this._results.filter(fn);
   }
@@ -155,13 +153,16 @@ export class QueryList<T> implements Iterable<T> {
    *    are compared as is (without any pre-processing).
    */
   reset(resultsTree: Array<T|any[]>, identityAccessor?: (value: T) => unknown): void {
-    (this as {dirty: boolean}).dirty = false;
+    // Cast to `QueryListInternal` so that we can mutate fields which are readonly for the usage of
+    // QueryList (but not for QueryList itself.)
+    const self = this as QueryListInternal<T>;
+    (self as {dirty: boolean}).dirty = false;
     const newResultFlat = flatten(resultsTree);
-    if (this._changesDetected = !arrayEquals(this._results, newResultFlat, identityAccessor)) {
-      this._results = newResultFlat;
-      (this as Writable<this>).length = newResultFlat.length;
-      (this as Writable<this>).last = newResultFlat[this.length - 1];
-      (this as Writable<this>).first = newResultFlat[0];
+    if (this._changesDetected = !arrayEquals(self._results, newResultFlat, identityAccessor)) {
+      self._results = newResultFlat;
+      self.length = newResultFlat.length;
+      self.last = newResultFlat[this.length - 1];
+      self.first = newResultFlat[0];
     }
   }
 
@@ -190,4 +191,15 @@ export class QueryList<T> implements Iterable<T> {
   // implement the Iterable interface. This is required for template type-checking of NgFor loops
   // over QueryLists to work correctly, since QueryList must be assignable to NgIterable.
   [Symbol.iterator]!: () => Iterator<T>;
+}
+
+/**
+ * Internal set of APIs used by the framework. (not to be made public)
+ */
+interface QueryListInternal<T> extends QueryList<T> {
+  reset(a: any[]): void;
+  notifyOnChanges(): void;
+  length: number;
+  last: T;
+  first: T;
 }

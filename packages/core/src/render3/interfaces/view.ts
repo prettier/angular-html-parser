@@ -8,12 +8,8 @@
 
 import {Injector} from '../../di/injector';
 import {ProviderToken} from '../../di/provider_token';
-import {DehydratedView} from '../../hydration/interfaces';
 import {SchemaMetadata} from '../../metadata/schema';
 import {Sanitizer} from '../../sanitization/sanitizer';
-import type {ReactiveLViewConsumer} from '../reactive_lview_consumer';
-import type {FlushableEffectRunner} from '../reactivity/effect';
-import type {AfterRenderEventManager} from '../after_render_hooks';
 
 import {LContainer} from './container';
 import {ComponentDef, ComponentTemplate, DirectiveDef, DirectiveDefList, HostBindingsFunction, PipeDef, PipeDefList, ViewQueriesFunction} from './definition';
@@ -23,7 +19,6 @@ import {LQueries, TQueries} from './query';
 import {Renderer, RendererFactory} from './renderer';
 import {RElement} from './renderer_dom';
 import {TStylingKey, TStylingRange} from './styling';
-import {TDeferBlockDetails} from '../../defer/interfaces';
 
 
 
@@ -33,33 +28,26 @@ import {TDeferBlockDetails} from '../../defer/interfaces';
 export const HOST = 0;
 export const TVIEW = 1;
 export const FLAGS = 2;
-
-// Shared with LContainer
 export const PARENT = 3;
 export const NEXT = 4;
-export const T_HOST = 5;
-// End shared with LContainer
-
-export const HYDRATION = 6;
+export const TRANSPLANTED_VIEWS_TO_REFRESH = 5;
+export const T_HOST = 6;
 export const CLEANUP = 7;
 export const CONTEXT = 8;
 export const INJECTOR = 9;
-export const ENVIRONMENT = 10;
+export const RENDERER_FACTORY = 10;
 export const RENDERER = 11;
-export const CHILD_HEAD = 12;
-export const CHILD_TAIL = 13;
+export const SANITIZER = 12;
+export const CHILD_HEAD = 13;
+export const CHILD_TAIL = 14;
 // FIXME(misko): Investigate if the three declarations aren't all same thing.
-export const DECLARATION_VIEW = 14;
-export const DECLARATION_COMPONENT_VIEW = 15;
-export const DECLARATION_LCONTAINER = 16;
-export const PREORDER_HOOK_FLAGS = 17;
-export const QUERIES = 18;
-export const ID = 19;
-export const EMBEDDED_VIEW_INJECTOR = 20;
-export const ON_DESTROY_HOOKS = 21;
-export const REACTIVE_TEMPLATE_CONSUMER = 23;
-export const REACTIVE_HOST_BINDING_CONSUMER = 24;
-
+export const DECLARATION_VIEW = 15;
+export const DECLARATION_COMPONENT_VIEW = 16;
+export const DECLARATION_LCONTAINER = 17;
+export const PREORDER_HOOK_FLAGS = 18;
+export const QUERIES = 19;
+export const ID = 20;
+export const EMBEDDED_VIEW_INJECTOR = 21;
 /**
  * Size of LView's header. Necessary to adjust for it when setting slots.
  *
@@ -67,7 +55,7 @@ export const REACTIVE_HOST_BINDING_CONSUMER = 24;
  * instruction index into `LView` index. All other indexes should be in the `LView` index space and
  * there should be no need to refer to `HEADER_OFFSET` anywhere else.
  */
-export const HEADER_OFFSET = 25;
+export const HEADER_OFFSET = 22;
 
 
 // This interface replaces the real LView interface if it is an arg or a
@@ -186,13 +174,14 @@ export interface LView<T = unknown> extends Array<any> {
   /** An optional Module Injector to be used as fall back after Element Injectors are consulted. */
   readonly[INJECTOR]: Injector|null;
 
-  /**
-   * Contextual data that is shared across multiple instances of `LView` in the same application.
-   */
-  [ENVIRONMENT]: LViewEnvironment;
+  /** Factory to be used for creating Renderer. */
+  [RENDERER_FACTORY]: RendererFactory;
 
   /** Renderer to be used for this view. */
   [RENDERER]: Renderer;
+
+  /** An optional custom sanitizer. */
+  [SANITIZER]: Sanitizer|null;
 
   /**
    * Reference to the first LView or LContainer beneath this LView in
@@ -322,56 +311,22 @@ export interface LView<T = unknown> extends Array<any> {
    */
   [PREORDER_HOOK_FLAGS]: PreOrderHookFlags;
 
+  /**
+   * The number of direct transplanted views which need a refresh or have descendants themselves
+   * that need a refresh but have not marked their ancestors as Dirty. This tells us that during
+   * change detection we should still descend to find those children to refresh, even if the parents
+   * are not `Dirty`/`CheckAlways`.
+   */
+  [TRANSPLANTED_VIEWS_TO_REFRESH]: number;
+
   /** Unique ID of the view. Used for `__ngContext__` lookups in the `LView` registry. */
   [ID]: number;
-
-  /**
-   * A container related to hydration annotation information that's associated with this LView.
-   */
-  [HYDRATION]: DehydratedView|null;
 
   /**
    * Optional injector assigned to embedded views that takes
    * precedence over the element and module injectors.
    */
   readonly[EMBEDDED_VIEW_INJECTOR]: Injector|null;
-
-  /**
-   * A collection of callbacks functions that are executed when a given LView is destroyed. Those
-   * are user defined, LView-specific destroy callbacks that don't have any corresponding TView
-   * entries.
-   */
-  [ON_DESTROY_HOOKS]: Array<() => void>|null;
-
-  /**
-   * The `Consumer` for this `LView`'s template so that signal reads can be tracked.
-   *
-   * This is initially `null` and gets assigned a consumer after template execution
-   * if any signals were read.
-   */
-  [REACTIVE_TEMPLATE_CONSUMER]: ReactiveLViewConsumer|null;
-
-  /**
-   * Same as REACTIVE_TEMPLATE_CONSUMER, but for the host bindings of the LView.
-   */
-  [REACTIVE_HOST_BINDING_CONSUMER]: ReactiveLViewConsumer|null;
-}
-
-/**
- * Contextual data that is shared across multiple instances of `LView` in the same application.
- */
-export interface LViewEnvironment {
-  /** Factory to be used for creating Renderer. */
-  rendererFactory: RendererFactory;
-
-  /** An optional custom sanitizer. */
-  sanitizer: Sanitizer|null;
-
-  /** Container for reactivity system `effect`s. */
-  inlineEffectRunner: FlushableEffectRunner|null;
-
-  /** Container for after render hooks */
-  afterRenderEventManager: AfterRenderEventManager|null;
 }
 
 /** Flags associated with an LView (saved in LView[FLAGS]) */
@@ -388,7 +343,7 @@ export const enum LViewFlags {
    * back into the parent view, `data` will be defined and `creationMode` will be
    * improperly reported as false.
    */
-  CreationMode = 1 << 2,
+  CreationMode = 0b00000000100,
 
   /**
    * Whether or not this LView instance is on its first processing pass.
@@ -397,60 +352,38 @@ export const enum LViewFlags {
    * has completed one creation mode run and one update mode run. At this
    * time, the flag is turned off.
    */
-  FirstLViewPass = 1 << 3,
+  FirstLViewPass = 0b00000001000,
 
   /** Whether this view has default change detection strategy (checks always) or onPush */
-  CheckAlways = 1 << 4,
-
-  /** Whether there are any i18n blocks inside this LView. */
-  HasI18n = 1 << 5,
+  CheckAlways = 0b00000010000,
 
   /** Whether or not this view is currently dirty (needing check) */
-  Dirty = 1 << 6,
+  Dirty = 0b00000100000,
 
   /** Whether or not this view is currently attached to change detection tree. */
-  Attached = 1 << 7,
+  Attached = 0b000001000000,
 
   /** Whether or not this view is destroyed. */
-  Destroyed = 1 << 8,
+  Destroyed = 0b000010000000,
 
   /** Whether or not this view is the root view */
-  IsRoot = 1 << 9,
+  IsRoot = 0b000100000000,
 
   /**
-   * Whether this moved LView was needs to be refreshed. Similar to the Dirty flag, but used for
-   * transplanted and signal views where the parent/ancestor views are not marked dirty as well.
-   * i.e. "Refresh just this view". Used in conjunction with the HAS_CHILD_VIEWS_TO_REFRESH
-   * flag.
+   * Whether this moved LView was needs to be refreshed at the insertion location because the
+   * declaration was dirty.
    */
-  RefreshView = 1 << 10,
+  RefreshTransplantedView = 0b001000000000,
 
   /** Indicates that the view **or any of its ancestors** have an embedded view injector. */
-  HasEmbeddedViewInjector = 1 << 11,
-
-  /** Indicates that the view was created with `signals: true`. */
-  SignalView = 1 << 12,
-
-  /**
-   * Indicates that this LView has a view underneath it that needs to be refreshed during change
-   * detection. This flag indicates that even if this view is not dirty itself, we still need to
-   * traverse its children during change detection.
-   */
-  HasChildViewsToRefresh = 1 << 13,
-
-  /**
-   * This is the count of the bits the 1 was shifted above (base 10)
-   */
-  IndexWithinInitPhaseShift = 14,
+  HasEmbeddedViewInjector = 0b0010000000000,
 
   /**
    * Index of the current init phase on last 21 bits
    */
-  IndexWithinInitPhaseIncrementer = 1 << IndexWithinInitPhaseShift,
-
-  // Subtracting 1 gives all 1s to the right of the initial shift
-  // So `(1 << 3) - 1` would give 3 1s: 1 << 3 = 0b01000, subtract 1 = 0b00111
-  IndexWithinInitPhaseReset = (1 << IndexWithinInitPhaseShift) - 1,
+  IndexWithinInitPhaseIncrementer = 0b0100000000000,
+  IndexWithinInitPhaseShift = 11,
+  IndexWithinInitPhaseReset = 0b0011111111111,
 }
 
 /**
@@ -833,14 +766,6 @@ export interface TView {
    * view. This means that the view is likely corrupted and we should try to recover it.
    */
   incompleteFirstPass: boolean;
-
-  /**
-   * Unique id of this TView for hydration purposes:
-   * - TViewType.Embedded: a unique id generated during serialization on the server
-   * - TViewType.Component: an id generated based on component properties
-   *                        (see `getComponentId` function for details)
-   */
-  ssrId: string|null;
 }
 
 /** Single hook callback function. */
@@ -913,6 +838,9 @@ export type DestroyHookData = (HookEntry|HookData)[];
  *
  * Injector bloom filters are also stored here.
  */
-export type TData =
-    (TNode|PipeDef<any>|DirectiveDef<any>|ComponentDef<any>|number|TStylingRange|TStylingKey|
-     ProviderToken<any>|TI18n|I18nUpdateOpCodes|TIcu|null|string|TDeferBlockDetails)[];
+export type TData = (TNode|PipeDef<any>|DirectiveDef<any>|ComponentDef<any>|number|TStylingRange|
+                     TStylingKey|ProviderToken<any>|TI18n|I18nUpdateOpCodes|TIcu|null|string)[];
+
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+export const unusedValueExportToPlacateAjd = 1;

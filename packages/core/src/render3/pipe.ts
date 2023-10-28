@@ -8,19 +8,17 @@
 
 import {PipeTransform} from '../change_detection/pipe_transform';
 import {setInjectImplementation} from '../di/inject_switch';
-import {formatRuntimeError, RuntimeError, RuntimeErrorCode} from '../errors';
+import {RuntimeError, RuntimeErrorCode} from '../errors';
 import {Type} from '../interface/type';
 
-import {InjectorProfilerContext, setInjectorProfilerContext} from './debug/injector_profiler';
 import {getFactoryDef} from './definition_factory';
-import {NodeInjector, setIncludeViewProviders} from './di';
+import {setIncludeViewProviders} from './di';
 import {store, ɵɵdirectiveInject} from './instructions/all';
 import {isHostComponentStandalone} from './instructions/element_validation';
 import {PipeDef, PipeDefList} from './interfaces/definition';
-import {TTextNode} from './interfaces/node';
 import {CONTEXT, DECLARATION_COMPONENT_VIEW, HEADER_OFFSET, LView, TVIEW} from './interfaces/view';
 import {pureFunction1Internal, pureFunction2Internal, pureFunction3Internal, pureFunction4Internal, pureFunctionVInternal} from './pure_function';
-import {getBindingRoot, getCurrentTNode, getLView, getTView} from './state';
+import {getBindingRoot, getLView, getTView} from './state';
 import {load} from './util/view_utils';
 
 
@@ -45,21 +43,13 @@ export function ɵɵpipe(index: number, pipeName: string): any {
     pipeDef = getPipeDef(pipeName, tView.pipeRegistry)!;
     tView.data[adjustedIndex] = pipeDef;
     if (pipeDef.onDestroy) {
-      (tView.destroyHooks ??= []).push(adjustedIndex, pipeDef.onDestroy);
+      (tView.destroyHooks || (tView.destroyHooks = [])).push(adjustedIndex, pipeDef.onDestroy);
     }
   } else {
     pipeDef = tView.data[adjustedIndex] as PipeDef<any>;
   }
 
   const pipeFactory = pipeDef.factory || (pipeDef.factory = getFactoryDef(pipeDef.type, true));
-
-  let previousInjectorProfilerContext: InjectorProfilerContext;
-  if (ngDevMode) {
-    previousInjectorProfilerContext = setInjectorProfilerContext({
-      injector: new NodeInjector(getCurrentTNode() as TTextNode, getLView()),
-      token: pipeDef.type
-    });
-  }
   const previousInjectImplementation = setInjectImplementation(ɵɵdirectiveInject);
   try {
     // DI for pipes is supposed to behave like directives when placed on a component
@@ -73,7 +63,6 @@ export function ɵɵpipe(index: number, pipeName: string): any {
     // we have to restore the injector implementation in finally, just in case the creation of the
     // pipe throws an error.
     setInjectImplementation(previousInjectImplementation);
-    ngDevMode && setInjectorProfilerContext(previousInjectorProfilerContext!);
   }
 }
 
@@ -87,14 +76,6 @@ export function ɵɵpipe(index: number, pipeName: string): any {
  */
 function getPipeDef(name: string, registry: PipeDefList|null): PipeDef<any>|undefined {
   if (registry) {
-    if (ngDevMode) {
-      const pipes = registry.filter(pipe => pipe.name === name);
-      // TODO: Throw an error in the next major
-      if (pipes.length > 1) {
-        console.warn(formatRuntimeError(
-            RuntimeErrorCode.MULTIPLE_MATCHING_PIPES, getMultipleMatchingPipesMessage(name)));
-      }
-    }
     for (let i = registry.length - 1; i >= 0; i--) {
       const pipeDef = registry[i];
       if (name === pipeDef.name) {
@@ -105,27 +86,6 @@ function getPipeDef(name: string, registry: PipeDefList|null): PipeDef<any>|unde
   if (ngDevMode) {
     throw new RuntimeError(RuntimeErrorCode.PIPE_NOT_FOUND, getPipeNotFoundErrorMessage(name));
   }
-  return;
-}
-
-/**
- * Generates a helpful error message for the user when multiple pipes match the name.
- *
- * @param name Name of the pipe
- * @returns The error message
- */
-function getMultipleMatchingPipesMessage(name: string) {
-  const lView = getLView();
-  const declarationLView = lView[DECLARATION_COMPONENT_VIEW] as LView<Type<unknown>>;
-  const context = declarationLView[CONTEXT];
-  const hostIsStandalone = isHostComponentStandalone(lView);
-  const componentInfoMessage = context ? ` in the '${context.constructor.name}' component` : '';
-  const verifyMessage = `check ${
-      hostIsStandalone ? '\'@Component.imports\' of this component' :
-                         'the imports of this module'}`;
-  const errorMessage =
-      `Multiple pipes match the name \`${name}\`${componentInfoMessage}. ${verifyMessage}`;
-  return errorMessage;
 }
 
 /**
@@ -155,18 +115,18 @@ function getPipeNotFoundErrorMessage(name: string) {
  * the pipe only when an input to the pipe changes.
  *
  * @param index Pipe index where the pipe was stored on creation.
- * @param offset the binding offset
+ * @param slotOffset the offset in the reserved slot space
  * @param v1 1st argument to {@link PipeTransform#transform}.
  *
  * @codeGenApi
  */
-export function ɵɵpipeBind1(index: number, offset: number, v1: any): any {
+export function ɵɵpipeBind1(index: number, slotOffset: number, v1: any): any {
   const adjustedIndex = index + HEADER_OFFSET;
   const lView = getLView();
   const pipeInstance = load<PipeTransform>(lView, adjustedIndex);
   return isPure(lView, adjustedIndex) ?
       pureFunction1Internal(
-          lView, getBindingRoot(), offset, pipeInstance.transform, v1, pipeInstance) :
+          lView, getBindingRoot(), slotOffset, pipeInstance.transform, v1, pipeInstance) :
       pipeInstance.transform(v1);
 }
 

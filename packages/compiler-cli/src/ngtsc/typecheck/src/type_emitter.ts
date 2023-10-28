@@ -143,7 +143,7 @@ export class TypeEmitter {
           return ts.visitEachChild(node, visitNode, context);
         }
       };
-      return node => ts.visitNode(node, visitNode, ts.isTypeNode);
+      return node => ts.visitNode(node, visitNode);
     };
     return ts.transform(type, [typeReferenceTransformer]).transformed[0];
   }

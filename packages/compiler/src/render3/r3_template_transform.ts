@@ -18,8 +18,6 @@ import {BindingParser} from '../template_parser/binding_parser';
 import {PreparsedElementType, preparseElement} from '../template_parser/template_preparser';
 
 import * as t from './r3_ast';
-import {createForLoop, createIfBlock, createSwitchBlock, isConnectedForLoopBlock, isConnectedIfLoopBlock} from './r3_control_flow';
-import {createDeferredBlock, isConnectedDeferLoopBlock} from './r3_deferred_blocks';
 import {I18N_ICU_VAR_PREFIX, isI18nRootNode} from './view/i18n/util';
 
 const BIND_NAME_REGEXP = /^(?:(bind-)|(let-)|(ref-|#)|(on-)|(bindon-)|(@))(.*)$/;
@@ -66,7 +64,7 @@ export function htmlAstToRender3Ast(
     htmlNodes: html.Node[], bindingParser: BindingParser,
     options: Render3ParseOptions): Render3ParseResult {
   const transformer = new HtmlAstToIvyAst(bindingParser, options);
-  const ivyNodes = html.visitAll(transformer, htmlNodes, htmlNodes);
+  const ivyNodes = html.visitAll(transformer, htmlNodes);
 
   // Errors might originate in either the binding parser or the html to ivy transformer
   const allErrors = bindingParser.errors.concat(transformer.errors);
@@ -92,12 +90,6 @@ class HtmlAstToIvyAst implements html.Visitor {
   // This array will be populated if `Render3ParseOptions['collectCommentNodes']` is true
   commentNodes: t.Comment[] = [];
   private inI18nBlock: boolean = false;
-
-  /**
-   * Keeps track of the nodes that have been processed already when previous nodes were visited.
-   * These are typically blocks connected to other blocks or text nodes between connected blocks.
-   */
-  private processedNodes = new Set<html.Block|html.Text>();
 
   constructor(private bindingParser: BindingParser, private options: Render3ParseOptions) {}
 
@@ -192,16 +184,8 @@ class HtmlAstToIvyAst implements html.Visitor {
       }
     }
 
-    let children: t.Node[];
-
-    if (preparsedElement.nonBindable) {
-      // The `NonBindableVisitor` may need to return an array of nodes for blocks so we need
-      // to flatten the array here. Avoid doing this for the `HtmlAstToIvyAst` since `flat` creates
-      // a new array.
-      children = html.visitAll(NON_BINDABLE_VISITOR, element.children).flat(Infinity);
-    } else {
-      children = html.visitAll(this, element.children, element.children);
-    }
+    const children: t.Node[] =
+        html.visitAll(preparsedElement.nonBindable ? NON_BINDABLE_VISITOR : this, element.children);
 
     let parsedElement: t.Content|t.Template|t.Element|undefined;
     if (preparsedElement.type === PreparsedElementType.NG_CONTENT) {
@@ -271,10 +255,8 @@ class HtmlAstToIvyAst implements html.Visitor {
         attribute.valueSpan, attribute.i18n);
   }
 
-  visitText(text: html.Text): t.Node|null {
-    return this.processedNodes.has(text) ?
-        null :
-        this._visitTextWithInterpolation(text.value, text.sourceSpan, text.tokens, text.i18n);
+  visitText(text: html.Text): t.Node {
+    return this._visitTextWithInterpolation(text.value, text.sourceSpan, text.tokens, text.i18n);
   }
 
   visitExpansion(expansion: html.Expansion): t.Icu|null {
@@ -322,103 +304,6 @@ class HtmlAstToIvyAst implements html.Visitor {
       this.commentNodes.push(new t.Comment(comment.value || '', comment.sourceSpan));
     }
     return null;
-  }
-
-  visitBlockParameter() {
-    return null;
-  }
-
-  visitBlock(block: html.Block, context: html.Node[]) {
-    const index = Array.isArray(context) ? context.indexOf(block) : -1;
-
-    if (index === -1) {
-      throw new Error(
-          'Visitor invoked incorrectly. Expecting visitBlock to be invoked siblings array as its context');
-    }
-
-    // Connected blocks may have been processed as a part of the previous block.
-    if (this.processedNodes.has(block)) {
-      return null;
-    }
-
-    let result: {node: t.Node|null, errors: ParseError[]}|null = null;
-
-    switch (block.name) {
-      case 'defer':
-        result = createDeferredBlock(
-            block, this.findConnectedBlocks(index, context, isConnectedDeferLoopBlock), this,
-            this.bindingParser);
-        break;
-
-      case 'switch':
-        result = createSwitchBlock(block, this, this.bindingParser);
-        break;
-
-      case 'for':
-        result = createForLoop(
-            block, this.findConnectedBlocks(index, context, isConnectedForLoopBlock), this,
-            this.bindingParser);
-        break;
-
-      case 'if':
-        result = createIfBlock(
-            block, this.findConnectedBlocks(index, context, isConnectedIfLoopBlock), this,
-            this.bindingParser);
-        break;
-
-      default:
-        let errorMessage: string;
-
-        if (isConnectedDeferLoopBlock(block.name)) {
-          errorMessage = `@${block.name} block can only be used after an @defer block.`;
-          this.processedNodes.add(block);
-        } else if (isConnectedForLoopBlock(block.name)) {
-          errorMessage = `@${block.name} block can only be used after an @for block.`;
-          this.processedNodes.add(block);
-        } else if (isConnectedIfLoopBlock(block.name)) {
-          errorMessage = `@${block.name} block can only be used after an @if or @else if block.`;
-          this.processedNodes.add(block);
-        } else {
-          errorMessage = `Unrecognized block @${block.name}.`;
-        }
-
-        result = {
-          node: new t.UnknownBlock(block.name, block.sourceSpan),
-          errors: [new ParseError(block.sourceSpan, errorMessage)],
-        };
-        break;
-    }
-
-    this.errors.push(...result.errors);
-    return result.node;
-  }
-
-  private findConnectedBlocks(
-      primaryBlockIndex: number, siblings: html.Node[],
-      predicate: (blockName: string) => boolean): html.Block[] {
-    const relatedBlocks: html.Block[] = [];
-
-    for (let i = primaryBlockIndex + 1; i < siblings.length; i++) {
-      const node = siblings[i];
-
-      // Ignore empty text nodes between blocks.
-      if (node instanceof html.Text && node.value.trim().length === 0) {
-        // Add the text node to the processed nodes since we don't want
-        // it to be generated between the connected nodes.
-        this.processedNodes.add(node);
-        continue;
-      }
-
-      // Stop searching as soon as we hit a non-block node or a block that is unrelated.
-      if (!(node instanceof html.Block) || !predicate(node.name)) {
-        break;
-      }
-
-      relatedBlocks.push(node);
-      this.processedNodes.add(node);
-    }
-
-    return relatedBlocks;
   }
 
   // convert view engine `ParsedProperty` to a format suitable for IVY
@@ -632,7 +517,7 @@ class NonBindableVisitor implements html.Visitor {
     const children: t.Node[] = html.visitAll(this, ast.children, null);
     return new t.Element(
         ast.name, html.visitAll(this, ast.attrs) as t.TextAttribute[],
-        /* inputs */[], /* outputs */[], children, /* references */[], ast.sourceSpan,
+        /* inputs */[], /* outputs */[], children,  /* references */[], ast.sourceSpan,
         ast.startSourceSpan, ast.endSourceSpan);
   }
 
@@ -655,25 +540,6 @@ class NonBindableVisitor implements html.Visitor {
   }
 
   visitExpansionCase(expansionCase: html.ExpansionCase): any {
-    return null;
-  }
-
-  visitBlock(block: html.Block, context: any) {
-    const nodes = [
-      // In an ngNonBindable context we treat the opening/closing tags of block as plain text.
-      // This is the as if the `tokenizeBlocks` option was disabled.
-      new t.Text(block.startSourceSpan.toString(), block.startSourceSpan),
-      ...html.visitAll(this, block.children)
-    ];
-
-    if (block.endSourceSpan !== null) {
-      nodes.push(new t.Text(block.endSourceSpan.toString(), block.endSourceSpan));
-    }
-
-    return nodes;
-  }
-
-  visitBlockParameter(parameter: html.BlockParameter, context: any) {
     return null;
   }
 }

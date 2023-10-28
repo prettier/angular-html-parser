@@ -56,7 +56,7 @@ describe('<ng-container>', function() {
     fixture.detectChanges();
 
     const dir = fixture.debugElement.children[0].injector.get(TextDirective);
-    expect(dir).toBeInstanceOf(TextDirective);
+    expect(dir).toBeAnInstanceOf(TextDirective);
     expect(dir.text).toEqual('container');
   });
 
@@ -66,7 +66,7 @@ describe('<ng-container>', function() {
     const fixture = TestBed.createComponent(MyComp);
 
     fixture.detectChanges();
-    const q = fixture.debugElement.children[0].references['q'];
+    const q = fixture.debugElement.children[0].references!['q'];
     fixture.detectChanges();
 
     expect(q.textDirChildren.length).toEqual(1);
@@ -81,8 +81,10 @@ class TextDirective {
 
 @Component({selector: 'needs-content-children', template: ''})
 class NeedsContentChildren implements AfterContentInit {
+  // TODO(issue/24571): remove '!'.
   @ContentChildren(TextDirective) textDirChildren!: QueryList<TextDirective>;
-  numberOfChildrenAfterContentInit: number|undefined;
+  // TODO(issue/24571): remove '!'.
+  numberOfChildrenAfterContentInit!: number;
 
   ngAfterContentInit() {
     this.numberOfChildrenAfterContentInit = this.textDirChildren.length;
@@ -91,8 +93,10 @@ class NeedsContentChildren implements AfterContentInit {
 
 @Component({selector: 'needs-view-children', template: '<div text></div>'})
 class NeedsViewChildren implements AfterViewInit {
+  // TODO(issue/24571): remove '!'.
   @ViewChildren(TextDirective) textDirChildren!: QueryList<TextDirective>;
-  numberOfChildrenAfterViewInit: number|undefined;
+  // TODO(issue/24571): remove '!'.
+  numberOfChildrenAfterViewInit!: number;
 
   ngAfterViewInit() {
     this.numberOfChildrenAfterViewInit = this.textDirChildren.length;

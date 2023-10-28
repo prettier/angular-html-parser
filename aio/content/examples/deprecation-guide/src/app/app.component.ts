@@ -1,15 +1,13 @@
 // #docplaster
-import { Component, ContentChild, Input, OnInit, TemplateRef } from '@angular/core';
-import { NgFor } from '@angular/common';
+import { Component, ContentChild, Injector, Input, OnInit, StaticProvider, TemplateRef } from '@angular/core';
+import { ReflectiveInjector } from '@angular/core';
 import {
-  FormsModule,
   FormControl,
 } from '@angular/forms';
 @Component({
-  standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
-  imports: [ FormsModule, NgFor ]
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
   title = 'example';
@@ -19,17 +17,23 @@ export class AppComponent implements OnInit {
     'repeat-value'
   ];
 
+  /*
+  // #docregion template-with-input-deprecated
+  @Input() @ContentChild(TemplateRef) tpldeprecated !: TemplateRef<any>;
+  // #enddocregion template-with-input-deprecated
+  */
+
   // #docregion template-with-input
   @Input() tpl !: TemplateRef<any>;
   @ContentChild(TemplateRef) inlineTemplate !: TemplateRef<any>;
   // #enddocregion template-with-input
 
   ngOnInit() {
-    // #docregion template-driven-form-example
+    // #docregion deprecated-example, template-driven-form-example
 
     this.value = 'some value';
 
-    // #enddocregion template-driven-form-example
+    // #enddocregion deprecated-example, template-driven-form-example
     this.setValue();
   }
 
@@ -41,3 +45,16 @@ export class AppComponent implements OnInit {
     // #enddocregion reactive-form-example
   }
 }
+
+class InjectorExample {}
+
+const Provider  = [InjectorExample];
+const providers: StaticProvider[] = [Provider];
+
+// #docregion reflective-injector-deprecated-example
+ReflectiveInjector.resolveAndCreate(providers);
+// #enddocregion reflective-injector-deprecated-example
+
+// #docregion static-injector-example
+Injector.create({providers});
+// #enddocregion static-injector-example

@@ -21,7 +21,7 @@ export type ProjectFiles = {
 
 function writeTsconfig(
     fs: FileSystem, tsConfigPath: AbsoluteFsPath, entryFiles: AbsoluteFsPath[],
-    angularCompilerOptions: TestableOptions, tsCompilerOptions: {}): void {
+    options: TestableOptions): void {
   fs.writeFile(
       tsConfigPath,
       JSON.stringify(
@@ -36,12 +36,11 @@ function writeTsconfig(
                 'dom',
                 'es2015',
               ],
-              ...tsCompilerOptions,
             },
             files: entryFiles,
             angularCompilerOptions: {
               strictTemplates: true,
-              ...angularCompilerOptions,
+              ...options,
             }
           },
           null, 2));
@@ -58,7 +57,7 @@ export class Project {
 
   static initialize(
       projectName: string, projectService: ts.server.ProjectService, files: ProjectFiles,
-      angularCompilerOptions: TestableOptions = {}, tsCompilerOptions = {}): Project {
+      options: TestableOptions = {}): Project {
     const fs = getFileSystem();
     const tsConfigPath = absoluteFrom(`/${projectName}/tsconfig.json`);
 
@@ -74,7 +73,7 @@ export class Project {
       }
     }
 
-    writeTsconfig(fs, tsConfigPath, entryFiles, angularCompilerOptions, tsCompilerOptions);
+    writeTsconfig(fs, tsConfigPath, entryFiles, options);
 
     // Ensure the project is live in the ProjectService.
     projectService.openClientFile(entryFiles[0]);
@@ -118,8 +117,7 @@ export class Project {
         throw new Error(
             `Unable to open ScriptInfo for ${projectFileName} in project ${this.tsConfigPath}`);
       }
-      this.buffers.set(
-          projectFileName, new OpenBuffer(this.ngLS, this.tsProject, projectFileName, scriptInfo));
+      this.buffers.set(projectFileName, new OpenBuffer(this.ngLS, projectFileName, scriptInfo));
     }
 
     return this.buffers.get(projectFileName)!;

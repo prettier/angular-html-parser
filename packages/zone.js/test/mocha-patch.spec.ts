@@ -60,12 +60,6 @@ ifEnvSupports('Mocha', function() {
     });
   });
 
-  (describe as any).skip('skip describe', () => {
-    test('test', () => {
-      fail('should not be here');
-    });
-  });
-
   suite('Mocha TDD-style', () => {
     let testZone: Zone|null = null;
     let beforeEachZone: Zone|null = null;
@@ -99,10 +93,6 @@ ifEnvSupports('Mocha', function() {
 
     suiteTeardown(() => {
       expect(suiteSetupZone).toBe(Zone.current);
-    });
-
-    (it as any).skip('test skip', () => {
-      fail('should not be here');
     });
   });
 

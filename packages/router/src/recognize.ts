@@ -7,102 +7,77 @@
  */
 
 import {EnvironmentInjector, Type, ɵRuntimeError as RuntimeError} from '@angular/core';
-import {from, Observable, of} from 'rxjs';
-import {catchError, concatMap, defaultIfEmpty, first, last as rxjsLast, map, mergeMap, scan, switchMap, tap} from 'rxjs/operators';
+import {EmptyError, from, Observable, Observer, of} from 'rxjs';
+import {catchError, concatMap, defaultIfEmpty, first, last as rxjsLast, map, scan, switchMap, takeWhile} from 'rxjs/operators';
 
-import {AbsoluteRedirect, ApplyRedirects, canLoadFails, noMatch, NoMatch} from './apply_redirects';
-import {createUrlTreeFromSnapshot} from './create_url_tree';
 import {RuntimeErrorCode} from './errors';
-import {Data, LoadedRouterConfig, ResolveData, Route, Routes} from './models';
-import {runCanLoadGuards} from './operators/check_guards';
-import {RouterConfigLoader} from './router_config_loader';
+import {Data, ResolveData, Route, Routes} from './models';
 import {ActivatedRouteSnapshot, inheritedParamsDataResolve, ParamsInheritanceStrategy, RouterStateSnapshot} from './router_state';
 import {PRIMARY_OUTLET} from './shared';
 import {UrlSegment, UrlSegmentGroup, UrlSerializer, UrlTree} from './url_tree';
 import {last} from './utils/collection';
 import {getOutlet, sortByMatchingOutlets} from './utils/config';
-import {isImmediateMatch, match, MatchResult, matchWithChecks, noLeftoversInUrl, split} from './utils/config_matching';
+import {isImmediateMatch, matchWithChecks, noLeftoversInUrl, split} from './utils/config_matching';
 import {TreeNode} from './utils/tree';
 import {isEmptyError} from './utils/type_guards';
 
-/**
- * Class used to indicate there were no additional route config matches but that all segments of
- * the URL were consumed during matching so the route was URL matched. When this happens, we still
- * try to match child configs in case there are empty path children.
- */
-class NoLeftoversInUrl {}
+const NG_DEV_MODE = typeof ngDevMode === 'undefined' || !!ngDevMode;
 
-export function recognize(
-    injector: EnvironmentInjector, configLoader: RouterConfigLoader,
-    rootComponentType: Type<any>|null, config: Routes, urlTree: UrlTree,
-    urlSerializer: UrlSerializer,
-    paramsInheritanceStrategy: ParamsInheritanceStrategy =
-        'emptyOnly'): Observable<{state: RouterStateSnapshot, tree: UrlTree}> {
-  return new Recognizer(
-             injector, configLoader, rootComponentType, config, urlTree, paramsInheritanceStrategy,
-             urlSerializer)
-      .recognize();
+class NoMatch {}
+
+function newObservableError(e: unknown): Observable<RouterStateSnapshot> {
+  // TODO(atscott): This pattern is used throughout the router code and can be `throwError` instead.
+  return new Observable<RouterStateSnapshot>((obs: Observer<RouterStateSnapshot>) => obs.error(e));
 }
 
-const MAX_ALLOWED_REDIRECTS = 31;
+export function recognize(
+    injector: EnvironmentInjector, rootComponentType: Type<any>|null, config: Routes,
+    urlTree: UrlTree, url: string, urlSerializer: UrlSerializer,
+    paramsInheritanceStrategy: ParamsInheritanceStrategy =
+        'emptyOnly'): Observable<RouterStateSnapshot> {
+  return new Recognizer(
+             injector, rootComponentType, config, urlTree, url, paramsInheritanceStrategy,
+             urlSerializer)
+      .recognize()
+      .pipe(switchMap(result => {
+        if (result === null) {
+          return newObservableError(new NoMatch());
+        } else {
+          return of(result);
+        }
+      }));
+}
 
 export class Recognizer {
-  private applyRedirects = new ApplyRedirects(this.urlSerializer, this.urlTree);
-  private absoluteRedirectCount = 0;
-  allowRedirects = true;
-
   constructor(
-      private injector: EnvironmentInjector, private configLoader: RouterConfigLoader,
-      private rootComponentType: Type<any>|null, private config: Routes, private urlTree: UrlTree,
+      private injector: EnvironmentInjector, private rootComponentType: Type<any>|null,
+      private config: Routes, private urlTree: UrlTree, private url: string,
       private paramsInheritanceStrategy: ParamsInheritanceStrategy,
       private readonly urlSerializer: UrlSerializer) {}
 
-  private noMatchError(e: NoMatch): any {
-    return new RuntimeError(
-        RuntimeErrorCode.NO_MATCH,
-        (typeof ngDevMode === 'undefined' || ngDevMode) &&
-            `Cannot match any routes. URL Segment: '${e.segmentGroup}'`);
-  }
+  recognize(): Observable<RouterStateSnapshot|null> {
+    const rootSegmentGroup =
+        split(this.urlTree.root, [], [], this.config.filter(c => c.redirectTo === undefined))
+            .segmentGroup;
 
-  recognize(): Observable<{state: RouterStateSnapshot, tree: UrlTree}> {
-    const rootSegmentGroup = split(this.urlTree.root, [], [], this.config).segmentGroup;
+    return this.processSegmentGroup(this.injector, this.config, rootSegmentGroup, PRIMARY_OUTLET)
+        .pipe(map(children => {
+          if (children === null) {
+            return null;
+          }
 
-    return this.match(rootSegmentGroup).pipe(map(children => {
-      // Use Object.freeze to prevent readers of the Router state from modifying it outside
-      // of a navigation, resulting in the router being out of sync with the browser.
-      const root = new ActivatedRouteSnapshot(
-          [], Object.freeze({}), Object.freeze({...this.urlTree.queryParams}),
-          this.urlTree.fragment, {}, PRIMARY_OUTLET, this.rootComponentType, null, {});
+          // Use Object.freeze to prevent readers of the Router state from modifying it outside of a
+          // navigation, resulting in the router being out of sync with the browser.
+          const root = new ActivatedRouteSnapshot(
+              [], Object.freeze({}), Object.freeze({...this.urlTree.queryParams}),
+              this.urlTree.fragment, {}, PRIMARY_OUTLET, this.rootComponentType, null,
+              this.urlTree.root, -1, {});
 
-      const rootNode = new TreeNode(root, children);
-      const routeState = new RouterStateSnapshot('', rootNode);
-      const tree =
-          createUrlTreeFromSnapshot(root, [], this.urlTree.queryParams, this.urlTree.fragment);
-      // https://github.com/angular/angular/issues/47307
-      // Creating the tree stringifies the query params
-      // We don't want to do this here so reassign them to the original.
-      tree.queryParams = this.urlTree.queryParams;
-      routeState.url = this.urlSerializer.serialize(tree);
-      this.inheritParamsAndData(routeState._root);
-      return {state: routeState, tree};
-    }));
-  }
-
-
-  private match(rootSegmentGroup: UrlSegmentGroup): Observable<TreeNode<ActivatedRouteSnapshot>[]> {
-    const expanded$ =
-        this.processSegmentGroup(this.injector, this.config, rootSegmentGroup, PRIMARY_OUTLET);
-    return expanded$.pipe(catchError((e: any) => {
-      if (e instanceof AbsoluteRedirect) {
-        this.urlTree = e.urlTree;
-        return this.match(e.urlTree.root);
-      }
-      if (e instanceof NoMatch) {
-        throw this.noMatchError(e);
-      }
-
-      throw e;
-    }));
+          const rootNode = new TreeNode<ActivatedRouteSnapshot>(root, children);
+          const routeState = new RouterStateSnapshot(this.url, rootNode);
+          this.inheritParamsAndData(routeState._root);
+          return routeState;
+        }));
   }
 
   inheritParamsAndData(routeNode: TreeNode<ActivatedRouteSnapshot>): void {
@@ -117,13 +92,12 @@ export class Recognizer {
 
   processSegmentGroup(
       injector: EnvironmentInjector, config: Route[], segmentGroup: UrlSegmentGroup,
-      outlet: string): Observable<TreeNode<ActivatedRouteSnapshot>[]> {
+      outlet: string): Observable<TreeNode<ActivatedRouteSnapshot>[]|null> {
     if (segmentGroup.segments.length === 0 && segmentGroup.hasChildren()) {
       return this.processChildren(injector, config, segmentGroup);
     }
 
-    return this.processSegment(injector, config, segmentGroup, segmentGroup.segments, outlet, true)
-        .pipe(map(child => child instanceof TreeNode ? [child] : []));
+    return this.processSegment(injector, config, segmentGroup, segmentGroup.segments, outlet);
   }
 
   /**
@@ -135,18 +109,8 @@ export class Recognizer {
    *     config.
    */
   processChildren(injector: EnvironmentInjector, config: Route[], segmentGroup: UrlSegmentGroup):
-      Observable<TreeNode<ActivatedRouteSnapshot>[]> {
-    // Expand outlets one at a time, starting with the primary outlet. We need to do it this way
-    // because an absolute redirect from the primary outlet takes precedence.
-    const childOutlets: string[] = [];
-    for (const child of Object.keys(segmentGroup.children)) {
-      if (child === 'primary') {
-        childOutlets.unshift(child);
-      } else {
-        childOutlets.push(child);
-      }
-    }
-    return from(childOutlets)
+      Observable<TreeNode<ActivatedRouteSnapshot>[]|null> {
+    return from(Object.keys(segmentGroup.children))
         .pipe(
             concatMap(childOutlet => {
               const child = segmentGroup.children[childOutlet];
@@ -157,209 +121,140 @@ export class Recognizer {
               return this.processSegmentGroup(injector, sortedConfig, child, childOutlet);
             }),
             scan((children, outletChildren) => {
+              if (!children || !outletChildren) return null;
               children.push(...outletChildren);
               return children;
             }),
+            takeWhile(children => children !== null),
             defaultIfEmpty(null as TreeNode<ActivatedRouteSnapshot>[] | null),
             rxjsLast(),
-            mergeMap(children => {
-              if (children === null) return noMatch(segmentGroup);
+            map(children => {
+              if (children === null) return null;
               // Because we may have matched two outlets to the same empty path segment, we can have
               // multiple activated results for the same outlet. We should merge the children of
               // these results so the final return value is only one `TreeNode` per outlet.
               const mergedChildren = mergeEmptyPathMatches(children);
-              if (typeof ngDevMode === 'undefined' || ngDevMode) {
+              if (NG_DEV_MODE) {
                 // This should really never happen - we are only taking the first match for each
                 // outlet and merge the empty path matches.
                 checkOutletNameUniqueness(mergedChildren);
               }
               sortActivatedRouteSnapshots(mergedChildren);
-              return of(mergedChildren);
+              return mergedChildren;
             }),
         );
   }
 
   processSegment(
       injector: EnvironmentInjector, routes: Route[], segmentGroup: UrlSegmentGroup,
-      segments: UrlSegment[], outlet: string,
-      allowRedirects: boolean): Observable<TreeNode<ActivatedRouteSnapshot>|NoLeftoversInUrl> {
+      segments: UrlSegment[], outlet: string): Observable<TreeNode<ActivatedRouteSnapshot>[]|null> {
     return from(routes).pipe(
         concatMap(r => {
-          return this
-              .processSegmentAgainstRoute(
-                  r._injector ?? injector, routes, r, segmentGroup, segments, outlet,
-                  allowRedirects)
-              .pipe(catchError((e: any) => {
-                if (e instanceof NoMatch) {
-                  return of(null);
-                }
-                throw e;
-              }));
+          return this.processSegmentAgainstRoute(
+              r._injector ?? injector, r, segmentGroup, segments, outlet);
         }),
-        first((x): x is TreeNode<ActivatedRouteSnapshot>|NoLeftoversInUrl => !!x), catchError(e => {
+        first((x): x is TreeNode<ActivatedRouteSnapshot>[] => !!x), catchError(e => {
           if (isEmptyError(e)) {
             if (noLeftoversInUrl(segmentGroup, segments, outlet)) {
-              return of(new NoLeftoversInUrl());
+              return of([]);
             }
-            return noMatch(segmentGroup);
+            return of(null);
           }
           throw e;
         }));
   }
 
   processSegmentAgainstRoute(
-      injector: EnvironmentInjector, routes: Route[], route: Route, rawSegment: UrlSegmentGroup,
-      segments: UrlSegment[], outlet: string,
-      allowRedirects: boolean): Observable<TreeNode<ActivatedRouteSnapshot>|NoLeftoversInUrl> {
-    if (!isImmediateMatch(route, rawSegment, segments, outlet)) return noMatch(rawSegment);
+      injector: EnvironmentInjector, route: Route, rawSegment: UrlSegmentGroup,
+      segments: UrlSegment[], outlet: string): Observable<TreeNode<ActivatedRouteSnapshot>[]|null> {
+    if (route.redirectTo || !isImmediateMatch(route, rawSegment, segments, outlet)) return of(null);
 
-    if (route.redirectTo === undefined) {
-      return this.matchSegmentAgainstRoute(injector, rawSegment, route, segments, outlet);
-    }
-
-    if (this.allowRedirects && allowRedirects) {
-      return this.expandSegmentAgainstRouteUsingRedirect(
-          injector, rawSegment, routes, route, segments, outlet);
-    }
-
-    return noMatch(rawSegment);
-  }
-
-  private expandSegmentAgainstRouteUsingRedirect(
-      injector: EnvironmentInjector, segmentGroup: UrlSegmentGroup, routes: Route[], route: Route,
-      segments: UrlSegment[],
-      outlet: string): Observable<TreeNode<ActivatedRouteSnapshot>|NoLeftoversInUrl> {
-    const {
-      matched,
-      consumedSegments,
-      positionalParamSegments,
-      remainingSegments,
-    } = route.path === '**' ? createWildcardMatchResult(segments) :
-                              match(segmentGroup, route, segments);
-    if (!matched) return noMatch(segmentGroup);
-
-    // TODO(atscott): Move all of this under an if(ngDevMode) as a breaking change and allow stack
-    // size exceeded in production
-    if (route.redirectTo!.startsWith('/')) {
-      this.absoluteRedirectCount++;
-      if (this.absoluteRedirectCount > MAX_ALLOWED_REDIRECTS) {
-        if (ngDevMode) {
-          throw new RuntimeError(
-              RuntimeErrorCode.INFINITE_REDIRECT,
-              `Detected possible infinite redirect when redirecting from '${this.urlTree}' to '${
-                  route.redirectTo}'.\n` +
-                  `This is currently a dev mode only error but will become a` +
-                  ` call stack size exceeded error in production in a future major version.`);
-        }
-        this.allowRedirects = false;
-      }
-    }
-    const newTree = this.applyRedirects.applyRedirectCommands(
-        consumedSegments, route.redirectTo!, positionalParamSegments);
-
-    return this.applyRedirects.lineralizeSegments(route, newTree)
-        .pipe(mergeMap((newSegments: UrlSegment[]) => {
-          return this.processSegment(
-              injector, routes, segmentGroup, newSegments.concat(remainingSegments), outlet, false);
-        }));
-  }
-
-  matchSegmentAgainstRoute(
-      injector: EnvironmentInjector, rawSegment: UrlSegmentGroup, route: Route,
-      segments: UrlSegment[], outlet: string): Observable<TreeNode<ActivatedRouteSnapshot>> {
-    let matchResult: Observable<MatchResult>;
+    let matchResult: Observable<{
+      snapshot: ActivatedRouteSnapshot,
+      consumedSegments: UrlSegment[],
+      remainingSegments: UrlSegment[],
+    }|null>;
 
     if (route.path === '**') {
-      matchResult = of(createWildcardMatchResult(segments));
-      // Prior versions of the route matching algorithm would stop matching at the wildcard route.
-      // We should investigate a better strategy for any existing children. Otherwise, these
-      // child segments are silently dropped from the navigation.
-      // https://github.com/angular/angular/issues/40089
-      rawSegment.children = {};
+      const params = segments.length > 0 ? last(segments)!.parameters : {};
+      const pathIndexShift = getPathIndexShift(rawSegment) + segments.length;
+      const snapshot = new ActivatedRouteSnapshot(
+          segments, params, Object.freeze({...this.urlTree.queryParams}), this.urlTree.fragment,
+          getData(route), getOutlet(route), route.component ?? route._loadedComponent ?? null,
+          route, getSourceSegmentGroup(rawSegment), pathIndexShift, getResolve(route));
+      matchResult = of({
+        snapshot,
+        consumedSegments: [],
+        remainingSegments: [],
+      });
     } else {
-      matchResult = matchWithChecks(rawSegment, route, segments, injector, this.urlSerializer);
+      matchResult =
+          matchWithChecks(rawSegment, route, segments, injector, this.urlSerializer)
+              .pipe(map(({matched, consumedSegments, remainingSegments, parameters}) => {
+                if (!matched) {
+                  return null;
+                }
+                const pathIndexShift = getPathIndexShift(rawSegment) + consumedSegments.length;
+
+                const snapshot = new ActivatedRouteSnapshot(
+                    consumedSegments, parameters, Object.freeze({...this.urlTree.queryParams}),
+                    this.urlTree.fragment, getData(route), getOutlet(route),
+                    route.component ?? route._loadedComponent ?? null, route,
+                    getSourceSegmentGroup(rawSegment), pathIndexShift, getResolve(route));
+                return {snapshot, consumedSegments, remainingSegments};
+              }));
     }
 
     return matchResult.pipe(switchMap((result) => {
-      if (!result.matched) {
-        return noMatch(rawSegment);
+      if (result === null) {
+        return of(null);
       }
-
+      const {snapshot, consumedSegments, remainingSegments} = result;
       // If the route has an injector created from providers, we should start using that.
       injector = route._injector ?? injector;
-      return this.getChildConfig(injector, route, segments)
-          .pipe(switchMap(({routes: childConfig}) => {
-            const childInjector = route._loadedInjector ?? injector;
+      const childInjector = route._loadedInjector ?? injector;
+      const childConfig: Route[] = getChildConfig(route);
 
-            const {consumedSegments, remainingSegments, parameters} = result;
-            const snapshot = new ActivatedRouteSnapshot(
-                consumedSegments, parameters, Object.freeze({...this.urlTree.queryParams}),
-                this.urlTree.fragment, getData(route), getOutlet(route),
-                route.component ?? route._loadedComponent ?? null, route, getResolve(route));
+      const {segmentGroup, slicedSegments} = split(
+          rawSegment, consumedSegments, remainingSegments,
+          // Filter out routes with redirectTo because we are trying to create activated route
+          // snapshots and don't handle redirects here. That should have been done in
+          // `applyRedirects`.
+          childConfig.filter(c => c.redirectTo === undefined));
 
-            const {segmentGroup, slicedSegments} =
-                split(rawSegment, consumedSegments, remainingSegments, childConfig);
-
-            if (slicedSegments.length === 0 && segmentGroup.hasChildren()) {
-              return this.processChildren(childInjector, childConfig, segmentGroup)
-                  .pipe(map(children => {
-                    if (children === null) {
-                      return null;
-                    }
-                    return new TreeNode(snapshot, children);
-                  }));
-            }
-
-            if (childConfig.length === 0 && slicedSegments.length === 0) {
-              return of(new TreeNode(snapshot, []));
-            }
-
-            const matchedOnOutlet = getOutlet(route) === outlet;
-            // If we matched a config due to empty path match on a different outlet, we need to
-            // continue passing the current outlet for the segment rather than switch to PRIMARY.
-            // Note that we switch to primary when we have a match because outlet configs look like
-            // this: {path: 'a', outlet: 'a', children: [
-            //  {path: 'b', component: B},
-            //  {path: 'c', component: C},
-            // ]}
-            // Notice that the children of the named outlet are configured with the primary outlet
-            return this
-                .processSegment(
-                    childInjector, childConfig, segmentGroup, slicedSegments,
-                    matchedOnOutlet ? PRIMARY_OUTLET : outlet, true)
-                .pipe(map(child => {
-                  return new TreeNode(snapshot, child instanceof TreeNode ? [child] : []);
-                }));
-          }));
-    }));
-  }
-  private getChildConfig(injector: EnvironmentInjector, route: Route, segments: UrlSegment[]):
-      Observable<LoadedRouterConfig> {
-    if (route.children) {
-      // The children belong to the same module
-      return of({routes: route.children, injector});
-    }
-
-    if (route.loadChildren) {
-      // lazy children belong to the loaded module
-      if (route._loadedRoutes !== undefined) {
-        return of({routes: route._loadedRoutes, injector: route._loadedInjector});
+      if (slicedSegments.length === 0 && segmentGroup.hasChildren()) {
+        return this.processChildren(childInjector, childConfig, segmentGroup).pipe(map(children => {
+          if (children === null) {
+            return null;
+          }
+          return [new TreeNode<ActivatedRouteSnapshot>(snapshot, children)];
+        }));
       }
 
-      return runCanLoadGuards(injector, route, segments, this.urlSerializer)
-          .pipe(mergeMap((shouldLoadResult: boolean) => {
-            if (shouldLoadResult) {
-              return this.configLoader.loadChildren(injector, route)
-                  .pipe(tap((cfg: LoadedRouterConfig) => {
-                    route._loadedRoutes = cfg.routes;
-                    route._loadedInjector = cfg.injector;
-                  }));
-            }
-            return canLoadFails(route);
-          }));
-    }
+      if (childConfig.length === 0 && slicedSegments.length === 0) {
+        return of([new TreeNode<ActivatedRouteSnapshot>(snapshot, [])]);
+      }
 
-    return of({routes: [], injector});
+      const matchedOnOutlet = getOutlet(route) === outlet;
+      // If we matched a config due to empty path match on a different outlet, we need to
+      // continue passing the current outlet for the segment rather than switch to PRIMARY.
+      // Note that we switch to primary when we have a match because outlet configs look like
+      // this: {path: 'a', outlet: 'a', children: [
+      //  {path: 'b', component: B},
+      //  {path: 'c', component: C},
+      // ]}
+      // Notice that the children of the named outlet are configured with the primary outlet
+      return this
+          .processSegment(
+              childInjector, childConfig, segmentGroup, slicedSegments,
+              matchedOnOutlet ? PRIMARY_OUTLET : outlet)
+          .pipe(map(children => {
+            if (children === null) {
+              return null;
+            }
+            return [new TreeNode<ActivatedRouteSnapshot>(snapshot, children)];
+          }));
+    }));
   }
 }
 
@@ -371,9 +266,21 @@ function sortActivatedRouteSnapshots(nodes: TreeNode<ActivatedRouteSnapshot>[]):
   });
 }
 
+function getChildConfig(route: Route): Route[] {
+  if (route.children) {
+    return route.children;
+  }
+
+  if (route.loadChildren) {
+    return route._loadedRoutes!;
+  }
+
+  return [];
+}
+
 function hasEmptyPathConfig(node: TreeNode<ActivatedRouteSnapshot>) {
   const config = node.value.routeConfig;
-  return config && config.path === '';
+  return config && config.path === '' && config.redirectTo === undefined;
 }
 
 /**
@@ -422,11 +329,38 @@ function checkOutletNameUniqueness(nodes: TreeNode<ActivatedRouteSnapshot>[]): v
       const c = n.value.url.map(s => s.toString()).join('/');
       throw new RuntimeError(
           RuntimeErrorCode.TWO_SEGMENTS_WITH_SAME_OUTLET,
-          (typeof ngDevMode === 'undefined' || ngDevMode) &&
-              `Two segments cannot have the same outlet name: '${p}' and '${c}'.`);
+          NG_DEV_MODE && `Two segments cannot have the same outlet name: '${p}' and '${c}'.`);
     }
     names[n.value.outlet] = n.value;
   });
+}
+
+function getSourceSegmentGroup(segmentGroup: UrlSegmentGroup): UrlSegmentGroup {
+  let s = segmentGroup;
+  while (s._sourceSegment) {
+    s = s._sourceSegment;
+  }
+  return s;
+}
+
+function getPathIndexShift(segmentGroup: UrlSegmentGroup): number {
+  let s = segmentGroup;
+  let res = s._segmentIndexShift ?? 0;
+  while (s._sourceSegment) {
+    s = s._sourceSegment;
+    res += s._segmentIndexShift ?? 0;
+  }
+  return res - 1;
+}
+
+function getCorrectedPathIndexShift(segmentGroup: UrlSegmentGroup): number {
+  let s = segmentGroup;
+  let res = s._segmentIndexShiftCorrected ?? s._segmentIndexShift ?? 0;
+  while (s._sourceSegment) {
+    s = s._sourceSegment;
+    res += s._segmentIndexShiftCorrected ?? s._segmentIndexShift ?? 0;
+  }
+  return res - 1;
 }
 
 function getData(route: Route): Data {
@@ -435,14 +369,4 @@ function getData(route: Route): Data {
 
 function getResolve(route: Route): ResolveData {
   return route.resolve || {};
-}
-
-function createWildcardMatchResult(segments: UrlSegment[]): MatchResult {
-  return {
-    matched: true,
-    parameters: segments.length > 0 ? last(segments)!.parameters : {},
-    consumedSegments: segments,
-    remainingSegments: [],
-    positionalParamSegments: {},
-  };
 }

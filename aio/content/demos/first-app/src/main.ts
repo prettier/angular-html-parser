@@ -1,5 +1,5 @@
 // import required packages
-import 'zone.js';
+import 'zone.js/dist/zone';
 import { Component } from '@angular/core';
 import { bootstrapApplication } from '@angular/platform-browser';
 

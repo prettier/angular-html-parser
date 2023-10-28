@@ -12,9 +12,6 @@
     "name": "APP_INITIALIZER"
   },
   {
-    "name": "AfterRenderEventManager"
-  },
-  {
     "name": "AnonymousSubject"
   },
   {
@@ -27,19 +24,10 @@
     "name": "ApplicationRef"
   },
   {
-    "name": "BLOOM_BUCKET_BITS"
-  },
-  {
-    "name": "BLOOM_MASK"
-  },
-  {
     "name": "BROWSER_MODULE_PROVIDERS"
   },
   {
     "name": "BROWSER_MODULE_PROVIDERS_MARKER"
-  },
-  {
-    "name": "BehaviorSubject"
   },
   {
     "name": "BrowserDomAdapter"
@@ -55,15 +43,6 @@
   },
   {
     "name": "COMPONENT_REGEX"
-  },
-  {
-    "name": "CONTAINER_HEADER_OFFSET"
-  },
-  {
-    "name": "CSP_NONCE"
-  },
-  {
-    "name": "ChainedInjector"
   },
   {
     "name": "ChangeDetectionStrategy"
@@ -84,9 +63,6 @@
     "name": "ComponentFactoryResolver2"
   },
   {
-    "name": "ComponentRef"
-  },
-  {
     "name": "ComponentRef2"
   },
   {
@@ -94,12 +70,6 @@
   },
   {
     "name": "ConnectableSubscriber"
-  },
-  {
-    "name": "DEFAULT_APP_ID"
-  },
-  {
-    "name": "DOCUMENT"
   },
   {
     "name": "DOCUMENT2"
@@ -111,19 +81,13 @@
     "name": "DepComponent"
   },
   {
-    "name": "DistinctUntilChangedOperator"
-  },
-  {
-    "name": "DistinctUntilChangedSubscriber"
-  },
-  {
-    "name": "DomAdapter"
-  },
-  {
     "name": "DomEventsPlugin"
   },
   {
     "name": "DomRendererFactory2"
+  },
+  {
+    "name": "DomSharedStylesHost"
   },
   {
     "name": "EMPTY_ARRAY"
@@ -162,15 +126,6 @@
     "name": "EventManagerPlugin"
   },
   {
-    "name": "GenericBrowserDomAdapter"
-  },
-  {
-    "name": "HAS_CHILD_VIEWS_TO_REFRESH"
-  },
-  {
-    "name": "HAS_TRANSPLANTED_VIEWS"
-  },
-  {
     "name": "INJECTOR2"
   },
   {
@@ -178,12 +133,6 @@
   },
   {
     "name": "INJECTOR_SCOPE"
-  },
-  {
-    "name": "INTERNAL_APPLICATION_ERROR_HANDLER"
-  },
-  {
-    "name": "InitialRenderPendingTasks"
   },
   {
     "name": "InjectFlags"
@@ -210,15 +159,6 @@
     "name": "MODIFIER_KEY_GETTERS"
   },
   {
-    "name": "MONKEY_PATCH_KEY_NAME"
-  },
-  {
-    "name": "MOVED_VIEWS"
-  },
-  {
-    "name": "MapOperator"
-  },
-  {
     "name": "MapSubscriber"
   },
   {
@@ -234,9 +174,6 @@
     "name": "NAMESPACE_URIS"
   },
   {
-    "name": "NATIVE"
-  },
-  {
     "name": "NEW_LINE"
   },
   {
@@ -247,9 +184,6 @@
   },
   {
     "name": "NG_ELEMENT_ID"
-  },
-  {
-    "name": "NG_ENV_ID"
   },
   {
     "name": "NG_FACTORY_DEF"
@@ -273,9 +207,6 @@
     "name": "NG_PROV_DEF"
   },
   {
-    "name": "NG_TEMPLATE_SELECTOR"
-  },
-  {
     "name": "NOT_FOUND"
   },
   {
@@ -288,16 +219,7 @@
     "name": "NO_CHANGE"
   },
   {
-    "name": "NO_PARENT_INJECTOR"
-  },
-  {
     "name": "NULL_INJECTOR"
-  },
-  {
-    "name": "NgModuleFactory"
-  },
-  {
-    "name": "NgModuleFactory2"
   },
   {
     "name": "NgModuleRef"
@@ -309,19 +231,10 @@
     "name": "NgZone"
   },
   {
-    "name": "NgZoneChangeDetectionScheduler"
-  },
-  {
     "name": "NodeInjector"
   },
   {
     "name": "NodeInjectorFactory"
-  },
-  {
-    "name": "NoneEncapsulationDomRenderer"
-  },
-  {
-    "name": "NoopNgZone"
   },
   {
     "name": "NullInjector"
@@ -342,19 +255,10 @@
     "name": "PLATFORM_INITIALIZER"
   },
   {
-    "name": "PRESERVE_HOST_CONTENT"
-  },
-  {
     "name": "PlatformRef"
   },
   {
     "name": "R3Injector"
-  },
-  {
-    "name": "REACTIVE_LVIEW_CONSUMER_NODE"
-  },
-  {
-    "name": "REMOVE_STYLES_ON_COMPONENT_DESTROY"
   },
   {
     "name": "RefCountOperator"
@@ -369,13 +273,10 @@
     "name": "RendererStyleFlags2"
   },
   {
-    "name": "RootViewRef"
-  },
-  {
     "name": "RuntimeError"
   },
   {
-    "name": "SIMPLE_CHANGES_STORE"
+    "name": "SERVER_TRANSITION_PROVIDERS"
   },
   {
     "name": "SafeSubscriber"
@@ -388,9 +289,6 @@
   },
   {
     "name": "SharedStylesHost"
-  },
-  {
-    "name": "SimpleChange"
   },
   {
     "name": "SimpleInnerSubscriber"
@@ -414,12 +312,6 @@
     "name": "Subscription"
   },
   {
-    "name": "SwitchMapOperator"
-  },
-  {
-    "name": "SwitchMapSubscriber"
-  },
-  {
     "name": "TESTABILITY"
   },
   {
@@ -435,7 +327,7 @@
     "name": "TRACKED_LVIEWS"
   },
   {
-    "name": "TYPE"
+    "name": "TRANSITION_ID"
   },
   {
     "name": "Testability"
@@ -459,12 +351,6 @@
     "name": "ViewEncapsulation"
   },
   {
-    "name": "ViewRef"
-  },
-  {
-    "name": "ZONE_IS_STABLE_OBSERVABLE"
-  },
-  {
     "name": "_DOM"
   },
   {
@@ -474,22 +360,13 @@
     "name": "__forward_ref__"
   },
   {
-    "name": "_applyRootElementTransformImpl"
-  },
-  {
     "name": "_currentInjector"
   },
   {
     "name": "_enable_super_gross_mode_that_will_cause_bad_things"
   },
   {
-    "name": "_getInsertInFrontOfRNodeWithI18n"
-  },
-  {
     "name": "_global"
-  },
-  {
-    "name": "_icuContainerIterate"
   },
   {
     "name": "_injectImplementation"
@@ -498,28 +375,16 @@
     "name": "_keyMap"
   },
   {
-    "name": "_locateOrCreateElementNode"
-  },
-  {
     "name": "_platformInjector"
   },
   {
-    "name": "_processI18nInsertBefore"
-  },
-  {
-    "name": "_retrieveHydrationInfoImpl"
+    "name": "_randomChar"
   },
   {
     "name": "_testabilityGetter"
   },
   {
-    "name": "_wasLastNodeCreated"
-  },
-  {
     "name": "_wrapInTimeout"
-  },
-  {
-    "name": "activeConsumer"
   },
   {
     "name": "addPropertyAlias"
@@ -549,9 +414,6 @@
     "name": "applyView"
   },
   {
-    "name": "assertConsumerNode"
-  },
-  {
     "name": "attachPatchData"
   },
   {
@@ -562,9 +424,6 @@
   },
   {
     "name": "callHook"
-  },
-  {
-    "name": "callHookInternal"
   },
   {
     "name": "callHooks"
@@ -582,10 +441,7 @@
     "name": "collectNativeNodes"
   },
   {
-    "name": "collectNativeNodesInLContainer"
-  },
-  {
-    "name": "commitLViewConsumerIfHasProducers"
+    "name": "componentDefCount"
   },
   {
     "name": "computeStaticStyling"
@@ -601,18 +457,6 @@
   },
   {
     "name": "connectableObservableDescriptor"
-  },
-  {
-    "name": "consumerAfterComputation"
-  },
-  {
-    "name": "consumerBeforeComputation"
-  },
-  {
-    "name": "consumerDestroy"
-  },
-  {
-    "name": "consumerIsLive"
   },
   {
     "name": "convertToBitFlags"
@@ -636,9 +480,6 @@
     "name": "createLView"
   },
   {
-    "name": "createLViewConsumer"
-  },
-  {
     "name": "createNodeInjector"
   },
   {
@@ -648,7 +489,7 @@
     "name": "createTView"
   },
   {
-    "name": "currentConsumer"
+    "name": "decoratePreventDefault"
   },
   {
     "name": "deepForEach"
@@ -660,25 +501,10 @@
     "name": "detachMovedView"
   },
   {
-    "name": "detectChangesInChildComponents"
-  },
-  {
-    "name": "detectChangesInComponent"
-  },
-  {
-    "name": "detectChangesInEmbeddedViews"
-  },
-  {
-    "name": "detectChangesInViewIfAttached"
-  },
-  {
     "name": "detectChangesInternal"
   },
   {
     "name": "diPublicInInjector"
-  },
-  {
-    "name": "disableStylesheet"
   },
   {
     "name": "empty"
@@ -708,13 +534,13 @@
     "name": "executeViewQueryFn"
   },
   {
-    "name": "extractDefListOrFactory"
-  },
-  {
     "name": "extractDirectiveDef"
   },
   {
     "name": "findAttrIndexInNode"
+  },
+  {
+    "name": "flattenStyles"
   },
   {
     "name": "flattenUnsubscriptionErrors"
@@ -724,12 +550,6 @@
   },
   {
     "name": "forwardRef"
-  },
-  {
-    "name": "from"
-  },
-  {
-    "name": "fromArray"
   },
   {
     "name": "generateInitialInputs"
@@ -807,9 +627,6 @@
     "name": "getOrCreateComponentTView"
   },
   {
-    "name": "getOrCreateCurrentLViewConsumer"
-  },
-  {
     "name": "getOrCreateInjectable"
   },
   {
@@ -846,13 +663,10 @@
     "name": "getPromiseCtor"
   },
   {
-    "name": "getReactiveLViewConsumer"
-  },
-  {
     "name": "getSimpleChangesStore"
   },
   {
-    "name": "getSymbolIterator"
+    "name": "getSymbolIterator2"
   },
   {
     "name": "getTNodeFromLView"
@@ -885,9 +699,6 @@
     "name": "initializeDirectives"
   },
   {
-    "name": "inject"
-  },
-  {
     "name": "injectArgs"
   },
   {
@@ -901,9 +712,6 @@
   },
   {
     "name": "injectableDefOrInjectorDefFactory"
-  },
-  {
-    "name": "innerSubscribe"
   },
   {
     "name": "insertBloom"
@@ -969,9 +777,6 @@
     "name": "isObject"
   },
   {
-    "name": "isPlatformServer"
-  },
-  {
     "name": "isPositive"
   },
   {
@@ -979,12 +784,6 @@
   },
   {
     "name": "isPromise2"
-  },
-  {
-    "name": "isScheduler"
-  },
-  {
-    "name": "isStableFactory"
   },
   {
     "name": "isTemplateNode"
@@ -997,9 +796,6 @@
   },
   {
     "name": "iterator"
-  },
-  {
-    "name": "lastNodeWasCreated"
   },
   {
     "name": "leaveDI"
@@ -1020,25 +816,10 @@
     "name": "makeRecord"
   },
   {
-    "name": "map"
-  },
-  {
-    "name": "markAncestorsForTraversal"
-  },
-  {
     "name": "markAsComponentHost"
   },
   {
-    "name": "markViewDirty"
-  },
-  {
-    "name": "markViewForRefresh"
-  },
-  {
     "name": "maybeWrapInNotSelector"
-  },
-  {
-    "name": "mergeAll"
   },
   {
     "name": "mergeHostAttribute"
@@ -1065,13 +846,7 @@
     "name": "ngOnChangesSetInput"
   },
   {
-    "name": "ngZoneApplicationErrorHandlerFactory"
-  },
-  {
     "name": "noSideEffects"
-  },
-  {
-    "name": "nonNegativeNumber"
   },
   {
     "name": "nonNull"
@@ -1104,13 +879,16 @@
     "name": "processInjectorTypesWithProviders"
   },
   {
-    "name": "producerRemoveLiveConsumerAtIndex"
-  },
-  {
-    "name": "profiler"
+    "name": "promise"
   },
   {
     "name": "refCount"
+  },
+  {
+    "name": "refreshComponent"
+  },
+  {
+    "name": "refreshContainsDirtyView"
   },
   {
     "name": "refreshContentQueries"
@@ -1131,6 +909,9 @@
     "name": "removeFromArray"
   },
   {
+    "name": "removeStyle"
+  },
+  {
     "name": "renderComponent"
   },
   {
@@ -1143,9 +924,6 @@
     "name": "resolveForwardRef"
   },
   {
-    "name": "retrieveHydrationInfo"
-  },
-  {
     "name": "rxSubscriber"
   },
   {
@@ -1155,10 +933,10 @@
     "name": "scheduleArray"
   },
   {
-    "name": "searchTokensOnInjector"
+    "name": "scheduleMicroTask"
   },
   {
-    "name": "setActiveConsumer"
+    "name": "searchTokensOnInjector"
   },
   {
     "name": "setBindingRootForHostBindings"
@@ -1200,13 +978,7 @@
     "name": "setupStaticAttributes"
   },
   {
-    "name": "share"
-  },
-  {
     "name": "shareSubjectFactory"
-  },
-  {
-    "name": "shimStylesContent"
   },
   {
     "name": "shouldSearchParent"
@@ -1224,9 +996,6 @@
     "name": "subscribeToArray"
   },
   {
-    "name": "switchMap"
-  },
-  {
     "name": "throwProviderNotFoundError"
   },
   {
@@ -1242,6 +1011,9 @@
     "name": "updateMicroTaskStatus"
   },
   {
+    "name": "updateTransplantedViewCount"
+  },
+  {
     "name": "urlParsingNode"
   },
   {
@@ -1251,13 +1023,7 @@
     "name": "walkProviderTree"
   },
   {
-    "name": "wasLastNodeCreated"
-  },
-  {
     "name": "writeDirectClass"
-  },
-  {
-    "name": "writeToDirectiveInput"
   },
   {
     "name": "ɵɵdefineComponent"

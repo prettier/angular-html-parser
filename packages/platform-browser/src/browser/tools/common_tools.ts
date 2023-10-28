@@ -7,7 +7,6 @@
  */
 
 import {ApplicationRef, ComponentRef} from '@angular/core';
-
 import {window} from './browser';
 
 export class ChangeDetectionPerfRecord {

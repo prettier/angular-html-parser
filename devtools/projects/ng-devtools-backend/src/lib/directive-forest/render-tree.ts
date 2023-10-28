@@ -68,6 +68,7 @@ export class RTreeStrategy {
     }
     const getComponent = (window as any).ng.getComponent as (element: Element) => {};
     const getDirectives = (window as any).ng.getDirectives as (node: Node) => {}[];
-    return extractViewTree(element, [], getComponent, getDirectives);
+    const result = extractViewTree(element, [], getComponent, getDirectives);
+    return result;
   }
 }

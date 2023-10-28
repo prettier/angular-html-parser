@@ -1,6 +1,5 @@
-const cssSelectorParser = require('css-selector-parser');
-const parseCss = cssSelectorParser.createParser();
-
+const CssSelectorParser = require('css-selector-parser').CssSelectorParser;
+const cssParser = new CssSelectorParser();
 /**
  * @dgProcessor addMetadataAliases
  *
@@ -35,21 +34,15 @@ module.exports = function addMetadataAliasesProcessor() {
 };
 
 function extractSelectors(selectors) {
-  const rules = parseCss(stripQuotes(selectors)).rules;
+  const selectorAST = cssParser.parse(stripQuotes(selectors));
+  const rules = selectorAST.selectors ? selectorAST.selectors.map(ruleSet => ruleSet.rule) : [selectorAST.rule];
   const aliases = {};
   rules.forEach(rule => {
-    if (rule.items.length === 0) {
-      return;
+    if (rule.tagName) {
+      aliases[rule.tagName] = true;
     }
-    const tagNames = rule.items.filter(cssSelectorParser.ast.isTagName);
-    if (tagNames) {
-      for (let tagName of tagNames) {
-        aliases[tagName.name] = true;
-      }
-    }
-    const attrs = rule.items.filter(cssSelectorParser.ast.isAttribute);
-    if (attrs) {
-      attrs.forEach(attr => aliases[attr.name] = true);
+    if (rule.attrs) {
+      rule.attrs.forEach(attr => aliases[attr.name] = true);
     }
   });
   return Object.keys(aliases);

@@ -106,77 +106,6 @@ import {serializeNodes as serializeHtmlNodes} from '../ml_parser/util/util';
     });
 
     describe('blocks', () => {
-      it('should extract from elements inside blocks', () => {
-        expect(extract(
-                   '@switch (value) {' +
-                   '@case (1) {<div i18n="a|b|c">one <span>nested</span></div>}' +
-                   '@case (2) {<strong i18n="d|e|f">two <span>nested</span></strong>}' +
-                   '@default {<strong i18n="g|h|i">default <span>nested</span></strong>}' +
-                   '}'))
-            .toEqual([
-              [
-                ['one ', '<ph tag name="START_TAG_SPAN">nested</ph name="CLOSE_TAG_SPAN">'], 'a',
-                'b|c', ''
-              ],
-              [
-                ['two ', '<ph tag name="START_TAG_SPAN">nested</ph name="CLOSE_TAG_SPAN">'], 'd',
-                'e|f', ''
-              ],
-              [
-                ['default ', '<ph tag name="START_TAG_SPAN">nested</ph name="CLOSE_TAG_SPAN">'],
-                'g', 'h|i', ''
-              ]
-            ]);
-      });
-
-      it('should extract from i18n comment blocks inside blocks', () => {
-        expect(
-            extract(
-                '@switch (value) {' +
-                '@case (1) {<!-- i18n: oneMeaning|oneDesc -->one message<!-- /i18n -->}' +
-                '@case (2) {<!-- i18n: twoMeaning|twoDesc -->two message<!-- /i18n -->}' +
-                '@default {<!-- i18n: defaultMeaning|defaultDesc -->default message<!-- /i18n -->}' +
-                '}'))
-            .toEqual([
-              [['one message'], 'oneMeaning', 'oneDesc', ''],
-              [['two message'], 'twoMeaning', 'twoDesc', ''],
-              [['default message'], 'defaultMeaning', 'defaultDesc', ''],
-            ]);
-      });
-
-      it('should extract ICUs from elements inside blocks', () => {
-        expect(extract(
-                   '@switch (value) {' +
-                   '@case (1) {<div i18n="a|b">{count, plural, =0 {oneText}}</div>}' +
-                   '@case (2) {<div i18n="c|d">{count, plural, =0 {twoText}}</div>}' +
-                   '@default {<div i18n="e|f">{count, plural, =0 {defaultText}}</div>}' +
-                   '}'))
-            .toEqual([
-              [['{count, plural, =0 {[oneText]}}'], 'a', 'b', ''],
-              [['{count, plural, =0 {[twoText]}}'], 'c', 'd', ''],
-              [['{count, plural, =0 {[defaultText]}}'], 'e', 'f', '']
-            ]);
-      });
-
-      it('should not extract messages from ICUs directly inside blocks', () => {
-        const expression = '{count, plural, =0 {text}}';
-
-        expect(extract(
-                   `@switch (value) {` +
-                   `@case (1) {${expression}}` +
-                   `@case (2) {${expression}}` +
-                   `@default {${expression}}` +
-                   `}`))
-            .toEqual([]);
-      });
-
-      it('should handle blocks inside of translated elements', () => {
-        expect(extract('<span i18n="a|b|c">@if (cond) {main content} @else {else content}</span>`'))
-            .toEqual([[['[main content]', ' ', '[else content]'], 'a', 'b|c', '']]);
-      });
-    });
-
-    describe('i18n comment blocks', () => {
       it('should extract from blocks', () => {
         expect(extract(`<!-- i18n: meaning1|desc1 -->message1<!-- /i18n -->
          <!-- i18n: desc2 -->message2<!-- /i18n -->
@@ -422,40 +351,40 @@ import {serializeNodes as serializeHtmlNodes} from '../ml_parser/util/util';
       describe('blocks', () => {
         it('should report nested blocks', () => {
           expect(extractErrors(`<!-- i18n --><!-- i18n --><!-- /i18n --><!-- /i18n -->`)).toEqual([
-            ['Could not start a block inside a translatable section', '<!-- i18n -->'],
-            ['Trying to close an unopened block', '<!-- /i18n -->'],
+            ['Could not start a block inside a translatable section', '<!--'],
+            ['Trying to close an unopened block', '<!--'],
           ]);
         });
 
         it('should report unclosed blocks', () => {
           expect(extractErrors(`<!-- i18n -->`)).toEqual([
-            ['Unclosed block', '<!-- i18n -->'],
+            ['Unclosed block', '<!--'],
           ]);
         });
 
         it('should report translatable blocks in translatable elements', () => {
           expect(extractErrors(`<p i18n><!-- i18n --><!-- /i18n --></p>`)).toEqual([
-            ['Could not start a block inside a translatable section', '<!-- i18n -->'],
-            ['Trying to close an unopened block', '<!-- /i18n -->'],
+            ['Could not start a block inside a translatable section', '<!--'],
+            ['Trying to close an unopened block', '<!--'],
           ]);
         });
 
         it('should report translatable blocks in implicit elements', () => {
           expect(extractErrors(`<p><!-- i18n --><!-- /i18n --></p>`, ['p'])).toEqual([
-            ['Could not start a block inside a translatable section', '<!-- i18n -->'],
-            ['Trying to close an unopened block', '<!-- /i18n -->'],
+            ['Could not start a block inside a translatable section', '<!--'],
+            ['Trying to close an unopened block', '<!--'],
           ]);
         });
 
         it('should report when start and end of a block are not at the same level', () => {
           expect(extractErrors(`<!-- i18n --><p><!-- /i18n --></p>`)).toEqual([
-            ['I18N blocks should not cross element boundaries', '<!-- /i18n -->'],
+            ['I18N blocks should not cross element boundaries', '<!--'],
             ['Unclosed block', '<p><!-- /i18n --></p>'],
           ]);
 
           expect(extractErrors(`<p><!-- i18n --></p><!-- /i18n -->`)).toEqual([
-            ['I18N blocks should not cross element boundaries', '<!-- /i18n -->'],
-            ['Unclosed block', '<!-- /i18n -->'],
+            ['I18N blocks should not cross element boundaries', '<!--'],
+            ['Unclosed block', '<!--'],
           ]);
         });
       });
@@ -493,7 +422,7 @@ import {serializeNodes as serializeHtmlNodes} from '../ml_parser/util/util';
       });
     });
 
-    describe('i18n comment blocks', () => {
+    describe('blocks', () => {
       it('should console.warn if we use i18n comments', () => {
         // TODO(ocombe): expect a warning message when we have a proper log service
         extract('<!-- i18n --><p><b i18n-title="m|d" title="msg"></b></p><!-- /i18n -->');

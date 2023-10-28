@@ -196,25 +196,9 @@
       "compilerOptions": {
         "baseUrl": ".",
         "paths": {
-          "external_library": [
-            "./external_library"
-          ]
+          "external_library": ["./external_library"]
         }
       }
-    },
-    {
-      "description": "should generate debug info statement for component",
-      "inputFiles": ["debug_info.ts"],
-      "expectations": [
-        {
-          "failureMessage": "Incorrect generated debug info statement",
-          "files": ["debug_info.js"]
-        }        
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "local compile"
-      ]
     }
   ]
 }

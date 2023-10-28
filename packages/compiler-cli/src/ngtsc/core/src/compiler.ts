@@ -11,15 +11,14 @@ import ts from 'typescript';
 import {ComponentDecoratorHandler, DirectiveDecoratorHandler, InjectableDecoratorHandler, NgModuleDecoratorHandler, NoopReferencesRegistry, PipeDecoratorHandler, ReferencesRegistry} from '../../annotations';
 import {InjectableClassRegistry} from '../../annotations/common';
 import {CycleAnalyzer, CycleHandlingStrategy, ImportGraph} from '../../cycles';
-import {COMPILER_ERRORS_WITH_GUIDES, ERROR_DETAILS_PAGE_BASE_URL, ErrorCode, FatalDiagnosticError, ngErrorCode} from '../../diagnostics';
-import {DocEntry, DocsExtractor} from '../../docs';
+import {COMPILER_ERRORS_WITH_GUIDES, ERROR_DETAILS_PAGE_BASE_URL, ErrorCode, ngErrorCode} from '../../diagnostics';
 import {checkForPrivateExports, ReferenceGraph} from '../../entry_point';
 import {absoluteFromSourceFile, AbsoluteFsPath, LogicalFileSystem, resolve} from '../../file_system';
-import {AbsoluteModuleStrategy, AliasingHost, AliasStrategy, DefaultImportTracker, DeferredSymbolTracker, ImportRewriter, LocalIdentifierStrategy, LogicalProjectStrategy, ModuleResolver, NoopImportRewriter, PrivateExportAliasingHost, R3SymbolsImportRewriter, Reference, ReferenceEmitStrategy, ReferenceEmitter, RelativePathStrategy, UnifiedModulesAliasingHost, UnifiedModulesStrategy} from '../../imports';
+import {AbsoluteModuleStrategy, AliasingHost, AliasStrategy, DefaultImportTracker, ImportRewriter, LocalIdentifierStrategy, LogicalProjectStrategy, ModuleResolver, NoopImportRewriter, PrivateExportAliasingHost, R3SymbolsImportRewriter, Reference, ReferenceEmitStrategy, ReferenceEmitter, RelativePathStrategy, UnifiedModulesAliasingHost, UnifiedModulesStrategy} from '../../imports';
 import {IncrementalBuildStrategy, IncrementalCompilation, IncrementalState} from '../../incremental';
 import {SemanticSymbol} from '../../incremental/semantic_graph';
 import {generateAnalysis, IndexedComponent, IndexingContext} from '../../indexer';
-import {ComponentResources, CompoundMetadataReader, CompoundMetadataRegistry, DirectiveMeta, DtsMetadataReader, ExportedProviderStatusResolver, HostDirectivesResolver, LocalMetadataRegistry, MetadataReader, MetadataReaderWithIndex, PipeMeta, ResourceRegistry} from '../../metadata';
+import {ComponentResources, CompoundMetadataReader, CompoundMetadataRegistry, DirectiveMeta, DtsMetadataReader, HostDirectivesResolver, LocalMetadataRegistry, MetadataReader, MetadataReaderWithIndex, PipeMeta, ResourceRegistry} from '../../metadata';
 import {NgModuleIndexImpl} from '../../metadata/src/ng_module_index';
 import {PartialEvaluator} from '../../partial_evaluator';
 import {ActivePerfRecorder, DelegatingPerfRecorder, PerfCheckpoint, PerfEvent, PerfPhase} from '../../perf';
@@ -28,6 +27,7 @@ import {DeclarationNode, isNamedClassDeclaration, TypeScriptReflectionHost} from
 import {AdapterResourceLoader} from '../../resource';
 import {ComponentScopeReader, CompoundComponentScopeReader, LocalModuleScopeRegistry, MetadataDtsModuleScopeResolver, TypeCheckScopeRegistry} from '../../scope';
 import {StandaloneComponentScopeReader} from '../../scope/src/standalone';
+import {generatedFactoryTransform} from '../../shims';
 import {aliasTransformFactory, CompilationMode, declarationTransformFactory, DecoratorHandler, DtsTransformRegistry, ivyTransformFactory, TraitCompiler} from '../../transform';
 import {TemplateTypeCheckerImpl} from '../../typecheck';
 import {OptimizeFor, TemplateTypeChecker, TypeCheckingConfig} from '../../typecheck/api';
@@ -146,7 +146,7 @@ export function incrementalFromCompilerTicket(
   const oldProgram = oldCompiler.getCurrentProgram();
   const oldState = oldCompiler.incrementalStrategy.getIncrementalState(oldProgram);
   if (oldState === null) {
-    // No incremental step is possible here, since no IncrementalState was found for the old
+    // No incremental step is possible here, since no IncrementalDriver was found for the old
     // program.
     return freshCompilationTicket(
         newProgram, oldCompiler.options, incrementalBuildStrategy, programDriver, perfRecorder,
@@ -321,7 +321,7 @@ export class NgCompiler {
       private livePerfRecorder: ActivePerfRecorder,
   ) {
     this.enableTemplateTypeChecker =
-        enableTemplateTypeChecker || (options['_enableTemplateTypeChecker'] ?? false);
+        enableTemplateTypeChecker || (options._enableTemplateTypeChecker ?? false);
     this.constructionDiagnostics.push(
         ...this.adapter.constructionDiagnostics, ...verifyCompatibleTypeCheckOptions(this.options));
 
@@ -365,6 +365,16 @@ export class NgCompiler {
 
   get perfRecorder(): ActivePerfRecorder {
     return this.livePerfRecorder;
+  }
+
+  /**
+   * Exposes the `IncrementalCompilation` under an old property name that the CLI uses, avoiding a
+   * chicken-and-egg problem with the rename to `incrementalCompilation`.
+   *
+   * TODO(alxhub): remove when the CLI uses the new name.
+   */
+  get incrementalDriver(): IncrementalCompilation {
+    return this.incrementalCompilation;
   }
 
   private updateWithChangedResources(
@@ -449,18 +459,11 @@ export class NgCompiler {
     const compilation = this.ensureAnalyzed();
     const ttc = compilation.templateTypeChecker;
     const diagnostics: ts.Diagnostic[] = [];
-    try {
-      diagnostics.push(...ttc.getDiagnosticsForComponent(component));
+    diagnostics.push(...ttc.getDiagnosticsForComponent(component));
 
-      const extendedTemplateChecker = compilation.extendedTemplateChecker;
-      if (this.options.strictTemplates && extendedTemplateChecker) {
-        diagnostics.push(...extendedTemplateChecker.getDiagnosticsForComponent(component));
-      }
-    } catch (err: unknown) {
-      if (!(err instanceof FatalDiagnosticError)) {
-        throw err;
-      }
-      diagnostics.push(err.toDiagnostic());
+    const extendedTemplateChecker = compilation.extendedTemplateChecker;
+    if (this.options.strictTemplates && extendedTemplateChecker) {
+      diagnostics.push(...extendedTemplateChecker.getDiagnosticsForComponent(component));
     }
     return this.addMessageTextDetails(diagnostics);
   }
@@ -625,19 +628,19 @@ export class NgCompiler {
     ];
 
     const afterDeclarations: ts.TransformerFactory<ts.SourceFile>[] = [];
-
-    // In local compilation mode we don't make use of .d.ts files for Angular compilation, so their
-    // transformation can be ditched.
-    if (this.options.compilationMode !== 'experimental-local' &&
-        compilation.dtsTransforms !== null) {
-      afterDeclarations.push(declarationTransformFactory(
-          compilation.dtsTransforms, compilation.reflector, compilation.refEmitter,
-          importRewriter));
+    if (compilation.dtsTransforms !== null) {
+      afterDeclarations.push(
+          declarationTransformFactory(compilation.dtsTransforms, importRewriter));
     }
 
     // Only add aliasing re-exports to the .d.ts output if the `AliasingHost` requests it.
     if (compilation.aliasingHost !== null && compilation.aliasingHost.aliasExportsInDts) {
       afterDeclarations.push(aliasTransformFactory(compilation.traitCompiler.exportStatements));
+    }
+
+    if (this.adapter.factoryTracker !== null) {
+      before.push(
+          generatedFactoryTransform(this.adapter.factoryTracker.sourceInfo, importRewriter));
     }
 
     return {transformers: {before, afterDeclarations} as ts.CustomTransformers};
@@ -653,32 +656,6 @@ export class NgCompiler {
     const context = new IndexingContext();
     compilation.traitCompiler.index(context);
     return generateAnalysis(context);
-  }
-
-  /**
-   * Gets information for the current program that may be used to generate API
-   * reference documentation. This includes Angular-specific information, such
-   * as component inputs and outputs.
-   *
-   * @param entryPoint Path to the entry point for the package for which API
-   *     docs should be extracted.
-   */
-  getApiDocumentation(entryPoint: string): DocEntry[] {
-    const compilation = this.ensureAnalyzed();
-    const checker = this.inputProgram.getTypeChecker();
-    const docsExtractor = new DocsExtractor(checker, compilation.metaReader);
-
-    const entryPointSourceFile = this.inputProgram.getSourceFiles().find(sourceFile => {
-      // TODO: this will need to be more specific than `.includes`, but the exact path comparison
-      //     will be easier to figure out when the pipeline is running end-to-end.
-      return sourceFile.fileName.includes(entryPoint);
-    });
-
-    if (!entryPointSourceFile) {
-      throw new Error(`Entry point "${entryPoint}" not found in program sources.`);
-    }
-
-    return docsExtractor.extractAll(entryPointSourceFile);
   }
 
   /**
@@ -860,15 +837,8 @@ export class NgCompiler {
         continue;
       }
 
-      try {
-        diagnostics.push(
-            ...compilation.templateTypeChecker.getDiagnosticsForFile(sf, OptimizeFor.WholeProgram));
-      } catch (err) {
-        if (!(err instanceof FatalDiagnosticError)) {
-          throw err;
-        }
-        diagnostics.push(err.toDiagnostic());
-      }
+      diagnostics.push(
+          ...compilation.templateTypeChecker.getDiagnosticsForFile(sf, OptimizeFor.WholeProgram));
     }
 
     const program = this.programDriver.getProgram();
@@ -885,14 +855,7 @@ export class NgCompiler {
     // Get the diagnostics.
     const diagnostics: ts.Diagnostic[] = [];
     if (!sf.isDeclarationFile && !this.adapter.isShim(sf)) {
-      try {
-        diagnostics.push(...compilation.templateTypeChecker.getDiagnosticsForFile(sf, optimizeFor));
-      } catch (err) {
-        if (!(err instanceof FatalDiagnosticError)) {
-          throw err;
-        }
-        diagnostics.push(err.toDiagnostic());
-      }
+      diagnostics.push(...compilation.templateTypeChecker.getDiagnosticsForFile(sf, optimizeFor));
     }
 
     const program = this.programDriver.getProgram();
@@ -947,7 +910,7 @@ export class NgCompiler {
     // Construct the ReferenceEmitter.
     let refEmitter: ReferenceEmitter;
     let aliasingHost: AliasingHost|null = null;
-    if (this.adapter.unifiedModulesHost === null || !this.options['_useHostForImportGeneration']) {
+    if (this.adapter.unifiedModulesHost === null || !this.options._useHostForImportGeneration) {
       let localImportStrategy: ReferenceEmitStrategy;
 
       // The strategy used for local, in-project imports depends on whether TS has been configured
@@ -1020,7 +983,6 @@ export class NgCompiler {
     const metaRegistry = new CompoundMetadataRegistry([localMetaRegistry, ngModuleScopeRegistry]);
     const injectableRegistry = new InjectableClassRegistry(reflector, isCore);
     const hostDirectivesResolver = new HostDirectivesResolver(metaReader);
-    const exportedProviderStatusResolver = new ExportedProviderStatusResolver(metaReader);
 
     const typeCheckScopeRegistry =
         new TypeCheckScopeRegistry(scopeReader, metaReader, hostDirectivesResolver);
@@ -1042,25 +1004,12 @@ export class NgCompiler {
 
     const resourceRegistry = new ResourceRegistry();
 
-    const deferredSymbolsTracker = new DeferredSymbolTracker(this.inputProgram.getTypeChecker());
-
     // Note: If this compilation builds `@angular/core`, we always build in full compilation
     // mode. Code inside the core package is always compatible with itself, so it does not
     // make sense to go through the indirection of partial compilation
-    let compilationMode: CompilationMode = CompilationMode.FULL;
-    if (!isCore) {
-      switch (this.options.compilationMode) {
-        case 'full':
-          compilationMode = CompilationMode.FULL;
-          break;
-        case 'partial':
-          compilationMode = CompilationMode.PARTIAL;
-          break;
-        case 'experimental-local':
-          compilationMode = CompilationMode.LOCAL;
-          break;
-      }
-    }
+    const compilationMode = this.options.compilationMode === 'partial' && !isCore ?
+        CompilationMode.PARTIAL :
+        CompilationMode.FULL;
 
     // Cycles are handled in full compilation mode by "remote scoping".
     // "Remote scoping" does not work well with tree shaking for libraries.
@@ -1070,28 +1019,6 @@ export class NgCompiler {
         CycleHandlingStrategy.Error;
 
     const strictCtorDeps = this.options.strictInjectionParameters || false;
-    const supportJitMode = this.options['supportJitMode'] ?? true;
-    const supportTestBed = this.options['supportTestBed'] ?? true;
-
-    // Libraries compiled in partial mode could potentially be used with TestBed within an
-    // application. Since this is not known at library compilation time, support is required to
-    // prevent potential downstream application testing breakage.
-    if (supportTestBed === false && compilationMode === CompilationMode.PARTIAL) {
-      throw new Error(
-          'TestBed support ("supportTestBed" option) cannot be disabled in partial compilation mode.');
-    }
-    if (supportJitMode === false && compilationMode === CompilationMode.PARTIAL) {
-      throw new Error(
-          'JIT mode support ("supportJitMode" option) cannot be disabled in partial compilation mode.');
-    }
-
-    // Currently forbidOrphanComponents depends on the code generated behind ngJitMode flag. Until
-    // we come up with a better design for these flags, it is necessary to have the JIT mode in
-    // order for forbidOrphanComponents to be able to work properly.
-    if (supportJitMode === false && this.options.forbidOrphanComponents) {
-      throw new Error(
-          'JIT mode support ("supportJitMode" option) cannot be disabled when forbidOrphanComponents is set to true');
-    }
 
     // Set up the IvyCompilation, which manages state for the Ivy transformer.
     const handlers: DecoratorHandler<unknown, unknown, SemanticSymbol|null, unknown>[] = [
@@ -1102,37 +1029,33 @@ export class NgCompiler {
           this.options.i18nUseExternalIds !== false,
           this.options.enableI18nLegacyMessageIdFormat !== false, this.usePoisonedData,
           this.options.i18nNormalizeLineEndingsInICUs === true, this.moduleResolver,
-          this.cycleAnalyzer, cycleHandlingStrategy, refEmitter, referencesRegistry,
+          this.cycleAnalyzer, cycleHandlingStrategy, refEmitter,
           this.incrementalCompilation.depGraph, injectableRegistry, semanticDepGraphUpdater,
-          this.closureCompilerEnabled, this.delegatingPerfRecorder, hostDirectivesResolver,
-          supportTestBed, compilationMode, deferredSymbolsTracker,
-          !!this.options.forbidOrphanComponents),
+          this.closureCompilerEnabled, this.delegatingPerfRecorder, hostDirectivesResolver),
 
       // TODO(alxhub): understand why the cast here is necessary (something to do with `null`
       // not being assignable to `unknown` when wrapped in `Readonly`).
       // clang-format off
         new DirectiveDecoratorHandler(
             reflector, evaluator, metaRegistry, ngModuleScopeRegistry, metaReader,
-            injectableRegistry, refEmitter, referencesRegistry, isCore, strictCtorDeps, semanticDepGraphUpdater,
-          this.closureCompilerEnabled,
+            injectableRegistry, refEmitter, isCore, strictCtorDeps, semanticDepGraphUpdater,
+          this.closureCompilerEnabled, /** compileUndecoratedClassesWithAngularFeatures */ false,
           this.delegatingPerfRecorder,
-          supportTestBed, compilationMode,
         ) as Readonly<DecoratorHandler<unknown, unknown, SemanticSymbol | null,unknown>>,
       // clang-format on
       // Pipe handler must be before injectable handler in list so pipe factories are printed
       // before injectable factories (so injectable factories can delegate to them)
       new PipeDecoratorHandler(
           reflector, evaluator, metaRegistry, ngModuleScopeRegistry, injectableRegistry, isCore,
-          this.delegatingPerfRecorder, supportTestBed, compilationMode),
+          this.delegatingPerfRecorder),
       new InjectableDecoratorHandler(
           reflector, evaluator, isCore, strictCtorDeps, injectableRegistry,
-          this.delegatingPerfRecorder, supportTestBed, compilationMode),
+          this.delegatingPerfRecorder),
       new NgModuleDecoratorHandler(
           reflector, evaluator, metaReader, metaRegistry, ngModuleScopeRegistry, referencesRegistry,
-          exportedProviderStatusResolver, semanticDepGraphUpdater, isCore, refEmitter,
-          this.closureCompilerEnabled, this.options.onlyPublishPublicTypingsForNgModules ?? false,
-          injectableRegistry, this.delegatingPerfRecorder, supportTestBed, supportJitMode,
-          compilationMode),
+          isCore, refEmitter, this.adapter.factoryTracker, this.closureCompilerEnabled,
+          this.options.onlyPublishPublicTypingsForNgModules ?? false, injectableRegistry,
+          this.delegatingPerfRecorder),
     ];
 
     const traitCompiler = new TraitCompiler(
@@ -1348,12 +1271,8 @@ class ReferenceGraphAdapter implements ReferencesRegistry {
 }
 
 class NotifyingProgramDriverWrapper implements ProgramDriver {
-  getSourceFileVersion: ProgramDriver['getSourceFileVersion'];
-
   constructor(
-      private delegate: ProgramDriver, private notifyNewProgram: (program: ts.Program) => void) {
-    this.getSourceFileVersion = this.delegate.getSourceFileVersion?.bind(this);
-  }
+      private delegate: ProgramDriver, private notifyNewProgram: (program: ts.Program) => void) {}
 
   get supportsInlineOperations() {
     return this.delegate.supportsInlineOperations;
@@ -1367,6 +1286,8 @@ class NotifyingProgramDriverWrapper implements ProgramDriver {
     this.delegate.updateFiles(contents, updateMode);
     this.notifyNewProgram(this.delegate.getProgram());
   }
+
+  getSourceFileVersion = this.delegate.getSourceFileVersion?.bind(this);
 }
 
 function versionMapFromProgram(

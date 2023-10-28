@@ -24,9 +24,9 @@ let upgradeCount: number = 0;
  *
  * The `UpgradeAdapter` allows:
  * 1. creation of Angular component from AngularJS component directive
- *    (See {@link UpgradeAdapter#upgradeNg1Component})
+ *    (See [UpgradeAdapter#upgradeNg1Component()])
  * 2. creation of AngularJS directive from Angular component.
- *    (See {@link UpgradeAdapter#downgradeNg2Component})
+ *    (See [UpgradeAdapter#downgradeNg2Component()])
  * 3. Bootstrapping of a hybrid Angular application which contains both of the frameworks
  *    coexisting in a single application.
  *
@@ -573,7 +573,8 @@ export class UpgradeAdapter {
                   {provide: $COMPILE, useFactory: () => ng1Injector.get($COMPILE)},
                   this.upgradedProviders
                 ],
-                imports: [resolveForwardRef(this.ng2AppModule)]
+                imports: [resolveForwardRef(this.ng2AppModule)],
+                entryComponents: this.downgradedComponents
               })
               class DynamicNgUpgradeModule {
                 ngDoBootstrap() {}

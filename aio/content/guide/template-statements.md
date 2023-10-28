@@ -36,7 +36,7 @@ The following JavaScript and template expression syntax is not allowed:
 *   Increment and decrement operators, `++` and `--`
 *   Operator assignment, such as `+=` and `-=`
 *   The bitwise operators, such as `|` and `&`
-*   The [pipe operator](guide/pipes-overview)
+*   The [pipe operator](guide/pipes)
 
 ## Statement context
 
@@ -71,4 +71,4 @@ In the preceding `deleteHero(hero)`, the `hero` is the template input variable, 
 
 <!-- end links -->
 
-@reviewed 2023-08-14
+@reviewed 2022-02-28

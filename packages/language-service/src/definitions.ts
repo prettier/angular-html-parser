@@ -173,7 +173,7 @@ export class DefinitionBuilder {
       readonly ts.DefinitionInfo[]|undefined {
     const templateInfo = getTemplateInfoAtPosition(fileName, position, this.compiler);
     if (templateInfo === undefined) {
-      return undefined;
+      return;
     }
     const definitionMetas = this.getDefinitionMetaAtPosition(templateInfo, position);
     if (definitionMetas === undefined) {
@@ -225,7 +225,6 @@ export class DefinitionBuilder {
       }
       return definitions;
     }
-    return undefined;
   }
 
   private getTypeDefinitionsForTemplateInstance(

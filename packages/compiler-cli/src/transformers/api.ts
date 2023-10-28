@@ -48,6 +48,7 @@ export interface CompilerOptions extends NgCompilerOptions, ts.CompilerOptions {
   flatModulePrivateSymbolPrefix?: string;
 
   // Whether to generate code for library code.
+  // If true, produce .ngfactory.ts and .ngstyle.ts files for .d.ts inputs.
   // Default is true.
   generateCodeForLibraries?: boolean;
 
@@ -75,6 +76,12 @@ export interface CompilerOptions extends NgCompilerOptions, ts.CompilerOptions {
   i18nInFile?: string;
   // How to handle missing messages
   i18nInMissingTranslations?: 'error'|'warning'|'ignore';
+
+  /**
+   * Whether to generate .ngsummary.ts files that allow to use AOTed artifacts
+   * in JIT mode. This is off by default.
+   */
+  enableSummariesForJit?: boolean;
 
   /**
    * Whether to replace the `templateUrl` and `styleUrls` property in all

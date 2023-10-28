@@ -75,6 +75,13 @@ ng new customer-app --routing
 This creates an application called `customer-app` and the `--routing` flag generates a file called `app-routing.module.ts`. This is one of the files you need for setting up lazy loading for your feature module.
 Navigate into the project by issuing the command `cd customer-app`.
 
+<div class="alert is-helpful">
+
+The `--routing` option requires Angular CLI version 8.1 or higher.
+See [Keeping Up to Date](guide/updating).
+
+</div>
+
 ### Create a feature module with routing
 
 Next, you need a feature module with a component to route to.
@@ -102,7 +109,7 @@ The import path is the relative path to the module.
 
 <header>String-based lazy loading</header>
 
-In Angular version 8, the string syntax for the `loadChildren` route specification [was deprecated](guide/deprecations#loadChildren) in favor of the `import()` syntax.
+In Angular version 8, the string syntax for the `loadChildren` route specification [was deprecated](guide/deprecations#loadchildren-string-syntax) in favor of the `import()` syntax.
 You can opt into using string-based lazy loading \(`loadChildren: './path/to/module#Module'`\) by including the lazy-loaded routes in your `tsconfig` file, which includes the lazy-loaded files in the compilation.
 
 By default the Angular CLI generates projects with stricter file inclusions intended to be used with the `import()` syntax.
@@ -244,15 +251,13 @@ For more information, see the [`forRoot()` pattern](guide/singleton-services#for
 ## Preloading
 
 Preloading improves UX by loading parts of your application in the background.
-You can preload modules, standalone components or component data.
+You can preload modules or component data.
 
-### Preloading modules and standalone components
+### Preloading modules
 
-Preloading modules and standalone components improves UX by loading parts of your application in the background. By doing this, users don't have to wait for the elements to download when they activate a route.
+Preloading modules improves UX by loading parts of your application in the background. By doing this, users don't have to wait for the elements to download when they activate a route.
 
-To enable preloading of all lazy loaded modules and standalone components, import the `PreloadAllModules` token from the Angular `router`.
-
-### Module based application
+To enable preloading of all lazy loaded modules, import the `PreloadAllModules` token from the Angular `router`.
 
 <code-example header="AppRoutingModule (excerpt)">
 
@@ -273,32 +278,6 @@ RouterModule.forRoot(
 
 </code-example>
 
-### Standalone application
-
-For standalone applications configure preloading strategies by adding `withPreloading` to  `provideRouter`s RouterFeatures in `app.config.ts`
-
-<code-example header="`app.config.ts`">
-
-import { ApplicationConfig } from '@angular/core';
-import {
-  PreloadAllModules,
-  provideRouter
-  withPreloading,
-} from '@angular/router';
-
-import { routes } from './app.routes';
-
-export const appConfig: ApplicationConfig = {
-  providers: [
-    provideRouter(
-      routes,
-      withPreloading(PreloadAllModules)
-    ),
-  ],
-};
-
-</code-example>
-
 ### Preloading component data
 
 To preload component data, use a `resolver`.
@@ -315,7 +294,7 @@ ng generate service &lt;service-name&gt;
 
 </code-example>
 
-In the newly created service, implement the `Resolve` interface provided by the `@angular/router` package:
+In the newly created service, implement the `Resolve` interface provided by the `&commat;angular/router` package:
 
 <code-example header="Resolver service (excerpt)">
 
@@ -422,4 +401,4 @@ You might also be interested in the following:
 
 <!-- end links -->
 
-@reviewed 2022-05-07
+@reviewed 2022-02-28

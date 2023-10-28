@@ -4,10 +4,7 @@
                   @angular-eslint/no-outputs-metadata-property */
 import { Directive, ElementRef, EventEmitter, Output } from '@angular/core';
 
-@Directive({
-  standalone: true,
-  selector: '[myClick]'
-})
+@Directive({selector: '[myClick]'})
 export class ClickDirective {
   @Output('myClick') clicks = new EventEmitter<string>(); //  @Output(alias) propertyName = ...
 
@@ -23,7 +20,6 @@ export class ClickDirective {
 }
 
 @Directive({
-  standalone: true,
   selector: '[myClick2]',
   outputs: ['clicks:myClick']  // propertyName:alias
 })

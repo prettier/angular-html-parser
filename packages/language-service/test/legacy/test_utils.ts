@@ -6,8 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import ts from 'typescript';
-
 import {MockService} from './mock_host';
 
 export interface HumanizedDefinitionInfo {

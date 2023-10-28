@@ -173,10 +173,13 @@ class LocalsComp {
   },
 })
 class BankAccount {
-  @Input() bank: string|undefined;
-  @Input('account') id: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  @Input() bank!: string;
+  // TODO(issue/24571): remove '!'.
+  @Input('account') id!: string;
 
-  normalizedBankName: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  normalizedBankName!: string;
 }
 
 @Component({
@@ -789,7 +792,7 @@ class TestCmptWithPropInterpolation {
       fixture = TestBed.createComponent(LocalsComp);
       fixture.detectChanges();
 
-      expect(fixture.debugElement.children[0].references['alice']).toBeInstanceOf(MyDir);
+      expect(fixture.debugElement.children[0].references!['alice']).toBeAnInstanceOf(MyDir);
     });
 
     it('should allow injecting from the element injector', () => {
@@ -830,17 +833,17 @@ class TestCmptWithPropInterpolation {
 
         const debugElement = fixture.debugElement;
 
-        expect(debugElement.properties['className']).toBe('class-one class-two');
+        expect(debugElement.properties.className).toBe('class-one class-two');
 
         fixture.componentInstance.hostClasses = 'class-three';
         fixture.detectChanges();
 
-        expect(debugElement.properties['className']).toBe('class-three');
+        expect(debugElement.properties.className).toBe('class-three');
 
         fixture.componentInstance.hostClasses = '';
         fixture.detectChanges();
 
-        expect(debugElement.properties['className']).toBeFalsy();
+        expect(debugElement.properties.className).toBeFalsy();
       });
 
       it('should preserve the type of the property values', () => {
@@ -848,9 +851,9 @@ class TestCmptWithPropInterpolation {
         fixture.detectChanges();
 
         const button = fixture.debugElement.query(By.css('button'));
-        expect(button.properties['disabled']).toEqual(true);
-        expect(button.properties['tabIndex']).toEqual(1337);
-        expect(button.properties['title']).toEqual('hello');
+        expect(button.properties.disabled).toEqual(true);
+        expect(button.properties.tabIndex).toEqual(1337);
+        expect(button.properties.title).toEqual('hello');
       });
 
       it('should include interpolated properties in the properties map', () => {
@@ -860,16 +863,16 @@ class TestCmptWithPropInterpolation {
         const buttons = fixture.debugElement.children;
 
         expect(buttons.length).toBe(10);
-        expect(buttons[0].properties['title']).toBe('0');
-        expect(buttons[1].properties['title']).toBe('a1b');
-        expect(buttons[2].properties['title']).toBe('a1b2c');
-        expect(buttons[3].properties['title']).toBe('a1b2c3d');
-        expect(buttons[4].properties['title']).toBe('a1b2c3d4e');
-        expect(buttons[5].properties['title']).toBe('a1b2c3d4e5f');
-        expect(buttons[6].properties['title']).toBe('a1b2c3d4e5f6g');
-        expect(buttons[7].properties['title']).toBe('a1b2c3d4e5f6g7h');
-        expect(buttons[8].properties['title']).toBe('a1b2c3d4e5f6g7h8i');
-        expect(buttons[9].properties['title']).toBe('a1b2c3d4e5f6g7h8i9j');
+        expect(buttons[0].properties.title).toBe('0');
+        expect(buttons[1].properties.title).toBe('a1b');
+        expect(buttons[2].properties.title).toBe('a1b2c');
+        expect(buttons[3].properties.title).toBe('a1b2c3d');
+        expect(buttons[4].properties.title).toBe('a1b2c3d4e');
+        expect(buttons[5].properties.title).toBe('a1b2c3d4e5f');
+        expect(buttons[6].properties.title).toBe('a1b2c3d4e5f6g');
+        expect(buttons[7].properties.title).toBe('a1b2c3d4e5f6g7h');
+        expect(buttons[8].properties.title).toBe('a1b2c3d4e5f6g7h8i');
+        expect(buttons[9].properties.title).toBe('a1b2c3d4e5f6g7h8i9j');
       });
 
       it('should not include directive-shadowed properties in the properties map', () => {
@@ -880,7 +883,7 @@ class TestCmptWithPropInterpolation {
         fixture.detectChanges();
 
         const button = fixture.debugElement.query(By.css('button'));
-        expect(button.properties['title']).not.toEqual('goes to input');
+        expect(button.properties.title).not.toEqual('goes to input');
       });
 
       it('should return native properties from DOM element even if no binding present', () => {
@@ -889,7 +892,7 @@ class TestCmptWithPropInterpolation {
         fixture.detectChanges();
         const button = fixture.debugElement.query(By.css('button'));
         fixture.componentInstance.renderer.setProperty(button.nativeElement, 'title', 'myTitle');
-        expect(button.properties['title']).toBe('myTitle');
+        expect(button.properties.title).toBe('myTitle');
       });
 
       it('should not include patched properties (starting with __) and on* properties', () => {
@@ -915,7 +918,7 @@ class TestCmptWithPropInterpolation {
         const host = fixture.debugElement;
         const button = fixture.debugElement.query(By.css('button'));
 
-        expect(button.properties['title']).toEqual('myTitle');
+        expect(button.properties.title).toEqual('myTitle');
       });
     });
 
@@ -988,7 +991,7 @@ class TestCmptWithPropInterpolation {
         fixture = TestBed.createComponent(TestCmpt);
 
         const debugEl = fixture.debugElement.children[0];
-        expect(debugEl.componentInstance).toBeInstanceOf(ParentComp);
+        expect(debugEl.componentInstance).toBeAnInstanceOf(ParentComp);
       });
 
       it('should return component associated with a node if a node is a component host (content projection)',
@@ -998,7 +1001,7 @@ class TestCmptWithPropInterpolation {
            fixture = TestBed.createComponent(TestCmpt);
 
            const debugEl = fixture.debugElement.query(By.directive(ChildComp));
-           expect(debugEl.componentInstance).toBeInstanceOf(ChildComp);
+           expect(debugEl.componentInstance).toBeAnInstanceOf(ChildComp);
          });
 
       it('should return host component instance if a node has no associated component and there is no component projecting this node',
@@ -1007,7 +1010,7 @@ class TestCmptWithPropInterpolation {
            fixture = TestBed.createComponent(TestCmpt);
 
            const debugEl = fixture.debugElement.children[0];
-           expect(debugEl.componentInstance).toBeInstanceOf(TestCmpt);
+           expect(debugEl.componentInstance).toBeAnInstanceOf(TestCmpt);
          });
 
       it('should return host component instance if a node has no associated component and there is no component projecting this node (nested embedded views)',
@@ -1022,7 +1025,7 @@ class TestCmptWithPropInterpolation {
            fixture.detectChanges();
 
            const debugEl = fixture.debugElement.query(By.directive(MyDir));
-           expect(debugEl.componentInstance).toBeInstanceOf(TestCmpt);
+           expect(debugEl.componentInstance).toBeAnInstanceOf(TestCmpt);
          });
 
       it('should return component instance that projects a given node if a node has no associated component',
@@ -1032,7 +1035,7 @@ class TestCmptWithPropInterpolation {
            fixture = TestBed.createComponent(TestCmpt);
 
            const debugEl = fixture.debugElement.children[0].children[0].children[0];  // <div>
-           expect(debugEl.componentInstance).toBeInstanceOf(ParentComp);
+           expect(debugEl.componentInstance).toBeAnInstanceOf(ParentComp);
          });
     });
 
@@ -1117,7 +1120,7 @@ class TestCmptWithPropInterpolation {
     it('should be an instance of DebugNode', () => {
       fixture = TestBed.createComponent(ParentComp);
       fixture.detectChanges();
-      expect(fixture.debugElement).toBeInstanceOf(DebugNode);
+      expect(fixture.debugElement).toBeAnInstanceOf(DebugNode);
     });
 
     it('should return the same element when queried twice', () => {
@@ -1187,10 +1190,10 @@ class TestCmptWithPropInterpolation {
       const element = fixture.debugElement.children[0];
 
       // Assert that the camel-case attribute is correct.
-      expect(element.attributes['svgIcon']).toBe('test');
+      expect(element.attributes.svgIcon).toBe('test');
 
       // Make sure that we somehow didn't preserve the native lower-cased value.
-      expect(element.attributes['svgicon']).toBeFalsy();
+      expect(element.attributes.svgicon).toBeFalsy();
     });
 
 
@@ -1222,7 +1225,7 @@ class TestCmptWithPropInterpolation {
 
       fixture.componentInstance.renderer.setAttribute(div.nativeElement, 'foo', 'bar');
 
-      expect(div.attributes['foo']).toBe('bar');
+      expect(div.attributes.foo).toBe('bar');
     });
 
     it('should clear event listeners when node is destroyed', () => {

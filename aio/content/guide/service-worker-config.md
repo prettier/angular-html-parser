@@ -9,13 +9,8 @@ A basic understanding of the following:
 *   [Service worker overview](https://developer.chrome.com/docs/workbox/service-worker-overview/)
 *   [Service Worker in Production](guide/service-worker-devops)
 
-## Modifying the configuration
-
-The `ngsw-config.json` JSON configuration file specifies which files and data URLs the Angular service worker should cache and how it should update the cached files and data.
-The [Angular CLI](cli) processes this configuration file during `ng build`.
-
-<!-- Does the following ngsw-config tool still work? Does not seem to. Not even clear what it does.
-
+The `ngsw-config.json` configuration file specifies which files and data URLs the Angular service worker should cache and how it should update the cached files and data.
+The [Angular CLI](cli) processes the configuration file during `ng build`.
 Manually, process it with the `ngsw-config` tool \(where `<project-name>` is the name of the project being built\):
 
 <code-example format="shell" language="shell">
@@ -25,7 +20,6 @@ Manually, process it with the `ngsw-config` tool \(where `<project-name>` is the
 </code-example>
 
 The configuration file uses the JSON format.
--->
 All file paths must begin with `/`, which corresponds to the deployment directory &mdash;usually `dist/<project-name>` in CLI projects.
 
 <a id="glob-patterns"></a>
@@ -457,4 +451,4 @@ It is recommended that you use the default performance strategy whenever possibl
 
 <!-- end links -->
 
-@reviewed 2023-09-06
+@reviewed 2022-02-28

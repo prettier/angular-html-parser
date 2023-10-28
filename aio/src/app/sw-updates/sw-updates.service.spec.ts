@@ -1,6 +1,6 @@
 import { ApplicationRef, ErrorHandler, Injector } from '@angular/core';
 import { discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
-import { SwUpdate, VersionEvent } from '@angular/service-worker';
+import { SwUpdate } from '@angular/service-worker';
 import { BehaviorSubject, Subject } from 'rxjs';
 
 import { LocationService } from 'app/shared/location.service';
@@ -89,7 +89,7 @@ describe('SwUpdatesService', () => {
       appRef.isStable.next(true);
       expect(swu.activateUpdate).not.toHaveBeenCalled();
 
-      swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+      swu.$$availableSubj.next({available: {hash: 'foo'}});
       expect(swu.activateUpdate).toHaveBeenCalled();
     })));
 
@@ -100,7 +100,7 @@ describe('SwUpdatesService', () => {
       tick(checkInterval);
       expect(swu.checkForUpdate).toHaveBeenCalledTimes(1);
 
-      swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+      swu.$$availableSubj.next({available: {hash: 'foo'}});
 
       tick(checkInterval);
       expect(swu.checkForUpdate).toHaveBeenCalledTimes(2);
@@ -111,17 +111,19 @@ describe('SwUpdatesService', () => {
       discardPeriodicTasks();
     })));
 
-    it('should request a full page navigation when an update has been activated', fakeAsync(run(async () => {
+    it('should request a full page navigation when an update has been activated', run(() => {
+      swu.$$availableSubj.next({available: {hash: 'foo'}});
       expect(location.fullPageNavigationNeeded).toHaveBeenCalledTimes(0);
 
-      swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
-      tick(checkInterval);
+      swu.$$activatedSubj.next({current: {hash: 'bar'}});
       expect(location.fullPageNavigationNeeded).toHaveBeenCalledTimes(1);
 
-      swu.$$availableSubj.next({latestVersion: {hash: 'baz'}, type: 'VERSION_READY'});
-      tick(checkInterval);
+      swu.$$availableSubj.next({available: {hash: 'baz'}});
+      expect(location.fullPageNavigationNeeded).toHaveBeenCalledTimes(1);
+
+      swu.$$activatedSubj.next({current: {hash: 'qux'}});
       expect(location.fullPageNavigationNeeded).toHaveBeenCalledTimes(2);
-    })));
+    }));
 
     it('should request a page reload when an unrecoverable state has been detected', run(() => {
       expect(location.reloadPage).toHaveBeenCalledTimes(0);
@@ -160,7 +162,8 @@ describe('SwUpdatesService', () => {
         tick(checkInterval);
         tick(checkInterval);
 
-        swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+        swu.$$availableSubj.next({available: {hash: 'foo'}});
+        swu.$$activatedSubj.next({current: {hash: 'bar'}});
 
         tick(checkInterval);
         tick(checkInterval);
@@ -169,18 +172,18 @@ describe('SwUpdatesService', () => {
       })));
 
       it('should not activate available updates', fakeAsync(runDeactivated(() => {
-        swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+        swu.$$availableSubj.next({available: {hash: 'foo'}});
         expect(swu.activateUpdate).not.toHaveBeenCalled();
       })));
 
-      it('should never request a full page navigation', fakeAsync(runDeactivated(() => {
-        swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
-        tick(checkInterval);
-        swu.$$availableSubj.next({latestVersion: {hash: 'baz'}, type: 'VERSION_READY'});
-        tick(checkInterval);
+      it('should never request a full page navigation', runDeactivated(() => {
+        swu.$$availableSubj.next({available: {hash: 'foo'}});
+        swu.$$activatedSubj.next({current: {hash: 'bar'}});
+        swu.$$availableSubj.next({available: {hash: 'baz'}});
+        swu.$$activatedSubj.next({current: {hash: 'qux'}});
 
         expect(location.fullPageNavigationNeeded).not.toHaveBeenCalled();
-      })));
+      }));
 
       it('should never request a page reload', runDeactivated(() => {
         swu.$$unrecoverableSubj.next({reason: 'Something bad happened'});
@@ -212,7 +215,8 @@ describe('SwUpdatesService', () => {
         service.disable();
         swu.checkForUpdate.calls.reset();
 
-        swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+        swu.$$availableSubj.next({available: {hash: 'foo'}});
+        swu.$$activatedSubj.next({current: {hash: 'baz'}});
 
         tick(checkInterval);
         tick(checkInterval);
@@ -222,24 +226,23 @@ describe('SwUpdatesService', () => {
 
       it('should not activate available updates', fakeAsync(run(() => {
         service.disable();
-        swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+        swu.$$availableSubj.next({available: {hash: 'foo'}});
 
         expect(swu.activateUpdate).not.toHaveBeenCalled();
       })));
 
-      it('should stop requesting full page navigations when updates are activated', fakeAsync(run(() => {
-        swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
-        tick(checkInterval);
+      it('should stop requesting full page navigations when updates are activated', run(() => {
+        swu.$$availableSubj.next({available: {hash: 'foo'}});
+        swu.$$activatedSubj.next({current: {hash: 'bar'}});
         expect(location.fullPageNavigationNeeded).toHaveBeenCalledTimes(1);
 
         service.disable();
         location.fullPageNavigationNeeded.calls.reset();
 
-        swu.$$availableSubj.next({latestVersion: {hash: 'baz'}, type: 'VERSION_READY'});
-        tick(checkInterval);
-
+        swu.$$availableSubj.next({available: {hash: 'baz'}});
+        swu.$$activatedSubj.next({current: {hash: 'qux'}});
         expect(location.fullPageNavigationNeeded).not.toHaveBeenCalled();
-      })));
+      }));
 
       it('should stop requesting page reloads when unrecoverable states are detected', run(() => {
         swu.$$unrecoverableSubj.next({reason: 'Something bad happened'});
@@ -273,7 +276,8 @@ describe('SwUpdatesService', () => {
           service.enable();
           swu.checkForUpdate.calls.reset();
 
-          swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+          swu.$$availableSubj.next({available: {hash: 'foo'}});
+          swu.$$activatedSubj.next({current: {hash: 'baz'}});
           tick(checkInterval);
 
           expect(swu.checkForUpdate).toHaveBeenCalled();
@@ -283,7 +287,8 @@ describe('SwUpdatesService', () => {
           service.disable();
           service.enable();
 
-          swu.$$availableSubj.next({latestVersion: {hash: 'foo'}, type: 'VERSION_READY'});
+          swu.$$availableSubj.next({available: {hash: 'foo'}});
+
           expect(swu.activateUpdate).toHaveBeenCalled();
         })));
       });
@@ -306,15 +311,16 @@ class MockApplicationRef {
 }
 
 class MockSwUpdate {
-  $$availableSubj = new Subject<{latestVersion: {hash: string}, type: 'VERSION_READY'}>();
+  $$availableSubj = new Subject<{available: {hash: string}}>();
+  $$activatedSubj = new Subject<{current: {hash: string}}>();
   $$unrecoverableSubj = new Subject<{reason: string}>();
-  $$versionUpdatesSubj = new Subject<VersionEvent>();
 
-  versionUpdates = this.$$availableSubj.asObservable();
+  available = this.$$availableSubj.asObservable();
+  activated = this.$$activatedSubj.asObservable();
   unrecoverable = this.$$unrecoverableSubj.asObservable();
 
   activateUpdate = jasmine.createSpy('MockSwUpdate.activateUpdate')
-                          .and.callFake(() => Promise.resolve(true));
+                          .and.callFake(() => Promise.resolve());
 
   checkForUpdate = jasmine.createSpy('MockSwUpdate.checkForUpdate')
                           .and.callFake(() => Promise.resolve());

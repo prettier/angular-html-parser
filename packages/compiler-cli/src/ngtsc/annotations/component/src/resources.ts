@@ -6,16 +6,15 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig, LexerRange, ParsedTemplate, ParseSourceFile, parseTemplate, TmplAstNode,} from '@angular/compiler';
+import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig, LexerRange, ParsedTemplate, ParseSourceFile, parseTemplate, TmplAstNode} from '@angular/compiler';
 import ts from 'typescript';
 
 import {ErrorCode, FatalDiagnosticError} from '../../../diagnostics';
 import {absoluteFrom} from '../../../file_system';
 import {DependencyTracker} from '../../../incremental/api';
 import {Resource} from '../../../metadata';
-import {DynamicValue, PartialEvaluator, traceDynamicValue} from '../../../partial_evaluator';
+import {PartialEvaluator} from '../../../partial_evaluator';
 import {ClassDeclaration, DeclarationNode, Decorator} from '../../../reflection';
-import {CompilationMode} from '../../../transform';
 import {TemplateSourceMapping} from '../../../typecheck/api';
 import {createValueHasWrongTypeError, isStringArray, ResourceLoader} from '../../common';
 
@@ -112,7 +111,15 @@ export type TemplateDeclaration = InlineTemplateDeclaration|ExternalTemplateDecl
 
 /** Determines the node to use for debugging purposes for the given TemplateDeclaration. */
 export function getTemplateDeclarationNodeForError(declaration: TemplateDeclaration): ts.Node {
-  return declaration.isInline ? declaration.expression : declaration.templateUrlExpression;
+  // TODO(zarend): Change this to if/else when that is compatible with g3. This uses a switch
+  // because if/else fails to compile on g3. That is because g3 compiles this in non-strict mode
+  // where type inference does not work correctly.
+  switch (declaration.isInline) {
+    case true:
+      return declaration.expression;
+    case false:
+      return declaration.templateUrlExpression;
+  }
 }
 
 export interface ExtractTemplateOptions {
@@ -124,7 +131,7 @@ export interface ExtractTemplateOptions {
 export function extractTemplate(
     node: ClassDeclaration, template: TemplateDeclaration, evaluator: PartialEvaluator,
     depTracker: DependencyTracker|null, resourceLoader: ResourceLoader,
-    options: ExtractTemplateOptions, compilationMode: CompilationMode): ParsedTemplateWithSource {
+    options: ExtractTemplateOptions): ParsedTemplateWithSource {
   if (template.isInline) {
     let sourceStr: string;
     let sourceParseRange: LexerRange|null = null;
@@ -148,27 +155,6 @@ export function extractTemplate(
       sourceMapUrl = template.resolvedTemplateUrl;
     } else {
       const resolvedTemplate = evaluator.evaluate(template.expression);
-
-      // In local compilation mode we use imported strings from another file as template as it
-      // cannot be resolved in single file mode. We warn the user here about the situation
-      // explicitly.
-      if (compilationMode === CompilationMode.LOCAL && resolvedTemplate instanceof DynamicValue &&
-          resolvedTemplate.isFromUnknownIdentifier()) {
-        const relatedInformation = traceDynamicValue(template.expression, resolvedTemplate);
-
-        const chain: ts.DiagnosticMessageChain = {
-          messageText: `Unknown identifier used as template string: ${
-              template.expression
-                  .getText()} (did you import this string from another file? This is not allowed in local compilation mode. Please either inline it or move it to a separate file and include it using 'templateUrl')`,
-          category: ts.DiagnosticCategory.Error,
-          code: 0,
-        };
-
-        throw new FatalDiagnosticError(
-            ErrorCode.LOCAL_COMPILATION_IMPORTED_TEMPLATE_STRING, template.expression, chain,
-            relatedInformation);
-      }
-
       if (typeof resolvedTemplate !== 'string') {
         throw createValueHasWrongTypeError(
             template.expression, resolvedTemplate, 'template must be a string');
@@ -213,7 +199,9 @@ export function extractTemplate(
       sourceMapping: {
         type: 'external',
         componentClass: node,
-        node: template.templateUrlExpression,
+        // TODO(alxhub): TS in g3 is unable to make this inference on its own, so cast it here
+        // until g3 is able to figure this out.
+        node: (template as ExternalTemplateDeclaration).templateUrlExpression,
         template: templateContent,
         templateUrl: template.resolvedTemplateUrl,
       },
@@ -274,9 +262,9 @@ function parseExtractedTemplate(
 }
 
 export function parseTemplateDeclaration(
-    node: ClassDeclaration, decorator: Decorator, component: Map<string, ts.Expression>,
-    containingFile: string, evaluator: PartialEvaluator, depTracker: DependencyTracker|null,
-    resourceLoader: ResourceLoader, defaultPreserveWhitespaces: boolean): TemplateDeclaration {
+    decorator: Decorator, component: Map<string, ts.Expression>, containingFile: string,
+    evaluator: PartialEvaluator, resourceLoader: ResourceLoader,
+    defaultPreserveWhitespaces: boolean): TemplateDeclaration {
   let preserveWhitespaces: boolean = defaultPreserveWhitespaces;
   if (component.has('preserveWhitespaces')) {
     const expr = component.get('preserveWhitespaces')!;
@@ -317,12 +305,6 @@ export function parseTemplateDeclaration(
         resolvedTemplateUrl: resourceUrl,
       };
     } catch (e) {
-      if (depTracker !== null) {
-        // The analysis of this file cannot be re-used if the template URL could
-        // not be resolved. Future builds should re-analyze and re-attempt resolution.
-        depTracker.recordDependencyAnalysisFailure(node.getSourceFile());
-      }
-
       throw makeResourceNotFoundError(
           templateUrl, templateUrlExpr, ResourceTypeForDiagnostics.Template);
     }
@@ -337,7 +319,8 @@ export function parseTemplateDeclaration(
     };
   } else {
     throw new FatalDiagnosticError(
-        ErrorCode.COMPONENT_MISSING_TEMPLATE, decorator.node, 'component is missing a template');
+        ErrorCode.COMPONENT_MISSING_TEMPLATE, Decorator.nodeForError(decorator),
+        'component is missing a template');
   }
 }
 
@@ -345,8 +328,8 @@ export function preloadAndParseTemplate(
     evaluator: PartialEvaluator, resourceLoader: ResourceLoader, depTracker: DependencyTracker|null,
     preanalyzeTemplateCache: Map<DeclarationNode, ParsedTemplateWithSource>, node: ClassDeclaration,
     decorator: Decorator, component: Map<string, ts.Expression>, containingFile: string,
-    defaultPreserveWhitespaces: boolean, options: ExtractTemplateOptions,
-    compilationMode: CompilationMode): Promise<ParsedTemplateWithSource|null> {
+    defaultPreserveWhitespaces: boolean,
+    options: ExtractTemplateOptions): Promise<ParsedTemplateWithSource|null> {
   if (component.has('templateUrl')) {
     // Extract the templateUrl and preload it.
     const templateUrlExpr = component.get('templateUrl')!;
@@ -365,10 +348,10 @@ export function preloadAndParseTemplate(
       if (templatePromise !== undefined) {
         return templatePromise.then(() => {
           const templateDecl = parseTemplateDeclaration(
-              node, decorator, component, containingFile, evaluator, depTracker, resourceLoader,
+              decorator, component, containingFile, evaluator, resourceLoader,
               defaultPreserveWhitespaces);
-          const template = extractTemplate(
-              node, templateDecl, evaluator, depTracker, resourceLoader, options, compilationMode);
+          const template =
+              extractTemplate(node, templateDecl, evaluator, depTracker, resourceLoader, options);
           preanalyzeTemplateCache.set(node, template);
           return template;
         });
@@ -376,21 +359,15 @@ export function preloadAndParseTemplate(
         return Promise.resolve(null);
       }
     } catch (e) {
-      if (depTracker !== null) {
-        // The analysis of this file cannot be re-used if the template URL could
-        // not be resolved. Future builds should re-analyze and re-attempt resolution.
-        depTracker.recordDependencyAnalysisFailure(node.getSourceFile());
-      }
-
       throw makeResourceNotFoundError(
           templateUrl, templateUrlExpr, ResourceTypeForDiagnostics.Template);
     }
   } else {
     const templateDecl = parseTemplateDeclaration(
-        node, decorator, component, containingFile, evaluator, depTracker, resourceLoader,
+        decorator, component, containingFile, evaluator, resourceLoader,
         defaultPreserveWhitespaces);
-    const template = extractTemplate(
-        node, templateDecl, evaluator, depTracker, resourceLoader, options, compilationMode);
+    const template =
+        extractTemplate(node, templateDecl, evaluator, depTracker, resourceLoader, options);
     preanalyzeTemplateCache.set(node, template);
     return Promise.resolve(template);
   }
@@ -449,8 +426,7 @@ export function transformDecoratorResources(
 
   // If no external resources are referenced, preserve the original decorator
   // for the best source map experience when the decorator is emitted in TS.
-  if (!component.has('templateUrl') && !component.has('styleUrls') && !component.has('styleUrl') &&
-      !component.has('styles')) {
+  if (!component.has('templateUrl') && !component.has('styleUrls') && !component.has('styles')) {
     return dec;
   }
 
@@ -462,10 +438,9 @@ export function transformDecoratorResources(
     metadata.set('template', ts.factory.createStringLiteral(template.content));
   }
 
-  if (metadata.has('styleUrls') || metadata.has('styleUrl') || metadata.has('styles')) {
+  if (metadata.has('styleUrls') || metadata.has('styles')) {
     metadata.delete('styles');
     metadata.delete('styleUrls');
-    metadata.delete('styleUrl');
 
     if (styles.length > 0) {
       const styleNodes = styles.reduce((result, style) => {
@@ -495,35 +470,11 @@ export function extractComponentStyleUrls(
     evaluator: PartialEvaluator,
     component: Map<string, ts.Expression>,
     ): StyleUrlMeta[] {
-  const styleUrlsExpr = component.get('styleUrls');
-  const styleUrlExpr = component.get('styleUrl');
-
-  if (styleUrlsExpr !== undefined && styleUrlExpr !== undefined) {
-    throw new FatalDiagnosticError(
-        ErrorCode.COMPONENT_INVALID_STYLE_URLS, styleUrlExpr,
-        '@Component cannot define both `styleUrl` and `styleUrls`. ' +
-            'Use `styleUrl` if the component has one stylesheet, or `styleUrls` if it has multiple');
+  if (!component.has('styleUrls')) {
+    return [];
   }
 
-  if (styleUrlsExpr !== undefined) {
-    return extractStyleUrlsFromExpression(evaluator, component.get('styleUrls')!);
-  }
-
-  if (styleUrlExpr !== undefined) {
-    const styleUrl = evaluator.evaluate(styleUrlExpr);
-
-    if (typeof styleUrl !== 'string') {
-      throw createValueHasWrongTypeError(styleUrlExpr, styleUrl, 'styleUrl must be a string');
-    }
-
-    return [{
-      url: styleUrl,
-      source: ResourceTypeForDiagnostics.StylesheetFromDecorator,
-      nodeForError: styleUrlExpr,
-    }];
-  }
-
-  return [];
+  return extractStyleUrlsFromExpression(evaluator, component.get('styleUrls')!);
 }
 
 function extractStyleUrlsFromExpression(
@@ -566,61 +517,40 @@ function extractStyleUrlsFromExpression(
 
   return styleUrls;
 }
-
 export function extractStyleResources(
     resourceLoader: ResourceLoader, component: Map<string, ts.Expression>,
     containingFile: string): ReadonlySet<Resource> {
   const styles = new Set<Resource>();
   function stringLiteralElements(array: ts.ArrayLiteralExpression): ts.StringLiteralLike[] {
-    return array.elements.filter((e): e is ts.StringLiteralLike => ts.isStringLiteralLike(e));
+    return array.elements.filter(
+        (e: ts.Expression): e is ts.StringLiteralLike => ts.isStringLiteralLike(e));
   }
 
-  // If styleUrls is a literal array, process each resource url individually and register ones that
-  // are string literals. If `styleUrl` is specified, register a single stylesheet. Note that
-  // `styleUrl` and `styleUrls` are mutually-exclusive. This is validated in
-  // `extractComponentStyleUrls`.
-  const styleUrlExpr = component.get('styleUrl');
+  // If styleUrls is a literal array, process each resource url individually and
+  // register ones that are string literals.
   const styleUrlsExpr = component.get('styleUrls');
   if (styleUrlsExpr !== undefined && ts.isArrayLiteralExpression(styleUrlsExpr)) {
     for (const expression of stringLiteralElements(styleUrlsExpr)) {
-      const resource = stringLiteralUrlToResource(resourceLoader, expression, containingFile);
-      if (resource !== null) {
-        styles.add(resource);
+      try {
+        const resourceUrl = resourceLoader.resolve(expression.text, containingFile);
+        styles.add({path: absoluteFrom(resourceUrl), expression});
+      } catch {
+        // Errors in style resource extraction do not need to be handled here. We will produce
+        // diagnostics for each one that fails in the analysis, after we evaluate the
+        // `styleUrls` expression to determine _all_ style resources, not just the string
+        // literals.
       }
-    }
-  } else if (styleUrlExpr !== undefined && ts.isStringLiteralLike(styleUrlExpr)) {
-    const resource = stringLiteralUrlToResource(resourceLoader, styleUrlExpr, containingFile);
-    if (resource !== null) {
-      styles.add(resource);
     }
   }
 
   const stylesExpr = component.get('styles');
-  if (stylesExpr !== undefined) {
-    if (ts.isArrayLiteralExpression(stylesExpr)) {
-      for (const expression of stringLiteralElements(stylesExpr)) {
-        styles.add({path: null, expression});
-      }
-    } else if (ts.isStringLiteralLike(stylesExpr)) {
-      styles.add({path: null, expression: stylesExpr});
+  if (stylesExpr !== undefined && ts.isArrayLiteralExpression(stylesExpr)) {
+    for (const expression of stringLiteralElements(stylesExpr)) {
+      styles.add({path: null, expression});
     }
   }
 
   return styles;
-}
-
-function stringLiteralUrlToResource(
-    resourceLoader: ResourceLoader, expression: ts.StringLiteralLike,
-    containingFile: string): Resource|null {
-  try {
-    const resourceUrl = resourceLoader.resolve(expression.text, containingFile);
-    return {path: absoluteFrom(resourceUrl), expression};
-  } catch {
-    // Errors in style resource extraction do not need to be handled here. We will produce
-    // diagnostics for each one that fails in the analysis, after we evaluate the `styleUrls`
-    // expression to determine _all_ style resources, not just the string literals.
-    return null;
-  }
 }
 
 export function _extractTemplateStyleUrls(template: ParsedTemplateWithSource): StyleUrlMeta[] {

@@ -1,9 +1,10 @@
-import { Rule } from '@angular-devkit/schematics';
-import { addRootImport } from '@schematics/angular/utility';
-import { Schema } from './schema';
+import { Rule, SchematicContext, Tree } from '@angular-devkit/schematics';
+import { NodePackageInstallTask } from '@angular-devkit/schematics/tasks';
 
-export function ngAdd(options: Schema): Rule {
-  // Add an import `MyLibModule` from `my-lib` to the root of the user's project.
-  return addRootImport(options.project, ({code, external}) =>
-    code`${external('MyLibModule', 'my-lib')}`);
+// Just return the tree
+export function ngAdd(): Rule {
+  return (tree: Tree, context: SchematicContext) => {
+    context.addTask(new NodePackageInstallTask());
+    return tree;
+  };
 }

@@ -6,8 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ɵisPromise as isPromise} from '@angular/core';
-import {from, isObservable, Observable, of} from 'rxjs';
+import {ɵisObservable as isObservable, ɵisPromise as isPromise} from '@angular/core';
+import {from, Observable, of} from 'rxjs';
+
+import {Params} from '../shared';
 
 export function shallowEqualArrays(a: any[], b: any[]): boolean {
   if (a.length !== b.length) return false;
@@ -17,16 +19,15 @@ export function shallowEqualArrays(a: any[], b: any[]): boolean {
   return true;
 }
 
-export function shallowEqual(
-    a: {[key: string|symbol]: any}, b: {[key: string|symbol]: any}): boolean {
+export function shallowEqual(a: Params, b: Params): boolean {
   // While `undefined` should never be possible, it would sometimes be the case in IE 11
   // and pre-chromium Edge. The check below accounts for this edge case.
-  const k1 = a ? getDataKeys(a) : undefined;
-  const k2 = b ? getDataKeys(b) : undefined;
+  const k1 = a ? Object.keys(a) : undefined;
+  const k2 = b ? Object.keys(b) : undefined;
   if (!k1 || !k2 || k1.length != k2.length) {
     return false;
   }
-  let key: string|symbol;
+  let key: string;
   for (let i = 0; i < k1.length; i++) {
     key = k1[i];
     if (!equalArraysOrString(a[key], b[key])) {
@@ -34,13 +35,6 @@ export function shallowEqual(
     }
   }
   return true;
-}
-
-/**
- * Gets the keys of an object, including `symbol` keys.
- */
-export function getDataKeys(obj: Object): Array<string|symbol> {
-  return [...Object.keys(obj), ...Object.getOwnPropertySymbols(obj)];
 }
 
 /**
@@ -58,10 +52,32 @@ export function equalArraysOrString(a: string|string[], b: string|string[]) {
 }
 
 /**
+ * Flattens single-level nested arrays.
+ */
+export function flatten<T>(arr: T[][]): T[] {
+  return Array.prototype.concat.apply([], arr);
+}
+
+/**
  * Return the last element of an array.
  */
 export function last<T>(a: T[]): T|null {
   return a.length > 0 ? a[a.length - 1] : null;
+}
+
+/**
+ * Verifys all booleans in an array are `true`.
+ */
+export function and(bools: boolean[]): boolean {
+  return !bools.some(v => !v);
+}
+
+export function forEach<K, V>(map: {[key: string]: V}, callback: (v: V, k: string) => void): void {
+  for (const prop in map) {
+    if (map.hasOwnProperty(prop)) {
+      callback(map[prop], prop);
+    }
+  }
 }
 
 export function wrapIntoObservable<T>(value: T|Promise<T>|Observable<T>): Observable<T> {

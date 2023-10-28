@@ -54,6 +54,7 @@ export class FormsModule {
  * making them available for import by NgModules that import this module.
  *
  * Providers associated with this module:
+ * * `FormBuilder`
  * * `RadioControlRegistry`
  *
  * @see [Forms Overview](guide/forms-overview)

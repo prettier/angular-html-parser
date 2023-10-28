@@ -56,7 +56,6 @@ export function ivyTransformFactory(
  */
 class IvyCompilationVisitor extends Visitor {
   public classCompilationMap = new Map<ts.ClassDeclaration, CompileResult[]>();
-  public deferrableImports = new Set<ts.ImportDeclaration>();
 
   constructor(private compilation: TraitCompiler, private constantPool: ConstantPool) {
     super();
@@ -69,16 +68,6 @@ class IvyCompilationVisitor extends Visitor {
     const result = this.compilation.compile(node, this.constantPool);
     if (result !== null) {
       this.classCompilationMap.set(node, result);
-
-      // Collect all deferrable imports declarations into a single set,
-      // so that we can pass it to the transform visitor that will drop
-      // corresponding regular import declarations.
-      for (const classResult of result) {
-        if (classResult.deferrableImports !== null && classResult.deferrableImports.size > 0) {
-          classResult.deferrableImports.forEach(
-              importDecl => this.deferrableImports.add(importDecl));
-        }
-      }
     }
     return {node};
   }
@@ -94,8 +83,7 @@ class IvyTransformationVisitor extends Visitor {
       private classCompilationMap: Map<ts.ClassDeclaration, CompileResult[]>,
       private reflector: ReflectionHost, private importManager: ImportManager,
       private recordWrappedNodeExpr: RecordWrappedNodeFn<ts.Expression>,
-      private isClosureCompilerEnabled: boolean, private isCore: boolean,
-      private deferrableImports: Set<ts.ImportDeclaration>) {
+      private isClosureCompilerEnabled: boolean, private isCore: boolean) {
     super();
   }
 
@@ -117,11 +105,6 @@ class IvyTransformationVisitor extends Visitor {
     const members = [...node.members];
 
     for (const field of this.classCompilationMap.get(node)!) {
-      // Type-only member.
-      if (field.initializer === null) {
-        continue;
-      }
-
       // Translate the initializer for the field into TS nodes.
       const exprNode = translateExpression(field.initializer, this.importManager, translateOptions);
 
@@ -163,16 +146,6 @@ class IvyTransformationVisitor extends Visitor {
         // Map over the class members and remove any Angular decorators from them.
         members.map(member => this._stripAngularDecorators(member)));
     return {node, after: statements};
-  }
-
-  override visitOtherNode<T extends ts.Node>(node: T): T {
-    if (ts.isImportDeclaration(node) && this.deferrableImports.has(node)) {
-      // Return `null` as an indication that this node should not be present
-      // in the final AST. Symbols from this import would be imported via
-      // dynamic imports.
-      return null!;
-    }
-    return node;
   }
 
   /**
@@ -303,7 +276,7 @@ function transformIvySourceFile(
   // results obtained at Step 1.
   const transformationVisitor = new IvyTransformationVisitor(
       compilation, compilationVisitor.classCompilationMap, reflector, importManager,
-      recordWrappedNode, isClosureCompilerEnabled, isCore, compilationVisitor.deferrableImports);
+      recordWrappedNode, isClosureCompilerEnabled, isCore);
   let sf = visit(file, transformationVisitor, context);
 
   // Generate the constant statements first, as they may involve adding additional imports

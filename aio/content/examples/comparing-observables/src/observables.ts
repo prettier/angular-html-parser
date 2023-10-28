@@ -1,9 +1,7 @@
 // #docplaster
 
-import {
-  Observable, concat, interval, of,
-  catchError, delay, map, take,
-} from 'rxjs';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export function docRegionObservable(console: Console) {
   // #docregion observable
@@ -46,37 +44,29 @@ export function docRegionUnsubscribe() {
   return subscription;
 }
 
-export function docRegionError(console = window.console) {
-  // #docregion error
+export function docRegionError() {
   const observable = new Observable<number>(() => {
-    throw new Error('my error');
+    // Subscriber fn...
   });
 
-  observable.pipe(
-    catchError(error => of(42)), // recover within the operator
-    map(() => { throw new Error('another error'); }), // oops
-    catchError(error => { throw new Error('revised error'); }) // modify and rethrow
-  ).subscribe({
-    error: err => console.error(err) // report error in subscribe
+  // #docregion error
+  observable.subscribe(() => {
+    throw new Error('my error');
   });
   // #enddocregion error
 }
 
-export function docRegionOperators() {
-  // #docregion operators
-  /** Emit 0, 2, 4 every 10ms */
-  const observable1$ = interval(10).pipe(
-    map(value  => 2 * value), // double the interval values: 0, 1, 2, ...
-    take(3) // take only the first 3 emitted values
-  );
+export function docRegionChain() {
+  let observable = new Observable<number>(observer => {
+    // Subscriber fn...
+    observer.next(2);
+  });
 
-  /** Emit 'Ta Da!' after 10ms */
-  const observable2$ = of('Ta Da!').pipe(delay(10));
+  observable =
+  // #docregion chain
 
-  /** Observable processes all of observable1 first, then all of observable2.
-   * Emits 0, 2, 4, 'Ta Da! after about 40ms' */
-  const combined$ = concat(observable1$, observable2$);
-  // #enddocregion operators
+  observable.pipe(map(v => 2 * v));
 
-  return combined$;
+  // #enddocregion chain
+  return observable;
 }

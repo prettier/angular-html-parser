@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Directive, EventEmitter, forwardRef, Inject, Input, OnChanges, OnDestroy, Optional, Output, Provider, Self, SimpleChanges, ɵWritable as Writable} from '@angular/core';
+import {Directive, EventEmitter, forwardRef, Inject, Input, OnChanges, OnDestroy, Optional, Output, Provider, Self, SimpleChanges} from '@angular/core';
 
 import {FormArray} from '../../model/form_array';
 import {FormControl, isFormControl} from '../../model/form_control';
@@ -37,7 +37,7 @@ const formDirectiveProvider: Provider = {
  * and `FormArrayName` directives.
  *
  * @see [Reactive Forms Guide](guide/reactive-forms)
- * @see {@link AbstractControl}
+ * @see `AbstractControl`
  *
  * @usageNotes
  * ### Register Form Group
@@ -270,7 +270,7 @@ export class FormGroupDirective extends ControlContainer implements Form, OnChan
    * @param $event The "submit" event object
    */
   onSubmit($event: Event): boolean {
-    (this as Writable<this>).submitted = true;
+    (this as {submitted: boolean}).submitted = true;
     syncPendingControls(this.form, this.directives);
     this.ngSubmit.emit($event);
     // Forms with `method="dialog"` have some special behavior that won't reload the page and that
@@ -295,7 +295,7 @@ export class FormGroupDirective extends ControlContainer implements Form, OnChan
    */
   resetForm(value: any = undefined): void {
     this.form.reset(value);
-    (this as Writable<this>).submitted = false;
+    (this as {submitted: boolean}).submitted = false;
   }
 
   /** @internal */
@@ -315,7 +315,7 @@ export class FormGroupDirective extends ControlContainer implements Form, OnChan
         // directive instance is being removed (invoked from `FormControlName.ngOnDestroy`).
         if (isFormControl(newCtrl)) {
           setUpControl(newCtrl, dir, this.callSetDisabledState);
-          (dir as Writable<FormControlName>).control = newCtrl;
+          (dir as {control: FormControl}).control = newCtrl;
         }
       }
     });

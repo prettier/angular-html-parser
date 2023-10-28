@@ -13,10 +13,6 @@
             "component.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "local compile"
       ]
     },
     {

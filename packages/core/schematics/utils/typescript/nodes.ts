@@ -10,8 +10,7 @@ import ts from 'typescript';
 
 /** Checks whether the given TypeScript node has the specified modifier set. */
 export function hasModifier(node: ts.Node, modifierKind: ts.SyntaxKind) {
-  return ts.canHaveModifiers(node) && !!node.modifiers &&
-      node.modifiers.some(m => m.kind === modifierKind);
+  return !!node.modifiers && node.modifiers.some(m => m.kind === modifierKind);
 }
 
 /** Find the closest parent node of a particular kind. */

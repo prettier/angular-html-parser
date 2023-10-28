@@ -29,10 +29,10 @@ export class AnimationEngine {
   public onRemovalComplete = (element: any, context: any) => {};
 
   constructor(
-      doc: Document, private _driver: AnimationDriver,
+      private bodyNode: any, private _driver: AnimationDriver,
       private _normalizer: AnimationStyleNormalizer) {
-    this._transitionEngine = new TransitionAnimationEngine(doc.body, _driver, _normalizer);
-    this._timelineEngine = new TimelineAnimationEngine(doc.body, _driver, _normalizer);
+    this._transitionEngine = new TransitionAnimationEngine(bodyNode, _driver, _normalizer);
+    this._timelineEngine = new TimelineAnimationEngine(bodyNode, _driver, _normalizer);
 
     this._transitionEngine.onRemovalComplete = (element: any, context: any) =>
         this.onRemovalComplete(element, context);
@@ -72,8 +72,8 @@ export class AnimationEngine {
     this._transitionEngine.insertNode(namespaceId, element, parent, insertBefore);
   }
 
-  onRemove(namespaceId: string, element: any, context: any): void {
-    this._transitionEngine.removeNode(namespaceId, element, context);
+  onRemove(namespaceId: string, element: any, context: any, isHostElement?: boolean): void {
+    this._transitionEngine.removeNode(namespaceId, element, isHostElement || false, context);
   }
 
   disableAnimations(element: any, disable: boolean) {
@@ -106,17 +106,11 @@ export class AnimationEngine {
   }
 
   get players(): AnimationPlayer[] {
-    return [
-      ...this._transitionEngine.players,
-      ...this._timelineEngine.players,
-    ];
+    return (this._transitionEngine.players as AnimationPlayer[])
+        .concat(this._timelineEngine.players as AnimationPlayer[]);
   }
 
   whenRenderingDone(): Promise<any> {
     return this._transitionEngine.whenRenderingDone();
-  }
-
-  afterFlushAnimationsDone(cb: VoidFunction): void {
-    this._transitionEngine.afterFlushAnimationsDone(cb);
   }
 }

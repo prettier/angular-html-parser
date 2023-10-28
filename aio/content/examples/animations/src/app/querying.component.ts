@@ -13,10 +13,8 @@ import {
 } from '@angular/animations';
 
 import { HEROES } from './mock-heroes';
-import { NgIf } from '@angular/common';
 
 @Component({
-  standalone: true,
   selector: 'app-querying',
   template: `
     <nav>
@@ -33,7 +31,6 @@ import { NgIf } from '@angular/common';
     </section>
   `,
   styleUrls: ['./querying.component.css'],
-  imports: [NgIf],
   animations: [
     trigger('query', [
       transition(':enter', [
@@ -69,9 +66,9 @@ import { NgIf } from '@angular/common';
     ]),
     trigger('animateMe', [
       transition('* <=> *', animate('500ms cubic-bezier(.68,-0.73,.26,1.65)', keyframes([
-        style({ backgroundColor: 'transparent', color: '*', offset: 0 }),
-        style({ backgroundColor: 'blue', color: 'white', offset: 0.2 }),
-        style({ backgroundColor: 'transparent', color: '*', offset: 1 })
+        style({ backgroundColor: "transparent", color: '*', offset: 0 }),
+        style({ backgroundColor: "blue", color: 'white', offset: 0.2 }),
+        style({ backgroundColor: "transparent", color: '*', offset: 1 })
       ])))
     ]),
   ]

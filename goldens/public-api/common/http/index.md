@@ -11,20 +11,10 @@ import { InjectionToken } from '@angular/core';
 import { ModuleWithProviders } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Provider } from '@angular/core';
-import { XhrFactory } from '@angular/common';
+import { XhrFactory as XhrFactory_2 } from '@angular/common';
 
 // @public
-export class FetchBackend implements HttpBackend {
-    // (undocumented)
-    handle(request: HttpRequest<any>): Observable<HttpEvent<any>>;
-    // (undocumented)
-    static ɵfac: i0.ɵɵFactoryDeclaration<FetchBackend, never>;
-    // (undocumented)
-    static ɵprov: i0.ɵɵInjectableDeclaration<FetchBackend>;
-}
-
-// @public
-export const HTTP_INTERCEPTORS: InjectionToken<readonly HttpInterceptor[]>;
+export const HTTP_INTERCEPTORS: InjectionToken<HttpInterceptor[]>;
 
 // @public
 export abstract class HttpBackend implements HttpHandler {
@@ -257,9 +247,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<ArrayBuffer>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -273,9 +260,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Blob>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -289,9 +273,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<string>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -305,9 +286,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<ArrayBuffer>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -321,9 +299,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Blob>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -337,9 +312,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<string>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -353,9 +325,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Object>>;
     get<T>(url: string, options: {
         headers?: HttpHeaders | {
@@ -369,9 +338,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<T>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -385,9 +351,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<ArrayBuffer>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -401,9 +364,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Blob>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -417,9 +377,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<string>>;
     get(url: string, options: {
         headers?: HttpHeaders | {
@@ -433,9 +390,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Object>>;
     get<T>(url: string, options: {
         headers?: HttpHeaders | {
@@ -449,9 +403,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<T>>;
     get(url: string, options?: {
         headers?: HttpHeaders | {
@@ -465,9 +416,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Object>;
     get<T>(url: string, options?: {
         headers?: HttpHeaders | {
@@ -481,9 +429,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<T>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -497,9 +442,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<ArrayBuffer>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -513,9 +455,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Blob>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -529,9 +468,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<string>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -545,9 +481,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<ArrayBuffer>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -561,9 +494,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Blob>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -577,9 +507,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<string>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -593,9 +520,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Object>>;
     head<T>(url: string, options: {
         headers?: HttpHeaders | {
@@ -609,9 +533,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<T>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -625,9 +546,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<ArrayBuffer>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -641,9 +559,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Blob>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -657,9 +572,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<string>>;
     head(url: string, options: {
         headers?: HttpHeaders | {
@@ -673,9 +585,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Object>>;
     head<T>(url: string, options: {
         headers?: HttpHeaders | {
@@ -689,9 +598,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<T>>;
     head(url: string, options?: {
         headers?: HttpHeaders | {
@@ -705,9 +611,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Object>;
     head<T>(url: string, options?: {
         headers?: HttpHeaders | {
@@ -721,9 +624,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<T>;
     jsonp(url: string, callbackParam: string): Observable<Object>;
     jsonp<T>(url: string, callbackParam: string): Observable<T>;
@@ -1129,9 +1029,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<ArrayBuffer>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1145,9 +1042,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Blob>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1161,9 +1055,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<string>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1177,9 +1068,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<ArrayBuffer>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1193,9 +1081,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Blob>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1209,9 +1094,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<string>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1225,9 +1107,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Object>>;
     post<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1241,9 +1120,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<T>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1257,9 +1133,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<ArrayBuffer>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1273,9 +1146,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Blob>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1289,9 +1159,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<string>>;
     post(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1305,9 +1172,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Object>>;
     post<T>(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1321,9 +1185,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<T>>;
     post(url: string, body: any | null, options?: {
         headers?: HttpHeaders | {
@@ -1337,9 +1198,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Object>;
     post<T>(url: string, body: any | null, options?: {
         headers?: HttpHeaders | {
@@ -1353,9 +1211,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<T>;
     put(url: string, body: any | null, options: {
         headers?: HttpHeaders | {
@@ -1566,9 +1421,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<ArrayBuffer>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1583,9 +1435,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Blob>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1600,9 +1449,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<string>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1617,9 +1463,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<ArrayBuffer>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1634,9 +1477,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<Blob>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1651,9 +1491,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<string>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1668,9 +1505,6 @@ export class HttpClient {
         };
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<any>>;
     request<R>(method: string, url: string, options: {
         body?: any;
@@ -1685,9 +1519,6 @@ export class HttpClient {
         };
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpEvent<R>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1702,9 +1533,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'arraybuffer';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<ArrayBuffer>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1719,9 +1547,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'blob';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<Blob>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1736,9 +1561,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType: 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<string>>;
     request(method: string, url: string, options: {
         body?: any;
@@ -1767,9 +1589,6 @@ export class HttpClient {
         };
         responseType?: 'json';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<HttpResponse<R>>;
     request(method: string, url: string, options?: {
         body?: any;
@@ -1784,9 +1603,6 @@ export class HttpClient {
         responseType?: 'json';
         reportProgress?: boolean;
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<Object>;
     request<R>(method: string, url: string, options?: {
         body?: any;
@@ -1801,9 +1617,6 @@ export class HttpClient {
         responseType?: 'json';
         reportProgress?: boolean;
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<R>;
     request(method: string, url: string, options?: {
         body?: any;
@@ -1818,9 +1631,6 @@ export class HttpClient {
         reportProgress?: boolean;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     }): Observable<any>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<HttpClient, never>;
@@ -1931,8 +1741,6 @@ export enum HttpFeatureKind {
     // (undocumented)
     CustomXsrfConfiguration = 2,
     // (undocumented)
-    Fetch = 6,
-    // (undocumented)
     Interceptors = 0,
     // (undocumented)
     JsonpSupport = 4,
@@ -1974,8 +1782,8 @@ export class HttpHeaderResponse extends HttpResponseBase {
 // @public
 export class HttpHeaders {
     constructor(headers?: string | {
-        [name: string]: string | number | (string | number)[];
-    } | Headers);
+        [name: string]: string | string[];
+    });
     append(name: string, value: string | string[]): HttpHeaders;
     delete(name: string, value?: string | string[]): HttpHeaders;
     get(name: string): string | null;
@@ -2039,18 +1847,7 @@ export interface HttpProgressEvent {
 
 // @public
 export class HttpRequest<T> {
-    constructor(method: 'GET' | 'HEAD', url: string, init?: {
-        headers?: HttpHeaders;
-        context?: HttpContext;
-        reportProgress?: boolean;
-        params?: HttpParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
-        withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
-    });
-    constructor(method: 'DELETE' | 'JSONP' | 'OPTIONS', url: string, init?: {
+    constructor(method: 'DELETE' | 'GET' | 'HEAD' | 'JSONP' | 'OPTIONS', url: string, init?: {
         headers?: HttpHeaders;
         context?: HttpContext;
         reportProgress?: boolean;
@@ -2058,18 +1855,7 @@ export class HttpRequest<T> {
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
         withCredentials?: boolean;
     });
-    constructor(method: 'POST', url: string, body: T | null, init?: {
-        headers?: HttpHeaders;
-        context?: HttpContext;
-        reportProgress?: boolean;
-        params?: HttpParams;
-        responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
-        withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
-    });
-    constructor(method: 'PUT' | 'PATCH', url: string, body: T | null, init?: {
+    constructor(method: 'POST' | 'PUT' | 'PATCH', url: string, body: T | null, init?: {
         headers?: HttpHeaders;
         context?: HttpContext;
         reportProgress?: boolean;
@@ -2084,9 +1870,6 @@ export class HttpRequest<T> {
         params?: HttpParams;
         responseType?: 'arraybuffer' | 'blob' | 'json' | 'text';
         withCredentials?: boolean;
-        transferCache?: {
-            includeHeaders?: string[];
-        } | boolean;
     });
     readonly body: T | null;
     // (undocumented)
@@ -2134,10 +1917,7 @@ export class HttpRequest<T> {
     readonly params: HttpParams;
     readonly reportProgress: boolean;
     readonly responseType: 'arraybuffer' | 'blob' | 'json' | 'text';
-    serializeBody(): ArrayBuffer | Blob | FormData | URLSearchParams | string | null;
-    readonly transferCache?: {
-        includeHeaders?: string[];
-    } | boolean;
+    serializeBody(): ArrayBuffer | Blob | FormData | string | null;
     // (undocumented)
     readonly url: string;
     readonly urlWithParams: string;
@@ -2328,13 +2108,6 @@ export const enum HttpStatusCode {
 }
 
 // @public
-export type HttpTransferCacheOptions = {
-    includeHeaders?: string[];
-    filter?: (req: HttpRequest<unknown>) => boolean;
-    includePostRequests?: boolean;
-};
-
-// @public
 export interface HttpUploadProgressEvent extends HttpProgressEvent {
     // (undocumented)
     type: HttpEventType.UploadProgress;
@@ -2356,7 +2129,7 @@ export interface HttpUserEvent<T> {
 
 // @public
 export class HttpXhrBackend implements HttpBackend {
-    constructor(xhrFactory: XhrFactory);
+    constructor(xhrFactory: XhrFactory_2);
     handle(req: HttpRequest<any>): Observable<HttpEvent<any>>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<HttpXhrBackend, never>;
@@ -2393,9 +2166,6 @@ export class JsonpInterceptor {
 export function provideHttpClient(...features: HttpFeature<HttpFeatureKind>[]): EnvironmentProviders;
 
 // @public
-export function withFetch(): HttpFeature<HttpFeatureKind.Fetch>;
-
-// @public
 export function withInterceptors(interceptorFns: HttpInterceptorFn[]): HttpFeature<HttpFeatureKind.Interceptors>;
 
 // @public
@@ -2415,6 +2185,12 @@ export function withXsrfConfiguration({ cookieName, headerName }: {
     cookieName?: string;
     headerName?: string;
 }): HttpFeature<HttpFeatureKind.CustomXsrfConfiguration>;
+
+// @public @deprecated
+export type XhrFactory = XhrFactory_2;
+
+// @public @deprecated
+export const XhrFactory: typeof XhrFactory_2;
 
 // (No @packageDocumentation comment for this package)
 

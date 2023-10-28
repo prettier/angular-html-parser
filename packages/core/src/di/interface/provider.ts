@@ -153,7 +153,7 @@ export interface ConstructorProvider extends ConstructorSansProvider {
 /**
  * Configures the `Injector` to return a value of another `useExisting` token.
  *
- * @see {@link ExistingProvider}
+ * @see `ExistingProvider`
  * @see ["Dependency Injection Guide"](guide/dependency-injection).
  *
  * @publicApi
@@ -196,7 +196,7 @@ export interface ExistingProvider extends ExistingSansProvider {
 /**
  * Configures the `Injector` to return a value by invoking a `useFactory` function.
  *
- * @see {@link FactoryProvider}
+ * @see `FactoryProvider`
  * @see ["Dependency Injection Guide"](guide/dependency-injection).
  *
  * @publicApi
@@ -250,7 +250,7 @@ export interface FactoryProvider extends FactorySansProvider {
  * Describes how an `Injector` should be configured as static (that is, without reflection).
  * A static provider provides tokens to an injector for various types of dependencies.
  *
- * @see {@link Injector.create()}
+ * @see `Injector.create()`.
  * @see ["Dependency Injection Guide"](guide/dependency-injection-providers).
  *
  * @publicApi
@@ -325,7 +325,7 @@ export interface ClassProvider extends ClassSansProvider {
  * Describes how the `Injector` should be configured.
  * @see ["Dependency Injection Guide"](guide/dependency-injection).
  *
- * @see {@link StaticProvider}
+ * @see `StaticProvider`
  *
  * @publicApi
  */
@@ -342,8 +342,8 @@ export type Provider = TypeProvider|ValueProvider|ClassProvider|ConstructorProvi
  *
  * This wrapper type prevents access to the `Provider`s inside.
  *
- * @see {@link makeEnvironmentProviders}
- * @see {@link importProvidersFrom}
+ * @see `makeEnvironmentProviders`
+ * @see `importProvidersFrom`
  *
  * @publicApi
  */
@@ -397,7 +397,7 @@ export interface ModuleWithProviders<T> {
  * This type cannot be directly implemented. It's returned from the `importProvidersFrom` function
  * and serves to prevent the extracted NgModule providers from being used in the wrong contexts.
  *
- * @see {@link importProvidersFrom}
+ * @see `importProvidersFrom`
  *
  * @publicApi
  * @deprecated replaced by `EnvironmentProviders`

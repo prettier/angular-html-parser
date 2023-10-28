@@ -1,27 +1,11 @@
-import {Component} from '@angular/core';
-import {CommonModule} from '@angular/common';
-import {FormsModule} from '@angular/forms';
+import { Component } from '@angular/core';
 
-import {heroSwitchComponents} from './hero-switch.components';
-import {HeroComponent} from './hero.component';
-import {UnlessDirective} from './unless.directive';
-import {TrigonometryDirective} from './trigonometry.directive';
-
-import {Hero, heroes} from './hero';
+import { Hero, heroes } from './hero';
 
 @Component({
-  standalone: true,
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css'],
-  imports: [
-    CommonModule,
-    FormsModule,
-    heroSwitchComponents,
-    HeroComponent,
-    UnlessDirective,
-    TrigonometryDirective,
-  ],
+  styleUrls: [ './app.component.css' ]
 })
 export class AppComponent {
   heroes = heroes;
@@ -33,7 +17,5 @@ export class AppComponent {
   showSad = true;
   status = 'ready';
 
-  trackById(index: number, hero: Hero): number {
-    return hero.id;
-  }
+  trackById(index: number, hero: Hero): number { return hero.id; }
 }

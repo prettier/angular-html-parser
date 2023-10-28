@@ -7,18 +7,20 @@
  */
 
 import ts from 'typescript';
+import type {TsickleHost, EmitResult as TsickleEmitResult} from 'tsickle';
 import yargs from 'yargs';
-
 import {exitCodeFromResult, formatDiagnostics, ParsedConfiguration, performCompilation, readConfiguration} from './perform_compile';
 import {createPerformWatchHost, performWatchCompilation} from './perform_watch';
 import * as api from './transformers/api';
+
+type TsickleModule = typeof import('tsickle');
 
 export function main(
     args: string[], consoleError: (s: string) => void = console.error,
     config?: NgcParsedConfiguration, customTransformers?: api.CustomTransformers, programReuse?: {
       program: api.Program|undefined,
     },
-    modifiedResourceFiles?: Set<string>|null): number {
+    modifiedResourceFiles?: Set<string>|null, tsickle?: TsickleModule): number {
   let {project, rootNames, options, errors: configErrors, watch, emitFlags} =
       config || readNgcCommandLineAndConfiguration(args);
   if (configErrors.length) {
@@ -34,8 +36,15 @@ export function main(
     oldProgram = programReuse.program;
   }
 
-  const {diagnostics: compileDiags, program} = performCompilation(
-      {rootNames, options, emitFlags, oldProgram, customTransformers, modifiedResourceFiles});
+  const {diagnostics: compileDiags, program} = performCompilation({
+    rootNames,
+    options,
+    emitFlags,
+    oldProgram,
+    emitCallback: createEmitCallback(options, tsickle),
+    customTransformers,
+    modifiedResourceFiles
+  });
   if (programReuse !== undefined) {
     programReuse.program = program;
   }
@@ -44,7 +53,8 @@ export function main(
 
 export function mainDiagnosticsForTest(
     args: string[], config?: NgcParsedConfiguration,
-    programReuse?: {program: api.Program|undefined}, modifiedResourceFiles?: Set<string>|null): {
+    programReuse?: {program: api.Program|undefined}, modifiedResourceFiles?: Set<string>|null,
+    tsickle?: TsickleModule): {
   exitCode: number,
   diagnostics: ReadonlyArray<ts.Diagnostic>,
 } {
@@ -68,6 +78,7 @@ export function mainDiagnosticsForTest(
     emitFlags,
     oldProgram,
     modifiedResourceFiles,
+    emitCallback: createEmitCallback(options, tsickle),
   });
 
   if (programReuse !== undefined) {
@@ -78,6 +89,56 @@ export function mainDiagnosticsForTest(
     exitCode: exitCodeFromResult(compileDiags),
     diagnostics: compileDiags,
   };
+}
+
+function createEmitCallback(options: api.CompilerOptions, tsickle?: TsickleModule):
+    api.TsEmitCallback<TsickleEmitResult>|undefined {
+  if (!options.annotateForClosureCompiler) {
+    return undefined;
+  }
+  if (tsickle == undefined) {
+    throw Error('Tsickle is not provided but `annotateForClosureCompiler` is enabled.');
+  }
+  const tsickleHost: Pick<
+      TsickleHost,
+      'shouldSkipTsickleProcessing'|'pathToModuleName'|'shouldIgnoreWarningsForPath'|
+      'fileNameToModuleId'|'googmodule'|'untyped'|'convertIndexImportShorthand'|
+      'transformDecorators'|'transformTypesToClosure'|'generateExtraSuppressions'|
+      'rootDirsRelative'> = {
+    shouldSkipTsickleProcessing: (fileName) => fileName.endsWith('.d.ts'),
+    pathToModuleName: (context, importPath) => '',
+    shouldIgnoreWarningsForPath: (filePath) => false,
+    fileNameToModuleId: (fileName) => fileName,
+    googmodule: false,
+    untyped: true,
+    convertIndexImportShorthand: false,
+    // Decorators are transformed as part of the Angular compiler programs. To avoid
+    // conflicts, we disable decorator transformations for tsickle.
+    transformDecorators: false,
+    transformTypesToClosure: true,
+    generateExtraSuppressions: true,
+    // Only used by the http://go/tsjs-migration-independent-javascript-imports migration in
+    // tsickle. This migration is not relevant externally and is only enabled when users
+    // would explicitly invoke `goog.tsMigrationExportsShim` (which is internal-only).
+    rootDirsRelative: (fileName) => fileName,
+  };
+
+  return ({
+           program,
+           targetSourceFile,
+           writeFile,
+           cancellationToken,
+           emitOnlyDtsFiles,
+           customTransformers = {},
+           host,
+           options
+         }) =>
+             tsickle.emitWithTsickle(
+                 program, {...tsickleHost, options, moduleResolutionHost: host}, host, options,
+                 targetSourceFile, writeFile, cancellationToken, emitOnlyDtsFiles, {
+                   beforeTs: customTransformers.before,
+                   afterTs: customTransformers.after,
+                 });
 }
 
 export interface NgcParsedConfiguration extends ParsedConfiguration {
@@ -177,7 +238,7 @@ export function watchMode(
     project: string, options: api.CompilerOptions, consoleError: (s: string) => void) {
   return performWatchCompilation(createPerformWatchHost(project, diagnostics => {
     printDiagnostics(diagnostics, options, consoleError);
-  }, options, undefined));
+  }, options, options => createEmitCallback(options)));
 }
 
 function printDiagnostics(

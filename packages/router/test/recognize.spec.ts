@@ -11,7 +11,6 @@ import {TestBed} from '@angular/core/testing';
 
 import {Routes} from '../src/models';
 import {Recognizer} from '../src/recognize';
-import {RouterConfigLoader} from '../src/router_config_loader';
 import {ActivatedRouteSnapshot, RouterStateSnapshot} from '../src/router_state';
 import {Params, PRIMARY_OUTLET} from '../src/shared';
 import {DefaultUrlSerializer, UrlTree} from '../src/url_tree';
@@ -53,13 +52,59 @@ describe('recognize', async () => {
         ],
         'a(left:b//right:c)');
     expect(s.root.url.toString()).toEqual(url.root.toString());
+    expect((s.root as any)._lastPathIndex).toBe(-1);
 
     const c = s.root.children;
     expect(c[0].url.toString()).toEqual(url.root.children[PRIMARY_OUTLET].toString());
+    expect((c[0] as any)._lastPathIndex).toBe(0);
 
     expect(c[1].url.toString()).toEqual(url.root.children['left'].toString());
+    expect((c[1] as any)._lastPathIndex).toBe(0);
 
     expect(c[2].url.toString()).toEqual(url.root.children['right'].toString());
+    expect((c[2] as any)._lastPathIndex).toBe(0);
+  });
+
+  it('should set url segment and index properly (nested case)', async () => {
+    const url = tree('a/b/c');
+    const s = await recognize(
+        [
+          {path: 'a/b', component: ComponentA, children: [{path: 'c', component: ComponentC}]},
+        ],
+        'a/b/c');
+    expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+    expect((s.root as any)._lastPathIndex).toBe(-1);
+
+    const compA = s.root.firstChild!;
+    expect((compA as any)._urlSegment.toString())
+        .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+    expect((compA as any)._lastPathIndex).toBe(1);
+
+    const compC = compA.firstChild!;
+    expect((compC as any)._urlSegment.toString())
+        .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+    expect((compC as any)._lastPathIndex).toBe(2);
+  });
+
+  it('should set url segment and index properly (wildcard)', async () => {
+    const url = tree('a/b/c');
+    const s = await recognize(
+        [
+          {path: 'a', component: ComponentA, children: [{path: '**', component: ComponentB}]},
+        ],
+        'a/b/c');
+    expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+    expect((s.root as any)._lastPathIndex).toBe(-1);
+
+    const compA = s.root.firstChild!;
+    expect((compA as any)._urlSegment.toString())
+        .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+    expect((compA as any)._lastPathIndex).toBe(0);
+
+    const compC = compA.firstChild!;
+    expect((compC as any)._urlSegment.toString())
+        .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+    expect((compC as any)._lastPathIndex).toBe(2);
   });
 
   it('should match routes in the depth first order', async () => {
@@ -166,19 +211,6 @@ describe('recognize', async () => {
       expect(r.data).toEqual({two: 2});
     });
 
-    it('should not inherit route\'s data if it has loadComponent', async () => {
-      const s = await recognize(
-          [{
-            path: 'a',
-            loadComponent: () => ComponentA,
-            data: {one: 1},
-            children: [{path: 'b', data: {two: 2}, component: ComponentB}]
-          }],
-          'a/b');
-      const r: ActivatedRouteSnapshot = s.root.firstChild!.firstChild!;
-      expect(r.data).toEqual({two: 2});
-    });
-
     it('should inherit route\'s data if paramsInheritanceStrategy is \'always\'', async () => {
       const s = await recognize(
           [{
@@ -217,6 +249,22 @@ describe('recognize', async () => {
             [{path: '', component: ComponentA, children: [{path: '', component: ComponentB}]}], '');
         checkActivatedRoute(s.root.firstChild!, '', {}, ComponentA);
         checkActivatedRoute(s.root.firstChild!.firstChild!, '', {}, ComponentB);
+      });
+
+      it('should set url segment and index properly', async () => {
+        const url = tree('') as any;
+        const s = await recognize(
+            [{path: '', component: ComponentA, children: [{path: '', component: ComponentB}]}], '');
+        expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+        expect((s.root as any)._lastPathIndex).toBe(-1);
+
+        const c = s.root.firstChild!;
+        expect((c as any)._urlSegment.toString()).toEqual(url.root.toString());
+        expect((c as any)._lastPathIndex).toBe(-1);
+
+        const c2 = s.root.firstChild!.firstChild!;
+        expect((c2 as any)._urlSegment.toString()).toEqual(url.root.toString());
+        expect((c2 as any)._lastPathIndex).toBe(-1);
       });
 
       it('should inherit params', async () => {
@@ -301,6 +349,129 @@ describe('recognize', async () => {
         expect(c.length).toEqual(1);
         checkActivatedRoute(c[0], 'b', {}, ComponentB);
       });
+
+      it('should set url segment and index properly', async () => {
+        const url = tree('a/b') as any;
+        const s = await recognize(
+            [{
+              path: 'a',
+              component: ComponentA,
+              children: [
+                {path: 'b', component: ComponentB}, {path: '', component: ComponentC, outlet: 'aux'}
+              ]
+            }],
+            'a/b');
+        expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+        expect((s.root as any)._lastPathIndex).toBe(-1);
+
+        const a = s.root.firstChild!;
+        expect((a as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((a as any)._lastPathIndex).toBe(0);
+
+        const b = a.firstChild!;
+        expect((b as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((b as any)._lastPathIndex).toBe(1);
+
+        const c = a.children[1];
+        expect((c as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((c as any)._lastPathIndex).toBe(0);
+      });
+
+      it('should set url segment and index properly when nested empty-path segments', async () => {
+        const url = tree('a') as any;
+        const s = await recognize(
+            [{
+              path: 'a',
+              children:
+                  [{path: '', component: ComponentB, children: [{path: '', component: ComponentC}]}]
+            }],
+            'a');
+        expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+        expect((s.root as any)._lastPathIndex).toBe(-1);
+
+        const a = s.root.firstChild!;
+        expect((a as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((a as any)._lastPathIndex).toBe(0);
+
+        const b = a.firstChild!;
+        expect((b as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((b as any)._lastPathIndex).toBe(0);
+
+        const c = b.firstChild!;
+        expect((c as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((c as any)._lastPathIndex).toBe(0);
+      });
+
+      it('should set url segment and index properly for nested empty-path segments', async () => {
+        const url = tree('a/b');
+        const s = await recognize(
+            [{
+              path: 'a',
+              children: [{
+                path: 'b',
+                component: ComponentB,
+                children: [
+                  {path: '', component: ComponentC, children: [{path: '', component: ComponentD}]}
+                ]
+              }]
+            }],
+            'a/b', 'emptyOnly');
+        expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+        expect((s.root as any)._lastPathIndex).toBe(-1);
+
+        const a = s.root.firstChild!;
+        expect((a as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((a as any)._lastPathIndex).toBe(0);
+
+        const b = a.firstChild!;
+        expect((b as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((b as any)._lastPathIndex).toBe(1);
+
+        const c = b.firstChild!;
+        expect((c as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((c as any)._lastPathIndex).toBe(1);
+
+        const d = c.firstChild!;
+        expect((d as any)._urlSegment.toString())
+            .toEqual(url.root.children[PRIMARY_OUTLET].toString());
+        expect((d as any)._lastPathIndex).toBe(1);
+      });
+
+      it('should set url segment and index properly when nested empty-path segments (2)',
+         async () => {
+           const url = tree('');
+           const s = await recognize(
+               [{
+                 path: '',
+                 children: [
+                   {path: '', component: ComponentB, children: [{path: '', component: ComponentC}]}
+                 ]
+               }],
+               '');
+           expect((s.root as any)._urlSegment.toString()).toEqual(url.root.toString());
+           expect((s.root as any)._lastPathIndex).toBe(-1);
+
+           const a = s.root.firstChild!;
+           expect((a as any)._urlSegment.toString()).toEqual(url.root.toString());
+           expect((a as any)._lastPathIndex).toBe(-1);
+
+           const b = a.firstChild!;
+           expect((b as any)._urlSegment.toString()).toEqual(url.root.toString());
+           expect((b as any)._lastPathIndex).toBe(-1);
+
+           const c = b.firstChild!;
+           expect((c as any)._urlSegment.toString()).toEqual(url.root.toString());
+           expect((c as any)._lastPathIndex).toBe(-1);
+         });
     });
 
     describe('aux split at the end (no right child)', async () => {
@@ -474,21 +645,20 @@ describe('recognize', async () => {
 
       it('should not persist a primary segment beyond the boundary of a named outlet match',
          async () => {
-           const recognizePromise = new Recognizer(
-                                        TestBed.inject(EnvironmentInjector),
-                                        TestBed.inject(RouterConfigLoader), RootComponent,
-                                        [
-                                          {
-                                            path: '',
-                                            component: ComponentA,
-                                            outlet: 'a',
-                                            children: [{path: 'b', component: ComponentB}],
-                                          },
-                                        ],
-                                        tree('/b'), 'emptyOnly', new DefaultUrlSerializer())
-                                        .recognize()
-                                        .toPromise();
-           await expectAsync(recognizePromise).toBeRejected();
+           const s = await new Recognizer(
+                         TestBed.inject(EnvironmentInjector), RootComponent,
+                         [
+                           {
+                             path: '',
+                             component: ComponentA,
+                             outlet: 'a',
+                             children: [{path: 'b', component: ComponentB}],
+                           },
+                         ],
+                         tree('/b'), '/b', 'emptyOnly', new DefaultUrlSerializer())
+                         .recognize()
+                         .toPromise();
+           expect(s).toBeNull();
          });
     });
   });
@@ -660,11 +830,12 @@ async function recognize(
     paramsInheritanceStrategy: 'emptyOnly'|'always' = 'emptyOnly'): Promise<RouterStateSnapshot> {
   const serializer = new DefaultUrlSerializer();
   const result = await new Recognizer(
-                     TestBed.inject(EnvironmentInjector), TestBed.inject(RouterConfigLoader),
-                     RootComponent, config, tree(url), paramsInheritanceStrategy, serializer)
+                     TestBed.inject(EnvironmentInjector), RootComponent, config, tree(url), url,
+                     paramsInheritanceStrategy, serializer)
                      .recognize()
                      .toPromise();
-  return result.state;
+  expect(result).not.toBeNull();
+  return result!;
 }
 
 function checkActivatedRoute(

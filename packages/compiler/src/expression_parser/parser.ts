@@ -81,7 +81,6 @@ export class Parser {
     return checker.errors;
   }
 
-  // Host bindings parsed here
   parseSimpleBinding(
       input: string, location: string, absoluteOffset: number,
       interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG): ASTWithSource {
@@ -950,8 +949,7 @@ export class _ParseAST {
           values.push(new PropertyRead(
               span, sourceSpan, sourceSpan, new ImplicitReceiver(span, sourceSpan), key));
         }
-      } while (this.consumeOptionalCharacter(chars.$COMMA) &&
-               !this.next.isCharacter(chars.$RBRACE));
+      } while (this.consumeOptionalCharacter(chars.$COMMA));
       this.rbracesExpected--;
       this.expectCharacter(chars.$RBRACE);
     }

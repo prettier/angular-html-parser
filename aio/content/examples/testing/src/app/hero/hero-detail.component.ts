@@ -1,37 +1,33 @@
 // #docplaster
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 
 import { Hero } from '../model/hero';
-import { sharedImports } from '../shared/shared';
-
 import { HeroDetailService } from './hero-detail.service';
 
 // #docregion prototype
 @Component({
-  standalone: true,
-  selector: 'app-hero-detail',
+  selector:    'app-hero-detail',
   templateUrl: './hero-detail.component.html',
-  styleUrls: ['./hero-detail.component.css'],
-  providers: [HeroDetailService],
-  imports: [sharedImports, RouterLink],
+  styleUrls:  ['./hero-detail.component.css' ],
+  providers:  [ HeroDetailService ]
 })
 export class HeroDetailComponent implements OnInit {
   // #docregion ctor
   constructor(
     private heroDetailService: HeroDetailService,
     private route: ActivatedRoute,
-    private router: Router,
-  ) {}
+    private router: Router) {
+  }
   // #enddocregion ctor
-  // #enddocregion prototype
+// #enddocregion prototype
 
   hero!: Hero;
 
   // #docregion ng-on-init
   ngOnInit(): void {
     // get hero when `id` param changes
-    this.route.paramMap.subscribe((pmap) => this.getHero(pmap.get('id')));
+    this.route.paramMap.subscribe(pmap => this.getHero(pmap.get('id')));
   }
   // #enddocregion ng-on-init
 
@@ -42,7 +38,7 @@ export class HeroDetailComponent implements OnInit {
       return;
     }
 
-    this.heroDetailService.getHero(id).subscribe((hero) => {
+    this.heroDetailService.getHero(id).subscribe(hero => {
       if (hero) {
         this.hero = hero;
       } else {
@@ -55,13 +51,11 @@ export class HeroDetailComponent implements OnInit {
     this.heroDetailService.saveHero(this.hero).subscribe(() => this.gotoList());
   }
 
-  cancel() {
-    this.gotoList();
-  }
+  cancel() { this.gotoList(); }
 
   gotoList() {
-    this.router.navigate(['../'], { relativeTo: this.route });
+    this.router.navigate(['../'], {relativeTo: this.route});
   }
-  // #docregion prototype
+// #docregion prototype
 }
 // #enddocregion prototype

@@ -34,7 +34,6 @@ const templateC = `
   </div>`;
 
 @Component({
-  standalone: true,
   selector: 'carol',
   template: templateC
 })
@@ -48,7 +47,6 @@ export class CarolComponent {
 // #enddocregion carol-class
 
 @Component({
-  standalone: true,
   selector: 'chris',
   template: templateC
 })
@@ -63,7 +61,6 @@ export class ChrisComponent {
  */
 // #docregion craig
 @Component({
-  standalone: true,
   selector: 'craig',
   template: `
   <div class="c">
@@ -89,11 +86,9 @@ const templateB = `
   </div>`;
 
 @Component({
-  standalone: true,
   selector:   'barry',
   template:   templateB,
-  providers:  [{ provide: Parent, useExisting: forwardRef(() => BarryComponent) }],
-  imports: [CarolComponent, ChrisComponent]
+  providers:  [{ provide: Parent, useExisting: forwardRef(() => BarryComponent) }]
 })
 export class BarryComponent implements Parent {
   name = 'Barry';
@@ -104,11 +99,9 @@ export class BarryComponent implements Parent {
 // #enddocregion barry
 
 @Component({
-  standalone: true,
   selector:   'bob',
   template:   templateB,
-  providers:  [ provideParent(BobComponent) ],
-  imports: [CarolComponent, ChrisComponent]
+  providers:  [ provideParent(BobComponent) ]
 })
 export class BobComponent implements Parent {
   name = 'Bob';
@@ -116,41 +109,19 @@ export class BobComponent implements Parent {
 }
 
 @Component({
-  standalone: true,
   selector:   'beth',
   template:   templateB,
-  providers:  [ provideParent(BethComponent, DifferentParent) ],
-  imports: [CarolComponent, ChrisComponent]
+  providers:  [ provideParent(BethComponent, DifferentParent) ]
 })
 export class BethComponent implements Parent {
   name = 'Beth';
   constructor( @SkipSelf() @Optional() public parent?: Parent ) { }
 }
 
-//////  Cathy ///////////
-/**
- * Show we can inject a parent by component type
- */
-// #docregion cathy
-@Component({
-  standalone: true,
-  selector: 'cathy',
-  template: `
-  <div class="c">
-    <h3>Cathy</h3>
-    {{alex ? 'Found' : 'Did not find'}} Alex via the component class.<br>
-  </div>`
-})
-export class CathyComponent {
-  constructor( @Optional() public alex?: AlexComponent ) { }
-}
-// #enddocregion cathy
-
 ///////// A - Grandparent //////
 
 // #docregion alex-1
 @Component({
-  standalone: true,
   selector: 'alex',
   template: `
     <div class="a">
@@ -164,7 +135,6 @@ export class CathyComponent {
   providers: [{ provide: Parent, useExisting: forwardRef(() => AlexComponent) }],
 // #enddocregion alex-providers
 // #docregion alex-1
-  imports: [CathyComponent, CraigComponent, CarolComponent]
 })
 // #enddocregion alex-1
 // TODO: Add `... implements Parent` to class signature
@@ -180,7 +150,6 @@ export class AlexComponent extends Base
 /////
 
 @Component({
-  standalone: true,
   selector: 'alice',
   template: `
     <div class="a">
@@ -190,8 +159,7 @@ export class AlexComponent extends Base
       <bob></bob>
       <carol></carol>
     </div> `,
-  providers:  [ provideParent(AliceComponent) ],
-  imports: [BarryComponent, BethComponent, BobComponent, CarolComponent]
+  providers:  [ provideParent(AliceComponent) ]
 })
 // #docregion alice-class-signature
 export class AliceComponent implements Parent
@@ -200,14 +168,30 @@ export class AliceComponent implements Parent
   name = 'Alice';
 }
 
+//////  Cathy ///////////
+/**
+ * Show we can inject a parent by component type
+ */
+// #docregion cathy
+@Component({
+  selector: 'cathy',
+  template: `
+  <div class="c">
+    <h3>Cathy</h3>
+    {{alex ? 'Found' : 'Did not find'}} Alex via the component class.<br>
+  </div>`
+})
+export class CathyComponent {
+  constructor( @Optional() public alex?: AlexComponent ) { }
+}
+// #enddocregion cathy
+
 ///////// ParentFinder //////
 @Component({
-  standalone: true,
   selector: 'app-parent-finder',
   template: `
     <h2>Parent Finder</h2>
     <alex></alex>
-    <alice></alice>`,
-    imports: [AlexComponent, AliceComponent]
+    <alice></alice>`
 })
 export class ParentFinderComponent { }

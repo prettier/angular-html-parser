@@ -17,7 +17,6 @@ module.exports =
 
         // Register the processors
         .processor(require('./processors/mergeParameterInfo'))
-        .processor(require('./processors/processSeeTags'))
         .processor(require('./processors/processPseudoClasses'))
         .processor(require('./processors/convertPrivateClassesToInterfaces'))
         .processor(require('./processors/generateApiListDoc'))
@@ -38,9 +37,8 @@ module.exports =
         .processor(require('./processors/computeSearchTitle'))
         .processor(require('./processors/simplifyMemberAnchors'))
         .processor(require('./processors/computeStability'))
-        .processor(require('./processors/removeInjectableAndInternalConstructors'))
+        .processor(require('./processors/removeInjectableConstructors'))
         .processor(require('./processors/processSpecialElements'))
-        .processor(require('./processors/processBlocks'))
         .processor(require('./processors/collectPackageContentDocs'))
         .processor(require('./processors/processPackages'))
         .processor(require('./processors/processNgModuleDocs'))
@@ -55,7 +53,7 @@ module.exports =
          * more Angular specific API types, such as decorators and directives.
          */
         .factory(function API_DOC_TYPES_TO_RENDER(EXPORT_DOC_TYPES) {
-          return EXPORT_DOC_TYPES.concat(['decorator', 'directive', 'ngmodule', 'pipe', 'package', 'element', 'block']);
+          return EXPORT_DOC_TYPES.concat(['decorator', 'directive', 'ngmodule', 'pipe', 'package', 'element']);
         })
 
         /**
@@ -78,13 +76,12 @@ module.exports =
 
         .factory(require('./readers/package-content'))
         .factory(require('./readers/element'))
-        .factory(require('./readers/block'))
 
         // Where do we get the source files?
         .config(function(
             readTypeScriptModules, readFilesProcessor, collectExamples, tsParser,
-            packageContentFileReader, specialElementFileReader, blockFileReader) {
-          // Tell TypeScript how to load modules that start with `@angular`
+            packageContentFileReader, specialElementFileReader) {
+          // Tell TypeScript how to load modules that start with with `@angular`
           tsParser.options.paths = {'@angular/*': [API_SOURCE_PATH + '/*']};
           tsParser.options.baseUrl = '.';
 
@@ -105,7 +102,6 @@ module.exports =
             'common/upgrade/index.ts',
             'core/index.ts',
             'core/global/index.ts',
-            'core/rxjs-interop/index.ts',
             'core/testing/index.ts',
             'elements/index.ts',
             'forms/index.ts',
@@ -119,6 +115,8 @@ module.exports =
             'platform-server/index.ts',
             'platform-server/init/index.ts',
             'platform-server/testing/index.ts',
+            'platform-webworker/index.ts',
+            'platform-webworker-dynamic/index.ts',
             'router/index.ts',
             'router/testing/index.ts',
             'router/upgrade/index.ts',
@@ -129,8 +127,7 @@ module.exports =
           ];
 
           // Special elements and packages docs are not extracted directly from TS code.
-          readFilesProcessor.fileReaders.push(
-              packageContentFileReader, specialElementFileReader, blockFileReader);
+          readFilesProcessor.fileReaders.push(packageContentFileReader, specialElementFileReader);
           readFilesProcessor.sourceFiles = [
             {
               basePath: API_SOURCE_PATH,
@@ -141,11 +138,6 @@ module.exports =
               basePath: CONTENTS_PATH + '/special-elements',
               include: CONTENTS_PATH + '/special-elements/*/**/*.md',
               fileReader: 'specialElementFileReader'
-            },
-            {
-              basePath: CONTENTS_PATH + '/blocks',
-              include: CONTENTS_PATH + '/blocks/*/**/*.md',
-              fileReader: 'blockFileReader'
             },
             {
               basePath: API_SOURCE_PATH,
@@ -165,31 +157,11 @@ module.exports =
               // path should not have a suffix
               return doc.fileInfo.relativePath.replace(/\.\w*$/, '');
             },
-            getAliases(doc) {
-              return [doc.name, doc.id];
-            }
+            getAliases(doc) { return [doc.name, doc.id]; }
           });
 
           computePathsProcessor.pathTemplates.push({
             docTypes: ['element'],
-            pathTemplate: API_SEGMENT + '/${id}',
-            outputPathTemplate: '${path}.json'
-          });
-        })
-        .config(function(computeIdsProcessor, computePathsProcessor) {
-          computeIdsProcessor.idTemplates.push({
-            docTypes: ['block'],
-            getId(doc) {
-              // path should not have a suffix
-              return doc.fileInfo.relativePath.replace(/\.\w*$/, '');
-            },
-            getAliases(doc) {
-              return [doc.name, doc.id];
-            }
-          });
-
-          computePathsProcessor.pathTemplates.push({
-            docTypes: ['block'],
             pathTemplate: API_SEGMENT + '/${id}',
             outputPathTemplate: '${path}.json'
           });
@@ -209,7 +181,7 @@ module.exports =
             API_DOC_TYPES_TO_RENDER, API_DOC_TYPES) {
           computeStability.docTypes = API_DOC_TYPES_TO_RENDER;
           // Only split the description on the API docs
-          splitDescription.docTypes = API_DOC_TYPES.concat(['package-content', 'element', 'block']);
+          splitDescription.docTypes = API_DOC_TYPES.concat(['package-content', 'element']);
           addNotYetDocumentedProperty.docTypes = API_DOC_TYPES;
         })
 
@@ -217,10 +189,8 @@ module.exports =
           mergeDecoratorDocs.propertiesToMerge = [
             'shortDescription',
             'description',
-            'syntax',
             'security',
             'deprecated',
-            'experimental',
             'see',
             'usageNotes',
           ];

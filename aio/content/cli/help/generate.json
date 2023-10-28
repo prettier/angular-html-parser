@@ -50,9 +50,39 @@
       "shortDescription": "Generates an application shell for running a server-side version of an app.",
       "options": [
         {
+          "name": "app-id",
+          "type": "string",
+          "default": "serverApp",
+          "description": "The application ID to use in withServerTransition()."
+        },
+        {
+          "name": "main",
+          "type": "string",
+          "default": "main.server.ts",
+          "description": "The name of the main entry-point file."
+        },
+        {
           "name": "project",
           "type": "string",
           "description": "The name of the related client app."
+        },
+        {
+          "name": "root-module-class-name",
+          "type": "string",
+          "default": "AppServerModule",
+          "description": "The name of the root module class."
+        },
+        {
+          "name": "root-module-file-name",
+          "type": "string",
+          "default": "app.server.module.ts",
+          "description": "The name of the root module file"
+        },
+        {
+          "name": "route",
+          "type": "string",
+          "default": "shell",
+          "description": "Route path used to produce the application shell."
         }
       ],
       "aliases": [],
@@ -108,8 +138,8 @@
         {
           "name": "routing",
           "type": "boolean",
-          "default": true,
-          "description": "Creates an application with routing enabled."
+          "default": false,
+          "description": "Create a routing NgModule."
         },
         {
           "name": "skip-install",
@@ -131,18 +161,6 @@
           ],
           "default": false,
           "description": "Do not create \"spec.ts\" test files for the application."
-        },
-        {
-          "name": "ssr",
-          "type": "boolean",
-          "default": false,
-          "description": "Creates an application with Server-Side Rendering (SSR) and Static Site Generation (SSG/Prerendering) enabled."
-        },
-        {
-          "name": "standalone",
-          "type": "boolean",
-          "default": true,
-          "description": "Creates an application based upon the standalone API, without NgModules."
         },
         {
           "name": "strict",
@@ -321,7 +339,7 @@
         {
           "name": "standalone",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Whether the generated component is standalone."
         },
         {
@@ -450,7 +468,7 @@
         {
           "name": "standalone",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Whether the generated directive is standalone."
         }
       ],
@@ -514,7 +532,7 @@
         {
           "name": "functional",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Specifies whether to generate a guard as a function."
         },
         {
@@ -562,7 +580,7 @@
         {
           "name": "functional",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Creates the interceptor as a `HttpInterceptorFn`."
         },
         {
@@ -667,12 +685,6 @@
           "type": "boolean",
           "default": false,
           "description": "Do not update \"tsconfig.json\" to add a path mapping for the new library. The path mapping is needed to use the library in an app, but can be disabled here to simplify development."
-        },
-        {
-          "name": "standalone",
-          "type": "boolean",
-          "default": true,
-          "description": "Creates a library based upon the standalone API, without NgModules."
         }
       ],
       "aliases": [
@@ -788,7 +800,7 @@
         {
           "name": "standalone",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Whether the generated pipe is standalone."
         }
       ],
@@ -811,7 +823,7 @@
         {
           "name": "functional",
           "type": "boolean",
-          "default": true,
+          "default": false,
           "description": "Creates the resolver as a `ResolveFn`."
         },
         {

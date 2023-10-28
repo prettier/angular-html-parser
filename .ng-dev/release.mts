@@ -6,6 +6,7 @@ export const release: ReleaseConfig = {
   representativeNpmPackage: '@angular/core',
   npmPackages: [
     {name: '@angular/animations'},
+    {name: '@angular/bazel'},
     {name: '@angular/common'},
     {name: '@angular/compiler'},
     {name: '@angular/compiler-cli'},

@@ -6,12 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AST, BindingPipe, BindingType, BoundTarget, Call, DYNAMIC_TYPE, ImplicitReceiver, ParsedEventType, ParseSourceSpan, PropertyRead, PropertyWrite, SafeCall, SafePropertyRead, SchemaMetadata, ThisReceiver, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstBoundText, TmplAstDeferredBlock, TmplAstDeferredBlockTriggers, TmplAstElement, TmplAstForLoopBlock, TmplAstHoverDeferredTrigger, TmplAstIcu, TmplAstIfBlock, TmplAstIfBlockBranch, TmplAstInteractionDeferredTrigger, TmplAstNode, TmplAstReference, TmplAstSwitchBlock, TmplAstSwitchBlockCase, TmplAstTemplate, TmplAstTextAttribute, TmplAstVariable, TmplAstViewportDeferredTrigger, TransplantedType} from '@angular/compiler';
+import {AST, BindingPipe, BindingType, BoundTarget, Call, DYNAMIC_TYPE, ImplicitReceiver, ParsedEventType, ParseSourceSpan, PropertyRead, PropertyWrite, SafeCall, SafePropertyRead, SchemaMetadata, ThisReceiver, TmplAstBoundAttribute, TmplAstBoundEvent, TmplAstBoundText, TmplAstElement, TmplAstIcu, TmplAstNode, TmplAstReference, TmplAstTemplate, TmplAstTextAttribute, TmplAstVariable} from '@angular/compiler';
 import ts from 'typescript';
 
 import {Reference} from '../../imports';
-import {BindingPropertyName, ClassPropertyName} from '../../metadata';
+import {ClassPropertyName} from '../../metadata';
 import {ClassDeclaration} from '../../reflection';
+import {createFunctionDeclaration, createParameterDeclaration} from '../../ts_compatibility';
 import {TemplateId, TypeCheckableDirectiveMeta, TypeCheckBlockMetadata} from '../api';
 
 import {addExpressionIdentifier, ExpressionIdentifier, markIgnoreDiagnostics} from './comments';
@@ -85,7 +86,7 @@ export function generateTypeCheckBlock(
   const tcb = new Context(
       env, domSchemaChecker, oobRecorder, meta.id, meta.boundTarget, meta.pipes, meta.schemas,
       meta.isStandalone);
-  const scope = Scope.forNodes(tcb, null, null, tcb.boundTarget.target.template!, /* guard */ null);
+  const scope = Scope.forNodes(tcb, null, tcb.boundTarget.target.template!, /* guard */ null);
   const ctxRawType = env.referenceType(ref);
   if (!ts.isTypeReferenceNode(ctxRawType)) {
     throw new Error(
@@ -130,7 +131,7 @@ export function generateTypeCheckBlock(
   // the `ts.Printer` to format the type-check block nicely.
   const body = ts.factory.createBlock(
       [ts.factory.createIfStatement(ts.factory.createTrue(), innerBody, undefined)]);
-  const fnDecl = ts.factory.createFunctionDeclaration(
+  const fnDecl = createFunctionDeclaration(
       /* modifiers */ undefined,
       /* asteriskToken */ undefined,
       /* name */ name,
@@ -216,7 +217,7 @@ class TcbElementOp extends TcbOp {
  *
  * Executing this operation returns a reference to the variable variable (lol).
  */
-class TcbTemplateVariableOp extends TcbOp {
+class TcbVariableOp extends TcbOp {
   constructor(
       private tcb: Context, private scope: Scope, private template: TmplAstTemplate,
       private variable: TmplAstVariable) {
@@ -379,8 +380,7 @@ class TcbTemplateBodyOp extends TcbOp {
 
     // Create a new Scope for the template. This constructs the list of operations for the template
     // children, as well as tracks bindings within the template.
-    const tmplScope =
-        Scope.forNodes(this.tcb, this.scope, this.template, this.template.children, guard);
+    const tmplScope = Scope.forNodes(this.tcb, this.scope, this.template, guard);
 
     // Render the template's `Scope` into its statements.
     const statements = tmplScope.render();
@@ -408,12 +408,12 @@ class TcbTemplateBodyOp extends TcbOp {
 }
 
 /**
- * A `TcbOp` which renders an Angular expression (e.g. `{{foo() && bar.baz}}`).
+ * A `TcbOp` which renders a text binding (interpolation) into the TCB.
  *
  * Executing this operation returns nothing.
  */
-class TcbExpressionOp extends TcbOp {
-  constructor(private tcb: Context, private scope: Scope, private expression: AST) {
+class TcbTextInterpolationOp extends TcbOp {
+  constructor(private tcb: Context, private scope: Scope, private binding: TmplAstBoundText) {
     super();
   }
 
@@ -422,7 +422,7 @@ class TcbExpressionOp extends TcbOp {
   }
 
   override execute(): null {
-    const expr = tcbExpression(this.expression, this.tcb, this.scope);
+    const expr = tcbExpression(this.binding.value, this.tcb, this.scope);
     this.scope.addStatement(ts.factory.createExpressionStatement(expr));
     return null;
   }
@@ -634,32 +634,35 @@ class TcbDirectiveCtorOp extends TcbOp {
     addParseSpanInfo(id, this.node.startSourceSpan || this.node.sourceSpan);
 
     const genericInputs = new Map<string, TcbDirectiveInput>();
-    const boundAttrs = getBoundAttributes(this.dir, this.node);
 
-    for (const attr of boundAttrs) {
+    const inputs = getBoundInputs(this.dir, this.node, this.tcb);
+    for (const input of inputs) {
       // Skip text attributes if configured to do so.
       if (!this.tcb.env.config.checkTypeOfAttributes &&
-          attr.attribute instanceof TmplAstTextAttribute) {
+          input.attribute instanceof TmplAstTextAttribute) {
         continue;
       }
-      for (const {fieldName} of attr.inputs) {
+      for (const fieldName of input.fieldNames) {
         // Skip the field if an attribute has already been bound to it; we can't have a duplicate
         // key in the type constructor call.
         if (genericInputs.has(fieldName)) {
           continue;
         }
 
-        const expression = translateInput(attr.attribute, this.tcb, this.scope);
-        genericInputs.set(
-            fieldName,
-            {type: 'binding', field: fieldName, expression, sourceSpan: attr.attribute.sourceSpan});
+        const expression = translateInput(input.attribute, this.tcb, this.scope);
+        genericInputs.set(fieldName, {
+          type: 'binding',
+          field: fieldName,
+          expression,
+          sourceSpan: input.attribute.sourceSpan
+        });
       }
     }
 
     // Add unset directive inputs for each of the remaining unset fields.
-    for (const {classPropertyName} of this.dir.inputs) {
-      if (!genericInputs.has(classPropertyName)) {
-        genericInputs.set(classPropertyName, {type: 'unset', field: classPropertyName});
+    for (const [fieldName] of this.dir.inputs) {
+      if (!genericInputs.has(fieldName)) {
+        genericInputs.set(fieldName, {type: 'unset', field: fieldName});
       }
     }
 
@@ -698,43 +701,28 @@ class TcbDirectiveInputsOp extends TcbOp {
 
     // TODO(joost): report duplicate properties
 
-    const boundAttrs = getBoundAttributes(this.dir, this.node);
-    const seenRequiredInputs = new Set<ClassPropertyName>();
-
-    for (const attr of boundAttrs) {
+    const inputs = getBoundInputs(this.dir, this.node, this.tcb);
+    for (const input of inputs) {
       // For bound inputs, the property is assigned the binding expression.
-      const expr = widenBinding(translateInput(attr.attribute, this.tcb, this.scope), this.tcb);
+      const expr = widenBinding(translateInput(input.attribute, this.tcb, this.scope), this.tcb);
 
       let assignment: ts.Expression = wrapForDiagnostics(expr);
 
-      for (const {fieldName, required, transformType} of attr.inputs) {
+      for (const fieldName of input.fieldNames) {
         let target: ts.LeftHandSideExpression;
-
-        if (required) {
-          seenRequiredInputs.add(fieldName);
-        }
-
         if (this.dir.coercedInputFields.has(fieldName)) {
-          let type: ts.TypeNode;
-
-          if (transformType) {
-            type = this.tcb.env.referenceTransplantedType(new TransplantedType(transformType));
-          } else {
-            // The input has a coercion declaration which should be used instead of assigning the
-            // expression into the input field directly. To achieve this, a variable is declared
-            // with a type of `typeof Directive.ngAcceptInputType_fieldName` which is then used as
-            // target of the assignment.
-            const dirTypeRef: ts.TypeNode = this.tcb.env.referenceType(this.dir.ref);
-
-            if (!ts.isTypeReferenceNode(dirTypeRef)) {
-              throw new Error(
-                  `Expected TypeReferenceNode from reference to ${this.dir.ref.debugName}`);
-            }
-
-            type = tsCreateTypeQueryForCoercedInput(dirTypeRef.typeName, fieldName);
+          // The input has a coercion declaration which should be used instead of assigning the
+          // expression into the input field directly. To achieve this, a variable is declared
+          // with a type of `typeof Directive.ngAcceptInputType_fieldName` which is then used as
+          // target of the assignment.
+          const dirTypeRef = this.tcb.env.referenceType(this.dir.ref);
+          if (!ts.isTypeReferenceNode(dirTypeRef)) {
+            throw new Error(
+                `Expected TypeReferenceNode from reference to ${this.dir.ref.debugName}`);
           }
 
           const id = this.tcb.allocateId();
+          const type = tsCreateTypeQueryForCoercedInput(dirTypeRef.typeName, fieldName);
           this.scope.addStatement(tsDeclareVariable(id, type));
 
           target = id;
@@ -781,42 +769,25 @@ class TcbDirectiveInputsOp extends TcbOp {
                   dirId, ts.factory.createIdentifier(fieldName));
         }
 
-        if (attr.attribute.keySpan !== undefined) {
-          addParseSpanInfo(target, attr.attribute.keySpan);
+        if (input.attribute.keySpan !== undefined) {
+          addParseSpanInfo(target, input.attribute.keySpan);
         }
         // Finally the assignment is extended by assigning it into the target expression.
         assignment =
             ts.factory.createBinaryExpression(target, ts.SyntaxKind.EqualsToken, assignment);
       }
 
-      addParseSpanInfo(assignment, attr.attribute.sourceSpan);
+      addParseSpanInfo(assignment, input.attribute.sourceSpan);
       // Ignore diagnostics for text attributes if configured to do so.
       if (!this.tcb.env.config.checkTypeOfAttributes &&
-          attr.attribute instanceof TmplAstTextAttribute) {
+          input.attribute instanceof TmplAstTextAttribute) {
         markIgnoreDiagnostics(assignment);
       }
 
       this.scope.addStatement(ts.factory.createExpressionStatement(assignment));
     }
 
-    this.checkRequiredInputs(seenRequiredInputs);
-
     return null;
-  }
-
-  private checkRequiredInputs(seenRequiredInputs: Set<ClassPropertyName>): void {
-    const missing: BindingPropertyName[] = [];
-
-    for (const input of this.dir.inputs) {
-      if (input.required && !seenRequiredInputs.has(input.classPropertyName)) {
-        missing.push(input.bindingPropertyName);
-      }
-    }
-
-    if (missing.length > 0) {
-      this.tcb.oobRecorder.missingRequiredInputs(
-          this.tcb.id, this.node, this.dir.name, this.dir.isComponent, missing);
-    }
   }
 }
 
@@ -1153,315 +1124,6 @@ class TcbComponentContextCompletionOp extends TcbOp {
 }
 
 /**
- * A `TcbOp` which renders a variable defined inside of block syntax (e.g. `@if (expr; as var) {}`).
- *
- * Executing this operation returns the identifier which can be used to refer to the variable.
- */
-class TcbBlockVariableOp extends TcbOp {
-  constructor(
-      private tcb: Context, private scope: Scope, private initializer: ts.Expression,
-      private variable: TmplAstVariable) {
-    super();
-  }
-
-  override get optional() {
-    return false;
-  }
-
-  override execute(): ts.Identifier {
-    const id = this.tcb.allocateId();
-    addParseSpanInfo(id, this.variable.keySpan);
-    this.scope.addStatement(tsCreateVariable(id, this.initializer));
-    return id;
-  }
-}
-
-/**
- * A `TcbOp` which renders a variable that is implicitly available within a block (e.g. `$count`
- * in a `@for` block).
- *
- * Executing this operation returns the identifier which can be used to refer to the variable.
- */
-class TcbBlockImplicitVariableOp extends TcbOp {
-  constructor(
-      private tcb: Context, private scope: Scope, private type: ts.TypeNode,
-      private variable: TmplAstVariable) {
-    super();
-  }
-
-  override get optional() {
-    return false;
-  }
-
-  override execute(): ts.Identifier {
-    const id = this.tcb.allocateId();
-    addParseSpanInfo(id, this.variable.keySpan);
-    this.scope.addStatement(tsDeclareVariable(id, this.type));
-    return id;
-  }
-}
-
-
-/**
- * A `TcbOp` which renders an `if` template block as a TypeScript `if` statement.
- *
- * Executing this operation returns nothing.
- */
-class TcbIfOp extends TcbOp {
-  private expressionScopes = new Map<TmplAstIfBlockBranch, Scope>();
-
-  constructor(private tcb: Context, private scope: Scope, private block: TmplAstIfBlock) {
-    super();
-  }
-
-  override get optional() {
-    return false;
-  }
-
-  override execute(): null {
-    const root = this.generateBranch(0);
-    root && this.scope.addStatement(root);
-    return null;
-  }
-
-  private generateBranch(index: number): ts.Statement|undefined {
-    const branch = this.block.branches[index];
-
-    if (!branch) {
-      return undefined;
-    }
-
-    // If the expression is null, it means that it's an `else` statement.
-    if (branch.expression === null) {
-      const branchScope = Scope.forNodes(
-          this.tcb, this.scope, null, branch.children, this.generateBranchGuard(index));
-      return ts.factory.createBlock(branchScope.render());
-    }
-
-    // We need to process the expression first so it gets its own scope that the body of the
-    // conditional will inherit from. We do this, because we need to declare a separate variable
-    // for the case where the expression has an alias _and_ because we need the processed
-    // expression when generating the guard for the body.
-    const expressionScope = Scope.forNodes(this.tcb, this.scope, branch, [], null);
-    expressionScope.render().forEach(stmt => this.scope.addStatement(stmt));
-    this.expressionScopes.set(branch, expressionScope);
-
-    const expression = branch.expressionAlias === null ?
-        tcbExpression(branch.expression, this.tcb, expressionScope) :
-        expressionScope.resolve(branch.expressionAlias);
-
-    const bodyScope = Scope.forNodes(
-        this.tcb, expressionScope, null, branch.children, this.generateBranchGuard(index));
-
-    return ts.factory.createIfStatement(
-        expression, ts.factory.createBlock(bodyScope.render()), this.generateBranch(index + 1));
-  }
-
-  private generateBranchGuard(index: number): ts.Expression|null {
-    let guard: ts.Expression|null = null;
-
-    // Since event listeners are inside callbacks, type narrowing doesn't apply to them anymore.
-    // To recreate the behavior, we generate an expression that negates all the values of the
-    // branches _before_ the current one, and then we add the current branch's expression on top.
-    // For example `@if (expr === 1) {} @else if (expr === 2) {} @else if (expr === 3)`, the guard
-    // for the last expression will be `!(expr === 1) && !(expr === 2) && expr === 3`.
-    for (let i = 0; i <= index; i++) {
-      const branch = this.block.branches[i];
-
-      // Skip over branches without an expression.
-      if (branch.expression === null) {
-        continue;
-      }
-
-      // This shouldn't happen since all the state is handled
-      // internally, but we have the check just in case.
-      if (!this.expressionScopes.has(branch)) {
-        throw new Error(`Could not determine expression scope of branch at index ${i}`);
-      }
-
-      const expressionScope = this.expressionScopes.get(branch)!;
-      let expression: ts.Expression;
-
-      if (branch.expressionAlias === null) {
-        // We need to recreate the expression and mark it to be ignored for diagnostics,
-        // because it was already checked as a part of the block's condition and we don't
-        // want it to produce a duplicate diagnostic.
-        expression = tcbExpression(branch.expression, this.tcb, expressionScope);
-        markIgnoreDiagnostics(expression);
-      } else {
-        expression = expressionScope.resolve(branch.expressionAlias);
-      }
-
-      // The expressions of the preceeding branches have to be negated
-      // (e.g. `expr` becomes `!(expr)`) when comparing in the guard, except
-      // for the branch's own expression which is preserved as is.
-      const comparisonExpression = i === index ?
-          expression :
-          ts.factory.createPrefixUnaryExpression(
-              ts.SyntaxKind.ExclamationToken, ts.factory.createParenthesizedExpression(expression));
-
-      // Finally add the expression to the guard with an && operator.
-      guard = guard === null ?
-          comparisonExpression :
-          ts.factory.createBinaryExpression(
-              guard, ts.SyntaxKind.AmpersandAmpersandToken, comparisonExpression);
-    }
-
-    return guard;
-  }
-}
-
-
-/**
- * A `TcbOp` which renders a `switch` block as a TypeScript `switch` statement.
- *
- * Executing this operation returns nothing.
- */
-class TcbSwitchOp extends TcbOp {
-  constructor(private tcb: Context, private scope: Scope, private block: TmplAstSwitchBlock) {
-    super();
-  }
-
-  override get optional() {
-    return false;
-  }
-
-  override execute(): null {
-    const expression = tcbExpression(this.block.expression, this.tcb, this.scope);
-
-    // Since we'll use the expression in multiple comparisons, we don't want to
-    // log the same diagnostic more than once. Ignore this expression since we already
-    // produced a `TcbExpressionOp`.
-    markIgnoreDiagnostics(expression);
-    const root = this.generateCase(0, expression, null);
-
-    if (root !== undefined) {
-      this.scope.addStatement(root);
-    }
-
-    return null;
-  }
-
-  private generateCase(
-      index: number, switchValue: ts.Expression,
-      defaultCase: TmplAstSwitchBlockCase|null): ts.Statement|undefined {
-    // If we've reached the end, output the default case as the final `else`.
-    if (index >= this.block.cases.length) {
-      if (defaultCase !== null) {
-        const defaultScope = Scope.forNodes(
-            this.tcb, this.scope, null, defaultCase.children,
-            this.generateGuard(defaultCase, switchValue));
-        return ts.factory.createBlock(defaultScope.render());
-      }
-      return undefined;
-    }
-
-    // If the current case is the default (could be placed arbitrarily),
-    // skip it since it needs to be generated as the final `else` at the end.
-    const current = this.block.cases[index];
-    if (current.expression === null) {
-      return this.generateCase(index + 1, switchValue, current);
-    }
-
-    const caseScope = Scope.forNodes(
-        this.tcb, this.scope, null, current.children, this.generateGuard(current, switchValue));
-    const caseValue = tcbExpression(current.expression, this.tcb, caseScope);
-
-    // TODO(crisbeto): change back to a switch statement when the TS bug is resolved.
-    // Note that it would be simpler to generate a `switch` statement to represent the user's
-    // code, but the current TypeScript version (at the time of writing 5.2.2) has a bug where
-    // parenthesized `switch` expressions aren't narrowed correctly:
-    // https://github.com/microsoft/TypeScript/issues/56030. We work around it by generating
-    // `if`/`else if`/`else` statements to represent the switch block instead.
-    return ts.factory.createIfStatement(
-        ts.factory.createBinaryExpression(
-            switchValue, ts.SyntaxKind.EqualsEqualsEqualsToken, caseValue),
-        ts.factory.createBlock(caseScope.render()),
-        this.generateCase(index + 1, switchValue, defaultCase));
-  }
-
-  private generateGuard(node: TmplAstSwitchBlockCase, switchValue: ts.Expression): ts.Expression
-      |null {
-    // For non-default cases, the guard needs to compare against the case value, e.g.
-    // `switchExpression === caseExpression`.
-    if (node.expression !== null) {
-      // The expression needs to be ignored for diagnostics since it has been checked already.
-      const expression = tcbExpression(node.expression, this.tcb, this.scope);
-      markIgnoreDiagnostics(expression);
-      return ts.factory.createBinaryExpression(
-          switchValue, ts.SyntaxKind.EqualsEqualsEqualsToken, expression);
-    }
-
-    // To fully narrow the type in the default case, we need to generate an expression that negates
-    // the values of all of the other expressions. For example:
-    // @switch (expr) {
-    //   @case (1) {}
-    //   @case (2) {}
-    //   @default {}
-    // }
-    // Will produce the guard `expr !== 1 && expr !== 2`.
-    let guard: ts.Expression|null = null;
-
-    for (const current of this.block.cases) {
-      if (current.expression === null) {
-        continue;
-      }
-
-      // The expression needs to be ignored for diagnostics since it has been checked already.
-      const expression = tcbExpression(current.expression, this.tcb, this.scope);
-      markIgnoreDiagnostics(expression);
-      const comparison = ts.factory.createBinaryExpression(
-          switchValue, ts.SyntaxKind.ExclamationEqualsEqualsToken, expression);
-
-      if (guard === null) {
-        guard = comparison;
-      } else {
-        guard = ts.factory.createBinaryExpression(
-            guard, ts.SyntaxKind.AmpersandAmpersandToken, comparison);
-      }
-    }
-
-    return guard;
-  }
-}
-
-/**
- * A `TcbOp` which renders a `for` block as a TypeScript `for...of` loop.
- *
- * Executing this operation returns nothing.
- */
-class TcbForOfOp extends TcbOp {
-  constructor(private tcb: Context, private scope: Scope, private block: TmplAstForLoopBlock) {
-    super();
-  }
-
-  override get optional() {
-    return false;
-  }
-
-  override execute(): null {
-    const loopScope = Scope.forNodes(this.tcb, this.scope, this.block, this.block.children, null);
-    const initializer = ts.factory.createVariableDeclarationList(
-        [ts.factory.createVariableDeclaration(this.block.item.name)], ts.NodeFlags.Const);
-    // It's common to have a for loop over a nullable value (e.g. produced by the `async` pipe).
-    // Add a non-null expression to allow such values to be assigned.
-    const expression = ts.factory.createNonNullExpression(
-        tcbExpression(this.block.expression, this.tcb, loopScope));
-    const trackTranslator = new TcbForLoopTrackTranslator(this.tcb, loopScope, this.block);
-    const trackExpression = trackTranslator.translate(this.block.trackBy);
-    const statements = [
-      ...loopScope.render(),
-      ts.factory.createExpressionStatement(trackExpression),
-    ];
-
-    this.scope.addStatement(ts.factory.createForOfStatement(
-        undefined, initializer, expression, ts.factory.createBlock(statements)));
-
-    return null;
-  }
-}
-
-/**
  * Value used to break a circular reference between `TcbOp`s.
  *
  * This value is returned whenever `TcbOp`s have a circular dependency. The expression is a non-null
@@ -1577,31 +1239,31 @@ class Scope {
    * Constructs a `Scope` given either a `TmplAstTemplate` or a list of `TmplAstNode`s.
    *
    * @param tcb the overall context of TCB generation.
-   * @param parentScope the `Scope` of the parent template (if any) or `null` if this is the root
+   * @param parent the `Scope` of the parent template (if any) or `null` if this is the root
    * `Scope`.
-   * @param scopedNode Node that provides the scope around the child nodes (e.g. a
-   * `TmplAstTemplate` node exposing variables to its children).
-   * @param children Child nodes that should be appended to the TCB.
+   * @param templateOrNodes either a `TmplAstTemplate` representing the template for which to
+   * calculate the `Scope`, or a list of nodes if no outer template object is available.
    * @param guard an expression that is applied to this scope for type narrowing purposes.
    */
   static forNodes(
-      tcb: Context, parentScope: Scope|null,
-      scopedNode: TmplAstTemplate|TmplAstIfBlockBranch|TmplAstForLoopBlock|null,
-      children: TmplAstNode[], guard: ts.Expression|null): Scope {
-    const scope = new Scope(tcb, parentScope, guard);
+      tcb: Context, parent: Scope|null, templateOrNodes: TmplAstTemplate|(TmplAstNode[]),
+      guard: ts.Expression|null): Scope {
+    const scope = new Scope(tcb, parent, guard);
 
-    if (parentScope === null && tcb.env.config.enableTemplateTypeChecker) {
+    if (parent === null && tcb.env.config.enableTemplateTypeChecker) {
       // Add an autocompletion point for the component context.
       scope.opQueue.push(new TcbComponentContextCompletionOp(scope));
     }
 
+    let children: TmplAstNode[];
+
     // If given an actual `TmplAstTemplate` instance, then process any additional information it
     // has.
-    if (scopedNode instanceof TmplAstTemplate) {
+    if (templateOrNodes instanceof TmplAstTemplate) {
       // The template's variable declarations need to be added as `TcbVariableOp`s.
       const varMap = new Map<string, TmplAstVariable>();
 
-      for (const v of scopedNode.variables) {
+      for (const v of templateOrNodes.variables) {
         // Validate that variables on the `TmplAstTemplate` are only declared once.
         if (!varMap.has(v.name)) {
           varMap.set(v.name, v);
@@ -1609,39 +1271,18 @@ class Scope {
           const firstDecl = varMap.get(v.name)!;
           tcb.oobRecorder.duplicateTemplateVar(tcb.id, v, firstDecl);
         }
-        this.registerVariable(scope, v, new TcbTemplateVariableOp(tcb, scope, scopedNode, v));
-      }
-    } else if (scopedNode instanceof TmplAstIfBlockBranch) {
-      const {expression, expressionAlias} = scopedNode;
-      if (expression !== null && expressionAlias !== null) {
-        this.registerVariable(
-            scope, expressionAlias,
-            new TcbBlockVariableOp(
-                tcb, scope, tcbExpression(expression, tcb, scope), expressionAlias));
-      }
-    } else if (scopedNode instanceof TmplAstForLoopBlock) {
-      this.registerVariable(
-          scope, scopedNode.item,
-          new TcbBlockVariableOp(
-              tcb, scope, ts.factory.createIdentifier(scopedNode.item.name), scopedNode.item));
 
-      for (const variable of Object.values(scopedNode.contextVariables)) {
-        // Note: currently all context variables are assumed to be number types.
-        const type = ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword);
-        this.registerVariable(
-            scope, variable, new TcbBlockImplicitVariableOp(tcb, scope, type, variable));
+        const opIndex = scope.opQueue.push(new TcbVariableOp(tcb, scope, templateOrNodes, v)) - 1;
+        scope.varMap.set(v, opIndex);
       }
+      children = templateOrNodes.children;
+    } else {
+      children = templateOrNodes;
     }
     for (const node of children) {
       scope.appendNode(node);
     }
     return scope;
-  }
-
-  /** Registers a local variable with a scope. */
-  private static registerVariable(scope: Scope, variable: TmplAstVariable, op: TcbOp): void {
-    const opIndex = scope.opQueue.push(op) - 1;
-    scope.varMap.set(variable, opIndex);
   }
 
   /**
@@ -1821,7 +1462,9 @@ class Scope {
       this.elementOpMap.set(node, opIndex);
       this.appendDirectivesAndInputsOfNode(node);
       this.appendOutputsOfNode(node);
-      this.appendChildren(node);
+      for (const child of node.children) {
+        this.appendNode(child);
+      }
       this.checkAndAppendReferencesOfNode(node);
     } else if (node instanceof TmplAstTemplate) {
       // Template children are rendered in a child scope.
@@ -1835,27 +1478,10 @@ class Scope {
         this.appendDeepSchemaChecks(node.children);
       }
       this.checkAndAppendReferencesOfNode(node);
-    } else if (node instanceof TmplAstDeferredBlock) {
-      this.appendDeferredBlock(node);
-    } else if (node instanceof TmplAstIfBlock) {
-      this.opQueue.push(new TcbIfOp(this.tcb, this, node));
-    } else if (node instanceof TmplAstSwitchBlock) {
-      this.opQueue.push(
-          new TcbExpressionOp(this.tcb, this, node.expression),
-          new TcbSwitchOp(this.tcb, this, node));
-    } else if (node instanceof TmplAstForLoopBlock) {
-      this.opQueue.push(new TcbForOfOp(this.tcb, this, node));
-      node.empty && this.appendChildren(node.empty);
     } else if (node instanceof TmplAstBoundText) {
-      this.opQueue.push(new TcbExpressionOp(this.tcb, this, node.value));
+      this.opQueue.push(new TcbTextInterpolationOp(this.tcb, this, node));
     } else if (node instanceof TmplAstIcu) {
       this.appendIcuExpressions(node);
-    }
-  }
-
-  private appendChildren(node: TmplAstNode&{children: TmplAstNode[]}) {
-    for (const child of node.children) {
-      this.appendNode(child);
     }
   }
 
@@ -2006,65 +1632,19 @@ class Scope {
 
   private appendIcuExpressions(node: TmplAstIcu): void {
     for (const variable of Object.values(node.vars)) {
-      this.opQueue.push(new TcbExpressionOp(this.tcb, this, variable.value));
+      this.opQueue.push(new TcbTextInterpolationOp(this.tcb, this, variable));
     }
     for (const placeholder of Object.values(node.placeholders)) {
       if (placeholder instanceof TmplAstBoundText) {
-        this.opQueue.push(new TcbExpressionOp(this.tcb, this, placeholder.value));
+        this.opQueue.push(new TcbTextInterpolationOp(this.tcb, this, placeholder));
       }
-    }
-  }
-
-  private appendDeferredBlock(block: TmplAstDeferredBlock): void {
-    this.appendDeferredTriggers(block, block.triggers);
-    this.appendDeferredTriggers(block, block.prefetchTriggers);
-    this.appendChildren(block);
-
-    if (block.placeholder !== null) {
-      this.appendChildren(block.placeholder);
-    }
-
-    if (block.loading !== null) {
-      this.appendChildren(block.loading);
-    }
-
-    if (block.error !== null) {
-      this.appendChildren(block.error);
-    }
-  }
-
-  private appendDeferredTriggers(
-      block: TmplAstDeferredBlock, triggers: TmplAstDeferredBlockTriggers): void {
-    if (triggers.when !== undefined) {
-      this.opQueue.push(new TcbExpressionOp(this.tcb, this, triggers.when.value));
-    }
-
-    if (triggers.hover !== undefined) {
-      this.appendReferenceBasedDeferredTrigger(block, triggers.hover);
-    }
-
-    if (triggers.interaction !== undefined) {
-      this.appendReferenceBasedDeferredTrigger(block, triggers.interaction);
-    }
-
-    if (triggers.viewport !== undefined) {
-      this.appendReferenceBasedDeferredTrigger(block, triggers.viewport);
-    }
-  }
-
-  private appendReferenceBasedDeferredTrigger(
-      block: TmplAstDeferredBlock,
-      trigger: TmplAstHoverDeferredTrigger|TmplAstInteractionDeferredTrigger|
-      TmplAstViewportDeferredTrigger): void {
-    if (this.tcb.boundTarget.getDeferredTriggerTarget(block, trigger) === null) {
-      this.tcb.oobRecorder.inaccessibleDeferredTriggerElement(this.tcb.id, trigger);
     }
   }
 }
 
-interface TcbBoundAttribute {
+interface TcbBoundInput {
   attribute: TmplAstBoundAttribute|TmplAstTextAttribute;
-  inputs: {fieldName: ClassPropertyName, required: boolean, transformType: ts.TypeNode|null}[];
+  fieldNames: ClassPropertyName[];
 }
 
 /**
@@ -2073,7 +1653,7 @@ interface TcbBoundAttribute {
  */
 function tcbThisParam(
     name: ts.EntityName, typeArguments: ts.TypeNode[]|undefined): ts.ParameterDeclaration {
-  return ts.factory.createParameterDeclaration(
+  return createParameterDeclaration(
       /* modifiers */ undefined,
       /* dotDotDotToken */ undefined,
       /* name */ 'this',
@@ -2257,10 +1837,10 @@ function tcbCallTypeCtor(
       /* argumentsArray */[ts.factory.createObjectLiteralExpression(members)]);
 }
 
-function getBoundAttributes(
-    directive: TypeCheckableDirectiveMeta,
-    node: TmplAstTemplate|TmplAstElement): TcbBoundAttribute[] {
-  const boundInputs: TcbBoundAttribute[] = [];
+function getBoundInputs(
+    directive: TypeCheckableDirectiveMeta, node: TmplAstTemplate|TmplAstElement,
+    tcb: Context): TcbBoundInput[] {
+  const boundInputs: TcbBoundInput[] = [];
 
   const processAttribute = (attr: TmplAstBoundAttribute|TmplAstTextAttribute) => {
     // Skip non-property bindings.
@@ -2270,17 +1850,11 @@ function getBoundAttributes(
 
     // Skip the attribute if the directive does not have an input for it.
     const inputs = directive.inputs.getByBindingPropertyName(attr.name);
-
-    if (inputs !== null) {
-      boundInputs.push({
-        attribute: attr,
-        inputs: inputs.map(input => ({
-                             fieldName: input.classPropertyName,
-                             required: input.required,
-                             transformType: input.transform?.type || null
-                           }))
-      });
+    if (inputs === null) {
+      return;
     }
+    const fieldNames = inputs.map(input => input.classPropertyName);
+    boundInputs.push({attribute: attr, fieldNames});
   };
 
   node.inputs.forEach(processAttribute);
@@ -2412,7 +1986,7 @@ function tcbCreateEventHandler(
     body = ts.factory.createIfStatement(guards, body);
   }
 
-  const eventParam = ts.factory.createParameterDeclaration(
+  const eventParam = createParameterDeclaration(
       /* modifiers */ undefined,
       /* dotDotDotToken */ undefined,
       /* name */ EVENT_PARAMETER,
@@ -2476,27 +2050,6 @@ class TcbEventHandlerTranslator extends TcbExpressionTranslator {
       const event = ts.factory.createIdentifier(EVENT_PARAMETER);
       addParseSpanInfo(event, ast.nameSpan);
       return event;
-    }
-
-    return super.resolve(ast);
-  }
-}
-
-class TcbForLoopTrackTranslator extends TcbExpressionTranslator {
-  constructor(tcb: Context, scope: Scope, private block: TmplAstForLoopBlock) {
-    super(tcb, scope);
-  }
-
-  protected override resolve(ast: AST): ts.Expression|null {
-    if (ast instanceof PropertyRead && ast.receiver instanceof ImplicitReceiver) {
-      const target = this.tcb.boundTarget.getExpressionTarget(ast);
-
-      // Tracking expressions are only allowed to read the `$index`,
-      // the item and properties off the component instance.
-      if (target !== null && target !== this.block.item &&
-          target !== this.block.contextVariables.$index) {
-        this.tcb.oobRecorder.illegalForLoopTrackAccess(this.tcb.id, this.block, ast);
-      }
     }
 
     return super.resolve(ast);

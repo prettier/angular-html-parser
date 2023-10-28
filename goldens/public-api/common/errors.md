@@ -7,8 +7,6 @@
 // @public
 export const enum RuntimeErrorCode {
     // (undocumented)
-    EQUALITY_NG_SWITCH_DIFFERENCE = 2001,
-    // (undocumented)
     INVALID_INPUT = 2952,
     // (undocumented)
     INVALID_LOADER_ARGUMENTS = 2959,
@@ -17,13 +15,11 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     LCP_IMG_MISSING_PRIORITY = 2955,
     // (undocumented)
-    LCP_IMG_NGSRC_MODIFIED = 2964,
-    // (undocumented)
     MISSING_BUILTIN_LOADER = 2962,
     // (undocumented)
-    MISSING_NECESSARY_LOADER = 2963,
-    // (undocumented)
     NG_FOR_MISSING_DIFFER = -2200,
+    // (undocumented)
+    NGSRCSET_WITHOUT_LOADER = 2963,
     // (undocumented)
     OVERSIZED_IMAGE = 2960,
     // (undocumented)

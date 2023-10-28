@@ -8,15 +8,12 @@
 
 import ts from 'typescript/lib/tsserverlibrary';
 
-import {GetComponentLocationsForTemplateResponse, GetTcbResponse, GetTemplateLocationForComponentResponse, isNgLanguageService, NgLanguageService} from '../api';
+import {GetComponentLocationsForTemplateResponse, GetTcbResponse, GetTemplateLocationForComponentResponse, NgLanguageService} from '../api';
 
 import {LanguageService} from './language_service';
 
 export function create(info: ts.server.PluginCreateInfo): NgLanguageService {
-  const {project, languageService, config} = info;
-  const tsLS = isNgLanguageService(languageService) ?
-      languageService.getTypescriptLanguageService() :
-      languageService;
+  const {project, languageService: tsLS, config} = info;
   const angularOnly = config?.angularOnly === true;
 
   const ngLS = new LanguageService(project, tsLS, config);
@@ -67,8 +64,9 @@ export function create(info: ts.server.PluginCreateInfo): NgLanguageService {
     return ngLS.getReferencesAtPosition(fileName, position);
   }
 
-  function findRenameLocations(fileName: string, position: number): readonly ts.RenameLocation[]|
-      undefined {
+  function findRenameLocations(
+      fileName: string, position: number, findInStrings: boolean, findInComments: boolean,
+      providePrefixAndSuffixTextForRename?: boolean): readonly ts.RenameLocation[]|undefined {
     // Most operations combine results from all extensions. However, rename locations are exclusive
     // (results from only one extension are used) so our rename locations are a superset of the TS
     // rename locations. As a result, we do not check the `angularOnly` flag here because we always
@@ -145,14 +143,6 @@ export function create(info: ts.server.PluginCreateInfo): NgLanguageService {
     }
   }
 
-  function getOutliningSpans(fileName: string): ts.OutliningSpan[] {
-    if (angularOnly) {
-      return ngLS.getOutliningSpans(fileName);
-    } else {
-      return tsLS.getOutliningSpans(fileName) ?? ngLS.getOutliningSpans(fileName);
-    }
-  }
-
   function getTcb(fileName: string, position: number): GetTcbResponse|undefined {
     return ngLS.getTcb(fileName, position);
   }
@@ -205,9 +195,6 @@ export function create(info: ts.server.PluginCreateInfo): NgLanguageService {
     }
   }
 
-  function getTypescriptLanguageService() {
-    return tsLS;
-  }
 
   return {
     ...tsLS,
@@ -225,11 +212,9 @@ export function create(info: ts.server.PluginCreateInfo): NgLanguageService {
     getCompilerOptionsDiagnostics,
     getComponentLocationsForTemplate,
     getSignatureHelpItems,
-    getOutliningSpans,
     getTemplateLocationForComponent,
     getCodeFixesAtPosition,
     getCombinedCodeFix,
-    getTypescriptLanguageService,
   };
 }
 

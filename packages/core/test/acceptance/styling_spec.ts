@@ -6,12 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import {CommonModule} from '@angular/common';
-import {Component, ComponentRef, Directive, ElementRef, HostBinding, Input, Renderer2, ViewChild, ViewContainerRef} from '@angular/core';
+import {Component, ComponentFactoryResolver, ComponentRef, Directive, ElementRef, HostBinding, Input, NgModule, Renderer2, ViewChild, ViewContainerRef} from '@angular/core';
 import {bypassSanitizationTrustStyle} from '@angular/core/src/sanitization/bypass';
 import {ngDevModeResetPerfCounters} from '@angular/core/src/util/ng_dev_mode';
 import {TestBed} from '@angular/core/testing';
 import {getElementClasses, getElementStyles, getSortedClassName, getSortedStyle} from '@angular/core/testing/src/styling';
 import {By, DomSanitizer, SafeStyle} from '@angular/platform-browser';
+import {expect} from '@angular/platform-browser/testing/src/matchers';
 import {expectPerfCounters} from '@angular/private/testing';
 
 describe('styling', () => {
@@ -68,9 +69,10 @@ describe('styling', () => {
 
     it('should perform interpolation bindings', () => {
       @Component({
+        // TODO(misko): change `style-x` to `style` once #34202 lands
         template: `<div class="static {{'dynamic'}}"
                         style.color="blu{{'e'}}"
-                        style="width: {{'100'}}px"></div>`
+                        style-x="width: {{'100'}}px"></div>`
       })
       class Cmp {
       }
@@ -81,7 +83,7 @@ describe('styling', () => {
 
       const div = fixture.nativeElement.querySelector('div');
       expect(getSortedClassName(div)).toEqual('dynamic static');
-      expect(getSortedStyle(div)).toEqual('color: blue; width: 100px;');
+      expect(getSortedStyle(div)).toEqual('color: blue;');
     });
 
     it('should support hostBindings', () => {
@@ -121,15 +123,14 @@ describe('styling', () => {
 
       const div = fixture.nativeElement.querySelector('div');
       expect(getSortedClassName(div)).toEqual('HOST_STATIC_1 HOST_STATIC_2 STATIC');
-      // Chrome will remove quotes but Firefox and Domino do not.
-      expect(getSortedStyle(div)).toMatch(/color: blue; font-family: "?c2"?;/);
+      expect(getSortedStyle(div)).toEqual('color: blue; font-family: c2;');
     });
 
     it('should support hostBindings inheritance', () => {
       @Component({template: `<div my-host-bindings class="STATIC" style="color: blue;"></div>`})
       class Cmp {
       }
-      @Directive({host: {'class': 'SUPER_STATIC', 'style': 'font-family: "super";'}})
+      @Directive({host: {'class': 'SUPER_STATIC', 'style': 'font-family: "super"; width: "1px";'}})
       class SuperDir {
       }
       @Directive({
@@ -148,29 +149,7 @@ describe('styling', () => {
       // Browsers keep the '"' around the font name, but Domino removes it some we do search and
       // replace. Yes we could do `replace(/"/g, '')` but that fails on android.
       expect(getSortedStyle(div).replace('"', '').replace('"', ''))
-          .toEqual('color: blue; font-family: host font;');
-    });
-
-    it('should apply style properties that require quote wrapping', () => {
-      @Component({
-        selector: 'test-style-quoting',
-        template: `
-          <div style="content: &quot;foo&quot;"></div>
-          <div style='content: "foo"'></div>
-          <div style="content: 'foo'"></div>
-        `
-      })
-      class Cmp {
-      }
-
-      TestBed.configureTestingModule({declarations: [Cmp]});
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-
-      const divElements = fixture.nativeElement.querySelectorAll('div');
-      expect(getSortedStyle(divElements[0])).toBe('content: "foo";');
-      expect(getSortedStyle(divElements[1])).toBe('content: "foo";');
-      expect(getSortedStyle(divElements[2])).toMatch(/content: ["']foo["'];/);
+          .toEqual('color: blue; font-family: host font; width: 1px;');
     });
 
     it('should apply template classes in correct order', () => {
@@ -296,135 +275,6 @@ describe('styling', () => {
 
       const span = fixture.nativeElement.querySelector('span') as HTMLElement;
       expect(getComputedStyle(span).getPropertyValue('width')).toEqual('100px');
-    });
-  });
-
-  describe('non-string class keys', () => {
-    it('should allow null in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', null, 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c null extra');
-    });
-
-    it('should allow undefined in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', undefined, 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c undefined extra');
-    });
-
-    it('should allow zero in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', 0, 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('0 a c extra');
-    });
-
-    it('should allow false in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', false, 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c false extra');
-    });
-
-    it('should ignore an empty string in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', '', 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c extra');
-    });
-
-    it('should ignore a string containing spaces in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', 'hello there', 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c extra');
-    });
-
-    it('should ignore a string containing spaces in a class object literal binding', () => {
-      @Component({
-        template:
-            `<div [class]="{a: true, 'hello there': true, c: true}" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c extra');
-    });
-
-    it('should ignore an object literal in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', {foo: true}, 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c extra');
-    });
-
-    it('should handle a string array in a class array binding', () => {
-      @Component({
-        template: `<div [class]="['a', ['foo', 'bar'], 'c']" [class.extra]="true"></div>`,
-        standalone: true,
-      })
-      class Cmp {
-      }
-
-      const fixture = TestBed.createComponent(Cmp);
-      fixture.detectChanges();
-      const div = fixture.nativeElement.querySelector('div');
-      expect(div.getAttribute('class')).toBe('a c foo,bar extra');
     });
   });
 
@@ -1582,7 +1432,7 @@ describe('styling', () => {
       fixture.detectChanges();
 
       const childDir = fixture.debugElement.query(By.directive(ChildDir)).injector.get(ChildDir);
-      expect(childDir.parent).toBeInstanceOf(TestDir);
+      expect(childDir.parent).toBeAnInstanceOf(TestDir);
       expect(testDirDiv.classList).not.toContain('with-button');
       expect(fixture.debugElement.nativeElement.textContent).toContain('Hello');
     });
@@ -2475,10 +2325,10 @@ describe('styling', () => {
        }
 
        const header = fixture.nativeElement.querySelector('header');
-       expect(header.classList.contains('header')).toBeTrue();
+       expect(header.classList.contains('header'));
 
        const footer = fixture.nativeElement.querySelector('footer');
-       expect(footer.classList.contains('footer')).toBeTrue();
+       expect(footer.classList.contains('footer'));
 
        expect(getItemElements().length).toEqual(3);
        expect(getItemClasses()).toEqual([
@@ -2787,8 +2637,11 @@ describe('styling', () => {
          }
 
          ngAfterViewInit() {
-           this.child = this.vcr.createComponent(ChildCmp);
+           const factory = this.componentFactoryResolver.resolveComponentFactory(ChildCmp);
+           this.child = this.vcr.createComponent(factory);
          }
+
+         constructor(private componentFactoryResolver: ComponentFactoryResolver) {}
        }
 
        @Component({
@@ -2856,8 +2709,11 @@ describe('styling', () => {
          }
 
          ngAfterViewInit() {
-           this.child = this.vcr.createComponent(ChildCmp);
+           const factory = this.componentFactoryResolver.resolveComponentFactory(ChildCmp);
+           this.child = this.vcr.createComponent(factory);
          }
+
+         constructor(private componentFactoryResolver: ComponentFactoryResolver) {}
        }
 
        @Component({
@@ -2954,45 +2810,8 @@ describe('styling', () => {
     dirInstance.setStyles();
 
     const div = fixture.debugElement.children[0];
-    expect(div.styles['transform']).toMatch(/translate3d\(0px\s*,\s*0px\s*,\s*0px\)/);
+    expect(div.styles.transform).toMatch(/translate3d\(0px\s*,\s*0px\s*,\s*0px\)/);
     expect(div.classes['my-class']).toBe(true);
-  });
-
-  it('should remove styles via Renderer2', () => {
-    let dirInstance: any;
-    @Directive({
-      selector: '[dir]',
-    })
-    class Dir {
-      constructor(public elementRef: ElementRef, public renderer: Renderer2) {
-        dirInstance = this;
-      }
-    }
-
-    @Component({template: `<div dir></div>`})
-    class App {
-    }
-
-    TestBed.configureTestingModule({
-      declarations: [App, Dir],
-    });
-    const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
-
-    const div = fixture.debugElement.children[0];
-    const nativeEl = dirInstance.elementRef.nativeElement;
-
-    // camel case
-    dirInstance.renderer.setStyle(nativeEl, 'backgroundColor', 'red');
-    expect(div.styles['backgroundColor']).toBe('red');
-    dirInstance.renderer.removeStyle(nativeEl, 'backgroundColor');
-    expect(div.styles['backgroundColor']).toBe('');
-
-    // kebab case
-    dirInstance.renderer.setStyle(nativeEl, 'background-color', 'red');
-    expect(div.styles['backgroundColor']).toBe('red');
-    dirInstance.renderer.removeStyle(nativeEl, 'background-color');
-    expect(div.styles['backgroundColor']).toBe('');
   });
 
   it('should not set classes when falsy value is passed while a sanitizer is present', () => {
@@ -3694,25 +3513,6 @@ describe('styling', () => {
     fixture.detectChanges();
 
     expect(logs).toEqual([]);
-  });
-
-  it('should support `styles` as a string', () => {
-    if (!isBrowser) {
-      return;
-    }
-
-    @Component({
-      template: `<span>Hello</span>`,
-      styles: `span {font-size: 10px}`,
-    })
-    class Cmp {
-    }
-    TestBed.configureTestingModule({declarations: [Cmp]});
-    const fixture = TestBed.createComponent(Cmp);
-    fixture.detectChanges();
-
-    const span = fixture.nativeElement.querySelector('span') as HTMLElement;
-    expect(getComputedStyle(span).getPropertyValue('font-size')).toBe('10px');
   });
 
   describe('regression', () => {

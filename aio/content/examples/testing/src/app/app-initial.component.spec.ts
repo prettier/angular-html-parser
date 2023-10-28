@@ -13,26 +13,28 @@ describe('AppComponent', () => {
 describe('AppComponent (initial CLI version)', () => {
   // #docregion
   beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({
-      imports: [AppComponent],
-    }).compileComponents();
+    TestBed
+        .configureTestingModule({
+          declarations: [AppComponent],
+        })
+        .compileComponents();
   }));
   it('should create the app', waitForAsync(() => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  }));
+       const fixture = TestBed.createComponent(AppComponent);
+       const app = fixture.componentInstance;
+       expect(app).toBeTruthy();
+     }));
   it("should have as title 'app'", waitForAsync(() => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.componentInstance;
-    expect(app.title).toEqual('app');
-  }));
+       const fixture = TestBed.createComponent(AppComponent);
+       const app = fixture.componentInstance;
+       expect(app.title).toEqual('app');
+     }));
   it('should render title', waitForAsync(() => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Welcome to app!');
-  }));
+       const fixture = TestBed.createComponent(AppComponent);
+       fixture.detectChanges();
+       const compiled = fixture.nativeElement as HTMLElement;
+       expect(compiled.querySelector('h1')?.textContent).toContain('Welcome to app!');
+     }));
 });
 // #enddocregion
 
@@ -47,7 +49,7 @@ describe('AppComponent (initial CLI version - as it should be)', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      imports: [AppComponent],
+      declarations: [AppComponent],
     });
 
     fixture = TestBed.createComponent(AppComponent);

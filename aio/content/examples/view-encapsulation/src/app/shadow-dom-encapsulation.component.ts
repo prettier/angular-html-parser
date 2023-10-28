@@ -1,10 +1,7 @@
-import {Component, ViewEncapsulation} from '@angular/core';
-import {NoEncapsulationComponent} from './no-encapsulation.component';
-import {EmulatedEncapsulationComponent} from './emulated-encapsulation.component';
+import { Component, ViewEncapsulation } from '@angular/core';
 
 // #docregion
 @Component({
-  standalone: true,
   selector: 'app-shadow-dom-encapsulation',
   template: `
     <h2>ShadowDom</h2>
@@ -14,6 +11,5 @@ import {EmulatedEncapsulationComponent} from './emulated-encapsulation.component
   `,
   styles: ['h2, .shadow-message { color: blue; }'],
   encapsulation: ViewEncapsulation.ShadowDom,
-  imports: [NoEncapsulationComponent, EmulatedEncapsulationComponent],
 })
-export class ShadowDomEncapsulationComponent {}
+export class ShadowDomEncapsulationComponent { }

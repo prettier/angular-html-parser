@@ -7,11 +7,11 @@
  */
 
 import {Injector} from '../di/injector';
-import {DehydratedContainerView} from '../hydration/interfaces';
+import {assertLContainer} from '../render3/assert';
+import {createLView, renderView} from '../render3/instructions/shared';
 import {TContainerNode, TNode, TNodeType} from '../render3/interfaces/node';
-import {LView} from '../render3/interfaces/view';
+import {DECLARATION_LCONTAINER, LView, LViewFlags, QUERIES, TView} from '../render3/interfaces/view';
 import {getCurrentTNode, getLView} from '../render3/state';
-import {createAndRenderEmbeddedLView} from '../render3/view_manipulation';
 import {ViewRef as R3_ViewRef} from '../render3/view_ref';
 import {assertDefined} from '../util/assert';
 
@@ -31,7 +31,7 @@ import {EmbeddedViewRef} from './view_ref';
  * You can also use a `Query` to find a `TemplateRef` associated with
  * a component or a directive.
  *
- * @see {@link ViewContainerRef}
+ * @see `ViewContainerRef`
  * @see [Navigate the Component Tree with DI](guide/dependency-injection-navtree)
  *
  * @publicApi
@@ -40,8 +40,8 @@ export abstract class TemplateRef<C> {
   /**
    * The anchor element in the parent view for this embedded view.
    *
-   * The data-binding and [injection contexts](guide/dependency-injection-context) of embedded views
-   * created from this `TemplateRef` inherit from the contexts of this location.
+   * The data-binding and injection contexts of embedded views created from this `TemplateRef`
+   * inherit from the contexts of this location.
    *
    * Typically new embedded views are attached to the view container of this location, but in
    * advanced use-cases, the view can be attached to a different container while keeping the
@@ -61,27 +61,6 @@ export abstract class TemplateRef<C> {
   abstract createEmbeddedView(context: C, injector?: Injector): EmbeddedViewRef<C>;
 
   /**
-   * Implementation of the `createEmbeddedView` function.
-   *
-   * This implementation is internal and allows framework code
-   * to invoke it with extra parameters (e.g. for hydration) without
-   * affecting public API.
-   *
-   * @internal
-   */
-  abstract createEmbeddedViewImpl(
-      context: C, injector?: Injector,
-      dehydratedView?: DehydratedContainerView|null): EmbeddedViewRef<C>;
-
-  /**
-   * Returns an `ssrId` associated with a TView, which was used to
-   * create this instance of the `TemplateRef`.
-   *
-   * @internal
-   */
-  abstract get ssrId(): string|null;
-
-  /**
    * @internal
    * @nocollapse
    */
@@ -99,28 +78,23 @@ const R3TemplateRef = class TemplateRef<T> extends ViewEngineTemplateRef<T> {
     super();
   }
 
-  /**
-   * Returns an `ssrId` associated with a TView, which was used to
-   * create this instance of the `TemplateRef`.
-   *
-   * @internal
-   */
-  override get ssrId(): string|null {
-    return this._declarationTContainer.tView?.ssrId || null;
-  }
-
   override createEmbeddedView(context: T, injector?: Injector): EmbeddedViewRef<T> {
-    return this.createEmbeddedViewImpl(context, injector);
-  }
+    const embeddedTView = this._declarationTContainer.tViews as TView;
+    const embeddedLView = createLView(
+        this._declarationLView, embeddedTView, context, LViewFlags.CheckAlways, null,
+        embeddedTView.declTNode, null, null, null, null, injector || null);
 
-  /**
-   * @internal
-   */
-  override createEmbeddedViewImpl(
-      context: T, injector?: Injector,
-      dehydratedView?: DehydratedContainerView): EmbeddedViewRef<T> {
-    const embeddedLView = createAndRenderEmbeddedLView(
-        this._declarationLView, this._declarationTContainer, context, {injector, dehydratedView});
+    const declarationLContainer = this._declarationLView[this._declarationTContainer.index];
+    ngDevMode && assertLContainer(declarationLContainer);
+    embeddedLView[DECLARATION_LCONTAINER] = declarationLContainer;
+
+    const declarationViewLQueries = this._declarationLView[QUERIES];
+    if (declarationViewLQueries !== null) {
+      embeddedLView[QUERIES] = declarationViewLQueries.createEmbeddedView(embeddedTView);
+    }
+
+    renderView(embeddedTView, embeddedLView, context);
+
     return new R3_ViewRef<T>(embeddedLView);
   }
 };
@@ -143,7 +117,7 @@ export function injectTemplateRef<T>(): TemplateRef<T>|null {
  */
 export function createTemplateRef<T>(hostTNode: TNode, hostLView: LView): TemplateRef<T>|null {
   if (hostTNode.type & TNodeType.Container) {
-    ngDevMode && assertDefined(hostTNode.tView, 'TView must be allocated');
+    ngDevMode && assertDefined(hostTNode.tViews, 'TView must be allocated');
     return new R3TemplateRef(
         hostLView, hostTNode as TContainerNode, createElementRef(hostTNode, hostLView));
   }

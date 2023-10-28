@@ -6,26 +6,27 @@ import { HighlightDirective } from './highlight.directive';
 
 // #docregion test-component
 @Component({
-  standalone: true,
-  template: ` <h2 highlight="yellow">Something Yellow</h2>
-    <h2 highlight>The Default (Gray)</h2>
-    <h2>No Highlight</h2>
-    <input #box [highlight]="box.value" value="cyan" />`,
-  imports: [HighlightDirective],
+  template: `
+  <h2 highlight="yellow">Something Yellow</h2>
+  <h2 highlight>The Default (Gray)</h2>
+  <h2>No Highlight</h2>
+  <input #box [highlight]="box.value" value="cyan"/>`
 })
-class TestComponent {}
+class TestComponent { }
 // #enddocregion test-component
 
 describe('HighlightDirective', () => {
+
   let fixture: ComponentFixture<TestComponent>;
-  let des: DebugElement[]; // the three elements w/ the directive
+  let des: DebugElement[];  // the three elements w/ the directive
   let bareH2: DebugElement; // the <h2> w/o the directive
 
   // #docregion selected-tests
   beforeEach(() => {
     fixture = TestBed.configureTestingModule({
-      imports: [HighlightDirective, TestComponent],
-    }).createComponent(TestComponent);
+      declarations: [ HighlightDirective, TestComponent ]
+    })
+    .createComponent(TestComponent);
 
     fixture.detectChanges(); // initial binding
 
@@ -55,7 +56,9 @@ describe('HighlightDirective', () => {
   it('should bind <input> background to value color', () => {
     // easier to work with nativeElement
     const input = des[2].nativeElement as HTMLInputElement;
-    expect(input.style.backgroundColor).withContext('initial backgroundColor').toBe('cyan');
+    expect(input.style.backgroundColor)
+      .withContext('initial backgroundColor')
+      .toBe('cyan');
 
     input.value = 'green';
 
@@ -63,8 +66,11 @@ describe('HighlightDirective', () => {
     input.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(input.style.backgroundColor).withContext('changed backgroundColor').toBe('green');
+    expect(input.style.backgroundColor)
+      .withContext('changed backgroundColor')
+      .toBe('green');
   });
+
 
   it('bare <h2> should not have a customProperty', () => {
     expect(bareH2.properties['customProperty']).toBeUndefined();

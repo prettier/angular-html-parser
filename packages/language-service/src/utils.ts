@@ -147,8 +147,8 @@ function tsDeclarationSortComparator(a: DeclarationNode, b: DeclarationNode): nu
   }
 }
 
-export function getFirstComponentForTemplateFile(
-    fileName: string, compiler: NgCompiler): TemplateInfo|undefined {
+function getFirstComponentForTemplateFile(fileName: string, compiler: NgCompiler): TemplateInfo|
+    undefined {
   const templateTypeChecker = compiler.getTemplateTypeChecker();
   const components = compiler.getComponentsWithTemplateFile(fileName);
   const sortedComponents = Array.from(components).sort(tsDeclarationSortComparator);
@@ -179,7 +179,7 @@ function toAttributeCssSelector(attribute: t.TextAttribute|t.BoundAttribute|t.Bo
   // Any dollar signs that appear in the attribute name and/or value need to be escaped because they
   // need to be taken as literal characters rather than special selector behavior of dollar signs in
   // CSS.
-  return selector.replace(/\$/g, '\\$');
+  return selector.replace('$', '\\$');
 }
 
 function getNodeName(node: t.Template|t.Element): string {

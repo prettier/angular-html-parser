@@ -8,8 +8,8 @@
 
 import {getHtmlTagDefinition} from '../../src/ml_parser/html_tags';
 import {TokenError, tokenize, TokenizeOptions, TokenizeResult} from '../../src/ml_parser/lexer';
-import {TagContentType} from '../../src/ml_parser/tags';
 import {Token, TokenType} from '../../src/ml_parser/tokens';
+import {TagContentType} from '../../src/ml_parser/tags';
 import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_util';
 
 {
@@ -834,9 +834,7 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
           [TokenType.ATTR_NAME, '', '&&'],
           [TokenType.ATTR_NAME, '', 'c'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.TEXT, ' d '],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.BLOCK_CLOSE],
+          [TokenType.TEXT, ' d }}'],
           [TokenType.EOF],
         ]);
       });
@@ -849,7 +847,7 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
           [TokenType.COMMENT_START],
           [TokenType.RAW_TEXT, ''],
           [TokenType.COMMENT_END],
-          [TokenType.BLOCK_CLOSE],
+          [TokenType.TEXT, '}'],
           [TokenType.EOF],
         ]);
       });
@@ -874,7 +872,7 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
           [TokenType.CDATA_START],
           [TokenType.RAW_TEXT, ''],
           [TokenType.CDATA_END],
-          [TokenType.BLOCK_CLOSE],
+          [TokenType.TEXT, '}'],
           [TokenType.EOF],
         ]);
       });
@@ -965,8 +963,7 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
 
       it('should treat expansion form as text when they are not parsed', () => {
         expect(tokenizeAndHumanizeParts(
-                   '<span>{a, b, =4 {c}}</span>',
-                   {tokenizeExpansionForms: false, tokenizeBlocks: false}))
+                   '<span>{a, b, =4 {c}}</span>', {tokenizeExpansionForms: false}))
             .toEqual([
               [TokenType.TAG_OPEN_START, '', 'span'],
               [TokenType.TAG_OPEN_END],
@@ -1877,385 +1874,20 @@ import {ParseLocation, ParseSourceFile, ParseSourceSpan} from '../../src/parse_u
 
     describe('getTagContentType', () => {
       it('support custom content type', () => {
-        expect(tokenizeAndHumanizeParts(
-                   `<custom>const foo = "</";</custom>`, undefined, () => TagContentType.RAW_TEXT))
-            .toEqual([
-              [TokenType.TAG_OPEN_START, '', 'custom'],
-              [TokenType.TAG_OPEN_END],
-              [TokenType.RAW_TEXT, 'const foo = "</";'],
-              [TokenType.TAG_CLOSE, '', 'custom'],
-              [TokenType.EOF],
-            ]);
+        expect(tokenizeAndHumanizeParts(`<custom>const foo = "</";</custom>`, undefined, () => TagContentType.RAW_TEXT)).toEqual([
+          [TokenType.TAG_OPEN_START, '', 'custom'],
+          [TokenType.TAG_OPEN_END],
+          [TokenType.RAW_TEXT, 'const foo = "</";'],
+          [TokenType.TAG_CLOSE, '', 'custom'],
+          [TokenType.EOF],
+        ]);
       });
     })
-    describe('blocks', () => {
-      it('should parse a block without parameters', () => {
-        const expected = [
-          [TokenType.BLOCK_OPEN_START, 'foo'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ];
-
-        expect(tokenizeAndHumanizeParts('@foo {hello}')).toEqual(expected);
-        expect(tokenizeAndHumanizeParts('@foo () {hello}')).toEqual(expected);
-        expect(tokenizeAndHumanizeParts('@foo(){hello}')).toEqual(expected);
-      });
-
-      it('should parse a block with parameters', () => {
-        expect(tokenizeAndHumanizeParts('@for (item of items; track item.id) {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'for'],
-          [TokenType.BLOCK_PARAMETER, 'item of items'],
-          [TokenType.BLOCK_PARAMETER, 'track item.id'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse a block with a trailing semicolon after the parameters', () => {
-        expect(tokenizeAndHumanizeParts('@for (item of items;) {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'for'],
-          [TokenType.BLOCK_PARAMETER, 'item of items'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse a block with a space in its name', () => {
-        expect(tokenizeAndHumanizeParts('@else if {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'else if'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-
-        expect(tokenizeAndHumanizeParts('@else if (foo !== 2) {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'else if'],
-          [TokenType.BLOCK_PARAMETER, 'foo !== 2'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse a block with an arbitrary amount of spaces around the parentheses', () => {
-        const expected = [
-          [TokenType.BLOCK_OPEN_START, 'foo'],
-          [TokenType.BLOCK_PARAMETER, 'a'],
-          [TokenType.BLOCK_PARAMETER, 'b'],
-          [TokenType.BLOCK_PARAMETER, 'c'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ];
-
-        expect(tokenizeAndHumanizeParts('@foo(a; b; c){hello}')).toEqual(expected);
-        expect(tokenizeAndHumanizeParts('@foo      (a; b; c)      {hello}')).toEqual(expected);
-        expect(tokenizeAndHumanizeParts('@foo(a; b; c)      {hello}')).toEqual(expected);
-        expect(tokenizeAndHumanizeParts('@foo      (a; b; c){hello}')).toEqual(expected);
-      });
-
-      it('should parse a block with multiple trailing semicolons', () => {
-        expect(tokenizeAndHumanizeParts('@for (item of items;;;;;) {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'for'],
-          [TokenType.BLOCK_PARAMETER, 'item of items'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse a block with trailing whitespace', () => {
-        expect(tokenizeAndHumanizeParts('@foo                        {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'foo'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse a block with no trailing semicolon', () => {
-        expect(tokenizeAndHumanizeParts('@for (item of items){hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'for'],
-          [TokenType.BLOCK_PARAMETER, 'item of items'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should handle semicolons, braces and parentheses used in a block parameter', () => {
-        const input = `@foo (a === ";"; b === ')'; c === "("; d === '}'; e === "{") {hello}`;
-        expect(tokenizeAndHumanizeParts(input)).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'foo'],
-          [TokenType.BLOCK_PARAMETER, `a === ";"`],
-          [TokenType.BLOCK_PARAMETER, `b === ')'`],
-          [TokenType.BLOCK_PARAMETER, `c === "("`],
-          [TokenType.BLOCK_PARAMETER, `d === '}'`],
-          [TokenType.BLOCK_PARAMETER, `e === "{"`],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should handle object literals and function calls in block parameters', () => {
-        expect(tokenizeAndHumanizeParts(
-                   `@foo (on a({a: 1, b: 2}, false, {c: 3}); when b({d: 4})) {hello}`))
-            .toEqual([
-              [TokenType.BLOCK_OPEN_START, 'foo'],
-              [TokenType.BLOCK_PARAMETER, 'on a({a: 1, b: 2}, false, {c: 3})'],
-              [TokenType.BLOCK_PARAMETER, 'when b({d: 4})'],
-              [TokenType.BLOCK_OPEN_END],
-              [TokenType.TEXT, 'hello'],
-              [TokenType.BLOCK_CLOSE],
-              [TokenType.EOF],
-            ]);
-      });
-
-      it('should parse block with unclosed parameters', () => {
-        expect(tokenizeAndHumanizeParts(`@foo (a === b {hello}`)).toEqual([
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'foo'],
-          [TokenType.BLOCK_PARAMETER, 'a === b {hello}'],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse block with stray parentheses in the parameter position', () => {
-        expect(tokenizeAndHumanizeParts(`@foo a === b) {hello}`)).toEqual([
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'foo a'],
-          [TokenType.TEXT, '=== b) {hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should report invalid quotes in a parameter', () => {
-        expect(tokenizeAndHumanizeErrors(`@foo (a === ") {hello}`)).toEqual([
-          [TokenType.BLOCK_PARAMETER, 'Unexpected character "EOF"', '0:22']
-        ]);
-
-        expect(tokenizeAndHumanizeErrors(`@foo (a === "hi') {hello}`)).toEqual([
-          [TokenType.BLOCK_PARAMETER, 'Unexpected character "EOF"', '0:25']
-        ]);
-      });
-
-      it('should report unclosed object literal inside a parameter', () => {
-        expect(tokenizeAndHumanizeParts(`@foo ({invalid: true) hello}`)).toEqual([
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'foo'],
-          [TokenType.BLOCK_PARAMETER, '{invalid: true'],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should handle a semicolon used in a nested string inside a block parameter', () => {
-        expect(tokenizeAndHumanizeParts(`@if (condition === "';'") {hello}`)).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'if'],
-          [TokenType.BLOCK_PARAMETER, `condition === "';'"`],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should handle a semicolon next to an escaped quote used in a block parameter', () => {
-        expect(tokenizeAndHumanizeParts('@if (condition === "\\";") {hello}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'if'],
-          [TokenType.BLOCK_PARAMETER, 'condition === "\\";"'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'hello'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse mixed text and html content in a block', () => {
-        expect(tokenizeAndHumanizeParts('@if (a === 1) {foo <b>bar</b> baz}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'if'],
-          [TokenType.BLOCK_PARAMETER, 'a === 1'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, 'foo '],
-          [TokenType.TAG_OPEN_START, '', 'b'],
-          [TokenType.TAG_OPEN_END],
-          [TokenType.TEXT, 'bar'],
-          [TokenType.TAG_CLOSE, '', 'b'],
-          [TokenType.TEXT, ' baz'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse HTML tags with attributes containing curly braces inside blocks', () => {
-        expect(tokenizeAndHumanizeParts('@if (a === 1) {<div a="}" b="{"></div>}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'if'],
-          [TokenType.BLOCK_PARAMETER, 'a === 1'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TAG_OPEN_START, '', 'div'],
-          [TokenType.ATTR_NAME, '', 'a'],
-          [TokenType.ATTR_QUOTE, '"'],
-          [TokenType.ATTR_VALUE_TEXT, '}'],
-          [TokenType.ATTR_QUOTE, '"'],
-          [TokenType.ATTR_NAME, '', 'b'],
-          [TokenType.ATTR_QUOTE, '"'],
-          [TokenType.ATTR_VALUE_TEXT, '{'],
-          [TokenType.ATTR_QUOTE, '"'],
-          [TokenType.TAG_OPEN_END],
-          [TokenType.TAG_CLOSE, '', 'div'],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse HTML tags with attribute containing block syntax', () => {
-        expect(tokenizeAndHumanizeParts('<div a="@if (foo) {}"></div>')).toEqual([
-          [TokenType.TAG_OPEN_START, '', 'div'],
-          [TokenType.ATTR_NAME, '', 'a'],
-          [TokenType.ATTR_QUOTE, '"'],
-          [TokenType.ATTR_VALUE_TEXT, '@if (foo) {}'],
-          [TokenType.ATTR_QUOTE, '"'],
-          [TokenType.TAG_OPEN_END],
-          [TokenType.TAG_CLOSE, '', 'div'],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse nested blocks', () => {
-        expect(tokenizeAndHumanizeParts(
-                   '@if (a) {' +
-                   'hello a' +
-                   '@if {' +
-                   'hello unnamed' +
-                   '@if (b) {' +
-                   'hello b' +
-                   '@if (c) {' +
-                   'hello c' +
-                   '}' +
-                   '}' +
-                   '}' +
-                   '}'))
-            .toEqual([
-              [TokenType.BLOCK_OPEN_START, 'if'],
-              [TokenType.BLOCK_PARAMETER, 'a'],
-              [TokenType.BLOCK_OPEN_END],
-              [TokenType.TEXT, 'hello a'],
-              [TokenType.BLOCK_OPEN_START, 'if'],
-              [TokenType.BLOCK_OPEN_END],
-              [TokenType.TEXT, 'hello unnamed'],
-              [TokenType.BLOCK_OPEN_START, 'if'],
-              [TokenType.BLOCK_PARAMETER, 'b'],
-              [TokenType.BLOCK_OPEN_END],
-              [TokenType.TEXT, 'hello b'],
-              [TokenType.BLOCK_OPEN_START, 'if'],
-              [TokenType.BLOCK_PARAMETER, 'c'],
-              [TokenType.BLOCK_OPEN_END],
-              [TokenType.TEXT, 'hello c'],
-              [TokenType.BLOCK_CLOSE],
-              [TokenType.BLOCK_CLOSE],
-              [TokenType.BLOCK_CLOSE],
-              [TokenType.BLOCK_CLOSE],
-              [TokenType.EOF],
-            ]);
-      });
-
-      it('should parse a block containing an expansion', () => {
-        const result = tokenizeAndHumanizeParts(
-            '@foo {{one.two, three, =4 {four} =5 {five} foo {bar} }}',
-            {tokenizeExpansionForms: true});
-
-        expect(result).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'foo'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.EXPANSION_FORM_START],
-          [TokenType.RAW_TEXT, 'one.two'],
-          [TokenType.RAW_TEXT, 'three'],
-          [TokenType.EXPANSION_CASE_VALUE, '=4'],
-          [TokenType.EXPANSION_CASE_EXP_START],
-          [TokenType.TEXT, 'four'],
-          [TokenType.EXPANSION_CASE_EXP_END],
-          [TokenType.EXPANSION_CASE_VALUE, '=5'],
-          [TokenType.EXPANSION_CASE_EXP_START],
-          [TokenType.TEXT, 'five'],
-          [TokenType.EXPANSION_CASE_EXP_END],
-          [TokenType.EXPANSION_CASE_VALUE, 'foo'],
-          [TokenType.EXPANSION_CASE_EXP_START],
-          [TokenType.TEXT, 'bar'],
-          [TokenType.EXPANSION_CASE_EXP_END],
-          [TokenType.EXPANSION_FORM_END],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse a block containing an interpolation', () => {
-        expect(tokenizeAndHumanizeParts('@foo {{{message}}}')).toEqual([
-          [TokenType.BLOCK_OPEN_START, 'foo'],
-          [TokenType.BLOCK_OPEN_END],
-          [TokenType.TEXT, ''],
-          [TokenType.INTERPOLATION, '{{', 'message', '}}'],
-          [TokenType.TEXT, ''],
-          [TokenType.BLOCK_CLOSE],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse an incomplete block start without parameters with surrounding text', () => {
-        expect(tokenizeAndHumanizeParts('My email frodo@baggins.com')).toEqual([
-          [TokenType.TEXT, 'My email frodo'],
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'baggins'],
-          [TokenType.TEXT, '.com'],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse an incomplete block start at the end of the input', () => {
-        expect(tokenizeAndHumanizeParts('My username is @frodo')).toEqual([
-          [TokenType.TEXT, 'My username is '],
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'frodo'],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse an incomplete block start with parentheses but without params', () => {
-        expect(tokenizeAndHumanizeParts('Use the @Input() decorator')).toEqual([
-          [TokenType.TEXT, 'Use the '],
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'Input'],
-          [TokenType.TEXT, 'decorator'],
-          [TokenType.EOF],
-        ]);
-      });
-
-      it('should parse an incomplete block start with parentheses and params', () => {
-        expect(tokenizeAndHumanizeParts('Use @Input({alias: "foo"}) to alias the input')).toEqual([
-          [TokenType.TEXT, 'Use '],
-          [TokenType.INCOMPLETE_BLOCK_OPEN, 'Input'],
-          [TokenType.BLOCK_PARAMETER, '{alias: "foo"}'],
-          [TokenType.TEXT, 'to alias the input'],
-          [TokenType.EOF],
-        ]);
-      });
-    });
   });
 }
 
-function tokenizeWithoutErrors(
-    input: string, options?: TokenizeOptions,
-    getTagContentType = (tagName: string, prefix: string) =>
-        getHtmlTagDefinition(tagName).getContentType(prefix)): TokenizeResult {
+function tokenizeWithoutErrors(input: string, options?: TokenizeOptions,
+    getTagContentType = (tagName: string, prefix: string) => getHtmlTagDefinition(tagName).getContentType(prefix)): TokenizeResult {
   const tokenizeResult = tokenize(input, 'someUrl', getTagContentType, options);
 
   if (tokenizeResult.errors.length > 0) {
@@ -2270,8 +1902,7 @@ function humanizeParts(tokens: Token[]) {
   return tokens.map(token => [token.type, ...token.parts]);
 }
 
-function tokenizeAndHumanizeParts(
-    input: string, options?: TokenizeOptions,
+function tokenizeAndHumanizeParts(input: string, options?: TokenizeOptions,
     getTagContentType?: (tagName: string, prefix: string) => TagContentType): any[] {
   return humanizeParts(tokenizeWithoutErrors(input, options, getTagContentType).tokens);
 }
@@ -2298,10 +1929,8 @@ function tokenizeAndHumanizeFullStart(input: string, options?: TokenizeOptions):
                humanizeLineColumn(token.sourceSpan.fullStart)]);
 }
 
-function tokenizeAndHumanizeErrors(
-    input: string, options?: TokenizeOptions,
-    getTagContentType = (tagName: string, prefix: string) =>
-        getHtmlTagDefinition(tagName).getContentType(prefix)): any[] {
+function tokenizeAndHumanizeErrors(input: string, options?: TokenizeOptions,
+    getTagContentType = (tagName: string, prefix: string) => getHtmlTagDefinition(tagName).getContentType(prefix)): any[] {
   return tokenize(input, 'someUrl', getTagContentType, options)
       .errors.map(e => [<any>e.tokenType, e.msg, humanizeLineColumn(e.span.start)]);
 }

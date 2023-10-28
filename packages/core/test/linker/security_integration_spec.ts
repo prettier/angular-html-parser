@@ -161,7 +161,8 @@ describe('security integration tests', function() {
     it('should escape unsafe properties if they are used in host bindings', () => {
       @Directive({selector: '[dirHref]'})
       class HrefDirective {
-        @HostBinding('href') @Input() dirHref: string|undefined;
+        // TODO(issue/24571): remove '!'.
+        @HostBinding('href') @Input() dirHref!: string;
       }
 
       const template = `<a [dirHref]="ctxProp">Link Title</a>`;
@@ -175,7 +176,8 @@ describe('security integration tests', function() {
     it('should escape unsafe attributes if they are used in host bindings', () => {
       @Directive({selector: '[dirHref]'})
       class HrefDirective {
-        @HostBinding('attr.href') @Input() dirHref: string|undefined;
+        // TODO(issue/24571): remove '!'.
+        @HostBinding('attr.href') @Input() dirHref!: string;
       }
 
       const template = `<a [dirHref]="ctxProp">Link Title</a>`;

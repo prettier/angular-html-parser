@@ -3,16 +3,20 @@
   font-size: 1em;
   width: 100%;
   height: calc(100% - 30px);
+}
 
-  p {
-    margin: 0;
-  }
+.mat-card {
+  display: flex;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+  height: wrap-content;
+  margin: 0 !important;
+  padding: 5px !important;
+  box-shadow: none !important;
+  border-radius: 0;
 }
 
 .mat-icon {
   font-size: 18px;
-  top: 4px;
-  position: relative;
 }
 
 .profiler-control {
@@ -24,6 +28,9 @@
 }
 
 .instructions {
+  margin-bottom: 0 !important;
+  align-self: center;
+
   &.hidden {
     display: none;
   }
@@ -53,9 +60,4 @@
       color: #ff625a;
     }
   }
-}
-
-.mdc-card {
-  flex-direction: row;
-  align-items: center;
 }

@@ -93,15 +93,13 @@ def karma_test(name, env_srcs, env_deps, env_entry_point, test_srcs, test_deps, 
                 bootstrap = [
                     ":saucelabs.js",
                     ":" + name + "_env_rollup.umd",
-                    "//packages/zone.js/bundles:zone.umd.js",
-                    "//packages/zone.js/bundles:zone-testing.umd.js",
+                    "//packages/zone.js/bundles:zone-testing-bundle.umd.min.js",
                 ] + _karma_test_required_dist_files,
                 browsers = ["@npm//@angular/build-tooling/bazel/browsers/chromium:chromium"],
                 config_file = "//:karma-js.conf.js",
                 configuration_env_vars = ["KARMA_WEB_TEST_MODE"],
                 data = [
                     "//:browser-providers.conf.js",
-                    "//tools/saucelabs-daemon/launcher:launcher_cjs",
                 ],
                 static_files = [
                     ":assets/sample.json",

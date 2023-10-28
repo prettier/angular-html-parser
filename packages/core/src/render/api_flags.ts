@@ -34,7 +34,7 @@ export interface RendererType2 {
   /**
    * Defines CSS styles to be stored on a renderer instance.
    */
-  styles: string[];
+  styles: (string|any[])[];
   /**
    * Defines arbitrary developer-defined data to be stored on a renderer instance.
    * This is useful for renderers that delegate to other renderers.

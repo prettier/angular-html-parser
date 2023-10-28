@@ -399,6 +399,10 @@ export interface TIcu {
   update: I18nUpdateOpCodes[];
 }
 
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+export const unusedValueExportToPlacateAjd = 1;
+
 /**
  * Parsed ICU expression
  */

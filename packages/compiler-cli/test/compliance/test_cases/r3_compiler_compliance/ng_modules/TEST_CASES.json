@@ -19,7 +19,7 @@
       ]
     },
     {
-      "description": "should define a basic NgModule (full/local)",      
+      "description": "should define a basic NgModule (full)",
       "inputFiles": [
         "basic_full.ts"
       ],
@@ -32,8 +32,7 @@
         }
       ],
       "compilationModeFilter": [
-        "full compile",
-        "local compile"
+        "full compile"
       ]
     },
     {
@@ -82,11 +81,6 @@
             "providers.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "linked compile",
-        "local compile"
       ]
     },
     {
@@ -101,10 +95,6 @@
             "imports_exports.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "local compile"
       ]
     },
     {
@@ -139,11 +129,6 @@
             "no_aot.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "linked compile",
-        "local compile"
       ]
     },
     {
@@ -158,11 +143,6 @@
             "inheritance.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "linked compile",
-        "local compile"
       ]
     },
     {
@@ -192,16 +172,11 @@
       ],
       "expectations": [
         {
-          "failureMessage": "Empty declaration exists",
+          "failureMessage": "Invalid injector definition",
           "files": [
             "empty_fields.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "linked compile",
-        "local compile"
       ]
     },
     {
@@ -216,11 +191,6 @@
             "variable_providers.js"
           ]
         }
-      ],
-      "compilationModeFilter": [
-        "full compile",
-        "linked compile",
-        "local compile"
       ]
     }
   ]

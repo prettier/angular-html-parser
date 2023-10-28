@@ -4,20 +4,16 @@ import { Component } from '@angular/core';
 
 import { HeroService } from './hero.service';
 import { LoggerService } from './logger.service';
-import { HeroBioComponent } from './hero-bio.component';
-import { HeroContactComponent } from './hero-contact.component';
 
 //////// HeroBiosComponent ////
 // #docregion simple
 @Component({
-  standalone: true,
   selector: 'app-hero-bios',
   template: `
     <app-hero-bio [heroId]="1"></app-hero-bio>
     <app-hero-bio [heroId]="2"></app-hero-bio>
     <app-hero-bio [heroId]="3"></app-hero-bio>`,
-  providers: [HeroService],
-  imports: [HeroBioComponent]
+  providers: [HeroService]
 })
 export class HeroBiosComponent {
 // #enddocregion simple
@@ -31,7 +27,6 @@ export class HeroBiosComponent {
 //////// HeroBiosAndContactsComponent ////
 // #docregion hero-bios-and-contacts
 @Component({
-  standalone: true,
   selector: 'app-hero-bios-and-contacts',
   // #docregion template
   template: `
@@ -39,8 +34,7 @@ export class HeroBiosComponent {
     <app-hero-bio [heroId]="2"> <app-hero-contact></app-hero-contact> </app-hero-bio>
     <app-hero-bio [heroId]="3"> <app-hero-contact></app-hero-contact> </app-hero-bio>`,
   // #enddocregion template
-  providers: [HeroService],
-  imports: [HeroBioComponent, HeroContactComponent]
+  providers: [HeroService]
 })
 export class HeroBiosAndContactsComponent {
   constructor(logger: LoggerService) {

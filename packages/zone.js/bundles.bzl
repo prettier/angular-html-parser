@@ -7,7 +7,7 @@ _DIR = "//packages/zone.js/lib:"
 
 BUNDLES_ENTRY_POINTS = {
     "zone": {
-        "es5": _DIR + "browser/rollup-main",
+        "es5": _DIR + "browser/rollup-legacy-main",
         "es2015": _DIR + "browser/rollup-main",
     },
     "zone-mix": {
@@ -102,5 +102,12 @@ BUNDLES_ENTRY_POINTS = {
     },
     "zone-testing": {
         "entrypoint": _DIR + "testing/zone-testing",
+    },
+    "zone-testing-bundle": {
+        "es5": _DIR + "browser/rollup-legacy-test-main",
+        "es2015": _DIR + "browser/rollup-test-main",
+    },
+    "zone-testing-node-bundle": {
+        "entrypoint": _DIR + "node/rollup-test-main",
     },
 }

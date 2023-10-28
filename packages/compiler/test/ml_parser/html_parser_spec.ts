@@ -41,8 +41,9 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
         });
 
         it('should parse CDATA', () => {
-          expect(humanizeDom(parser.parse('<![CDATA[text &amp; {{ foo }} ]]>', 'TestComp')))
-              .toEqual([[html.CDATA, 'text &amp; {{ foo }} ', 0, ['text &amp; {{ foo }} ']]]);
+          expect(humanizeDom(parser.parse('<![CDATA[text &amp; {{ foo }} ]]>', 'TestComp'))).toEqual([
+            [html.CDATA, 'text &amp; {{ foo }} ', 0, ['text &amp; {{ foo }} ']]
+          ]);
         });
 
         it('should normalize line endings within CDATA', () => {
@@ -214,8 +215,9 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
         });
 
         it('should support self closing elements (contentType=RAW_TEXT) with canSelfClose', () => {
-          expect(humanizeDom(parser.parse('<script />', 'TestComp', {canSelfClose: true})))
-              .toEqual([[html.Element, 'script', 0]]);
+          expect(humanizeDom(parser.parse('<script />', 'TestComp', {canSelfClose: true}))).toEqual([
+            [html.Element, 'script', 0]
+          ]);
         });
 
         it('should ignore LF immediately after textarea, pre and listing', () => {
@@ -264,16 +266,27 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
           expect(parsed.errors).toEqual([]);
         });
 
-        it('should parse element with JavaScript keyword tag name', () => {
-          expect(humanizeDom(parser.parse('<constructor></constructor>', 'TestComp'))).toEqual([
-            [html.Element, 'constructor', 0]
+        it('should treat prematurely terminated interpolation as text', () => {
+          const {errors, rootNodes} =
+              parser.parse('<div><span>x {{ expr }<!---->} y</span><div></div></div>', 'TestComp');
+          expect(humanizeNodes(rootNodes, true)).toEqual([
+            [
+              html.Element, 'div', 0, '<div><span>x {{ expr }<!---->} y</span><div></div></div>',
+              '<div>', '</div>'
+            ],
+            [html.Element, 'span', 1, '<span>x {{ expr }<!---->} y</span>', '<span>', '</span>'],
+            [html.Text, 'x {{ expr }', 2, ['x '], ['{{', ' expr }'], [''], 'x {{ expr }'],
+            [html.Comment, '', 2, '<!---->'],
+            [html.Text, '} y', 2, ['} y'], '} y'],
+            [html.Element, 'div', 1, '<div></div>', '<div>', '</div>'],
           ]);
+          expect(errors).toEqual([]);
         });
 
         it('should allow htm component tag close if enabled', () => {
           expect(humanizeDom(parser.parse(
-                     'foo<Footer>footer content</ / >bar', 'TestComp',
-                     {allowHtmComponentClosingTags: true})))
+                     'foo<Footer>footer content</ / >bar',
+                     'TestComp', {allowHtmComponentClosingTags: true})))
               .toEqual([
                 [html.Text, 'foo', 0, ['foo']],
                 [html.Element, 'Footer', 0],
@@ -799,255 +812,10 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
         });
       });
 
-      describe('blocks', () => {
-        it('should parse a block', () => {
-          expect(humanizeDom(parser.parse('@foo (a b; c d){hello}', 'TestComp'))).toEqual([
-            [html.Block, 'foo', 0],
-            [html.BlockParameter, 'a b'],
-            [html.BlockParameter, 'c d'],
-            [html.Text, 'hello', 1, ['hello']],
-          ]);
-        });
-
-        it('should parse a block with an HTML element', () => {
-          expect(humanizeDom(parser.parse('@defer {<my-cmp/>}', 'TestComp'))).toEqual([
-            [html.Block, 'defer', 0],
-            [html.Element, 'my-cmp', 1],
-          ]);
-        });
-
-        it('should parse a block containing mixed plain text and HTML', () => {
-          expect(humanizeDom(parser.parse(
-                     '@switch (expr) {' +
-                         '@case (1) {hello<my-cmp/>there}' +
-                         '@case (two) {<p>Two...</p>}' +
-                         '@case (isThree(3)) {T<strong>htr<i>e</i>e</strong>!}' +
-                         '}',
-                     'TestComp')))
-              .toEqual([
-                [html.Block, 'switch', 0],
-                [html.BlockParameter, 'expr'],
-                [html.Block, 'case', 1],
-                [html.BlockParameter, '1'],
-                [html.Text, 'hello', 2, ['hello']],
-                [html.Element, 'my-cmp', 2],
-                [html.Text, 'there', 2, ['there']],
-                [html.Block, 'case', 1],
-                [html.BlockParameter, 'two'],
-                [html.Element, 'p', 2],
-                [html.Text, 'Two...', 3, ['Two...']],
-                [html.Block, 'case', 1],
-                [html.BlockParameter, 'isThree(3)'],
-                [html.Text, 'T', 2, ['T']],
-                [html.Element, 'strong', 2],
-                [html.Text, 'htr', 3, ['htr']],
-                [html.Element, 'i', 3],
-                [html.Text, 'e', 4, ['e']],
-                [html.Text, 'e', 3, ['e']],
-                [html.Text, '!', 2, ['!']],
-              ]);
-        });
-
-        it('should parse nested blocks', () => {
-          // clang-format off
-          const markup = `<root-sibling-one/>` +
-            `@root {` +
-              `<outer-child-one/>` +
-              `<outer-child-two>` +
-                `@child (childParam === 1) {` +
-                  `@innerChild (innerChild1 === foo) {` +
-                    `<inner-child-one/>` +
-                    `@grandChild {` +
-                      `@innerGrandChild {` +
-                        `<inner-grand-child-one/>` +
-                      `}` +
-                      `@innerGrandChild {` +
-                        `<inner-grand-child-two/>` +
-                      `}` +
-                    `}` +
-                  `}` +
-                  `@innerChild {` +
-                    `<inner-child-two/>` +
-                  `}` +
-                `}` +
-              `</outer-child-two>` +
-              `@outerChild (outerChild1; outerChild2) {` +
-                `<outer-child-three/>` +
-              `}` +
-            `} <root-sibling-two/>`;
-          // clang-format on
-
-          expect(humanizeDom(parser.parse(markup, 'TestComp'))).toEqual([
-            [html.Element, 'root-sibling-one', 0],
-            [html.Block, 'root', 0],
-            [html.Element, 'outer-child-one', 1],
-            [html.Element, 'outer-child-two', 1],
-            [html.Block, 'child', 2],
-            [html.BlockParameter, 'childParam === 1'],
-            [html.Block, 'innerChild', 3],
-            [html.BlockParameter, 'innerChild1 === foo'],
-            [html.Element, 'inner-child-one', 4],
-            [html.Block, 'grandChild', 4],
-            [html.Block, 'innerGrandChild', 5],
-            [html.Element, 'inner-grand-child-one', 6],
-            [html.Block, 'innerGrandChild', 5],
-            [html.Element, 'inner-grand-child-two', 6],
-            [html.Block, 'innerChild', 3],
-            [html.Element, 'inner-child-two', 4],
-            [html.Block, 'outerChild', 1],
-            [html.BlockParameter, 'outerChild1'],
-            [html.BlockParameter, 'outerChild2'],
-            [html.Element, 'outer-child-three', 2],
-            [html.Text, ' ', 0, [' ']],
-            [html.Element, 'root-sibling-two', 0],
-          ]);
-        });
-
-        it('should infer namespace through block boundary', () => {
-          expect(humanizeDom(parser.parse('<svg>@if (cond) {<circle/>}</svg>', 'TestComp')))
-              .toEqual([
-                [html.Element, ':svg:svg', 0],
-                [html.Block, 'if', 1],
-                [html.BlockParameter, 'cond'],
-                [html.Element, ':svg:circle', 2],
-              ]);
-        });
-
-        it('should parse an empty block', () => {
-          expect(humanizeDom(parser.parse('@foo{}', 'TestComp'))).toEqual([
-            [html.Block, 'foo', 0],
-          ]);
-        });
-
-        it('should parse a block with void elements', () => {
-          expect(humanizeDom(parser.parse('@foo {<br>}', 'TestComp'))).toEqual([
-            [html.Block, 'foo', 0],
-            [html.Element, 'br', 1],
-          ]);
-        });
-
-        it('should close void elements used right before a block', () => {
-          expect(humanizeDom(parser.parse('<img>@foo {hello}', 'TestComp'))).toEqual([
-            [html.Element, 'img', 0],
-            [html.Block, 'foo', 0],
-            [html.Text, 'hello', 1, ['hello']],
-          ]);
-        });
-
-        it('should report an unclosed block', () => {
-          const errors = parser.parse('@foo {hello', 'TestComp').errors;
-          expect(errors.length).toEqual(1);
-          expect(humanizeErrors(errors)).toEqual([['foo', 'Unclosed block "foo"', '0:0']]);
-        });
-
-        it('should report an unexpected block close', () => {
-          const errors = parser.parse('hello}', 'TestComp').errors;
-          expect(errors.length).toEqual(1);
-          expect(humanizeErrors(errors)).toEqual([[
-            null,
-            'Unexpected closing block. The block may have been closed earlier. If you meant to write the } character, you should use the "&#125;" HTML entity instead.',
-            '0:5'
-          ]]);
-        });
-
-        it('should report unclosed tags inside of a block', () => {
-          const errors = parser.parse('@foo {<strong>hello}', 'TestComp').errors;
-          expect(errors.length).toEqual(1);
-          expect(humanizeErrors(errors)).toEqual([[
-            null,
-            'Unexpected closing block. The block may have been closed earlier. If you meant to write the } character, you should use the "&#125;" HTML entity instead.',
-            '0:19'
-          ]]);
-        });
-
-        it('should report an unexpected closing tag inside a block', () => {
-          const errors = parser.parse('<div>@if (cond) {hello</div>}', 'TestComp').errors;
-          expect(errors.length).toEqual(2);
-          expect(humanizeErrors(errors)).toEqual([
-            [
-              'div',
-              'Unexpected closing tag "div". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
-              '0:22'
-            ],
-            [
-              null,
-              'Unexpected closing block. The block may have been closed earlier. If you meant to write the } character, you should use the "&#125;" HTML entity instead.',
-              '0:28'
-            ],
-          ]);
-        });
-
-        it('should store the source locations of blocks', () => {
-          const markup = '@switch (expr) {' +
-              '@case (1) {<div>hello</div>world}' +
-              '@case (two) {Two}' +
-              '@case (isThree(3)) {Placeholde<strong>r</strong>}' +
-              '}';
-
-          expect(humanizeDomSourceSpans(parser.parse(markup, 'TestComp'))).toEqual([
-            [
-              html.Block, 'switch', 0,
-              '@switch (expr) {@case (1) {<div>hello</div>world}@case (two) {Two}@case (isThree(3)) {Placeholde<strong>r</strong>}}',
-              '@switch (expr) {', '}'
-            ],
-            [html.BlockParameter, 'expr', 'expr'],
-            [html.Block, 'case', 1, '@case (1) {<div>hello</div>world}', '@case (1) {', '}'],
-            [html.BlockParameter, '1', '1'],
-            [html.Element, 'div', 2, '<div>hello</div>', '<div>', '</div>'],
-            [html.Text, 'hello', 3, ['hello'], 'hello'],
-            [html.Text, 'world', 2, ['world'], 'world'],
-            [html.Block, 'case', 1, '@case (two) {Two}', '@case (two) {', '}'],
-            [html.BlockParameter, 'two', 'two'],
-            [html.Text, 'Two', 2, ['Two'], 'Two'],
-            [
-              html.Block, 'case', 1, '@case (isThree(3)) {Placeholde<strong>r</strong>}',
-              '@case (isThree(3)) {', '}'
-            ],
-            [html.BlockParameter, 'isThree(3)', 'isThree(3)'],
-            [html.Text, 'Placeholde', 2, ['Placeholde'], 'Placeholde'],
-            [html.Element, 'strong', 2, '<strong>r</strong>', '<strong>', '</strong>'],
-            [html.Text, 'r', 3, ['r'], 'r'],
-          ]);
-        });
-
-        it('should parse an incomplete block with no parameters', () => {
-          const result = parser.parse('Use the @Input() decorator', 'TestComp');
-
-          expect(humanizeNodes(result.rootNodes, true)).toEqual([
-            [html.Text, 'Use the ', 0, ['Use the '], 'Use the '],
-            [html.Block, 'Input', 0, '@Input() ', '@Input() ', null],
-            [html.Text, 'decorator', 0, ['decorator'], 'decorator'],
-          ]);
-
-          expect(humanizeErrors(result.errors)).toEqual([[
-            'Input',
-            'Incomplete block "Input". If you meant to write the @ character, you should use the "&#64;" HTML entity instead.',
-            '0:8'
-          ]]);
-        });
-
-        it('should parse an incomplete block with no parameters', () => {
-          const result = parser.parse('Use @Input({alias: "foo"}) to alias your input', 'TestComp');
-
-          expect(humanizeNodes(result.rootNodes, true)).toEqual([
-            [html.Text, 'Use ', 0, ['Use '], 'Use '],
-            [html.Block, 'Input', 0, '@Input({alias: "foo"}) ', '@Input({alias: "foo"}) ', null],
-            [html.BlockParameter, '{alias: "foo"}', '{alias: "foo"}'],
-            [html.Text, 'to alias your input', 0, ['to alias your input'], 'to alias your input'],
-          ]);
-
-          expect(humanizeErrors(result.errors)).toEqual([[
-            'Input',
-            'Incomplete block "Input". If you meant to write the @ character, you should use the "&#64;" HTML entity instead.',
-            '0:4'
-          ]]);
-        });
-      });
-
       describe('source spans', () => {
         it('should store the location', () => {
           expect(humanizeDomSourceSpans(parser.parse(
-                     '<div [prop]="v1" (e)="do()" attr="v2" noValue>\na\n</div>', ' TestComp')))
+                     '<div [prop]="v1" (e)="do()" attr="v2" noValue>\na\n</div>', 'TestComp')))
               .toEqual([
                 [
                   html.Element, 'div', 0,
@@ -1231,29 +999,29 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
         it('should report a name span for an attribute', () => {
           const ast = parser.parse('<div bar="12"></div>', 'TestComp');
           const attr = (ast.rootNodes[0] as html.Element).attrs[0];
-          expect(attr.keySpan!.start.offset).toEqual(5);
-          expect(attr.keySpan!.end.offset).toEqual(8);
+          expect(attr.keySpan !.start.offset).toEqual(5);
+          expect(attr.keySpan !.end.offset).toEqual(8);
         });
 
         it('should report a name span for an element', () => {
           const ast = parser.parse('<div bar="12"></div>', 'TestComp');
           const el = (ast.rootNodes[0] as html.Element);
-          expect(el.nameSpan!.start.offset).toEqual(1);
-          expect(el.nameSpan!.end.offset).toEqual(4);
+          expect(el.nameSpan !.start.offset).toEqual(1);
+          expect(el.nameSpan !.end.offset).toEqual(4);
         });
 
         it('should support comment', () => {
           const ast = parser.parse('<!--foo-->', 'TestComp');
           const comment = (ast.rootNodes[0] as html.Comment);
-          expect(comment.sourceSpan!.start.offset).toEqual(0);
-          expect(comment.sourceSpan!.end.offset).toEqual(10);
+          expect(comment.sourceSpan !.start.offset).toEqual(0);
+          expect(comment.sourceSpan !.end.offset).toEqual(10);
         });
 
         it('should support endSourceSpan with void element as its last child', () => {
           const ast = parser.parse('<a><br></a>', 'TestComp');
           const element = (ast.rootNodes[0] as html.Element);
-          expect(element.endSourceSpan!.start.offset).toEqual(7);
-          expect(element.endSourceSpan!.end.offset).toEqual(11);
+          expect(element.endSourceSpan !.start.offset).toEqual(7);
+          expect(element.endSourceSpan !.end.offset).toEqual(11);
         });
       });
 
@@ -1277,7 +1045,7 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
           const result =
               parser.parse('<div id="foo"><span id="bar">a</span><span>b</span></div>', 'TestComp');
           const accumulator: html.Node[] = [];
-          const visitor = new class implements html.Visitor {
+          const visitor = new class {
             visit(node: html.Node, context: any) {
               accumulator.push(node);
             }
@@ -1294,11 +1062,6 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
               html.visitAll(this, expansion.cases);
             }
             visitExpansionCase(expansionCase: html.ExpansionCase, context: any): any {}
-            visitBlock(block: html.Block, context: any) {
-              html.visitAll(this, block.parameters);
-              html.visitAll(this, block.children);
-            }
-            visitBlockParameter(parameter: html.BlockParameter, context: any) {}
           };
 
           html.visitAll(visitor, result.rootNodes);
@@ -1309,7 +1072,7 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
         });
 
         it('should skip typed visit if visit() returns a truthy value', () => {
-          const visitor = new class implements html.Visitor {
+          const visitor = new class {
             visit(node: html.Node, context: any) {
               return true;
             }
@@ -1325,22 +1088,12 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
             visitComment(comment: html.Comment, context: any): any {
               throw Error('Unexpected');
             }
-            visitCdata(cdata: html.CDATA, context: any): any {
-              throw Error('Unexpected');
-            }
-            visitDocType(docType: html.DocType, context: any): any {
-              throw Error('Unexpected');
-            }
+            visitCdata(cdata: html.CDATA, context: any): any { throw Error('Unexpected'); }
+            visitDocType(docType: html.DocType, context: any): any { throw Error('Unexpected'); }
             visitExpansion(expansion: html.Expansion, context: any): any {
               throw Error('Unexpected');
             }
             visitExpansionCase(expansionCase: html.ExpansionCase, context: any): any {
-              throw Error('Unexpected');
-            }
-            visitBlock(block: html.Block, context: any) {
-              throw Error('Unexpected');
-            }
-            visitBlockParameter(parameter: html.BlockParameter, context: any) {
               throw Error('Unexpected');
             }
           };
@@ -1445,11 +1198,10 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
           ]);
         });
 
-        it('should not report closing tag for non-lowercase void elements with isTagNameCaseSensitive',
-           () => {
-             const errors = parser.parse('<Input></Input>', 'TestComp', undefined, true).errors;
-             expect(errors.length).toEqual(0);
-           });
+        it('should not report closing tag for non-lowercase void elements with isTagNameCaseSensitive', () => {
+          const errors = parser.parse('<Input></Input>', 'TestComp', undefined, true).errors;
+          expect(errors.length).toEqual(0);
+        });
 
         it('should report self closing html element', () => {
           const errors = parser.parse('<p />', 'TestComp').errors;
@@ -1466,11 +1218,13 @@ import {humanizeDom, humanizeDomSourceSpans, humanizeLineColumn, humanizeNodes} 
         it('should also report lexer errors', () => {
           const errors = parser.parse('<!-err--><div></p></div>', 'TestComp').errors;
           expect(errors.length).toEqual(1);
-          expect(humanizeErrors(errors)).toEqual([[
-            'p',
-            'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
-            '0:14'
-          ]]);
+          expect(humanizeErrors(errors)).toEqual([
+            [
+              'p',
+              'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
+              '0:14'
+            ]
+          ]);
         });
       });
     });

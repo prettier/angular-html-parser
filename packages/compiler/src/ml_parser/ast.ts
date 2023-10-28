@@ -16,8 +16,7 @@ interface BaseNode {
   visit(visitor: Visitor, context: any): any;
 }
 
-export type Node =
-    Attribute|CDATA|Comment|DocType|Element|Expansion|ExpansionCase|Text|Block|BlockParameter;
+export type Node = Attribute|CDATA|Comment|DocType|Element|Expansion|ExpansionCase|Text;
 // Expansion|ExpansionCase -- not used by angular-html-parser, should be removed on publish
 
 export abstract class NodeWithI18n implements BaseNode {
@@ -91,8 +90,7 @@ export class Element extends NodeWithI18n {
   constructor(
       public name: string, public attrs: Attribute[], public children: Node[],
       sourceSpan: ParseSourceSpan, public startSourceSpan: ParseSourceSpan,
-      public endSourceSpan: ParseSourceSpan|null = null,
-      public nameSpan: ParseSourceSpan|null = null, i18n?: I18nMeta) {
+      public endSourceSpan: ParseSourceSpan|null = null, public nameSpan: ParseSourceSpan|null = null, i18n?: I18nMeta) {
     super(sourceSpan, i18n);
   }
   override visit(visitor: Visitor, context: any): any {
@@ -117,25 +115,6 @@ export class DocType implements BaseNode {
   readonly type = 'docType';
 }
 
-export class Block implements BaseNode {
-  constructor(
-      public name: string, public parameters: BlockParameter[], public children: Node[],
-      public sourceSpan: ParseSourceSpan, public startSourceSpan: ParseSourceSpan,
-      public endSourceSpan: ParseSourceSpan|null = null) {}
-
-  visit(visitor: Visitor, context: any) {
-    return visitor.visitBlock(this, context);
-  }
-}
-
-export class BlockParameter implements BaseNode {
-  constructor(public expression: string, public sourceSpan: ParseSourceSpan) {}
-
-  visit(visitor: Visitor, context: any): any {
-    return visitor.visitBlockParameter(this, context);
-  }
-}
-
 export interface Visitor {
   // Returning a truthy value from `visit()` will prevent `visitAll()` from the call to the typed
   // method and result returned will become the result included in `visitAll()`s result array.
@@ -149,8 +128,6 @@ export interface Visitor {
   visitDocType(docType: DocType, context: any): any;
   visitExpansion(expansion: Expansion, context: any): any;
   visitExpansionCase(expansionCase: ExpansionCase, context: any): any;
-  visitBlock(block: Block, context: any): any;
-  visitBlockParameter(parameter: BlockParameter, context: any): any;
 }
 
 export function visitAll(visitor: Visitor, nodes: Node[], context: any = null): any[] {
@@ -191,15 +168,6 @@ export class RecursiveVisitor implements Visitor {
   }
 
   visitExpansionCase(ast: ExpansionCase, context: any): any {}
-
-  visitBlock(block: Block, context: any): any {
-    this.visitChildren(context, visit => {
-      visit(block.parameters);
-      visit(block.children);
-    });
-  }
-
-  visitBlockParameter(ast: BlockParameter, context: any): any {}
 
   private visitChildren<T extends Node>(
       context: any, cb: (visit: (<V extends Node>(children: V[]|undefined) => void)) => void) {

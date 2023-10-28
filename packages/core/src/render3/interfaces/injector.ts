@@ -64,9 +64,9 @@ export const enum NodeInjectorOffset {
  * The interfaces encodes number of parents `LView`s to traverse and index in the `LView`
  * pointing to the parent injector.
  */
-export type RelativeInjectorLocation = number&{
+export interface RelativeInjectorLocation {
   __brand__: 'RelativeInjectorLocationFlags';
-};
+}
 
 export const enum RelativeInjectorLocationFlags {
   InjectorIndexMask = 0b111111111111111,
@@ -74,7 +74,7 @@ export const enum RelativeInjectorLocationFlags {
   NO_PARENT = -1,
 }
 
-export const NO_PARENT_INJECTOR = -1 as RelativeInjectorLocation;
+export const NO_PARENT_INJECTOR: RelativeInjectorLocation = -1 as any;
 
 /**
  * Each injector is saved in 9 contiguous slots in `LView` and 9 contiguous slots in
@@ -289,3 +289,7 @@ export class NodeInjectorFactory {
 export function isFactory(obj: any): obj is NodeInjectorFactory {
   return obj instanceof NodeInjectorFactory;
 }
+
+// Note: This hack is necessary so we don't erroneously get a circular dependency
+// failure based on types.
+export const unusedValueExportToPlacateAjd = 1;

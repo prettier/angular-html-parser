@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ApplicationRef, ChangeDetectorRef, Component, ComponentRef, createComponent, ElementRef, EmbeddedViewRef, EnvironmentInjector, Injector, TemplateRef, ViewChild, ViewContainerRef} from '@angular/core';
+import {ApplicationRef, ChangeDetectorRef, Component, ComponentFactoryResolver, ComponentRef, ElementRef, EmbeddedViewRef, Injector, NgModule, TemplateRef, ViewChild, ViewContainerRef} from '@angular/core';
 import {InternalViewRef} from '@angular/core/src/linker/view_ref';
 import {TestBed} from '@angular/core/testing';
 
@@ -21,10 +21,13 @@ describe('ViewRef', () => {
     @Component({template: `<span></span>`})
     class App {
       componentRef!: ComponentRef<DynamicComponent>;
-      constructor(public appRef: ApplicationRef, private injector: EnvironmentInjector) {}
+      constructor(
+          public appRef: ApplicationRef, private cfr: ComponentFactoryResolver,
+          private injector: Injector) {}
 
       create() {
-        this.componentRef = createComponent(DynamicComponent, {environmentInjector: this.injector});
+        const componentFactory = this.cfr.resolveComponentFactory(DynamicComponent);
+        this.componentRef = componentFactory.create(this.injector);
         (this.componentRef.hostView as InternalViewRef).attachToAppRef(this.appRef);
         document.body.appendChild(this.componentRef.instance.elRef.nativeElement);
       }
@@ -77,11 +80,14 @@ describe('ViewRef', () => {
       @ViewChild(TemplateRef) templateRef!: TemplateRef<any>;
       componentRef!: ComponentRef<DynamicComponent>;
       viewRef!: EmbeddedViewRef<any>;
-      constructor(private _viewContainerRef: ViewContainerRef) {}
+      constructor(
+          private _viewContainerRef: ViewContainerRef,
+          private _componentFactoryResolver: ComponentFactoryResolver) {}
 
       create() {
+        const factory = this._componentFactoryResolver.resolveComponentFactory(DynamicComponent);
         this.viewRef = this.templateRef.createEmbeddedView(null);
-        this.componentRef = this._viewContainerRef.createComponent(DynamicComponent);
+        this.componentRef = this._viewContainerRef.createComponent(factory);
         this.componentRef.instance.viewContainerRef.insert(this.viewRef);
       }
     }
@@ -108,11 +114,14 @@ describe('ViewRef', () => {
       @ViewChild(TemplateRef) templateRef!: TemplateRef<any>;
       componentRef!: ComponentRef<DynamicComponent>;
       viewRef!: EmbeddedViewRef<any>;
-      constructor(private _viewContainerRef: ViewContainerRef) {}
+      constructor(
+          private _viewContainerRef: ViewContainerRef,
+          private _componentFactoryResolver: ComponentFactoryResolver) {}
 
       create() {
+        const factory = this._componentFactoryResolver.resolveComponentFactory(DynamicComponent);
         this.viewRef = this.templateRef.createEmbeddedView(null);
-        this.componentRef = this._viewContainerRef.createComponent(DynamicComponent);
+        this.componentRef = this._viewContainerRef.createComponent(factory);
         this.componentRef.instance.viewContainerRef.insert(this.viewRef);
       }
     }

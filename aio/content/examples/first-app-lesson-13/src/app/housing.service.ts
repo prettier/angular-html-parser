@@ -5,15 +5,14 @@ import { HousingLocation } from './housinglocation';
   providedIn: 'root'
 })
 export class HousingService {
-  readonly baseUrl = 'https://angular.io/assets/images/tutorials/faa';
-
+  private img_server = "https://storage.googleapis.com/angular-tutorial-assets/first-app/";
   protected housingLocationList: HousingLocation[] = [
     {
       id: 0,
       name: 'Acme Fresh Start Housing',
       city: 'Chicago',
       state: 'IL',
-      photo: `${this.baseUrl}/bernard-hermant-CLKGGwIBTaY-unsplash.jpg`,
+      photo: this.img_server + 'house_0.png',
       availableUnits: 4,
       wifi: true,
       laundry: true
@@ -23,17 +22,17 @@ export class HousingService {
       name: 'A113 Transitional Housing',
       city: 'Santa Monica',
       state: 'CA',
-      photo: `${this.baseUrl}/brandon-griggs-wR11KBaB86U-unsplash.jpg`,
+      photo: this.img_server + 'house_1.png',
       availableUnits: 0,
       wifi: false,
       laundry: true
     },
     {
       id: 2,
-      name: 'Warm Beds Housing Support',
+      name: 'Warm Beds Support',
       city: 'Juneau',
       state: 'AK',
-      photo: `${this.baseUrl}/i-do-nothing-but-love-lAyXdl1-Wmc-unsplash.jpg`,
+      photo: this.img_server + 'house_2.png',
       availableUnits: 1,
       wifi: false,
       laundry: false
@@ -43,7 +42,7 @@ export class HousingService {
       name: 'Homesteady Housing',
       city: 'Chicago',
       state: 'IL',
-      photo: `${this.baseUrl}/ian-macdonald-W8z6aiwfi1E-unsplash.jpg`,
+      photo: this.img_server + 'house_3.png',
       availableUnits: 1,
       wifi: true,
       laundry: false
@@ -53,7 +52,7 @@ export class HousingService {
       name: 'Happy Homes Group',
       city: 'Gary',
       state: 'IN',
-      photo: `${this.baseUrl}/krzysztof-hepner-978RAXoXnH4-unsplash.jpg`,
+      photo: this.img_server + 'house_4.png',
       availableUnits: 1,
       wifi: true,
       laundry: false
@@ -63,7 +62,7 @@ export class HousingService {
       name: 'Hopeful Apartment Group',
       city: 'Oakland',
       state: 'CA',
-      photo: `${this.baseUrl}/r-architecture-JvQ0Q5IkeMM-unsplash.jpg`,
+      photo: this.img_server + 'house_5.png',
       availableUnits: 2,
       wifi: true,
       laundry: true
@@ -73,7 +72,7 @@ export class HousingService {
       name: 'Seriously Safe Towns',
       city: 'Oakland',
       state: 'CA',
-      photo: `${this.baseUrl}/phil-hearing-IYfp2Ixe9nM-unsplash.jpg`,
+      photo: this.img_server + 'house_6.png',
       availableUnits: 5,
       wifi: true,
       laundry: true
@@ -83,7 +82,7 @@ export class HousingService {
       name: 'Hopeful Housing Solutions',
       city: 'Oakland',
       state: 'CA',
-      photo: `${this.baseUrl}/r-architecture-GGupkreKwxA-unsplash.jpg`,
+      photo: this.img_server + 'house_7.png',
       availableUnits: 2,
       wifi: true,
       laundry: true
@@ -93,7 +92,7 @@ export class HousingService {
       name: 'Seriously Safe Towns',
       city: 'Oakland',
       state: 'CA',
-      photo: `${this.baseUrl}/saru-robert-9rP3mxf8qWI-unsplash.jpg`,
+      photo: this.img_server + 'house_8.png',
       availableUnits: 10,
       wifi: false,
       laundry: false
@@ -103,7 +102,7 @@ export class HousingService {
       name: 'Capital Safe Towns',
       city: 'Portland',
       state: 'OR',
-      photo: `${this.baseUrl}/webaliser-_TPTXZd9mOo-unsplash.jpg`,
+      photo: this.img_server + 'house_9.png',
       availableUnits: 6,
       wifi: true,
       laundry: true
@@ -119,6 +118,6 @@ export class HousingService {
   }
 
   submitApplication(firstName: string, lastName: string, email: string) {
-    console.log(`Homes application received: firstName: ${firstName}, lastName: ${lastName}, email: ${email}.`);
+    console.log(`Homes application recieved: firstName: ${firstName}, lastName: ${lastName}, email: ${email}.`);
   }
 }

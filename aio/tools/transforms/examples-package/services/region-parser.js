@@ -13,6 +13,7 @@ module.exports = function regionParser() {
     js: inlineC,
     mjs: inlineCOnly,
     es6: inlineC,
+    dart: inlineC,
     html: html,
     svg: html,
     css: blockC,

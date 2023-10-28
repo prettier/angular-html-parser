@@ -13,7 +13,7 @@ import {ɵgetDOM as getDOM} from '@angular/common';
 import {DominoAdapter} from '@angular/platform-server/src/domino_adapter';
 
 if (typeof window == 'undefined') {
-  const domino = require('../../../platform-server/src/bundled-domino');
+  const domino = require('domino');
 
   DominoAdapter.makeCurrent();
   (global as any).document = getDOM().getDefaultDocument();

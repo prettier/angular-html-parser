@@ -1,9 +1,8 @@
-.mdc-card.breadcrumb-card { 
+.mat-card.breadcrumb-card {
   padding: 0;
   width: 100%;
   height: 24px;
   display: flex;
-  flex-direction: row;
 
   .scroll-button {
     height: 100%;
@@ -29,15 +28,13 @@
     }
 
     button {
-      height: 24px;
-
       &.selected {
         background-color: rgb(243, 243, 243);
       }
     }
   }
 
-  .mdc-button {
+  .mat-button {
     height: 20px;
     line-height: 20px;
     font-size: 11px;
@@ -52,7 +49,7 @@
 }
 
 :host-context(.dark-theme) {
-  .mdc-card {
+  .mat-card {
     &.breadcrumb-card {
       .scroll-button {
         background-color: rgb(41, 42, 45);
@@ -67,7 +64,7 @@
         }
       }
 
-      .mdc-button {
+      .mat-button {
         color: #5caace;
         &:hover {
           background-color: #093e69;

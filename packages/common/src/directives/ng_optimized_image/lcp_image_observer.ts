@@ -15,13 +15,6 @@ import {assertDevMode} from './asserts';
 import {imgDirectiveDetails} from './error_helper';
 import {getUrl} from './url';
 
-interface ObservedImageState {
-  priority: boolean;
-  modified: boolean;
-  alreadyWarnedPriority: boolean;
-  alreadyWarnedModified: boolean;
-}
-
 /**
  * Observer that detects whether an image with `NgOptimizedImage`
  * is treated as a Largest Contentful Paint (LCP) element. If so,
@@ -35,7 +28,9 @@ interface ObservedImageState {
 @Injectable({providedIn: 'root'})
 export class LCPImageObserver implements OnDestroy {
   // Map of full image URLs -> original `ngSrc` values.
-  private images = new Map<string, ObservedImageState>();
+  private images = new Map<string, string>();
+  // Keep track of images for which `console.warn` was produced.
+  private alreadyWarned = new Set<string>();
 
   private window: Window|null = null;
   private observer: PerformanceObserver|null = null;
@@ -70,30 +65,19 @@ export class LCPImageObserver implements OnDestroy {
       // Exclude `data:` and `blob:` URLs, since they are not supported by the directive.
       if (imgSrc.startsWith('data:') || imgSrc.startsWith('blob:')) return;
 
-      const img = this.images.get(imgSrc);
-      if (!img) return;
-      if (!img.priority && !img.alreadyWarnedPriority) {
-        img.alreadyWarnedPriority = true;
-        logMissingPriorityError(imgSrc);
-      }
-      if (img.modified && !img.alreadyWarnedModified) {
-        img.alreadyWarnedModified = true;
-        logModifiedWarning(imgSrc);
+      const imgNgSrc = this.images.get(imgSrc);
+      if (imgNgSrc && !this.alreadyWarned.has(imgSrc)) {
+        this.alreadyWarned.add(imgSrc);
+        logMissingPriorityWarning(imgSrc);
       }
     });
     observer.observe({type: 'largest-contentful-paint', buffered: true});
     return observer;
   }
 
-  registerImage(rewrittenSrc: string, originalNgSrc: string, isPriority: boolean) {
+  registerImage(rewrittenSrc: string, originalNgSrc: string) {
     if (!this.observer) return;
-    const newObservedImageState: ObservedImageState = {
-      priority: isPriority,
-      modified: false,
-      alreadyWarnedModified: false,
-      alreadyWarnedPriority: false
-    };
-    this.images.set(getUrl(rewrittenSrc, this.window!).href, newObservedImageState);
+    this.images.set(getUrl(rewrittenSrc, this.window!).href, originalNgSrc);
   }
 
   unregisterImage(rewrittenSrc: string) {
@@ -101,39 +85,20 @@ export class LCPImageObserver implements OnDestroy {
     this.images.delete(getUrl(rewrittenSrc, this.window!).href);
   }
 
-  updateImage(originalSrc: string, newSrc: string) {
-    const originalUrl = getUrl(originalSrc, this.window!).href;
-    const img = this.images.get(originalUrl);
-    if (img) {
-      img.modified = true;
-      this.images.set(getUrl(newSrc, this.window!).href, img);
-      this.images.delete(originalUrl);
-    }
-  }
-
   ngOnDestroy() {
     if (!this.observer) return;
     this.observer.disconnect();
     this.images.clear();
+    this.alreadyWarned.clear();
   }
 }
 
-function logMissingPriorityError(ngSrc: string) {
+function logMissingPriorityWarning(ngSrc: string) {
   const directiveDetails = imgDirectiveDetails(ngSrc);
-  console.error(formatRuntimeError(
+  console.warn(formatRuntimeError(
       RuntimeErrorCode.LCP_IMG_MISSING_PRIORITY,
       `${directiveDetails} this image is the Largest Contentful Paint (LCP) ` +
           `element but was not marked "priority". This image should be marked ` +
           `"priority" in order to prioritize its loading. ` +
           `To fix this, add the "priority" attribute.`));
-}
-
-function logModifiedWarning(ngSrc: string) {
-  const directiveDetails = imgDirectiveDetails(ngSrc);
-  console.warn(formatRuntimeError(
-      RuntimeErrorCode.LCP_IMG_NGSRC_MODIFIED,
-      `${directiveDetails} this image is the Largest Contentful Paint (LCP) ` +
-          `element and has had its "ngSrc" attribute modified. This can cause ` +
-          `slower loading performance. It is recommended not to modify the "ngSrc" ` +
-          `property on any image which could be the LCP element.`));
 }

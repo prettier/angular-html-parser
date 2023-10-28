@@ -1,6 +1,4 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("//tools:defaults.bzl", "api_golden_test_npm_package", "esbuild", "ng_module", "ng_package", "tsec_test")
-load("@npm//@angular/build-tooling/bazel/api-gen:generate_api_docs.bzl", "generate_api_docs")
+load("//tools:defaults.bzl", "api_golden_test_npm_package", "ng_module", "ng_package", "tsec_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -12,38 +10,21 @@ ng_module(
             "*.ts",
             "src/**/*.ts",
         ],
-        exclude = ["src/bundled-domino.d.ts"],
     ),
     deps = [
-        ":bundled_domino_lib",
         "//packages/animations/browser",
         "//packages/common",
         "//packages/common/http",
         "//packages/compiler",
         "//packages/core",
         "//packages/platform-browser",
+        "//packages/platform-browser-dynamic",
         "//packages/platform-browser/animations",
         "//packages/zone.js/lib:zone_d_ts",
         "@npm//@types/node",
         "@npm//domino",
         "@npm//rxjs",
         "@npm//xhr2",
-    ],
-)
-
-esbuild(
-    name = "bundled_domino",
-    entry_point = "@npm//:node_modules/domino/lib/index.js",
-    format = "esm",
-    output = "src/bundled-domino.mjs",
-    deps = ["@npm//domino"],
-)
-
-js_library(
-    name = "bundled_domino_lib",
-    srcs = [
-        "src/bundled-domino.d.ts",
-        ":bundled_domino",
     ],
 )
 
@@ -59,6 +40,7 @@ ng_package(
         "package.json",
     ],
     externals = [
+        "domino",
         "xhr2",
     ],
     tags = [
@@ -96,11 +78,4 @@ filegroup(
         "*.ts",
         "src/**/*.ts",
     ]) + ["PACKAGE.md"],
-)
-
-generate_api_docs(
-    name = "platform-server_docs",
-    srcs = [":files_for_docgen"],
-    entry_point = ":index.ts",
-    module_name = "@angular/platform-server",
 )

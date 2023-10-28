@@ -262,7 +262,7 @@ describe('Typed Class', () => {
       c.setControl('c', new FormControl(0));
       c.setControl('notpresent', new FormControl(0));
       c.removeControl('c');
-      c.controls['d'].valueChanges.subscribe(() => {});
+      c.controls.d.valueChanges.subscribe((v) => {});
     });
 
     it('supports groups with explicit named interface types', () => {
@@ -1105,15 +1105,6 @@ describe('Typed Class', () => {
           let t1 = c3.controls;
           t1 = null as unknown as ControlsType;
         }
-
-        const c4 = fb.group({foo: [[1, 2, 3], Validators.maxLength(4)]});
-        {
-          type ControlsType = {foo: FormControl<number[]|null>};
-          let t: ControlsType = c4.controls;
-          let t1 = c4.controls;
-          t1 = null as unknown as ControlsType;
-        }
-        expect(c4.controls.foo.value).toEqual([1, 2, 3]);
       });
 
       it('from objects with ControlConfigs and validator lists', () => {
@@ -1477,7 +1468,7 @@ describe('Typed Class', () => {
           t1 = null as unknown as RawValueType;
         }
         c.reset();
-        expect(c.value).not.toBeNull();
+        expect(c.value).not.toBeNull;
       });
     });
 

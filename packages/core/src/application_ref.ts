@@ -8,15 +8,13 @@
 
 import './util/ng_jit_mode';
 
-import {setThrowInvalidWriteToSignalError} from '@angular/core/primitives/signals';
-import {Observable, of, Subscription} from 'rxjs';
-import {distinctUntilChanged, first, share, switchMap} from 'rxjs/operators';
+import {merge, Observable, Observer, Subscription} from 'rxjs';
+import {share} from 'rxjs/operators';
 
 import {ApplicationInitStatus} from './application_init';
-import {PLATFORM_INITIALIZER} from './application_tokens';
+import {APP_BOOTSTRAP_LISTENER, PLATFORM_INITIALIZER} from './application_tokens';
 import {getCompilerFacade, JitCompilerUsage} from './compiler/compiler_facade';
 import {Console} from './console';
-import {ENVIRONMENT_INITIALIZER, inject, makeEnvironmentProviders} from './di';
 import {Injectable} from './di/injectable';
 import {InjectionToken} from './di/injection_token';
 import {Injector} from './di/injector';
@@ -27,8 +25,6 @@ import {ErrorHandler} from './error_handler';
 import {formatRuntimeError, RuntimeError, RuntimeErrorCode} from './errors';
 import {DEFAULT_LOCALE_ID} from './i18n/localization';
 import {LOCALE_ID} from './i18n/tokens';
-import {ImagePerformanceWarning} from './image_performance_warning';
-import {InitialRenderPendingTasks} from './initial_render_pending_tasks';
 import {Type} from './interface/type';
 import {COMPILER_OPTIONS, CompilerOptions} from './linker/compiler';
 import {ComponentFactory, ComponentRef} from './linker/component_factory';
@@ -42,12 +38,13 @@ import {isStandalone} from './render3/definition';
 import {assertStandaloneComponentType} from './render3/errors';
 import {setLocaleId} from './render3/i18n/i18n_locale_id';
 import {setJitOptions} from './render3/jit/jit_options';
-import {createNgModuleRefWithProviders, EnvironmentNgModuleRefAdapter, NgModuleFactory as R3NgModuleFactory} from './render3/ng_module_ref';
+import {createEnvironmentInjector, NgModuleFactory as R3NgModuleFactory} from './render3/ng_module_ref';
 import {publishDefaultGlobalUtils as _publishDefaultGlobalUtils} from './render3/util/global_utils';
 import {TESTABILITY} from './testability/testability';
 import {isPromise} from './util/lang';
+import {scheduleMicroTask} from './util/microtask';
 import {stringify} from './util/stringify';
-import {isStableFactory, NgZone, NoopNgZone, ZONE_IS_STABLE_OBSERVABLE} from './zone/ng_zone';
+import {NgZone, NoopNgZone} from './zone/ng_zone';
 
 let _platformInjector: Injector|null = null;
 
@@ -66,18 +63,7 @@ export const ALLOW_MULTIPLE_PLATFORMS = new InjectionToken<boolean>('AllowMultip
 const PLATFORM_DESTROY_LISTENERS =
     new InjectionToken<Set<VoidFunction>>('PlatformDestroyListeners');
 
-/**
- * A [DI token](guide/glossary#di-token "DI token definition") that provides a set of callbacks to
- * be called for every component that is bootstrapped.
- *
- * Each callback must take a `ComponentRef` instance and return nothing.
- *
- * `(componentRef: ComponentRef) => void`
- *
- * @publicApi
- */
-export const APP_BOOTSTRAP_LISTENER =
-    new InjectionToken<ReadonlyArray<(compRef: ComponentRef<any>) => void>>('appBootstrapListener');
+const NG_DEV_MODE = typeof ngDevMode === 'undefined' || ngDevMode;
 
 export function compileNgModuleFactory<M>(
     injector: Injector, options: CompilerOptions,
@@ -105,7 +91,7 @@ export function compileNgModuleFactory<M>(
     return Promise.resolve(moduleFactory);
   }
 
-  const compilerProviders = compilerOptions.flatMap((option) => option.providers ?? []);
+  const compilerProviders = _mergeArrays(compilerOptions.map(o => o.providers!));
 
   // In case there are no compiler providers, we just return the module factory as
   // there won't be any resource loader. This can happen with Ivy, because AOT compiled
@@ -132,19 +118,6 @@ export function publishDefaultGlobalUtils() {
   ngDevMode && _publishDefaultGlobalUtils();
 }
 
-/**
- * Sets the error for an invalid write to a signal to be an Angular `RuntimeError`.
- */
-export function publishSignalConfiguration(): void {
-  setThrowInvalidWriteToSignalError(() => {
-    throw new RuntimeError(
-        RuntimeErrorCode.SIGNAL_WRITE_FROM_ILLEGAL_CONTEXT,
-        ngDevMode &&
-            'Writing to signals is not allowed in a `computed` or an `effect` by default. ' +
-                'Use `allowSignalWrites` in the `CreateEffectOptions` to enable this inside effects.');
-  });
-}
-
 export function isBoundToModule<C>(cf: ComponentFactory<C>): boolean {
   return (cf as R3ComponentFactory<C>).isBoundToModule;
 }
@@ -152,7 +125,6 @@ export function isBoundToModule<C>(cf: ComponentFactory<C>): boolean {
 /**
  * A token for third-party components that can register themselves with NgProbe.
  *
- * @deprecated
  * @publicApi
  */
 export class NgProbeToken {
@@ -173,7 +145,6 @@ export function createPlatform(injector: Injector): PlatformRef {
             'There can be only one platform. Destroy the previous one to create a new one.');
   }
   publishDefaultGlobalUtils();
-  publishSignalConfiguration();
   _platformInjector = injector;
   const platform = injector.get(PlatformRef);
   runPlatformInitializers(injector);
@@ -185,7 +156,7 @@ export function createPlatform(injector: Injector): PlatformRef {
  * but avoid referencing `PlatformRef` class.
  * This function is needed for bootstrapping a Standalone Component.
  */
-function createOrReusePlatformInjector(providers: StaticProvider[] = []): Injector {
+export function createOrReusePlatformInjector(providers: StaticProvider[] = []): Injector {
   // If a platform injector already exists, it means that the platform
   // is already bootstrapped and no additional actions are required.
   if (_platformInjector) return _platformInjector;
@@ -194,14 +165,15 @@ function createOrReusePlatformInjector(providers: StaticProvider[] = []): Inject
   const injector = createPlatformInjector(providers);
   _platformInjector = injector;
   publishDefaultGlobalUtils();
-  publishSignalConfiguration();
   runPlatformInitializers(injector);
   return injector;
 }
 
-function runPlatformInitializers(injector: Injector): void {
+export function runPlatformInitializers(injector: Injector): void {
   const inits = injector.get(PLATFORM_INITIALIZER, null);
-  inits?.forEach((init) => init());
+  if (inits) {
+    inits.forEach((init: any) => init());
+  }
 }
 
 /**
@@ -220,84 +192,70 @@ export function internalCreateApplication(config: {
   appProviders?: Array<Provider|EnvironmentProviders>,
   platformProviders?: Provider[],
 }): Promise<ApplicationRef> {
-  try {
-    const {rootComponent, appProviders, platformProviders} = config;
+  const {rootComponent, appProviders, platformProviders} = config;
 
-    if ((typeof ngDevMode === 'undefined' || ngDevMode) && rootComponent !== undefined) {
-      assertStandaloneComponentType(rootComponent);
-    }
+  if (NG_DEV_MODE && rootComponent !== undefined) {
+    assertStandaloneComponentType(rootComponent);
+  }
 
-    const platformInjector = createOrReusePlatformInjector(platformProviders as StaticProvider[]);
+  const platformInjector = createOrReusePlatformInjector(platformProviders as StaticProvider[]);
 
+  const ngZone = getNgZone('zone.js', getNgZoneOptions());
+
+  return ngZone.run(() => {
     // Create root application injector based on a set of providers configured at the platform
     // bootstrap level as well as providers passed to the bootstrap call by a user.
     const allAppProviders = [
-      provideZoneChangeDetection(),
-      ...(appProviders || []),
+      {provide: NgZone, useValue: ngZone},  //
+      ...(appProviders || []),              //
     ];
-    const adapter = new EnvironmentNgModuleRefAdapter({
-      providers: allAppProviders,
-      parent: platformInjector as EnvironmentInjector,
-      debugName: (typeof ngDevMode === 'undefined' || ngDevMode) ? 'Environment Injector' : '',
-      // We skip environment initializers because we need to run them inside the NgZone, which
-      // happens after we get the NgZone instance from the Injector.
-      runEnvironmentInitializers: false,
-    });
-    const envInjector = adapter.injector;
-    const ngZone = envInjector.get(NgZone);
 
-    return ngZone.run(() => {
-      envInjector.resolveInjectorInitializers();
-      const exceptionHandler: ErrorHandler|null = envInjector.get(ErrorHandler, null);
-      if ((typeof ngDevMode === 'undefined' || ngDevMode) && !exceptionHandler) {
-        throw new RuntimeError(
-            RuntimeErrorCode.MISSING_REQUIRED_INJECTABLE_IN_BOOTSTRAP,
-            'No `ErrorHandler` found in the Dependency Injection tree.');
-      }
+    const envInjector = createEnvironmentInjector(
+        allAppProviders, platformInjector as EnvironmentInjector, 'Environment Injector');
 
-      let onErrorSubscription: Subscription;
-      ngZone.runOutsideAngular(() => {
-        onErrorSubscription = ngZone.onError.subscribe({
-          next: (error: any) => {
-            exceptionHandler!.handleError(error);
-          }
-        });
-      });
+    const exceptionHandler: ErrorHandler|null = envInjector.get(ErrorHandler, null);
+    if (NG_DEV_MODE && !exceptionHandler) {
+      throw new RuntimeError(
+          RuntimeErrorCode.ERROR_HANDLER_NOT_FOUND,
+          'No `ErrorHandler` found in the Dependency Injection tree.');
+    }
 
-      // If the whole platform is destroyed, invoke the `destroy` method
-      // for all bootstrapped applications as well.
-      const destroyListener = () => envInjector.destroy();
-      const onPlatformDestroyListeners = platformInjector.get(PLATFORM_DESTROY_LISTENERS);
-      onPlatformDestroyListeners.add(destroyListener);
-
-      envInjector.onDestroy(() => {
-        onErrorSubscription.unsubscribe();
-        onPlatformDestroyListeners.delete(destroyListener);
-      });
-
-      return _callAndReportToErrorHandler(exceptionHandler!, ngZone, () => {
-        const initStatus = envInjector.get(ApplicationInitStatus);
-        initStatus.runInitializers();
-
-        return initStatus.donePromise.then(() => {
-          const localeId = envInjector.get(LOCALE_ID, DEFAULT_LOCALE_ID);
-          setLocaleId(localeId || DEFAULT_LOCALE_ID);
-
-          const appRef = envInjector.get(ApplicationRef);
-          if (rootComponent !== undefined) {
-            appRef.bootstrap(rootComponent);
-          }
-          if (typeof ngDevMode === 'undefined' || ngDevMode) {
-            const imagePerformanceService = envInjector.get(ImagePerformanceWarning);
-            imagePerformanceService.start();
-          }
-          return appRef;
-        });
+    let onErrorSubscription: Subscription;
+    ngZone.runOutsideAngular(() => {
+      onErrorSubscription = ngZone.onError.subscribe({
+        next: (error: any) => {
+          exceptionHandler!.handleError(error);
+        }
       });
     });
-  } catch (e) {
-    return Promise.reject(e);
-  }
+
+    // If the whole platform is destroyed, invoke the `destroy` method
+    // for all bootstrapped applications as well.
+    const destroyListener = () => envInjector.destroy();
+    const onPlatformDestroyListeners = platformInjector.get(PLATFORM_DESTROY_LISTENERS);
+    onPlatformDestroyListeners.add(destroyListener);
+
+    envInjector.onDestroy(() => {
+      onErrorSubscription.unsubscribe();
+      onPlatformDestroyListeners.delete(destroyListener);
+    });
+
+    return _callAndReportToErrorHandler(exceptionHandler!, ngZone, () => {
+      const initStatus = envInjector.get(ApplicationInitStatus);
+      initStatus.runInitializers();
+
+      return initStatus.donePromise.then(() => {
+        const localeId = envInjector.get(LOCALE_ID, DEFAULT_LOCALE_ID);
+        setLocaleId(localeId || DEFAULT_LOCALE_ID);
+
+        const appRef = envInjector.get(ApplicationRef);
+        if (rootComponent !== undefined) {
+          appRef.bootstrap(rootComponent);
+        }
+        return appRef;
+      });
+    });
+  });
 }
 
 /**
@@ -391,58 +349,6 @@ export function getPlatform(): PlatformRef|null {
 }
 
 /**
- * Used to configure event and run coalescing with `provideZoneChangeDetection`.
- *
- * @publicApi
- *
- * @see {@link provideZoneChangeDetection}
- */
-export interface NgZoneOptions {
-  /**
-   * Optionally specify coalescing event change detections or not.
-   * Consider the following case.
-   *
-   * ```
-   * <div (click)="doSomething()">
-   *   <button (click)="doSomethingElse()"></button>
-   * </div>
-   * ```
-   *
-   * When button is clicked, because of the event bubbling, both
-   * event handlers will be called and 2 change detections will be
-   * triggered. We can coalesce such kind of events to only trigger
-   * change detection only once.
-   *
-   * By default, this option will be false. So the events will not be
-   * coalesced and the change detection will be triggered multiple times.
-   * And if this option be set to true, the change detection will be
-   * triggered async by scheduling a animation frame. So in the case above,
-   * the change detection will only be triggered once.
-   */
-  eventCoalescing?: boolean;
-
-  /**
-   * Optionally specify if `NgZone#run()` method invocations should be coalesced
-   * into a single change detection.
-   *
-   * Consider the following case.
-   * ```
-   * for (let i = 0; i < 10; i ++) {
-   *   ngZone.run(() => {
-   *     // do something
-   *   });
-   * }
-   * ```
-   *
-   * This case triggers the change detection multiple times.
-   * With ngZoneRunCoalescing options, all change detections in an event loop trigger only once.
-   * In addition, the change detection executes in requestAnimation.
-   *
-   */
-  runCoalescing?: boolean;
-}
-
-/**
  * Provides additional options to the bootstrapping process.
  *
  * @publicApi
@@ -531,36 +437,26 @@ export class PlatformRef {
     // as instantiating the module creates some providers eagerly.
     // So we create a mini parent injector that just contains the new NgZone and
     // pass that as parent to the NgModuleFactory.
-    const ngZone = getNgZone(options?.ngZone, getNgZoneOptions({
-                               eventCoalescing: options?.ngZoneEventCoalescing,
-                               runCoalescing: options?.ngZoneRunCoalescing
-                             }));
+    const ngZone = getNgZone(options?.ngZone, getNgZoneOptions(options));
+    const providers: StaticProvider[] = [{provide: NgZone, useValue: ngZone}];
     // Note: Create ngZoneInjector within ngZone.run so that all of the instantiated services are
     // created within the Angular zone
     // Do not try to replace ngZone.run with ApplicationRef#run because ApplicationRef would then be
     // created outside of the Angular zone.
     return ngZone.run(() => {
-      const moduleRef = createNgModuleRefWithProviders(
-          moduleFactory.moduleType, this.injector,
-          internalProvideZoneChangeDetection(() => ngZone));
-
-      if ((typeof ngDevMode === 'undefined' || ngDevMode) &&
-          moduleRef.injector.get(PROVIDED_NG_ZONE, null) !== null) {
+      const ngZoneInjector = Injector.create(
+          {providers: providers, parent: this.injector, name: moduleFactory.moduleType.name});
+      const moduleRef = <InternalNgModuleRef<M>>moduleFactory.create(ngZoneInjector);
+      const exceptionHandler: ErrorHandler|null = moduleRef.injector.get(ErrorHandler, null);
+      if (!exceptionHandler) {
         throw new RuntimeError(
-            RuntimeErrorCode.PROVIDER_IN_WRONG_CONTEXT,
-            '`bootstrapModule` does not support `provideZoneChangeDetection`. Use `BootstrapOptions` instead.');
+            RuntimeErrorCode.ERROR_HANDLER_NOT_FOUND,
+            ngDevMode && 'No ErrorHandler. Is platform module (BrowserModule) included?');
       }
-
-      const exceptionHandler = moduleRef.injector.get(ErrorHandler, null);
-      if ((typeof ngDevMode === 'undefined' || ngDevMode) && exceptionHandler === null) {
-        throw new RuntimeError(
-            RuntimeErrorCode.MISSING_REQUIRED_INJECTABLE_IN_BOOTSTRAP,
-            'No ErrorHandler. Is platform module (BrowserModule) included?');
-      }
-      ngZone.runOutsideAngular(() => {
-        const subscription = ngZone.onError.subscribe({
+      ngZone!.runOutsideAngular(() => {
+        const subscription = ngZone!.onError.subscribe({
           next: (error: any) => {
-            exceptionHandler!.handleError(error);
+            exceptionHandler.handleError(error);
           }
         });
         moduleRef.onDestroy(() => {
@@ -568,7 +464,7 @@ export class PlatformRef {
           subscription.unsubscribe();
         });
       });
-      return _callAndReportToErrorHandler(exceptionHandler!, ngZone, () => {
+      return _callAndReportToErrorHandler(exceptionHandler, ngZone!, () => {
         const initStatus: ApplicationInitStatus = moduleRef.injector.get(ApplicationInitStatus);
         initStatus.runInitializers();
         return initStatus.donePromise.then(() => {
@@ -670,7 +566,7 @@ export class PlatformRef {
 }
 
 // Set of options recognized by the NgZone.
-interface InternalNgZoneOptions {
+interface NgZoneOptions {
   enableLongStackTrace: boolean;
   shouldCoalesceEventChangeDetection: boolean;
   shouldCoalesceRunChangeDetection: boolean;
@@ -679,23 +575,23 @@ interface InternalNgZoneOptions {
 // Transforms a set of `BootstrapOptions` (supported by the NgModule-based bootstrap APIs) ->
 // `NgZoneOptions` that are recognized by the NgZone constructor. Passing no options will result in
 // a set of default options returned.
-function getNgZoneOptions(options?: NgZoneOptions): InternalNgZoneOptions {
+function getNgZoneOptions(options?: BootstrapOptions): NgZoneOptions {
   return {
     enableLongStackTrace: typeof ngDevMode === 'undefined' ? false : !!ngDevMode,
-    shouldCoalesceEventChangeDetection: options?.eventCoalescing ?? false,
-    shouldCoalesceRunChangeDetection: options?.runCoalescing ?? false,
+    shouldCoalesceEventChangeDetection: !!(options && options.ngZoneEventCoalescing) || false,
+    shouldCoalesceRunChangeDetection: !!(options && options.ngZoneRunCoalescing) || false,
   };
 }
 
-function getNgZone(
-    ngZoneToUse: NgZone|'zone.js'|'noop' = 'zone.js', options: InternalNgZoneOptions): NgZone {
+function getNgZone(ngZoneToUse: NgZone|'zone.js'|'noop'|undefined, options: NgZoneOptions): NgZone {
+  let ngZone: NgZone;
+
   if (ngZoneToUse === 'noop') {
-    return new NoopNgZone();
+    ngZone = new NoopNgZone();
+  } else {
+    ngZone = (ngZoneToUse === 'zone.js' ? undefined : ngZoneToUse) || new NgZone(options);
   }
-  if (ngZoneToUse === 'zone.js') {
-    return new NgZone(options);
-  }
-  return ngZoneToUse;
+  return ngZone;
 }
 
 function _callAndReportToErrorHandler(
@@ -718,17 +614,20 @@ function _callAndReportToErrorHandler(
   }
 }
 
-function optionsReducer<T extends Object>(dst: T, objs: T|T[]): T {
+function optionsReducer<T extends Object>(dst: any, objs: T|T[]): T {
   if (Array.isArray(objs)) {
-    return objs.reduce(optionsReducer, dst);
+    dst = objs.reduce(optionsReducer, dst);
+  } else {
+    dst = {...dst, ...(objs as any)};
   }
-  return {...dst, ...objs};
+  return dst;
 }
 
 /**
  * A reference to an Angular application running on a page.
  *
  * @usageNotes
+ *
  * {@a is-stable-examples}
  * ### isStable examples and caveats
  *
@@ -821,13 +720,12 @@ function optionsReducer<T extends Object>(dst: T, objs: T|T[]): T {
 export class ApplicationRef {
   /** @internal */
   private _bootstrapListeners: ((compRef: ComponentRef<any>) => void)[] = [];
+  private _views: InternalViewRef[] = [];
   private _runningTick: boolean = false;
+  private _stable = true;
+  private _onMicrotaskEmptySubscription: Subscription;
   private _destroyed = false;
   private _destroyListeners: Array<() => void> = [];
-  /** @internal */
-  _views: InternalViewRef[] = [];
-  private readonly internalErrorHandler = inject(INTERNAL_APPLICATION_ERROR_HANDLER);
-  private readonly zoneIsStable = inject(ZONE_IS_STABLE_OBSERVABLE);
 
   /**
    * Indicates whether this instance was destroyed.
@@ -849,21 +747,80 @@ export class ApplicationRef {
 
   /**
    * Returns an Observable that indicates when the application is stable or unstable.
+   *
+   * @see  [Usage notes](#is-stable-examples) for examples and caveats when using this API.
    */
-  public readonly isStable: Observable<boolean> =
-      inject(InitialRenderPendingTasks)
-          .hasPendingTasks.pipe(
-              switchMap(hasPendingTasks => hasPendingTasks ? of(false) : this.zoneIsStable),
-              distinctUntilChanged(),
-              share(),
-          );
+  // TODO(issue/24571): remove '!'.
+  public readonly isStable!: Observable<boolean>;
 
-  private readonly _injector = inject(EnvironmentInjector);
   /**
    * The `EnvironmentInjector` used to create this application.
    */
   get injector(): EnvironmentInjector {
     return this._injector;
+  }
+
+  /** @internal */
+  constructor(
+      private _zone: NgZone,
+      private _injector: EnvironmentInjector,
+      private _exceptionHandler: ErrorHandler,
+  ) {
+    this._onMicrotaskEmptySubscription = this._zone.onMicrotaskEmpty.subscribe({
+      next: () => {
+        this._zone.run(() => {
+          this.tick();
+        });
+      }
+    });
+
+    const isCurrentlyStable = new Observable<boolean>((observer: Observer<boolean>) => {
+      this._stable = this._zone.isStable && !this._zone.hasPendingMacrotasks &&
+          !this._zone.hasPendingMicrotasks;
+      this._zone.runOutsideAngular(() => {
+        observer.next(this._stable);
+        observer.complete();
+      });
+    });
+
+    const isStable = new Observable<boolean>((observer: Observer<boolean>) => {
+      // Create the subscription to onStable outside the Angular Zone so that
+      // the callback is run outside the Angular Zone.
+      let stableSub: Subscription;
+      this._zone.runOutsideAngular(() => {
+        stableSub = this._zone.onStable.subscribe(() => {
+          NgZone.assertNotInAngularZone();
+
+          // Check whether there are no pending macro/micro tasks in the next tick
+          // to allow for NgZone to update the state.
+          scheduleMicroTask(() => {
+            if (!this._stable && !this._zone.hasPendingMacrotasks &&
+                !this._zone.hasPendingMicrotasks) {
+              this._stable = true;
+              observer.next(true);
+            }
+          });
+        });
+      });
+
+      const unstableSub: Subscription = this._zone.onUnstable.subscribe(() => {
+        NgZone.assertInAngularZone();
+        if (this._stable) {
+          this._stable = false;
+          this._zone.runOutsideAngular(() => {
+            observer.next(false);
+          });
+        }
+      });
+
+      return () => {
+        stableSub.unsubscribe();
+        unstableSub.unsubscribe();
+      };
+    });
+
+    (this as {isStable: Observable<boolean>}).isStable =
+        merge(isCurrentlyStable, isStable.pipe(share()));
   }
 
   /**
@@ -987,7 +944,7 @@ export class ApplicationRef {
    */
   bootstrap<C>(componentOrFactory: ComponentFactory<C>|Type<C>, rootSelectorOrNode?: string|any):
       ComponentRef<C> {
-    (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
+    NG_DEV_MODE && this.warnIfDestroyed();
     const isComponentFactory = componentOrFactory instanceof ComponentFactory;
     const initStatus = this._injector.get(ApplicationInitStatus);
 
@@ -998,8 +955,7 @@ export class ApplicationRef {
           (standalone ? '' :
                         ' Bootstrap components in the `ngDoBootstrap` method of the root module.');
       throw new RuntimeError(
-          RuntimeErrorCode.ASYNC_INITIALIZERS_STILL_RUNNING,
-          (typeof ngDevMode === 'undefined' || ngDevMode) && errorMessage);
+          RuntimeErrorCode.ASYNC_INITIALIZERS_STILL_RUNNING, NG_DEV_MODE && errorMessage);
     }
 
     let componentFactory: ComponentFactory<C>;
@@ -1029,7 +985,8 @@ export class ApplicationRef {
     this._loadComponent(compRef);
     if (typeof ngDevMode === 'undefined' || ngDevMode) {
       const _console = this._injector.get(Console);
-      _console.log(`Angular is running in development mode.`);
+      _console.log(
+          `Angular is running in development mode. Call enableProdMode() to enable production mode.`);
     }
     return compRef;
   }
@@ -1045,7 +1002,7 @@ export class ApplicationRef {
    * detection pass during which all change detection must complete.
    */
   tick(): void {
-    (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
+    NG_DEV_MODE && this.warnIfDestroyed();
     if (this._runningTick) {
       throw new RuntimeError(
           RuntimeErrorCode.RECURSIVE_APPLICATION_REF_TICK,
@@ -1064,7 +1021,7 @@ export class ApplicationRef {
       }
     } catch (e) {
       // Attention: Don't rethrow as it could cancel subscriptions to Observables!
-      this.internalErrorHandler(e);
+      this._zone.runOutsideAngular(() => this._exceptionHandler.handleError(e));
     } finally {
       this._runningTick = false;
     }
@@ -1076,7 +1033,7 @@ export class ApplicationRef {
    * This will throw if the view is already attached to a ViewContainer.
    */
   attachView(viewRef: ViewRef): void {
-    (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
+    NG_DEV_MODE && this.warnIfDestroyed();
     const view = (viewRef as InternalViewRef);
     this._views.push(view);
     view.attachToAppRef(this);
@@ -1086,7 +1043,7 @@ export class ApplicationRef {
    * Detaches a view from dirty checking again.
    */
   detachView(viewRef: ViewRef): void {
-    (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
+    NG_DEV_MODE && this.warnIfDestroyed();
     const view = (viewRef as InternalViewRef);
     remove(this._views, view);
     view.detachFromAppRef();
@@ -1106,7 +1063,8 @@ export class ApplicationRef {
               'Please check that the `APP_BOOTSTRAP_LISTENER` token is configured as a ' +
               '`multi: true` provider.');
     }
-    [...this._bootstrapListeners, ...listeners].forEach((listener) => listener(componentRef));
+    listeners.push(...this._bootstrapListeners);
+    listeners.forEach((listener) => listener(componentRef));
   }
 
   /** @internal */
@@ -1119,6 +1077,7 @@ export class ApplicationRef {
 
       // Destroy all registered views.
       this._views.slice().forEach((view) => view.destroy());
+      this._onMicrotaskEmptySubscription.unsubscribe();
     } finally {
       // Indicate that this instance is destroyed.
       this._destroyed = true;
@@ -1135,9 +1094,11 @@ export class ApplicationRef {
    *
    * @param callback A callback function to add as a listener.
    * @returns A function which unregisters a listener.
+   *
+   * @internal
    */
   onDestroy(callback: () => void): VoidFunction {
-    (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
+    NG_DEV_MODE && this.warnIfDestroyed();
     this._destroyListeners.push(callback);
     return () => remove(this._destroyListeners, callback);
   }
@@ -1176,7 +1137,7 @@ export class ApplicationRef {
   }
 
   private warnIfDestroyed() {
-    if ((typeof ngDevMode === 'undefined' || ngDevMode) && this._destroyed) {
+    if (NG_DEV_MODE && this._destroyed) {
       console.warn(formatRuntimeError(
           RuntimeErrorCode.APPLICATION_REF_ALREADY_DESTROYED,
           'This instance of the `ApplicationRef` has already been destroyed.'));
@@ -1200,132 +1161,8 @@ function _lastDefined<T>(args: T[]): T|undefined {
   return undefined;
 }
 
-/**
- * `InjectionToken` used to configure how to call the `ErrorHandler`.
- *
- * `NgZone` is provided by default today so the default (and only) implementation for this
- * is calling `ErrorHandler.handleError` outside of the Angular zone.
- */
-const INTERNAL_APPLICATION_ERROR_HANDLER = new InjectionToken<(e: any) => void>(
-    (typeof ngDevMode === 'undefined' || ngDevMode) ? 'internal error handler' : '', {
-      providedIn: 'root',
-      factory: () => {
-        const userErrorHandler = inject(ErrorHandler);
-        return userErrorHandler.handleError.bind(this);
-      }
-    });
-
-function ngZoneApplicationErrorHandlerFactory() {
-  const zone = inject(NgZone);
-  const userErrorHandler = inject(ErrorHandler);
-  return (e: unknown) => zone.runOutsideAngular(() => userErrorHandler.handleError(e));
-}
-
-@Injectable({providedIn: 'root'})
-export class NgZoneChangeDetectionScheduler {
-  private readonly zone = inject(NgZone);
-  private readonly applicationRef = inject(ApplicationRef);
-
-  private _onMicrotaskEmptySubscription?: Subscription;
-
-  initialize(): void {
-    if (this._onMicrotaskEmptySubscription) {
-      return;
-    }
-
-    this._onMicrotaskEmptySubscription = this.zone.onMicrotaskEmpty.subscribe({
-      next: () => {
-        this.zone.run(() => {
-          this.applicationRef.tick();
-        });
-      }
-    });
-  }
-
-  ngOnDestroy() {
-    this._onMicrotaskEmptySubscription?.unsubscribe();
-  }
-}
-
-/**
- * Internal token used to verify that `provideZoneChangeDetection` is not used
- * with the bootstrapModule API.
- */
-const PROVIDED_NG_ZONE = new InjectionToken<boolean>(
-    (typeof ngDevMode === 'undefined' || ngDevMode) ? 'provideZoneChangeDetection token' : '');
-
-export function internalProvideZoneChangeDetection(ngZoneFactory: () => NgZone): StaticProvider[] {
-  return [
-    {provide: NgZone, useFactory: ngZoneFactory},
-    {
-      provide: ENVIRONMENT_INITIALIZER,
-      multi: true,
-      useFactory: () => {
-        const ngZoneChangeDetectionScheduler =
-            inject(NgZoneChangeDetectionScheduler, {optional: true});
-        if ((typeof ngDevMode === 'undefined' || ngDevMode) &&
-            ngZoneChangeDetectionScheduler === null) {
-          throw new RuntimeError(
-              RuntimeErrorCode.MISSING_REQUIRED_INJECTABLE_IN_BOOTSTRAP,
-              `A required Injectable was not found in the dependency injection tree. ` +
-                  'If you are bootstrapping an NgModule, make sure that the `BrowserModule` is imported.');
-        }
-        return () => ngZoneChangeDetectionScheduler!.initialize();
-      },
-    },
-    {provide: INTERNAL_APPLICATION_ERROR_HANDLER, useFactory: ngZoneApplicationErrorHandlerFactory},
-    {provide: ZONE_IS_STABLE_OBSERVABLE, useFactory: isStableFactory},
-  ];
-}
-
-/**
- * Provides `NgZone`-based change detection for the application bootstrapped using
- * `bootstrapApplication`.
- *
- * `NgZone` is already provided in applications by default. This provider allows you to configure
- * options like `eventCoalescing` in the `NgZone`.
- * This provider is not available for `platformBrowser().bootstrapModule`, which uses
- * `BootstrapOptions` instead.
- *
- * @usageNotes
- * ```typescript=
- * bootstrapApplication(MyApp, {providers: [
- *   provideZoneChangeDetection({eventCoalescing: true}),
- * ]});
- * ```
- *
- * @publicApi
- * @see {@link bootstrapApplication}
- * @see {@link NgZoneOptions}
- */
-export function provideZoneChangeDetection(options?: NgZoneOptions): EnvironmentProviders {
-  const zoneProviders =
-      internalProvideZoneChangeDetection(() => new NgZone(getNgZoneOptions(options)));
-  return makeEnvironmentProviders([
-    (typeof ngDevMode === 'undefined' || ngDevMode) ? {provide: PROVIDED_NG_ZONE, useValue: true} :
-                                                      [],
-    zoneProviders,
-  ]);
-}
-
-let whenStableStore: WeakMap<ApplicationRef, Promise<void>>|undefined;
-/**
- * Returns a Promise that resolves when the application becomes stable after this method is called
- * the first time.
- */
-export function whenStable(applicationRef: ApplicationRef): Promise<void> {
-  whenStableStore ??= new WeakMap();
-  const cachedWhenStable = whenStableStore.get(applicationRef);
-  if (cachedWhenStable) {
-    return cachedWhenStable;
-  }
-
-  const whenStablePromise =
-      applicationRef.isStable.pipe(first((isStable) => isStable)).toPromise().then(() => void 0);
-  whenStableStore.set(applicationRef, whenStablePromise);
-
-  // Be a good citizen and clean the store `onDestroy` even though we are using `WeakMap`.
-  applicationRef.onDestroy(() => whenStableStore?.delete(applicationRef));
-
-  return whenStablePromise;
+function _mergeArrays(parts: any[][]): any[] {
+  const result: any[] = [];
+  parts.forEach((part) => part && result.push(...part));
+  return result;
 }

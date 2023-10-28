@@ -41,7 +41,6 @@ export interface I18nOptions {
 
 // @public
 export interface LegacyNgcOptions {
-    // @deprecated
     allowEmptyCodegenFiles?: boolean;
     flatModuleId?: string;
     flatModuleOutFile?: string;
@@ -55,7 +54,12 @@ export interface LegacyNgcOptions {
 export interface MiscOptions {
     compileNonExportedClasses?: boolean;
     disableTypeScriptVersionCheck?: boolean;
-    forbidOrphanComponents?: boolean;
+}
+
+// @public
+export interface NgcCompatibilityOptions {
+    generateNgFactoryShims?: boolean;
+    generateNgSummaryShims?: boolean;
 }
 
 // @public
@@ -75,7 +79,7 @@ export interface StrictTemplateOptions {
 
 // @public
 export interface TargetOptions {
-    compilationMode?: 'full' | 'partial' | 'experimental-local';
+    compilationMode?: 'full' | 'partial';
 }
 
 // (No @packageDocumentation comment for this package)

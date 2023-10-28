@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 import { of } from 'rxjs';
 import { docRegionTypeahead } from './typeahead';
 
@@ -69,7 +71,7 @@ describe('typeahead', () => {
 
   // Helpers
   interface MockTask {
-    id: ReturnType<typeof setTimeout>;
+    id: NodeJS.Timeout;
     fn: () => unknown;
     delay: number;
     recurring: boolean;
@@ -84,12 +86,12 @@ describe('typeahead', () => {
     static install(mockTime = 0): MockClock['tick'] {
       const mocked = new this(mockTime);
 
-      spyOn(globalThis, 'clearInterval').and.callFake(id => mocked.clearTask(id as MockTask['id']));
-      spyOn(globalThis, 'clearTimeout').and.callFake(id => mocked.clearTask(id as MockTask['id']));
-      spyOn(globalThis, 'setInterval').and.callFake(
+      spyOn(global, 'clearInterval').and.callFake(id => mocked.clearTask(id as MockTask['id']));
+      spyOn(global, 'clearTimeout').and.callFake(id => mocked.clearTask(id as MockTask['id']));
+      spyOn(global, 'setInterval').and.callFake(
           ((fn: () => unknown, delay: number, ...args: any[]) =>
             mocked.createTask(fn, delay, true, ...args)) as typeof setInterval);
-      spyOn(globalThis, 'setTimeout').and.callFake(
+      spyOn(global, 'setTimeout').and.callFake(
           ((fn: () => unknown, delay: number, ...args: any[]) =>
             mocked.createTask(fn, delay, false, ...args)) as typeof setTimeout);
 

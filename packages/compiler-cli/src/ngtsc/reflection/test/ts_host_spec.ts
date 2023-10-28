@@ -6,27 +6,12 @@
  * found in the LICENSE file at https://angular.io/license
  */
 import ts from 'typescript';
-
 import {absoluteFrom, getSourceFileOrError} from '../../file_system';
 import {runInEachFileSystem} from '../../file_system/testing';
 import {getDeclaration, makeProgram} from '../../testing';
-import {ClassMember, ClassMemberKind, CtorParameter, TypeValueReferenceKind} from '../src/host';
+import {ClassMember, ClassMemberKind, CtorParameter, DeclarationKind, TypeValueReferenceKind} from '../src/host';
 import {TypeScriptReflectionHost} from '../src/typescript';
 import {isNamedClassDeclaration} from '../src/util';
-
-function findFirstImportDeclaration(node: ts.Node): ts.ImportDeclaration|null {
-  let found: ts.ImportDeclaration|null = null;
-  const visit = (node: ts.Node): void => {
-    if (found) return;
-    if (ts.isImportDeclaration(node)) {
-      found = node;
-      return;
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(node);
-  return found;
-}
 
 runInEachFileSystem(() => {
   describe('reflector', () => {
@@ -297,12 +282,9 @@ runInEachFileSystem(() => {
         }
         const Target = foo.type.typeName;
         const directImport = host.getImportOfIdentifier(Target);
-        const sf = foo.getSourceFile();
-        const importDecl = findFirstImportDeclaration(sf);
         expect(directImport).toEqual({
           name: 'Target',
           from: 'absolute',
-          node: importDecl as ts.ImportDeclaration,
         });
       });
 
@@ -327,12 +309,9 @@ runInEachFileSystem(() => {
         }
         const Target = foo.type.typeName.right;
         const namespacedImport = host.getImportOfIdentifier(Target);
-        const sf = foo.getSourceFile();
-        const importDecl = findFirstImportDeclaration(sf);
         expect(namespacedImport).toEqual({
           name: 'Target',
           from: 'absolute',
-          node: importDecl as ts.ImportDeclaration,
         });
       });
     });
@@ -405,8 +384,11 @@ runInEachFileSystem(() => {
         const Target = foo.type.typeName;
         const decl = host.getDeclarationOfIdentifier(Target);
         expect(decl).toEqual({
+          kind: DeclarationKind.Concrete,
           node: targetDecl,
+          known: null,
           viaModule: 'absolute',
+          identity: null,
         });
       });
 
@@ -435,7 +417,10 @@ runInEachFileSystem(() => {
         const decl = host.getDeclarationOfIdentifier(Target);
         expect(decl).toEqual({
           node: targetDecl,
+          known: null,
           viaModule: 'absolute',
+          identity: null,
+          kind: DeclarationKind.Concrete
         });
       });
     });

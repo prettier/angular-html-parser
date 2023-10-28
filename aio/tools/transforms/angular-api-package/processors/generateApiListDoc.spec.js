@@ -67,17 +67,17 @@ describe('generateApiListDoc processor', () => {
     ];
     processor.$process(docs);
     expect(docs[2].data[0].items).toEqual([
-      { docType: 'directive', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'pipe', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'decorator', title: 'CccCcc', name: 'cccccc', path: 'ccc', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'DddDdd', name: 'dddddd', path: 'ddd', stability: '', securityRisk: false, developerPreview: false }
+      { docType: 'directive', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: false },
+      { docType: 'pipe', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false },
+      { docType: 'decorator', title: 'CccCcc', name: 'cccccc', path: 'ccc', stability: '', securityRisk: false },
+      { docType: 'class', title: 'DddDdd', name: 'dddddd', path: 'ddd', stability: '', securityRisk: false }
     ]);
     expect(docs[2].data[1].items).toEqual([
-      { docType: 'interface', title: 'EeeEee', name: 'eeeeee', path: 'eee', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'function', title: 'FffFff', name: 'ffffff', path: 'fff', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'enum', title: 'GggGgg', name: 'gggggg', path: 'ggg', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'type-alias', title: 'HhhHhh', name: 'hhhhhh', path: 'hhh', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'const', title: 'IiiIii', name: 'iiiiii', path: 'iii', stability: '', securityRisk: false, developerPreview: false },
+      { docType: 'interface', title: 'EeeEee', name: 'eeeeee', path: 'eee', stability: '', securityRisk: false },
+      { docType: 'function', title: 'FffFff', name: 'ffffff', path: 'fff', stability: '', securityRisk: false },
+      { docType: 'enum', title: 'GggGgg', name: 'gggggg', path: 'ggg', stability: '', securityRisk: false },
+      { docType: 'type-alias', title: 'HhhHhh', name: 'hhhhhh', path: 'hhh', stability: '', securityRisk: false },
+      { docType: 'const', title: 'IiiIii', name: 'iiiiii', path: 'iii', stability: '', securityRisk: false },
     ]);
   });
 
@@ -92,7 +92,7 @@ describe('generateApiListDoc processor', () => {
     ];
     processor.$process(docs);
     expect(docs[1].data[0].items).toEqual([
-      { docType: 'pipe', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false, developerPreview: false },
+      { docType: 'pipe', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false },
     ]);
   });
 
@@ -106,8 +106,8 @@ describe('generateApiListDoc processor', () => {
     ];
     processor.$process(docs);
     expect(docs[1].data[0].items).toEqual([
-      { docType: 'const', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'const', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false, developerPreview: false },
+      { docType: 'const', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: false },
+      { docType: 'const', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false },
     ]);
   });
 
@@ -121,23 +121,8 @@ describe('generateApiListDoc processor', () => {
     ];
     processor.$process(docs);
     expect(docs[1].data[0].items).toEqual([
-      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: true, developerPreview: false },
-      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false, developerPreview: false },
-    ]);
-  });
-
-  it('should convert developerPreview to a boolean developerPreview', () => {
-    const processor = processorFactory();
-    const docs = [
-      { docType: 'package', id: '@angular/common/index', exports: [
-        { docType: 'class', name: 'AaaAaa', path: 'aaa', developerPreview: true },
-        { docType: 'class', name: 'BbbBbb', path: 'bbb' },
-      ]}
-    ];
-    processor.$process(docs);
-    expect(docs[1].data[0].items).toEqual([
-      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: false, developerPreview: true },
-      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false, developerPreview: false },
+      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: '', securityRisk: true },
+      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: '', securityRisk: false },
     ]);
   });
 
@@ -153,10 +138,10 @@ describe('generateApiListDoc processor', () => {
     ];
     processor.$process(docs);
     expect(docs[1].data[0].items).toEqual([
-      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: 'stable', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: 'experimental', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'CccCcc', name: 'cccccc', path: 'ccc', stability: 'deprecated', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'DddDdd', name: 'dddddd', path: 'ddd', stability: '', securityRisk: false, developerPreview: false },
+      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'aaa', stability: 'stable', securityRisk: false },
+      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'bbb', stability: 'experimental', securityRisk: false },
+      { docType: 'class', title: 'CccCcc', name: 'cccccc', path: 'ccc', stability: 'deprecated', securityRisk: false },
+      { docType: 'class', title: 'DddDdd', name: 'dddddd', path: 'ddd', stability: '', securityRisk: false },
     ]);
   });
 
@@ -172,10 +157,10 @@ describe('generateApiListDoc processor', () => {
     ];
     processor.$process(docs);
     expect(docs[1].data[0].items).toEqual([
-      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'xxx', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'vvv', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'CccCcc', name: 'cccccc', path: 'yyy', stability: '', securityRisk: false, developerPreview: false },
-      { docType: 'class', title: 'DddDdd', name: 'dddddd', path: 'uuu', stability: '', securityRisk: false, developerPreview: false },
+      { docType: 'class', title: 'AaaAaa', name: 'aaaaaa', path: 'xxx', stability: '', securityRisk: false },
+      { docType: 'class', title: 'BbbBbb', name: 'bbbbbb', path: 'vvv', stability: '', securityRisk: false },
+      { docType: 'class', title: 'CccCcc', name: 'cccccc', path: 'yyy', stability: '', securityRisk: false },
+      { docType: 'class', title: 'DddDdd', name: 'dddddd', path: 'uuu', stability: '', securityRisk: false },
     ]);
   });
 });

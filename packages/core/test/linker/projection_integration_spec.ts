@@ -7,9 +7,10 @@
  */
 
 import {ɵgetDOM as getDOM} from '@angular/common';
-import {Component, ComponentRef, createComponent, Directive, ElementRef, EnvironmentInjector, Injector, Input, NgModule, NO_ERRORS_SCHEMA, OnInit, reflectComponentType, TemplateRef, ViewChild, ViewContainerRef, ViewEncapsulation} from '@angular/core';
+import {Component, ComponentFactoryResolver, ComponentRef, Directive, ElementRef, Injector, Input, NgModule, NO_ERRORS_SCHEMA, OnInit, TemplateRef, ViewChild, ViewContainerRef, ViewEncapsulation} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser/src/dom/debug/by';
+import {browserDetection} from '@angular/platform-browser/testing/src/browser_util';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
 
 describe('projection', () => {
@@ -119,17 +120,16 @@ describe('projection', () => {
     TestBed.configureTestingModule({declarations: [MultipleContentTagsComponent]});
     const injector: Injector = TestBed.inject(Injector);
 
-    expect(reflectComponentType(MultipleContentTagsComponent)?.ngContentSelectors).toEqual([
-      'h1', '*'
-    ]);
+    const componentFactoryResolver: ComponentFactoryResolver =
+        injector.get(ComponentFactoryResolver);
+    const componentFactory =
+        componentFactoryResolver.resolveComponentFactory(MultipleContentTagsComponent);
+    expect(componentFactory.ngContentSelectors).toEqual(['h1', '*']);
 
 
     const nodeOne = getDOM().getDefaultDocument().createTextNode('one');
     const nodeTwo = getDOM().getDefaultDocument().createTextNode('two');
-    const component = createComponent(MultipleContentTagsComponent, {
-      environmentInjector: injector as EnvironmentInjector,
-      projectableNodes: [[nodeOne], [nodeTwo]]
-    });
+    const component = componentFactory.create(injector, [[nodeOne], [nodeTwo]]);
     expect(component.location.nativeElement).toHaveText('(one, two)');
   });
 
@@ -441,7 +441,7 @@ describe('projection', () => {
     expect(main.nativeElement).toHaveText('TREE(0:TREE2(1:TREE(2:)))');
   });
 
-  if (!isNode) {
+  if (browserDetection.supportsShadowDom) {
     it('should support shadow dom content projection and isolate styles per component', () => {
       TestBed.configureTestingModule({declarations: [SimpleShadowDom1, SimpleShadowDom2]});
       TestBed.overrideComponent(MainComp, {
@@ -670,7 +670,7 @@ describe('projection', () => {
   describe('projectable nodes', () => {
     @Component({selector: 'test', template: ''})
     class TestComponent {
-      constructor(public vcr: ViewContainerRef) {}
+      constructor(public cfr: ComponentFactoryResolver) {}
     }
 
     @Component({selector: 'with-content', template: ''})
@@ -713,9 +713,9 @@ describe('projection', () => {
       TestBed.overrideTemplate(WithContentCmpt, tpl);
 
       fixture = TestBed.createComponent(TestComponent);
-      const vcr = fixture.componentInstance.vcr;
-      const cmptRef =
-          vcr.createComponent(WithContentCmpt, {injector: Injector.NULL, projectableNodes});
+      const cfr = fixture.componentInstance.cfr;
+      const cf = cfr.resolveComponentFactory(WithContentCmpt);
+      const cmptRef = cf.create(Injector.NULL, projectableNodes);
 
       cmptRef.changeDetectorRef.detectChanges();
 

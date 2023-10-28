@@ -6,22 +6,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Injector, ɵcreateInjector, ɵInjectorProfilerContext, ɵsetInjectorProfilerContext, ɵɵFactoryTarget, ɵɵngDeclareFactory} from '@angular/core';
+import {Injector, ɵcreateInjector, ɵɵFactoryTarget, ɵɵngDeclareFactory} from '@angular/core';
 import {ɵɵdefineInjector} from '@angular/core/src/di';
 import {setCurrentInjector} from '@angular/core/src/di/injector_compatibility';
 
 describe('Factory declaration jit compilation', () => {
   let previousInjector: Injector|null|undefined;
-  let previousInjectorProfilerContext: ɵInjectorProfilerContext;
-  beforeEach(() => {
-    const injector = ɵcreateInjector(TestInjector);
-    previousInjector = setCurrentInjector(injector);
-    previousInjectorProfilerContext = ɵsetInjectorProfilerContext({injector, token: null});
-  });
-  afterEach(() => {
-    setCurrentInjector(previousInjector);
-    previousInjectorProfilerContext = ɵsetInjectorProfilerContext(previousInjectorProfilerContext);
-  });
+  beforeEach(() => previousInjector = setCurrentInjector(ɵcreateInjector(TestInjector)));
+  afterEach(() => setCurrentInjector(previousInjector));
 
   it('should compile a simple factory declaration', () => {
     const factory = TestClass.ɵfac as Function;

@@ -24,7 +24,7 @@ describe('BannerComponent (initial CLI generated)', () => {
   let fixture: ComponentFixture<BannerComponent>;
 
   beforeEach(waitForAsync(() => {
-    TestBed.configureTestingModule({ imports: [BannerComponent] }).compileComponents();
+    TestBed.configureTestingModule({declarations: [BannerComponent]}).compileComponents();
   }));
 
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('BannerComponent (initial CLI generated)', () => {
 describe('BannerComponent (minimal)', () => {
   it('should create', () => {
     // #docregion configureTestingModule
-    TestBed.configureTestingModule({ imports: [BannerComponent] });
+    TestBed.configureTestingModule({declarations: [BannerComponent]});
     // #enddocregion configureTestingModule
     // #docregion createComponent
     const fixture = TestBed.createComponent(BannerComponent);
@@ -62,7 +62,7 @@ describe('BannerComponent (with beforeEach)', () => {
   let fixture: ComponentFixture<BannerComponent>;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [BannerComponent] });
+    TestBed.configureTestingModule({declarations: [BannerComponent]});
     fixture = TestBed.createComponent(BannerComponent);
     component = fixture.componentInstance;
   });
@@ -88,6 +88,7 @@ describe('BannerComponent (with beforeEach)', () => {
     expect(p.textContent).toEqual('banner works!');
   });
   // #enddocregion v4-test-3
+
 
   // #docregion v4-test-4
   it('should find the <p> with fixture.debugElement.nativeElement)', () => {

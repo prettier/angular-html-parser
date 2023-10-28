@@ -4,13 +4,13 @@
 
 ```ts
 
-import { ApplicationRef } from '@angular/core';
 import { EnvironmentProviders } from '@angular/core';
 import * as i0 from '@angular/core';
 import * as i1 from '@angular/common/http';
 import * as i2 from '@angular/platform-browser/animations';
 import * as i3 from '@angular/platform-browser';
 import { InjectionToken } from '@angular/core';
+import { NgModuleFactory } from '@angular/core';
 import { PlatformRef } from '@angular/core';
 import { Provider } from '@angular/core';
 import { StaticProvider } from '@angular/core';
@@ -18,22 +18,20 @@ import { Type } from '@angular/core';
 import { Version } from '@angular/core';
 
 // @public
-export const BEFORE_APP_SERIALIZED: InjectionToken<readonly (() => void | Promise<void>)[]>;
+export const BEFORE_APP_SERIALIZED: InjectionToken<(() => void | Promise<void>)[]>;
 
 // @public
 export const INITIAL_CONFIG: InjectionToken<PlatformConfig>;
 
 // @public
 export interface PlatformConfig {
-    // @deprecated
     baseUrl?: string;
     document?: string;
     url?: string;
-    // @deprecated
     useAbsoluteUrl?: boolean;
 }
 
-// @public @deprecated
+// @public
 export const platformDynamicServer: (extraProviders?: StaticProvider[] | undefined) => PlatformRef;
 
 // @public (undocumented)
@@ -51,18 +49,24 @@ export class PlatformState {
 }
 
 // @public
-export function provideServerRendering(): EnvironmentProviders;
-
-// @public
-export function renderApplication<T>(bootstrap: () => Promise<ApplicationRef>, options: {
+export function renderApplication<T>(rootComponent: Type<T>, options: {
+    appId: string;
     document?: string | Document;
     url?: string;
+    providers?: Array<Provider | EnvironmentProviders>;
     platformProviders?: Provider[];
 }): Promise<string>;
 
 // @public
 export function renderModule<T>(moduleType: Type<T>, options: {
     document?: string | Document;
+    url?: string;
+    extraProviders?: StaticProvider[];
+}): Promise<string>;
+
+// @public @deprecated
+export function renderModuleFactory<T>(moduleFactory: NgModuleFactory<T>, options: {
+    document?: string;
     url?: string;
     extraProviders?: StaticProvider[];
 }): Promise<string>;

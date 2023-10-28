@@ -7,6 +7,7 @@
  */
 
 import {Inject, Injectable, InjectionToken} from '../di';
+import {scheduleMicroTask} from '../util/microtask';
 import {NgZone} from '../zone/ng_zone';
 
 /**
@@ -126,7 +127,7 @@ export class Testability implements PublicTestability {
       this._ngZone.onStable.subscribe({
         next: () => {
           NgZone.assertNotInAngularZone();
-          queueMicrotask(() => {
+          scheduleMicroTask(() => {
             this._isZoneStable = true;
             this._runCallbacksIfReady();
           });
@@ -168,7 +169,7 @@ export class Testability implements PublicTestability {
   private _runCallbacksIfReady(): void {
     if (this.isStable()) {
       // Schedules the call backs in a new frame so that it is always async.
-      queueMicrotask(() => {
+      scheduleMicroTask(() => {
         while (this._callbacks.length !== 0) {
           let cb = this._callbacks.pop()!;
           clearTimeout(cb.timeoutId);

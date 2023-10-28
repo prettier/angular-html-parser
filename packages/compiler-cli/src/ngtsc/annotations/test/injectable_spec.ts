@@ -13,7 +13,6 @@ import {PartialEvaluator} from '../../partial_evaluator';
 import {NOOP_PERF_RECORDER} from '../../perf';
 import {isNamedClassDeclaration, TypeScriptReflectionHost} from '../../reflection';
 import {getDeclaration, makeProgram} from '../../testing';
-import {CompilationMode} from '../../transform';
 import {InjectableDecoratorHandler} from '../src/injectable';
 
 runInEachFileSystem(() => {
@@ -73,8 +72,7 @@ function setupHandler(errorOnDuplicateProv: boolean) {
   const evaluator = new PartialEvaluator(reflectionHost, checker, null);
   const handler = new InjectableDecoratorHandler(
       reflectionHost, evaluator, /* isCore */ false,
-      /* strictCtorDeps */ false, injectableRegistry, NOOP_PERF_RECORDER, true,
-      /*compilationMode */ CompilationMode.FULL, errorOnDuplicateProv);
+      /* strictCtorDeps */ false, injectableRegistry, NOOP_PERF_RECORDER, errorOnDuplicateProv);
   const TestClass = getDeclaration(program, ENTRY_FILE, 'TestClass', isNamedClassDeclaration);
   const ɵprov = reflectionHost.getMembersOfClass(TestClass).find(member => member.name === 'ɵprov');
   if (ɵprov === undefined) {

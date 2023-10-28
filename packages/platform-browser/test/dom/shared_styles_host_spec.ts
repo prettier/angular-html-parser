@@ -7,18 +7,18 @@
  */
 
 import {ɵgetDOM as getDOM} from '@angular/common';
-import {SharedStylesHost} from '@angular/platform-browser/src/dom/shared_styles_host';
+import {DomSharedStylesHost} from '@angular/platform-browser/src/dom/shared_styles_host';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
 
 {
-  describe('SharedStylesHost', () => {
+  describe('DomSharedStylesHost', () => {
     let doc: Document;
-    let ssh: SharedStylesHost;
+    let ssh: DomSharedStylesHost;
     let someHost: Element;
     beforeEach(() => {
       doc = getDOM().createHtmlDocument();
       doc.title = '';
-      ssh = new SharedStylesHost(doc, 'app-id');
+      ssh = new DomSharedStylesHost(doc);
       someHost = getDOM().createElement('div');
     });
 
@@ -46,6 +46,15 @@ import {expect} from '@angular/platform-browser/testing/src/matchers';
       expect(doc.head).toHaveText('a {};b {};');
     });
 
+    it('should remove style nodes when the host is removed', () => {
+      ssh.addStyles(['a {};']);
+      ssh.addHost(someHost);
+      expect(someHost.innerHTML).toEqual('<style>a {};</style>');
+
+      ssh.removeHost(someHost);
+      expect(someHost.innerHTML).toEqual('');
+    });
+
     it('should remove style nodes on destroy', () => {
       ssh.addStyles(['a {};']);
       ssh.addHost(someHost);
@@ -53,22 +62,6 @@ import {expect} from '@angular/platform-browser/testing/src/matchers';
 
       ssh.ngOnDestroy();
       expect(someHost.innerHTML).toEqual('');
-    });
-
-    it(`should add 'nonce' attribute when a nonce value is provided`, () => {
-      ssh = new SharedStylesHost(doc, 'app-id', '{% nonce %}');
-      ssh.addStyles(['a {};']);
-      ssh.addHost(someHost);
-      expect(someHost.innerHTML).toEqual('<style nonce="{% nonce %}">a {};</style>');
-    });
-
-    it('should not add duplicate style nodes', () => {
-      ssh.addHost(someHost);
-      const styles = ['a {};'];
-      ssh.addStyles(styles);
-      ssh.disableStyles(styles);
-      ssh.addStyles(styles);
-      expect(someHost.innerHTML).toEqual('<style>a {};</style>');
     });
   });
 }

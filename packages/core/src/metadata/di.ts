@@ -11,6 +11,45 @@ import {ProviderToken} from '../di/provider_token';
 import {makePropDecorator} from '../util/decorators';
 
 /**
+ * A DI token that you can use to create a virtual [provider](guide/glossary#provider)
+ * that will populate the `entryComponents` field of components and NgModules
+ * based on its `useValue` property value.
+ * All components that are referenced in the `useValue` value (either directly
+ * or in a nested array or map) are added to the `entryComponents` property.
+ *
+ * @usageNotes
+ *
+ * The following example shows how the router can populate the `entryComponents`
+ * field of an NgModule based on a router configuration that refers
+ * to components.
+ *
+ * ```typescript
+ * // helper function inside the router
+ * function provideRoutes(routes) {
+ *   return [
+ *     {provide: ROUTES, useValue: routes},
+ *     {provide: ANALYZE_FOR_ENTRY_COMPONENTS, useValue: routes, multi: true}
+ *   ];
+ * }
+ *
+ * // user code
+ * let routes = [
+ *   {path: '/root', component: RootComp},
+ *   {path: '/teams', component: TeamsComp}
+ * ];
+ *
+ * @NgModule({
+ *   providers: [provideRoutes(routes)]
+ * })
+ * class ModuleWithRoutes {}
+ * ```
+ *
+ * @publicApi
+ * @deprecated Since 9.0.0. With Ivy, this property is no longer necessary.
+ */
+export const ANALYZE_FOR_ENTRY_COMPONENTS = new InjectionToken<any>('AnalyzeForEntryComponents');
+
+/**
  * Type of the `Attribute` decorator / constructor function.
  *
  * @publicApi
@@ -75,10 +114,10 @@ export const emitDistinctChangesOnlyDefaultValue = true;
 /**
  * Base class for query metadata.
  *
- * @see {@link ContentChildren}
- * @see {@link ContentChild}
- * @see {@link ViewChildren}
- * @see {@link ViewChild}
+ * @see `ContentChildren`.
+ * @see `ContentChild`.
+ * @see `ViewChildren`.
+ * @see `ViewChild`.
  *
  * @publicApi
  */
@@ -87,7 +126,7 @@ export abstract class Query {}
 /**
  * Type of the ContentChildren decorator / constructor function.
  *
- * @see {@link ContentChildren}
+ * @see `ContentChildren`.
  * @publicApi
  */
 export interface ContentChildrenDecorator {
@@ -202,6 +241,8 @@ export interface ContentChildDecorator {
    * If the content DOM changes, and a new child matches the selector,
    * the property will be updated.
    *
+   * Content queries are set before the `ngAfterContentInit` callback is called.
+   *
    * Does not retrieve elements or directives that are in other components' templates,
    * since a component's template is always a black box to its ancestors.
    *
@@ -231,17 +272,6 @@ export interface ContentChildDecorator {
    * this query
    *   * Any provider defined through a string token (e.g. `{provide: 'token', useValue: 'val'}`)
    *   * `TemplateRef`, `ElementRef`, and `ViewContainerRef`
-   *
-   * Difference between dynamic and static queries:
-   *
-   * | Queries                             | Details |
-   * |:---                                 |:---     |
-   * | Dynamic queries \(`static: false`\) | The query resolves before the `ngAfterContentInit()`
-   * callback is called. The result will be updated for changes to your view, such as changes to
-   * `ngIf` and `ngFor` blocks. | | Static queries \(`static: true`\)   | The query resolves once
-   * the view has been created, but before change detection runs (before the `ngOnInit()` callback
-   * is called). The result, though, will never be updated to reflect changes to your view, such as
-   * changes to `ngIf` and `ngFor` blocks.  |
    *
    * @usageNotes
    *
@@ -283,7 +313,7 @@ export const ContentChild: ContentChildDecorator = makePropDecorator(
 /**
  * Type of the ViewChildren decorator / constructor function.
  *
- * @see {@link ViewChildren}
+ * @see `ViewChildren`.
  *
  * @publicApi
  */
@@ -372,7 +402,7 @@ export const ViewChildren: ViewChildrenDecorator = makePropDecorator(
 /**
  * Type of the ViewChild decorator / constructor function.
  *
- * @see {@link ViewChild}
+ * @see `ViewChild`.
  * @publicApi
  */
 export interface ViewChildDecorator {
@@ -383,12 +413,14 @@ export interface ViewChildDecorator {
    * in the view DOM. If the view DOM changes, and a new child matches the selector,
    * the property is updated.
    *
+   * View queries are set before the `ngAfterViewInit` callback is called.
+   *
    * **Metadata Properties**:
    *
    * * **selector** - The directive type or the name used for querying.
    * * **read** - Used to read a different token from the queried elements.
-   * * **static** - `true` to resolve query results before change detection runs,
-   * `false` to resolve after change detection. Defaults to `false`.
+   * * **static** - True to resolve query results before change detection runs,
+   * false to resolve after change detection. Defaults to false.
    *
    *
    * The following selectors are supported.
@@ -408,17 +440,6 @@ export interface ViewChildDecorator {
    * this query
    *   * Any provider defined through a string token (e.g. `{provide: 'token', useValue: 'val'}`)
    *   * `TemplateRef`, `ElementRef`, and `ViewContainerRef`
-   *
-   * Difference between dynamic and static queries**:
-   *
-   * | Queries                             | Details |
-   * |:---                                 |:---     |
-   * | Dynamic queries \(`static: false`\) | The query resolves before the `ngAfterViewInit()`
-   * callback is called. The result will be updated for changes to your view, such as changes to
-   * `ngIf` and `ngFor` blocks. | | Static queries \(`static: true`\)   | The query resolves once
-   * the view has been created, but before change detection runs (before the `ngOnInit()` callback
-   * is called). The result, though, will never be updated to reflect changes to your view, such as
-   * changes to `ngIf` and `ngFor` blocks. |
    *
    * @usageNotes
    *

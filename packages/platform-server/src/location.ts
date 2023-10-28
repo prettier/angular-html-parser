@@ -7,10 +7,9 @@
  */
 
 import {DOCUMENT, LocationChangeEvent, LocationChangeListener, PlatformLocation, ɵgetDOM as getDOM} from '@angular/common';
-import {Inject, Injectable, Optional, ɵWritable as Writable} from '@angular/core';
+import {Inject, Injectable, Optional} from '@angular/core';
 import {Subject} from 'rxjs';
 import * as url from 'url';
-
 import {INITIAL_CONFIG, PlatformConfig} from './tokens';
 
 function parseUrl(urlStr: string) {
@@ -91,9 +90,9 @@ export class ServerPlatformLocation implements PlatformLocation {
       // Don't fire events if the hash has not changed.
       return;
     }
-    (this as Writable<this>).hash = value;
+    (this as {hash: string}).hash = value;
     const newUrl = this.url;
-    queueMicrotask(
+    scheduleMicroTask(
         () => this._hashUpdate.next(
             {type: 'hashchange', state: null, oldUrl, newUrl} as LocationChangeEvent));
   }
@@ -101,8 +100,8 @@ export class ServerPlatformLocation implements PlatformLocation {
   replaceState(state: any, title: string, newUrl: string): void {
     const oldUrl = this.url;
     const parsedUrl = parseUrl(newUrl);
-    (this as Writable<this>).pathname = parsedUrl.pathname;
-    (this as Writable<this>).search = parsedUrl.search;
+    (this as {pathname: string}).pathname = parsedUrl.pathname;
+    (this as {search: string}).search = parsedUrl.search;
     this.setHash(parsedUrl.hash, oldUrl);
   }
 
@@ -122,4 +121,8 @@ export class ServerPlatformLocation implements PlatformLocation {
   getState(): unknown {
     return undefined;
   }
+}
+
+export function scheduleMicroTask(fn: Function) {
+  Zone.current.scheduleMicroTask('scheduleMicrotask', fn);
 }

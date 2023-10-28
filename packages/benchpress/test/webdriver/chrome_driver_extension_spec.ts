@@ -40,16 +40,14 @@ import {TraceEventFactory} from '../trace_event_factory';
       }
       log = [];
       extension = Injector
-                      .create({
-                        providers: [
-                          ChromeDriverExtension.PROVIDERS, {
-                            provide: WebDriverAdapter,
-                            useValue: new MockDriverAdapter(log, perfRecords, messageMethod)
-                          },
-                          {provide: Options.USER_AGENT, useValue: userAgent},
-                          {provide: Options.RAW_PERFLOG_PATH, useValue: null}
-                        ]
-                      })
+                      .create([
+                        ChromeDriverExtension.PROVIDERS, {
+                          provide: WebDriverAdapter,
+                          useValue: new MockDriverAdapter(log, perfRecords, messageMethod)
+                        },
+                        {provide: Options.USER_AGENT, useValue: userAgent},
+                        {provide: Options.RAW_PERFLOG_PATH, useValue: null}
+                      ])
                       .get(ChromeDriverExtension);
       return extension;
     }
@@ -153,26 +151,9 @@ import {TraceEventFactory} from '../trace_event_factory';
           .then((events) => {
             expect(events.length).toEqual(2);
             expect(events[0]).toEqual(
-                normEvents.start('gc', 1.0, {'usedHeapSize': 1000, 'majorGc': false, gcAmount: 0}));
+                normEvents.start('gc', 1.0, {'usedHeapSize': 1000, 'majorGc': false}));
             expect(events[1]).toEqual(
-                normEvents.end('gc', 2.0, {'usedHeapSize': 0, 'majorGc': false, gcAmount: 0}));
-            done();
-          });
-    });
-
-    it('should report minor gc with GC amount', done => {
-      createExtension([
-        chromeTimelineV8Events.create(
-            'X', 'MinorGC', 1000, {'usedHeapSizeBefore': 5000, 'usedHeapSizeAfter': 2000}),
-      ])
-          .readPerfLog()
-          .then((events) => {
-            expect(events.length).toEqual(1);
-            expect(events[0]).toEqual({
-              ...normEvents.create(
-                  'X', 'gc', 1.0, {'usedHeapSize': 2000, 'majorGc': false, gcAmount: 3000}),
-              dur: 0
-            });
+                normEvents.end('gc', 2.0, {'usedHeapSize': 0, 'majorGc': false}));
             done();
           });
     });
@@ -188,26 +169,9 @@ import {TraceEventFactory} from '../trace_event_factory';
           .then((events) => {
             expect(events.length).toEqual(2);
             expect(events[0]).toEqual(
-                normEvents.start('gc', 1.0, {'usedHeapSize': 1000, 'majorGc': true, gcAmount: 0}));
+                normEvents.start('gc', 1.0, {'usedHeapSize': 1000, 'majorGc': true}));
             expect(events[1]).toEqual(
-                normEvents.end('gc', 2.0, {'usedHeapSize': 0, 'majorGc': true, gcAmount: 0}));
-            done();
-          });
-    });
-
-    it('should report major gc with GC amount', done => {
-      createExtension([
-        chromeTimelineV8Events.create(
-            'X', 'MajorGC', 1000, {'usedHeapSizeBefore': 5000, 'usedHeapSizeAfter': 2000}),
-      ])
-          .readPerfLog()
-          .then((events) => {
-            expect(events.length).toEqual(1);
-            expect(events[0]).toEqual({
-              ...normEvents.create(
-                  'X', 'gc', 1.0, {'usedHeapSize': 2000, 'majorGc': true, gcAmount: 3000}),
-              dur: 0
-            });
+                normEvents.end('gc', 2.0, {'usedHeapSize': 0, 'majorGc': true}));
             done();
           });
     });

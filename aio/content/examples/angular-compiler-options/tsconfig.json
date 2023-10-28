@@ -1,5 +1,5 @@
 // #docplaster ...
-/* To learn more about this file see: https://angular.io/guide/typescript-configuration. */
+/* To learn more about this file see: https://angular.io/config/tsconfig. */
 // #docregion angular-compiler-options
 {
   "compileOnSave": false,
@@ -32,9 +32,8 @@
     "strictInjectionParameters": true,
     // #enddocregion angular-compiler-options
     "strictInputAccessModifiers": true,
-    "strictTemplates": true,
+    "strictTemplates": true
     // #docregion angular-compiler-options
-    "disableTypeScriptVersionCheck": true
   }
 }
 // #enddocregion angular-compiler-options

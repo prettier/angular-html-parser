@@ -8,20 +8,26 @@
 
 import {DOCUMENT, ɵgetDOM as getDOM} from '@angular/common';
 import {Inject, Injectable} from '@angular/core';
-import {EventManagerPlugin} from '@angular/platform-browser';
 
 @Injectable()
-export class ServerEventManagerPlugin extends EventManagerPlugin {
-  constructor(@Inject(DOCUMENT) private doc: any) {
-    super(doc);
-  }
+export class ServerEventManagerPlugin /* extends EventManagerPlugin which is private */ {
+  constructor(@Inject(DOCUMENT) private doc: any) {}
 
   // Handle all events on the server.
-  override supports(eventName: string) {
+  supports(eventName: string) {
     return true;
   }
 
-  override addEventListener(element: HTMLElement, eventName: string, handler: Function): Function {
+  addEventListener(element: HTMLElement, eventName: string, handler: Function): Function {
     return getDOM().onAndCancel(element, eventName, handler);
+  }
+
+  /** @deprecated No longer being used in Ivy code. To be removed in version 14. */
+  addGlobalEventListener(element: string, eventName: string, handler: Function): Function {
+    const target: HTMLElement = getDOM().getGlobalEventTarget(this.doc, element);
+    if (!target) {
+      throw new Error(`Unsupported event target ${target} for event ${eventName}`);
+    }
+    return this.addEventListener(target, eventName, handler);
   }
 }

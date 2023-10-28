@@ -6,14 +6,13 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {RuntimeError, RuntimeErrorCode} from '../../errors';
-import {assertDefined, assertGreaterThan, assertGreaterThanOrEqual, assertIndexInRange, assertLessThan} from '../../util/assert';
+import {assertGreaterThan, assertGreaterThanOrEqual, assertIndexInRange, assertLessThan} from '../../util/assert';
 import {assertTNode, assertTNodeForLView} from '../assert';
-import {HAS_CHILD_VIEWS_TO_REFRESH, LContainer, TYPE} from '../interfaces/container';
+import {LContainer, TYPE} from '../interfaces/container';
 import {TConstants, TNode} from '../interfaces/node';
 import {RNode} from '../interfaces/renderer_dom';
 import {isLContainer, isLView} from '../interfaces/type_checks';
-import {DECLARATION_VIEW, FLAGS, HEADER_OFFSET, HOST, LView, LViewFlags, ON_DESTROY_HOOKS, PARENT, PREORDER_HOOK_FLAGS, PreOrderHookFlags, TData, TView} from '../interfaces/view';
+import {FLAGS, HEADER_OFFSET, HOST, LView, LViewFlags, PARENT, PREORDER_HOOK_FLAGS, TData, TRANSPLANTED_VIEWS_TO_REFRESH, TView} from '../interfaces/view';
 
 
 
@@ -161,112 +160,25 @@ export function getConstant<T>(consts: TConstants|null, index: number|null|undef
  * @param lView the LView on which the flags are reset
  */
 export function resetPreOrderHookFlags(lView: LView) {
-  lView[PREORDER_HOOK_FLAGS] = 0 as PreOrderHookFlags;
+  lView[PREORDER_HOOK_FLAGS] = 0;
 }
 
 /**
- * Adds the `RefreshView` flag from the lView and updates HAS_CHILD_VIEWS_TO_REFRESH flag of
- * parents.
- */
-export function markViewForRefresh(lView: LView) {
-  if (lView[FLAGS] & LViewFlags.RefreshView) {
-    return;
-  }
-  lView[FLAGS] |= LViewFlags.RefreshView;
-  if (viewAttachedToChangeDetector(lView)) {
-    markAncestorsForTraversal(lView);
-  }
-}
-
-/**
- * Walks up the LView hierarchy.
- * @param nestingLevel Number of times to walk up in hierarchy.
- * @param currentView View from which to start the lookup.
- */
-export function walkUpViews(nestingLevel: number, currentView: LView): LView {
-  while (nestingLevel > 0) {
-    ngDevMode &&
-        assertDefined(
-            currentView[DECLARATION_VIEW],
-            'Declaration view should be defined if nesting level is greater than 0.');
-    currentView = currentView[DECLARATION_VIEW]!;
-    nestingLevel--;
-  }
-  return currentView;
-}
-
-
-/**
- * Updates the `DESCENDANT_VIEWS_TO_REFRESH` counter on the parents of the `LView` as well as the
- * parents above that whose
+ * Updates the `TRANSPLANTED_VIEWS_TO_REFRESH` counter on the `LContainer` as well as the parents
+ * whose
  *  1. counter goes from 0 to 1, indicating that there is a new child that has a view to refresh
  *  or
  *  2. counter goes from 1 to 0, indicating there are no more descendant views to refresh
- * When attaching/re-attaching an `LView` to the change detection tree, we need to ensure that the
- * views above it are traversed during change detection if this one is marked for refresh or has
- * some child or descendant that needs to be refreshed.
  */
-export function updateAncestorTraversalFlagsOnAttach(lView: LView) {
-  if (lView[FLAGS] & (LViewFlags.RefreshView | LViewFlags.HasChildViewsToRefresh)) {
-    markAncestorsForTraversal(lView);
-  }
-}
-
-/**
- * Ensures views above the given `lView` are traversed during change detection even when they are
- * not dirty.
- *
- * This is done by setting the `HAS_CHILD_VIEWS_TO_REFRESH` flag up to the root, stopping when the
- * flag is already `true` or the `lView` is detached.
- */
-export function markAncestorsForTraversal(lView: LView) {
-  let parent = lView[PARENT];
-  if (parent === null) {
-    return;
-  }
-
-  while (parent !== null) {
-    // We stop adding markers to the ancestors once we reach one that already has the marker. This
-    // is to avoid needlessly traversing all the way to the root when the marker already exists.
-    if ((isLContainer(parent) && parent[HAS_CHILD_VIEWS_TO_REFRESH] ||
-         (isLView(parent) && parent[FLAGS] & LViewFlags.HasChildViewsToRefresh))) {
-      break;
-    }
-
-    if (isLContainer(parent)) {
-      parent[HAS_CHILD_VIEWS_TO_REFRESH] = true;
-    } else {
-      parent[FLAGS] |= LViewFlags.HasChildViewsToRefresh;
-      if (!viewAttachedToChangeDetector(parent)) {
-        break;
-      }
-    }
+export function updateTransplantedViewCount(lContainer: LContainer, amount: 1|- 1) {
+  lContainer[TRANSPLANTED_VIEWS_TO_REFRESH] += amount;
+  let viewOrContainer: LView|LContainer = lContainer;
+  let parent: LView|LContainer|null = lContainer[PARENT];
+  while (parent !== null &&
+         ((amount === 1 && viewOrContainer[TRANSPLANTED_VIEWS_TO_REFRESH] === 1) ||
+          (amount === -1 && viewOrContainer[TRANSPLANTED_VIEWS_TO_REFRESH] === 0))) {
+    parent[TRANSPLANTED_VIEWS_TO_REFRESH] += amount;
+    viewOrContainer = parent;
     parent = parent[PARENT];
-  }
-}
-
-/**
- * Stores a LView-specific destroy callback.
- */
-export function storeLViewOnDestroy(lView: LView, onDestroyCallback: () => void) {
-  if ((lView[FLAGS] & LViewFlags.Destroyed) === LViewFlags.Destroyed) {
-    throw new RuntimeError(
-        RuntimeErrorCode.VIEW_ALREADY_DESTROYED, ngDevMode && 'View has already been destroyed.');
-  }
-  if (lView[ON_DESTROY_HOOKS] === null) {
-    lView[ON_DESTROY_HOOKS] = [];
-  }
-  lView[ON_DESTROY_HOOKS].push(onDestroyCallback);
-}
-
-/**
- * Removes previously registered LView-specific destroy callback.
- */
-export function removeLViewOnDestroy(lView: LView, onDestroyCallback: () => void) {
-  if (lView[ON_DESTROY_HOOKS] === null) return;
-
-  const destroyCBIdx = lView[ON_DESTROY_HOOKS].indexOf(onDestroyCallback);
-  if (destroyCBIdx !== -1) {
-    lView[ON_DESTROY_HOOKS].splice(destroyCBIdx, 1);
   }
 }

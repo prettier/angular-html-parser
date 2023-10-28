@@ -9,7 +9,7 @@
 import {Adapter} from './adapter';
 import {CacheState, Debuggable, DebugIdleState, DebugState, DebugVersion, NormalizedUrl, UpdateCacheStatus, UpdateSource} from './api';
 import {AppVersion} from './app-version';
-import {Database, Table} from './database';
+import {Database} from './database';
 import {CacheTable} from './db-cache';
 import {DebugHandler} from './debug';
 import {errorToString} from './error';
@@ -101,7 +101,7 @@ export class Driver implements Debuggable, UpdateSource {
    */
   private loggedInvalidOnlyIfCachedRequest: boolean = false;
 
-  private ngswStatePath: string;
+  private ngswStatePath = this.adapter.parseUrl('ngsw/state', this.scope.registration.scope).path;
 
   /**
    * A scheduler which manages a queue of tasks that need to be executed when the SW is
@@ -112,13 +112,10 @@ export class Driver implements Debuggable, UpdateSource {
   debugger: DebugHandler;
 
   // A promise resolving to the control DB table.
-  private controlTable: Promise<Table>;
+  private controlTable = this.db.open('control');
 
   constructor(
       private scope: ServiceWorkerGlobalScope, private adapter: Adapter, private db: Database) {
-    this.controlTable = this.db.open('control');
-    this.ngswStatePath = this.adapter.parseUrl('ngsw/state', this.scope.registration.scope).path;
-
     // Set up all the event handlers that the SW needs.
 
     // The install event is triggered when the service worker is first installed.
@@ -446,7 +443,13 @@ export class Driver implements Debuggable, UpdateSource {
 
     // Notify the client about this activation.
     const current = this.versions.get(this.latestHash!)!;
+    const notice = {
+      type: 'UPDATE_ACTIVATED',
+      previous,
+      current: this.mergeHashWithAppData(current.manifest, this.latestHash!),
+    };
 
+    client.postMessage(notice);
     return true;
   }
 
@@ -634,6 +637,7 @@ export class Driver implements Debuggable, UpdateSource {
         await this.scheduleInitialization(this.versions.get(hash)!);
       } catch (err) {
         this.debugger.log(err as Error, `initialize: schedule init of ${hash}`);
+        return false;
       }
     }));
   }

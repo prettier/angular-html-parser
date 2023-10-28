@@ -19,7 +19,7 @@ function MyComponent_img_2_Template(rf, ctx) {
 …
 decls: 3,
 vars: 2,
-consts: () => {
+consts: function() {
   __i18nMsg__('App logo #{$interpolation}', [['interpolation', String.raw`\uFFFD0\uFFFD`]], {original_code: {'interpolation': '{{ id }}'}}, {})
   return [
     ["src", "logo.png"],
@@ -33,7 +33,8 @@ consts: () => {
 template: function MyComponent_Template(rf, ctx) {
   if (rf & 1) {
     $r3$.ɵɵelement(0, "img", 0);
-    $r3$.ɵɵtemplate(1, MyComponent_img_1_Template, 1, 0, "img", 1)(2, MyComponent_img_2_Template, 2, 1, "img", 2);
+    $r3$.ɵɵtemplate(1, MyComponent_img_1_Template, 1, 0, "img", 1);
+    $r3$.ɵɵtemplate(2, MyComponent_img_2_Template, 2, 1, "img", 2);
   }
   if (rf & 2) {
     $r3$.ɵɵadvance(1);

@@ -10,7 +10,6 @@ import { RouterLink, RouterOutlet } from '@angular/router';
     RouterLink,
     RouterOutlet,
   ],
-  // #docregion add-router-link-to-header
   template: `
     <main>
       <a [routerLink]="['/']">
@@ -23,7 +22,6 @@ import { RouterLink, RouterOutlet } from '@angular/router';
       </section>
     </main>
   `,
-  // #enddocregion
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent {

@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {DirectiveMeta, InputMapping, MatchSource, MetadataReader} from '../../metadata/src/api';
+import {DirectiveMeta, MatchSource, MetadataReader} from '../../metadata/src/api';
 import {ClassDeclaration} from '../../reflection';
-import {ClassPropertyMapping, InputOrOutput} from '../src/property_mapping';
+import {BindingPropertyName, ClassPropertyMapping, ClassPropertyName} from '../src/property_mapping';
 
 import {flattenInheritedDirectiveMetadata} from './inheritance';
 
@@ -55,10 +55,8 @@ export class HostDirectivesResolver {
       results.push({
         ...hostMeta,
         matchSource: MatchSource.HostDirective,
-        inputs: ClassPropertyMapping.fromMappedObject(
-            this.filterMappings(hostMeta.inputs, current.inputs, resolveInput)),
-        outputs: ClassPropertyMapping.fromMappedObject(
-            this.filterMappings(hostMeta.outputs, current.outputs, resolveOutput)),
+        inputs: this.filterMappings(hostMeta.inputs, current.inputs),
+        outputs: this.filterMappings(hostMeta.outputs, current.outputs),
       });
     }
 
@@ -69,12 +67,11 @@ export class HostDirectivesResolver {
    * Filters the class property mappings so that only the allowed ones are present.
    * @param source Property mappings that should be filtered.
    * @param allowedProperties Property mappings that are allowed in the final results.
-   * @param valueResolver Function used to resolve the value that is assigned to the final mapping.
    */
-  private filterMappings<T, M extends InputOrOutput>(
-      source: ClassPropertyMapping<M>, allowedProperties: Record<string, string>|null,
-      valueResolver: (bindingName: string, binding: M) => T): Record<string, T> {
-    const result: Record<string, T> = {};
+  private filterMappings(
+      source: ClassPropertyMapping,
+      allowedProperties: {[publicName: string]: string}|null): ClassPropertyMapping {
+    const result: Record<string, BindingPropertyName|[ClassPropertyName, BindingPropertyName]> = {};
 
     if (allowedProperties !== null) {
       for (const publicName in allowedProperties) {
@@ -83,27 +80,13 @@ export class HostDirectivesResolver {
 
           if (bindings !== null) {
             for (const binding of bindings) {
-              result[binding.classPropertyName] =
-                  valueResolver(allowedProperties[publicName], binding);
+              result[binding.classPropertyName] = allowedProperties[publicName];
             }
           }
         }
       }
     }
 
-    return result;
+    return ClassPropertyMapping.fromMappedObject(result);
   }
-}
-
-function resolveInput(bindingName: string, binding: InputMapping): InputMapping {
-  return {
-    bindingPropertyName: bindingName,
-    classPropertyName: binding.classPropertyName,
-    required: binding.required,
-    transform: binding.transform,
-  };
-}
-
-function resolveOutput(bindingName: string): string {
-  return bindingName;
 }

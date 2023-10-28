@@ -4,11 +4,9 @@
 */
 import { bootstrapApplication,provideProtractorTestingSupport } from '@angular/platform-browser';
 import { AppComponent } from './app/app.component';
-// #docregion add-router-imports
 import { provideRouter } from '@angular/router';
 import routeConfig from './app/routes';
-// #enddocregion
-// #docregion add-router-config
+
 bootstrapApplication(AppComponent,
   {
     providers: [
@@ -17,4 +15,3 @@ bootstrapApplication(AppComponent,
     ]
   }
 ).catch(err => console.error(err));
-// #enddocregion

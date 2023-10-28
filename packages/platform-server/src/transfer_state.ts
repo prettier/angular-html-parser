@@ -7,7 +7,8 @@
  */
 
 import {DOCUMENT} from '@angular/common';
-import {APP_ID, NgModule, Provider, TransferState} from '@angular/core';
+import {APP_ID, NgModule, Provider} from '@angular/core';
+import {TransferState, ɵescapeHtml as escapeHtml} from '@angular/platform-browser';
 
 import {BEFORE_APP_SERIALIZED} from './tokens';
 
@@ -33,11 +34,7 @@ function serializeTransferStateFactory(doc: Document, appId: string, transferSto
     const script = doc.createElement('script');
     script.id = appId + '-state';
     script.setAttribute('type', 'application/json');
-    script.textContent = content;
-
-    // It is intentional that we add the script at the very bottom. Angular CLI script tags for
-    // bundles are always `type="module"`. These are deferred by default and cause the transfer
-    // transfer data to be queried only after the browser has finished parsing the DOM.
+    script.textContent = escapeHtml(content);
     doc.body.appendChild(script);
   };
 }

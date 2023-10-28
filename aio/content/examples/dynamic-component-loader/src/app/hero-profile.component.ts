@@ -1,19 +1,22 @@
-/* eslint-disable @angular-eslint/no-input-rename */
 // #docregion
 import { Component, Input } from '@angular/core';
 
+import { AdComponent } from './ad.component';
+
 @Component({
-  standalone: true,
   template: `
     <div class="hero-profile">
       <h3>Featured Hero Profile</h3>
-      <h4>{{ name }}</h4>
-      <p>{{ bio }}</p>
+      <h4>{{data.name}}</h4>
+
+      <p>{{data.bio}}</p>
+
       <strong>Hire this hero today!</strong>
     </div>
-  `,
+  `
 })
-export class HeroProfileComponent {
-  @Input() name!: string;
-  @Input() bio!: string;
+export class HeroProfileComponent implements AdComponent {
+  @Input() data: any;
 }
+
+

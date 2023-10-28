@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import fs from 'fs';
+import {writeFileSync} from 'fs';
 import {join} from 'path';
 
 import {CldrData} from '../cldr-data';
@@ -21,7 +21,7 @@ import {BASE_LOCALE} from './base-locale';
  * Generates locale files for each available CLDR locale and writes it to the
  * specified directory.
  */
-async function main(outputDir: string|undefined) {
+function main(outputDir: string|undefined) {
   if (outputDir === undefined) {
     throw Error('No output directory specified.');
   }
@@ -32,22 +32,19 @@ async function main(outputDir: string|undefined) {
   const extraLocaleDir = join(outputDir, 'extra');
   const globalLocaleDir = join(outputDir, 'global');
 
+  console.info(`Writing locales to: ${outputDir}`);
+
   // Generate locale files for all locales we have data for.
-  await Promise.all(cldrData.availableLocales.flatMap(async (localeData) => {
+  cldrData.availableLocales.forEach((localeData) => {
     const locale = localeData.locale;
     const localeFile = generateLocale(locale, localeData, baseCurrencies);
     const localeExtraFile = generateLocaleExtra(locale, localeData);
     const localeGlobalFile = generateLocaleGlobalFile(locale, localeData, baseCurrencies);
 
-    return [
-      fs.promises.writeFile(join(outputDir, `${locale}.ts`), localeFile),
-      fs.promises.writeFile(join(extraLocaleDir, `${locale}.ts`), localeExtraFile),
-      fs.promises.writeFile(join(globalLocaleDir, `${locale}.js`), localeGlobalFile),
-    ];
-  }));
+    writeFileSync(join(outputDir, `${locale}.ts`), localeFile);
+    writeFileSync(join(extraLocaleDir, `${locale}.ts`), localeExtraFile);
+    writeFileSync(join(globalLocaleDir, `${locale}.js`), localeGlobalFile);
+  });
 }
 
-main(process.argv[2]).catch(err => {
-  console.error(err);
-  process.exitCode = 1;
-});
+main(process.argv[2]);

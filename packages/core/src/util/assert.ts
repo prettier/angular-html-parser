@@ -107,16 +107,14 @@ export function throwError(msg: string, actual?: any, expected?: any, comparison
 }
 
 export function assertDomNode(node: any): asserts node is Node {
-  if (!(node instanceof Node)) {
+  // If we're in a worker, `Node` will not be defined.
+  if (!(typeof Node !== 'undefined' && node instanceof Node) &&
+      !(typeof node === 'object' && node != null &&
+        node.constructor.name === 'WebWorkerRenderNode')) {
     throwError(`The provided value must be an instance of a DOM Node but got ${stringify(node)}`);
   }
 }
 
-export function assertElement(node: any): asserts node is Element {
-  if (!(node instanceof Element)) {
-    throwError(`The provided value must be an element but got ${stringify(node)}`);
-  }
-}
 
 export function assertIndexInRange(arr: any[], index: number) {
   assertDefined(arr, 'Array must be defined.');
@@ -125,6 +123,7 @@ export function assertIndexInRange(arr: any[], index: number) {
     throwError(`Index expected to be less than ${maxLen} but got ${index}`);
   }
 }
+
 
 export function assertOneOf(value: any, ...validValues: any[]) {
   if (validValues.indexOf(value) !== -1) return true;

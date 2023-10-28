@@ -68,15 +68,8 @@ export class RouterTestingHarness {
     return harness;
   }
 
-  /**
-   * Fixture of the root component of the RouterTestingHarness
-   */
-  public readonly fixture: ComponentFixture<unknown>;
-
   /** @internal */
-  constructor(fixture: ComponentFixture<unknown>) {
-    this.fixture = fixture;
-  }
+  constructor(private readonly fixture: ComponentFixture<RootCmp>) {}
 
   /** Instructs the root fixture to run change detection. */
   detectChanges(): void {
@@ -84,7 +77,7 @@ export class RouterTestingHarness {
   }
   /** The `DebugElement` of the `RouterOutlet` component. `null` if the outlet is not activated. */
   get routeDebugElement(): DebugElement|null {
-    const outlet = (this.fixture.componentInstance as RootCmp).outlet;
+    const outlet = this.fixture.componentInstance.outlet;
     if (!outlet || !outlet.isActivated) {
       return null;
     }
@@ -143,7 +136,7 @@ export class RouterTestingHarness {
     await router.navigateByUrl(url);
     await redirectTrackingPromise;
     this.fixture.detectChanges();
-    const outlet = (this.fixture.componentInstance as RootCmp).outlet;
+    const outlet = this.fixture.componentInstance.outlet;
     // The outlet might not be activated if the user is testing a navigation for a guard that
     // rejects
     if (outlet && outlet.isActivated && outlet.activatedRoute.component) {

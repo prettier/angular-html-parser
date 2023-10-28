@@ -19,17 +19,15 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     APPLICATION_REF_ALREADY_DESTROYED = 406,
     // (undocumented)
-    ASSERTION_NOT_INSIDE_REACTIVE_CONTEXT = -602,
-    // (undocumented)
     ASYNC_INITIALIZERS_STILL_RUNNING = 405,
     // (undocumented)
     BOOTSTRAP_COMPONENTS_NOT_FOUND = -403,
     // (undocumented)
-    COMPONENT_ID_COLLISION = -912,
-    // (undocumented)
     CYCLIC_DI_DEPENDENCY = -200,
     // (undocumented)
     DUPLICATE_DIRECTITVE = 309,
+    // (undocumented)
+    ERROR_HANDLER_NOT_FOUND = 402,
     // (undocumented)
     EXPORT_NOT_FOUND = -301,
     // (undocumented)
@@ -44,16 +42,6 @@ export const enum RuntimeErrorCode {
     HOST_DIRECTIVE_UNDEFINED_BINDING = 311,
     // (undocumented)
     HOST_DIRECTIVE_UNRESOLVABLE = 307,
-    // (undocumented)
-    HYDRATION_MISSING_NODE = -502,
-    // (undocumented)
-    HYDRATION_MISSING_SIBLINGS = -501,
-    // (undocumented)
-    HYDRATION_NODE_MISMATCH = -500,
-    // (undocumented)
-    HYDRATION_STABLE_TIMEDOUT = -506,
-    // (undocumented)
-    IMAGE_PERFORMANCE_WARNING = -913,
     // (undocumented)
     IMPORT_PROVIDERS_FROM_STANDALONE = 800,
     // (undocumented)
@@ -73,13 +61,7 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     INVALID_MULTI_PROVIDER = -209,
     // (undocumented)
-    INVALID_SKIP_HYDRATION_HOST = -504,
-    // (undocumented)
-    MISSING_DOCUMENT = 210,
-    // (undocumented)
     MISSING_GENERATED_DEF = 906,
-    // (undocumented)
-    MISSING_HYDRATION_ANNOTATIONS = -505,
     // (undocumented)
     MISSING_INJECTION_CONTEXT = -203,
     // (undocumented)
@@ -87,15 +69,9 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     MISSING_LOCALE_DATA = 701,
     // (undocumented)
-    MISSING_REQUIRED_INJECTABLE_IN_BOOTSTRAP = 402,
-    // (undocumented)
-    MISSING_SSR_CONTENT_INTEGRITY_MARKER = -507,
-    // (undocumented)
     MISSING_ZONEJS = 908,
     // (undocumented)
     MULTIPLE_COMPONENTS_MATCH = -300,
-    // (undocumented)
-    MULTIPLE_MATCHING_PIPES = 313,
     // (undocumented)
     MULTIPLE_PLATFORMS = 400,
     // (undocumented)
@@ -113,17 +89,7 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     RECURSIVE_APPLICATION_REF_TICK = 101,
     // (undocumented)
-    RECURSIVE_APPLICATION_RENDER = 102,
-    // (undocumented)
     RENDERER_NOT_FOUND = 407,
-    // (undocumented)
-    REQUIRE_SYNC_WITHOUT_SYNC_EMIT = 601,
-    // (undocumented)
-    RUNTIME_DEPS_INVALID_IMPORTED_TYPE = 1000,
-    // (undocumented)
-    RUNTIME_DEPS_ORPHAN_COMPONENT = 1001,
-    // (undocumented)
-    SIGNAL_WRITE_FROM_ILLEGAL_CONTEXT = 600,
     // (undocumented)
     TEMPLATE_STRUCTURE_ERROR = 305,
     // (undocumented)
@@ -141,11 +107,7 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     UNSAFE_VALUE_IN_SCRIPT = 905,
     // (undocumented)
-    UNSUPPORTED_PROJECTION_DOM_NODES = -503,
-    // (undocumented)
-    VIEW_ALREADY_ATTACHED = 902,
-    // (undocumented)
-    VIEW_ALREADY_DESTROYED = 911
+    VIEW_ALREADY_ATTACHED = 902
 }
 
 // (No @packageDocumentation comment for this package)

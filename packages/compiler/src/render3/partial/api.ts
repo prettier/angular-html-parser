@@ -45,10 +45,7 @@ export interface R3DeclareDirectiveMetadata extends R3PartialDeclaration {
    * A mapping of inputs from class property names to binding property names, or to a tuple of
    * binding property name and class property name if the names are different.
    */
-  inputs?: {
-    [classPropertyName: string]: string|
-    [bindingPropertyName: string, classPropertyName: string, transformFunction?: o.Expression]
-  };
+  inputs?: {[classPropertyName: string]: string|[string, string]};
 
   /**
    * A mapping of outputs from class property names to binding property names.
@@ -121,11 +118,6 @@ export interface R3DeclareDirectiveMetadata extends R3PartialDeclaration {
    * Whether the directive is standalone. Defaults to false.
    */
   isStandalone?: boolean;
-
-  /**
-   * Whether the directive is a signal-based directive. Defaults to false.
-   */
-  isSignal?: boolean;
 
   /**
    * Additional directives applied to the directive host.

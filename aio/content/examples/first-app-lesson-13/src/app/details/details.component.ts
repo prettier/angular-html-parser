@@ -64,11 +64,8 @@ export class DetailsComponent {
   }
 
   submitApplication() {
-    this.housingService.submitApplication(
-      this.applyForm.value.firstName ?? '',
-      this.applyForm.value.lastName ?? '',
-      this.applyForm.value.email ?? ''
-    );
+    const { firstName, lastName, email } = this.applyForm.value;
+      this.housingService.submitApplication(firstName ?? '', lastName ?? '', email ?? '');
   }
 
 }

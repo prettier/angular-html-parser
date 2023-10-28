@@ -14,7 +14,7 @@ import { Product } from '../products';
 export class ProductAlertsComponent {
 
 // #enddocregion as-generated
-  @Input() product: Product | undefined;
+  @Input() product!: Product;
 // #docregion as-generated
 
 }

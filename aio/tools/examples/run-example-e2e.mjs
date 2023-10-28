@@ -1,17 +1,15 @@
 import path from 'canonical-path';
 import {spawn} from 'cross-spawn';
 import fs from 'fs-extra';
-import getPort from 'get-port';
 import {globbySync} from 'globby';
 import os from 'os';
 import shelljs from 'shelljs';
 import treeKill from 'tree-kill';
 import yargs from 'yargs';
 import {hideBin} from 'yargs/helpers'
-
-import {getAdjustedChromeBinPathForWindows} from '../windows-chromium-path.js';
-
-import {constructExampleSandbox} from './example-sandbox.mjs';
+import getPort from 'get-port';
+import {constructExampleSandbox} from "./example-sandbox.mjs";
+import { getAdjustedChromeBinPathForWindows } from '../windows-chromium-path.js';
 
 shelljs.set('-e');
 
@@ -22,17 +20,11 @@ process.env.CHROME_BIN = getAdjustedChromeBinPathForWindows();
 process.env.CHROME_BIN = path.resolve(process.env.CHROME_BIN);
 process.env.CHROMEDRIVER_BIN = path.resolve(process.env.CHROMEDRIVER_BIN);
 
-const {argv} =
-    yargs(hideBin(process.argv))
-        .command('* <examplePath> <yarnPath> <exampleDepsWorkspaceName>')
-        .option('localPackage', {
-          array: true,
-          type: 'string',
-          default: [],
-          describe: 'Locally built package to substitute, in the form `packageName#packagePath`'
-        })
-        .version(false)
-        .strict();
+const {argv} = yargs(hideBin(process.argv))
+  .command("* <examplePath> <yarnPath> <exampleDepsWorkspaceName>")
+  .option('localPackage', {array: true, type: 'string', default: [], describe: 'Locally built package to substitute, in the form `packageName#packagePath`'})
+  .version(false)
+  .strict();
 
 const EXAMPLE_PATH = path.resolve(argv.examplePath);
 const NODE = process.execPath;
@@ -52,15 +44,13 @@ const MAX_NO_OUTPUT_TIMEOUT = 1000 * 60 * 5;  // 5 minutes
 /**
  * Run Protractor End-to-End Tests for a Docs Example
  *
- * Usage: node run-example-e2e.mjs <examplePath> <yarnPath> <exampleDepsWorkspaceName>
- * [localPackage...]
+ * Usage: node run-example-e2e.mjs <examplePath> <yarnPath> <exampleDepsWorkspaceName> [localPackage...]
  *
  * Args:
  *  examplePath: path to the example
  *  yarnPath: path to a vendored version of yarn
  *  exampleDepsWorkspaceName: name of bazel workspace containing example node_omodules
- *  localPackages: a vararg of local packages to substitute in place npm deps, in the
- * form @package/name#pathToPackage.
+ *  localPackages: a vararg of local packages to substitute in place npm deps, in the form @package/name#pathToPackage.
  *
  * Flags
  *  --retry to retry failed tests (useful for overcoming flakes)
@@ -72,12 +62,9 @@ async function runE2e(examplePath) {
   const maxAttempts = argv.retry || 1;
   const exampleTestPath = generatePathForExampleTest(exampleName);
 
-  console.info('Running example tests in directory: ', exampleTestPath)
-
   try {
-    await constructExampleSandbox(
-        examplePath, exampleTestPath,
-        path.resolve('..', EXAMPLE_DEPS_WORKSPACE_NAME, 'node_modules'), LOCAL_PACKAGES);
+
+    await constructExampleSandbox(examplePath, exampleTestPath, path.resolve('..', EXAMPLE_DEPS_WORKSPACE_NAME, 'node_modules'), LOCAL_PACKAGES);
 
     let testFn;
     if (isSystemJsTest(exampleTestPath)) {
@@ -87,7 +74,7 @@ async function runE2e(examplePath) {
     } else {
       throw new Error(`Unknown e2e test type for example ${exampleName}`);
     }
-
+  
     await attempt(testFn, maxAttempts);
   } catch (e) {
     console.error(e);
@@ -103,12 +90,7 @@ async function attempt(testFn, maxAttempts) {
 
   while (true) {
     attempts++;
-    passed = true;
-    try {
-      await testFn();
-    } catch (e) {
-      passed = false;
-    }
+    passed = await testFn();
 
     if (passed || (attempts >= maxAttempts)) break;
   }
@@ -143,15 +125,13 @@ async function runE2eTestsSystemJS(exampleName, appDir) {
   const appBuildSpawnInfo = spawnExt(NODE, [VENDORED_YARN, config.build], {cwd: appDir});
   const appRunSpawnInfo = spawnExt(NODE, [VENDORED_YARN, ...runArgs, '-s'], {cwd: appDir}, true);
 
-  try {
-    await runProtractorSystemJS(exampleName, appBuildSpawnInfo.promise, appDir);
-  } finally {
-    treeKill(appRunSpawnInfo.proc.pid);
-  }
+  let run = runProtractorSystemJS(exampleName, appBuildSpawnInfo.promise, appDir, appRunSpawnInfo);
 
   if (fs.existsSync(appDir + '/aot/index.html')) {
-    await runProtractorAoT(exampleName, appDir);
+    run = run.then((ok) => ok && runProtractorAoT(exampleName, appDir));
   }
+
+  return run;
 }
 
 // The SystemJS examples spawn an http server and protractor using a hardcoded
@@ -167,7 +147,7 @@ async function overrideSystemJsExampleToUseRandomPort(exampleConfig, exampleDir)
   const isUsingHttpServerLibrary = exampleConfig.run === 'serve:upgrade';
   if (isUsingHttpServerLibrary) {
     // Override the port in http-server by passing as an argument
-    runArgs = [...runArgs, '-p', freePort];
+    runArgs = [...runArgs, "-p", freePort];
   }
 
   // Override the port in any lite-server config files
@@ -182,23 +162,53 @@ async function overrideSystemJsExampleToUseRandomPort(exampleConfig, exampleDir)
 
   // Override hardcoded port in protractor.config.js
   let protractorConfig = fs.readFileSync(path.join(exampleDir, 'protractor.config.js'), 'utf8');
-  protractorConfig =
-      protractorConfig.replaceAll('http://localhost:8080', `http://localhost:${freePort}`);
+  protractorConfig = protractorConfig.replaceAll('http://localhost:8080', `http://localhost:${freePort}`);
   fs.writeFileSync(path.join(exampleDir, 'protractor.config.js'), protractorConfig);
 
   return runArgs;
 }
 
-async function runProtractorSystemJS(exampleName, prepPromise, appDir) {
-  await prepPromise;
+function runProtractorSystemJS(exampleName, prepPromise, appDir, appRunSpawnInfo) {
+  const specFilename = path.resolve(`${appDir}/${SJS_SPEC_FILENAME}`);
+  return prepPromise
+      .catch(() => {
+        const emsg = `Application at ${appDir} failed to transpile.\n\n`;
+        console.log(emsg);
+        return Promise.reject(emsg);
+      })
+      .then(() => {
+        let transpileError = false;
 
-  // Wait for the app to be running. Then we can start Protractor tests.
-  console.log(`\n\n=========== Running aio example tests for: ${exampleName}`);
-  await spawnExt(NODE, [VENDORED_YARN, 'protractor'], {cwd: appDir}).promise;
+        // Start protractor.
+        console.log(`\n\n=========== Running aio example tests for: ${exampleName}`);
+        const spawnInfo = spawnExt(NODE, [VENDORED_YARN, 'protractor'], {cwd: appDir});
+
+        spawnInfo.proc.stderr.on('data', function(data) {
+          transpileError = transpileError || /npm ERR! Exit status 100/.test(data.toString());
+        });
+        return spawnInfo.promise.catch(function() {
+          if (transpileError) {
+            const emsg = `${specFilename} failed to transpile.\n\n`;
+            console.log(emsg);
+          }
+          return Promise.reject();
+        });
+      })
+      .then(
+        () => finish(appRunSpawnInfo.proc.pid, true),
+        () => finish(appRunSpawnInfo.proc.pid, false)
+      );
+}
+
+function finish(spawnProcId, ok) {
+  // Ugh... proc.kill does not work properly on windows with child processes.
+  // appRun.proc.kill();
+  treeKill(spawnProcId);
+  return ok;
 }
 
 // Run e2e tests over the AOT build for projects that examples it.
-async function runProtractorAoT(exampleName, appDir) {
+function runProtractorAoT(exampleName, appDir) {
   const aotBuildSpawnInfo = spawnExt(NODE, [VENDORED_YARN, 'build:aot'], {cwd: appDir});
   let promise = aotBuildSpawnInfo.promise;
 
@@ -206,28 +216,20 @@ async function runProtractorAoT(exampleName, appDir) {
   if (fs.existsSync(appDir + '/' + copyFileCmd)) {
     promise = promise.then(() => spawnExt('node', [copyFileCmd], {cwd: appDir}).promise);
   }
-
-  // Run the server in the background. Will be killed upon test completion.
   const aotRunSpawnInfo = spawnExt(NODE, [VENDORED_YARN, 'serve:aot'], {cwd: appDir}, true);
-
-  try {
-    await runProtractorSystemJS(exampleName, promise, appDir);
-  } finally {
-    treeKill(aotRunSpawnInfo.proc.pid);
-  }
+  return runProtractorSystemJS(exampleName, promise, appDir, aotRunSpawnInfo);
 }
 
 // Start the example in appDir; then run protractor with the specified
 // fileName; then shut down the example.
 // All protractor output is appended to the outputFile.
 // CLI version
-async function runE2eTestsCLI(exampleName, appDir) {
+function runE2eTestsCLI(exampleName, appDir) {
   console.log(`\n\n=========== Running aio example tests for: ${exampleName}`);
 
   const config = loadExampleConfig(appDir);
 
-  // Replace any calls with yarn (which requires yarn to be on the PATH) to instead call our
-  // vendored yarn
+  // Replace any calls with yarn (which requires yarn to be on the PATH) to instead call our vendored yarn
   if (config.tests) {
     for (let test of config.tests) {
       if (test.cmd === 'yarn') {
@@ -239,9 +241,9 @@ async function runE2eTestsCLI(exampleName, appDir) {
 
   // `--no-webdriver-update` is needed to preserve the ChromeDriver version already installed.
   const testCommands = config.tests || [{
-                         cmd: NODE,
+                        cmd: NODE,
                          args: [
-                           VENDORED_YARN,
+                          VENDORED_YARN,
                            'e2e',
                            '--configuration=production',
                            '--protractor-config=e2e/protractor-bazel.conf.js',
@@ -250,16 +252,23 @@ async function runE2eTestsCLI(exampleName, appDir) {
                          ],
                        }];
 
+  const e2eSpawnPromise = testCommands.reduce((prevSpawnPromise, {cmd, args}) => {
+    return prevSpawnPromise.then(() => {
+      const currSpawn = spawnExt(
+          cmd, args, {cwd: appDir}, false);
+      return currSpawn.promise.then(
+          () => finish(currSpawn.proc.pid, true),
+          () => finish(currSpawn.proc.pid, false),
+      )
+    });
+  }, Promise.resolve());
 
-  for (const {cmd, args} of testCommands) {
-    await spawnExt(cmd, args, {cwd: appDir}, false).promise;
-  }
+  return e2eSpawnPromise;
 }
 
 // Returns both a promise and the spawned process so that it can be killed if needed.
 function spawnExt(
-    command, args, options, ignoreClose = false,
-    printMessageFn = msg => process.stdout.write(msg)) {
+    command, args, options, ignoreClose = false, printMessageFn = msg => process.stdout.write(msg)) {
   let proc = null;
   const promise = new Promise((resolveFn, rejectFn) => {
     let noOutputTimeoutId;
@@ -284,15 +293,7 @@ function spawnExt(
     let descr = command + ' ' + args.join(' ');
     printMessage(`running: ${descr}\n`);
     try {
-      proc = spawn(command, args, {
-        // All NodeJS scripts executed for running example e2e tests should preserve symlinks.
-        // This is important as otherwise test commands like `yarn ng build` would escape from the
-        // example sandbox into the `bazel-bin` where ultimately incorrect versions of local
-        // framework packages might be resolved. e.g. the `@angular/compiler-cli` version is never
-        // the one locally built.
-        env: {...process.env, NODE_PRESERVE_SYMLINKS: '1'},
-        ...options
-      });
+      proc = spawn(command, args, options);
     } catch (e) {
       console.log(e);
       return reject(e);

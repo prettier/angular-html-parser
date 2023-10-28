@@ -205,8 +205,8 @@ export class LiteralMap extends AST {
 
 export class Interpolation extends AST {
   constructor(
-      span: ParseSpan, sourceSpan: AbsoluteSourceSpan, public strings: string[],
-      public expressions: AST[]) {
+      span: ParseSpan, sourceSpan: AbsoluteSourceSpan, public strings: any[],
+      public expressions: any[]) {
     super(span, sourceSpan);
   }
   override visit(visitor: AstVisitor, context: any = null): any {

@@ -11,7 +11,7 @@ import {Type} from '@angular/core';
 import {Data, ResolveData, Route} from '../src/models';
 import {ActivatedRouteSnapshot} from '../src/router_state';
 import {Params} from '../src/shared';
-import {UrlSegment, UrlTree} from '../src/url_tree';
+import {UrlSegment, UrlSegmentGroup, UrlTree} from '../src/url_tree';
 
 export class Logger {
   logs: string[] = [];
@@ -39,6 +39,8 @@ export declare type ARSArgs = {
   data?: Data,
   outlet?: string, component: Type<unknown>| string | null,
   routeConfig?: Route | null,
+  urlSegment?: UrlSegmentGroup,
+  lastPathIndex?: number,
   resolve?: ResolveData
 };
 
@@ -46,5 +48,5 @@ export function createActivatedRouteSnapshot(args: ARSArgs): ActivatedRouteSnaps
   return new (ActivatedRouteSnapshot as any)(
       args.url || [], args.params || {}, args.queryParams || null, args.fragment || null,
       args.data || null, args.outlet || null, args.component, args.routeConfig || {},
-      args.resolve || {});
+      args.urlSegment || null, args.lastPathIndex || -1, args.resolve || {});
 }

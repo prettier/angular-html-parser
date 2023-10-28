@@ -7,7 +7,6 @@
  */
 
 import {RuntimeError, RuntimeErrorCode} from '../../errors';
-import {Writable} from '../../interface/type';
 import {isListLikeIterable, iterateListLike} from '../../util/iterable';
 import {stringify} from '../../util/stringify';
 
@@ -33,7 +32,7 @@ const trackByIdentity = (index: number, item: any) => item;
  */
 export class DefaultIterableDiffer<V> implements IterableDiffer<V>, IterableChanges<V> {
   public readonly length: number = 0;
-  // TODO: confirm the usage of `collection` as it's unused, readonly and on a non public API.
+  // TODO(issue/24571): remove '!'.
   public readonly collection!: V[]|Iterable<V>|null;
   // Keeps track of the used records at any point in time (during & across `_check()` calls)
   private _linkedRecords: _DuplicateMap<V>|null = null;
@@ -179,7 +178,7 @@ export class DefaultIterableDiffer<V> implements IterableDiffer<V>, IterableChan
     let item: V;
     let itemTrackBy: any;
     if (Array.isArray(collection)) {
-      (this as Writable<this>).length = collection.length;
+      (this as {length: number}).length = collection.length;
 
       for (let index = 0; index < this.length; index++) {
         item = collection[index];
@@ -214,11 +213,11 @@ export class DefaultIterableDiffer<V> implements IterableDiffer<V>, IterableChan
         record = record._next;
         index++;
       });
-      (this as Writable<this>).length = index;
+      (this as {length: number}).length = index;
     }
 
     this._truncate(record);
-    (this as Writable<this>).collection = collection;
+    (this as {collection: V[] | Iterable<V>}).collection = collection;
     return this.isDirty;
   }
 

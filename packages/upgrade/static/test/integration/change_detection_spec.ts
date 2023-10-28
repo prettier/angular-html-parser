@@ -115,8 +115,8 @@ withEachNg1Version(() => {
                                .directive('ng1b', () => ({template: '{{ l(\'ng1b\') }}'}))
                                .directive('ng2', downgradeComponent({component: Ng2Component}))
                                .run(($rootScope: angular.IRootScopeService) => {
-                                 $rootScope['l'] = l;
-                                 $rootScope['reset'] = () => log.length = 0;
+                                 $rootScope.l = l;
+                                 $rootScope.reset = () => log.length = 0;
                                });
 
          const element =
@@ -160,7 +160,7 @@ withEachNg1Version(() => {
              });
 
              // Create a micro-task to update the value to be rendered asynchronously.
-             queueMicrotask(() => this.valueFromPromise = changes['value'].currentValue);
+             Promise.resolve().then(() => this.valueFromPromise = changes['value'].currentValue);
            }
          }
 

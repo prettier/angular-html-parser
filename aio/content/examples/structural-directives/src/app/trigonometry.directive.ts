@@ -1,9 +1,6 @@
-import {Directive, Input, TemplateRef, ViewContainerRef} from '@angular/core';
+import { Directive, Input, TemplateRef, ViewContainerRef } from '@angular/core';
 
-@Directive({
-  standalone: true,
-  selector: '[appTrigonometry]',
-})
+@Directive({ selector: '[appTrigonometry]' })
 export class TrigonometryDirective {
   private isViewCreated = false;
   private readonly context = new TrigonometryContext();
@@ -22,14 +19,14 @@ export class TrigonometryDirective {
 
   constructor(
     private readonly viewContainerRef: ViewContainerRef,
-    private readonly templateRef: TemplateRef<TrigonometryContext>,
+    private readonly templateRef: TemplateRef<TrigonometryContext>
   ) {}
 
   // Make sure the template checker knows the type of the context with which the
   // template of this directive will be rendered
   static ngTemplateContextGuard(
     directive: TrigonometryDirective,
-    context: unknown,
+    context: unknown
   ): context is TrigonometryContext {
     return true;
   }

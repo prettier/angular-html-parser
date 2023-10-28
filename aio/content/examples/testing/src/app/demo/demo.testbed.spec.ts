@@ -1,51 +1,44 @@
 // #docplaster
-import { Component, DebugElement, Injectable } from '@angular/core';
 import {
-  ComponentFixture,
-  fakeAsync,
-  inject,
-  TestBed,
-  tick,
-  waitForAsync,
-} from '@angular/core/testing';
-import { FormsModule, NgControl, NgModel } from '@angular/forms';
+  DemoModule,
+  BankAccountComponent, BankAccountParentComponent,
+  LightswitchComponent,
+  Child1Component, Child2Component, Child3Component,
+  MasterService,
+  ValueService,
+  ExternalTemplateComponent,
+  InputComponent,
+  IoComponent, IoParentComponent,
+  MyIfComponent, MyIfChildComponent, MyIfParentComponent,
+  NeedsContentComponent, ParentComponent,
+  TestProvidersComponent, TestViewProvidersComponent,
+  ReversePipeComponent, ShellComponent
+} from './demo';
+
 import { By } from '@angular/platform-browser';
+import { Component,
+         DebugElement,
+         Injectable } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+
+// Forms symbols imported only for a specific test below
+import { NgModel, NgControl } from '@angular/forms';
+
+import {
+  ComponentFixture, fakeAsync, inject, TestBed, tick, waitForAsync
+} from '@angular/core/testing';
 
 import { addMatchers, click } from '../../testing';
 
-import {
-  BankAccountComponent,
-  BankAccountParentComponent,
-  Child1Component,
-  Child2Component,
-  Child3Component,
-  ExternalTemplateComponent,
-  InputComponent,
-  IoComponent,
-  IoParentComponent,
-  LightswitchComponent,
-  MasterService,
-  MyIfChildComponent,
-  MyIfComponent,
-  MyIfParentComponent,
-  NeedsContentComponent,
-  ParentComponent,
-  ReversePipeComponent,
-  ShellComponent,
-  TestProvidersComponent,
-  TestViewProvidersComponent,
-  ValueService,
-} from './demo';
-
-export class NotProvided extends ValueService {
-  /* example below */
-}
+export class NotProvided extends ValueService { /* example below */ }
 beforeEach(addMatchers);
 
 describe('demo (with TestBed):', () => {
+
   ////////  Service Tests  /////////////
 
   describe('ValueService', () => {
+
     // #docregion value-service-before-each
     let service: ValueService;
 
@@ -72,16 +65,20 @@ describe('demo (with TestBed):', () => {
     });
 
     it('test should wait for ValueService.getPromiseValue', waitForAsync(() => {
-      service.getPromiseValue().then((value) => expect(value).toBe('promise value'));
+      service.getPromiseValue().then(
+        value => expect(value).toBe('promise value')
+      );
     }));
 
     it('test should wait for ValueService.getObservableValue', waitForAsync(() => {
-      service.getObservableValue().subscribe((value) => expect(value).toBe('observable value'));
+      service.getObservableValue().subscribe(
+        value => expect(value).toBe('observable value')
+      );
     }));
 
     // Must use done. See https://github.com/angular/angular/issues/10127
     it('test should wait for ValueService.getObservableDelayValue', (done: DoneFn) => {
-      service.getObservableDelayValue().subscribe((value) => {
+      service.getObservableDelayValue().subscribe(value => {
         expect(value).toBe('observable delay value');
         done();
       });
@@ -89,7 +86,7 @@ describe('demo (with TestBed):', () => {
 
     it('should allow the use of fakeAsync', fakeAsync(() => {
       let value: any;
-      service.getPromiseValue().then((val: any) => (value = val));
+      service.getPromiseValue().then((val: any) => value = val);
       tick(); // Trigger JS engine cycle until all promises resolve.
       expect(value).toBe('promise value');
     }));
@@ -105,7 +102,10 @@ describe('demo (with TestBed):', () => {
 
       TestBed.configureTestingModule({
         // Provide both the service-to-test and its (spy) dependency
-        providers: [MasterService, { provide: ValueService, useValue: spy }],
+        providers: [
+          MasterService,
+          { provide: ValueService, useValue: spy }
+        ]
       });
       // Inject both the service-to-test and its (spy) dependency
       masterService = TestBed.inject(MasterService);
@@ -118,11 +118,14 @@ describe('demo (with TestBed):', () => {
       const stubValue = 'stub value';
       valueServiceSpy.getValue.and.returnValue(stubValue);
 
-      expect(masterService.getValue()).withContext('service returned stub value').toBe(stubValue);
+      expect(masterService.getValue())
+        .withContext('service returned stub value')
+        .toBe(stubValue);
       expect(valueServiceSpy.getValue.calls.count())
         .withContext('spy method was called once')
         .toBe(1);
-      expect(valueServiceSpy.getValue.calls.mostRecent().returnValue).toBe(stubValue);
+      expect(valueServiceSpy.getValue.calls.mostRecent().returnValue)
+        .toBe(stubValue);
     });
     // #enddocregion master-service-it
   });
@@ -132,10 +135,13 @@ describe('demo (with TestBed):', () => {
       TestBed.configureTestingModule({ providers: [ValueService] });
     });
 
-    it('should use modified providers', inject([ValueService], (service: ValueService) => {
-      service.setValue('value modified in beforeEach');
-      expect(service.getValue()).toBe('value modified in beforeEach');
-    }));
+    it('should use modified providers',
+      inject([ValueService], (service: ValueService) => {
+        service.setValue('value modified in beforeEach');
+        expect(service.getValue())
+          .toBe('value modified in beforeEach');
+      })
+    );
   });
 
   describe('using waitForAsync(inject) within beforeEach', () => {
@@ -145,11 +151,9 @@ describe('demo (with TestBed):', () => {
       TestBed.configureTestingModule({ providers: [ValueService] });
     });
 
-    beforeEach(waitForAsync(
-      inject([ValueService], (service: ValueService) => {
-        service.getPromiseValue().then((value) => (serviceValue = value));
-      }),
-    ));
+    beforeEach(waitForAsync(inject([ValueService], (service: ValueService) => {
+      service.getPromiseValue().then(value => serviceValue = value);
+    })));
 
     it('should use asynchronously modified value ... in synchronous test', () => {
       expect(serviceValue).toBe('promise value');
@@ -159,11 +163,15 @@ describe('demo (with TestBed):', () => {
   /////////// Component Tests //////////////////
 
   describe('TestBed component tests', () => {
-    // beforeEach(waitForAsync(() => {
-    //   TestBed.configureTestingModule()
-    //     // Compile everything in DemoModule
-    //     .compileComponents();
-    // }));
+
+    beforeEach(waitForAsync(() => {
+      TestBed
+        .configureTestingModule({
+          imports: [DemoModule],
+        })
+        // Compile everything in DemoModule
+        .compileComponents();
+    }));
 
     it('should create a component with inline template', () => {
       const fixture = TestBed.createComponent(Child1Component);
@@ -195,7 +203,9 @@ describe('demo (with TestBed):', () => {
 
       fixture.detectChanges();
       const heroes = fixture.debugElement.queryAll(By.css('.hero'));
-      expect(heroes.length).withContext('has heroes').toBeGreaterThan(0);
+      expect(heroes.length)
+        .withContext('has heroes')
+        .toBeGreaterThan(0);
 
       const comp = fixture.componentInstance;
       const hero = comp.heroes[0];
@@ -216,12 +226,18 @@ describe('demo (with TestBed):', () => {
       const ngForRow = fixture.debugElement.query(By.directive(IoComponent)); // first hero ngForRow
 
       const hero = ngForRow.context.hero; // the hero object passed into the row
-      expect(hero.name).withContext('ngRow.context.hero').toBe(heroName);
+      expect(hero.name)
+        .withContext('ngRow.context.hero')
+        .toBe(heroName);
 
       const rowComp = ngForRow.componentInstance;
       // jasmine.any is an "instance-of-type" test.
-      expect(rowComp).withContext('component is IoComp').toEqual(jasmine.any(IoComponent));
-      expect(rowComp.hero.name).withContext('component.hero').toBe(heroName);
+      expect(rowComp)
+        .withContext('component is IoComp')
+        .toEqual(jasmine.any(IoComponent));
+      expect(rowComp.hero.name)
+        .withContext('component.hero')
+        .toBe(heroName);
     });
 
     it('should support clicking a button', () => {
@@ -236,7 +252,9 @@ describe('demo (with TestBed):', () => {
 
       click(btn);
       fixture.detectChanges();
-      expect(span.textContent).withContext('after click').toMatch(/is on/i);
+      expect(span.textContent)
+        .withContext('after click')
+        .toMatch(/is on/i);
     });
 
     // ngModel is async so we must wait for it with promise-based `whenStable`
@@ -255,30 +273,24 @@ describe('demo (with TestBed):', () => {
         .toBe(expectedOrigName);
 
       // wait until ngModel binds comp.name to input box
-      fixture
-        .whenStable()
-        .then(() => {
-          expect(input.value)
-            .withContext(
-              `After ngModel updates input box, input.value should be ${expectedOrigName} `,
-            )
-            .toBe(expectedOrigName);
+      fixture.whenStable().then(() => {
+        expect(input.value)
+          .withContext(`After ngModel updates input box, input.value should be ${expectedOrigName} `)
+          .toBe(expectedOrigName);
 
-          // simulate user entering new name in input
-          input.value = expectedNewName;
+        // simulate user entering new name in input
+        input.value = expectedNewName;
 
-          // that change doesn't flow to the component immediately
-          expect(comp.name)
-            .withContext(
-              `comp.name should still be ${expectedOrigName} after value change, before binding happens`,
-            )
-            .toBe(expectedOrigName);
+        // that change doesn't flow to the component immediately
+        expect(comp.name)
+          .withContext(`comp.name should still be ${expectedOrigName} after value change, before binding happens`)
+          .toBe(expectedOrigName);
 
-          // Dispatch a DOM event so that Angular learns of input value change.
-          // then wait while ngModel pushes input.box value to comp.name
-          input.dispatchEvent(new Event('input'));
-          return fixture.whenStable();
-        })
+        // Dispatch a DOM event so that Angular learns of input value change.
+        // then wait while ngModel pushes input.box value to comp.name
+        input.dispatchEvent(new Event('input'));
+        return fixture.whenStable();
+      })
         .then(() => {
           expect(comp.name)
             .withContext(`After ngModel updates the model, comp.name should be ${expectedNewName} `)
@@ -295,7 +307,7 @@ describe('demo (with TestBed):', () => {
       const fixture = TestBed.createComponent(InputComponent);
       fixture.detectChanges();
 
-      const comp = fixture.componentInstance;
+      const comp =  fixture.componentInstance;
       const input = fixture.debugElement.query(By.css('input')).nativeElement as HTMLInputElement;
 
       expect(comp.name)
@@ -313,9 +325,7 @@ describe('demo (with TestBed):', () => {
 
       // that change doesn't flow to the component immediately
       expect(comp.name)
-        .withContext(
-          `comp.name should still be ${expectedOrigName} after value change, before binding happens`,
-        )
+        .withContext(`comp.name should still be ${expectedOrigName} after value change, before binding happens`)
         .toBe(expectedOrigName);
 
       // Dispatch a DOM event so that Angular learns of input value change.
@@ -347,8 +357,12 @@ describe('demo (with TestBed):', () => {
       input.dispatchEvent(new Event('input'));
       tick();
       fixture.detectChanges();
-      expect(span.textContent).withContext('output span').toBe(expectedText);
-      expect(comp.text).withContext('component.text').toBe(inputText);
+      expect(span.textContent)
+        .withContext('output span')
+        .toBe(expectedText);
+      expect(comp.text)
+        .withContext('component.text')
+        .toBe(inputText);
     }));
 
     // Use this technique to find attached directives of any kind
@@ -358,12 +372,18 @@ describe('demo (with TestBed):', () => {
 
       const inputEl = fixture.debugElement.query(By.css('input'));
 
-      expect(inputEl.providerTokens).withContext('NgModel directive').toContain(NgModel);
+      expect(inputEl.providerTokens)
+        .withContext('NgModel directive')
+        .toContain(NgModel);
 
       const ngControl = inputEl.injector.get(NgControl);
-      expect(ngControl).withContext('NgControl directive').toEqual(jasmine.any(NgControl));
+      expect(ngControl)
+        .withContext('NgControl directive')
+        .toEqual(jasmine.any(NgControl));
 
-      expect(inputEl.listeners.length).withContext('several listeners attached').toBeGreaterThan(2);
+      expect(inputEl.listeners.length)
+        .withContext('several listeners attached')
+        .toBeGreaterThan(2);
     });
 
     it('BankAccountComponent should set attributes, styles, classes, and properties', () => {
@@ -376,31 +396,48 @@ describe('demo (with TestBed):', () => {
       const childComp = el.componentInstance as BankAccountComponent;
       expect(childComp).toEqual(jasmine.any(BankAccountComponent));
 
-      expect(el.context).withContext('context is the child component').toBe(childComp);
+      expect(el.context)
+        .withContext('context is the child component')
+        .toBe(childComp);
 
-      expect(el.attributes['account']).withContext('account attribute').toBe(childComp.id);
-      expect(el.attributes['bank']).withContext('bank attribute').toBe(childComp.bank);
+      expect(el.attributes['account'])
+        .withContext('account attribute')
+        .toBe(childComp.id);
+      expect(el.attributes['bank'])
+        .withContext('bank attribute')
+        .toBe(childComp.bank);
 
-      expect(el.classes['closed']).withContext('closed class').toBe(true);
-      expect(el.classes['open']).withContext('open class').toBeFalsy();
+      expect(el.classes['closed'])
+        .withContext('closed class')
+        .toBe(true);
+      expect(el.classes['open'])
+        .withContext('open class')
+        .toBeFalsy();
 
-      expect(el.styles['color']).withContext('color style').toBe(comp.color);
+      expect(el.styles['color'])
+        .withContext('color style')
+        .toBe(comp.color);
       expect(el.styles['width'])
         .withContext('width style')
         .toBe(comp.width + 'px');
 
       // Removed on 12/02/2016 when ceased public discussion of the `Renderer`. Revive in future?
       // expect(el.properties['customProperty']).toBe(true, 'customProperty');
+
     });
+
+
   });
 
   describe('TestBed component overrides:', () => {
+
     it("should override ChildComp's template", () => {
+
       const fixture = TestBed.configureTestingModule({
-        imports: [Child1Component],
+        declarations: [Child1Component],
       })
         .overrideComponent(Child1Component, {
-          set: { template: '<span>Fake</span>' },
+          set: { template: '<span>Fake</span>' }
         })
         .createComponent(Child1Component);
 
@@ -410,7 +447,7 @@ describe('demo (with TestBed):', () => {
 
     it("should override TestProvidersComp's ValueService provider", () => {
       const fixture = TestBed.configureTestingModule({
-        imports: [TestProvidersComponent],
+        declarations: [TestProvidersComponent],
       })
         .overrideComponent(TestProvidersComponent, {
           remove: { providers: [ValueService] },
@@ -426,19 +463,24 @@ describe('demo (with TestBed):', () => {
 
       // Explore the providerTokens
       const tokens = fixture.debugElement.providerTokens;
-      expect(tokens).withContext('component ctor').toContain(fixture.componentInstance.constructor);
-      expect(tokens).withContext('TestProvidersComp').toContain(TestProvidersComponent);
-      expect(tokens).withContext('ValueService').toContain(ValueService);
+      expect(tokens)
+        .withContext('component ctor')
+        .toContain(fixture.componentInstance.constructor);
+      expect(tokens)
+        .withContext('TestProvidersComp')
+        .toContain(TestProvidersComponent);
+      expect(tokens)
+        .withContext('ValueService')
+        .toContain(ValueService);
     });
 
     it("should override TestViewProvidersComp's ValueService viewProvider", () => {
       const fixture = TestBed.configureTestingModule({
-        imports: [TestViewProvidersComponent],
+        declarations: [TestViewProvidersComponent],
       })
         .overrideComponent(TestViewProvidersComponent, {
           // remove: { viewProviders: [ValueService]},
-          // add:    { viewProviders: [{ provide: ValueService, useClass: FakeValueService }]
-          // },
+          // add:    { viewProviders: [{ provide: ValueService, useClass: FakeValueService }] },
 
           // Or replace them all (this component has only one viewProvider)
           set: { viewProviders: [{ provide: ValueService, useClass: FakeValueService }] },
@@ -450,38 +492,37 @@ describe('demo (with TestBed):', () => {
     });
 
     it("injected provider should not be same as component's provider", () => {
+
       // TestComponent is parent of TestProvidersComponent
-      @Component({
-        standalone: true,
-        template: '<my-service-comp></my-service-comp>',
-        imports: [TestProvidersComponent],
-      })
-      class TestComponent {}
+      @Component({ template: '<my-service-comp></my-service-comp>' })
+      class TestComponent { }
 
       // 3 levels of ValueService provider: module, TestComponent, TestProvidersComponent
       const fixture = TestBed.configureTestingModule({
-        imports: [TestComponent, TestProvidersComponent],
-        providers: [ValueService],
+        declarations: [TestComponent, TestProvidersComponent],
+        providers: [ValueService]
       })
         .overrideComponent(TestComponent, {
-          set: { providers: [{ provide: ValueService, useValue: {} }] },
+          set: { providers: [{ provide: ValueService, useValue: {} }] }
         })
         .overrideComponent(TestProvidersComponent, {
-          set: { providers: [{ provide: ValueService, useClass: FakeValueService }] },
+          set: { providers: [{ provide: ValueService, useClass: FakeValueService }] }
         })
         .createComponent(TestComponent);
 
       let testBedProvider!: ValueService;
 
       // `inject` uses TestBed's injector
-      inject([ValueService], (s: ValueService) => (testBedProvider = s))();
+      inject([ValueService], (s: ValueService) => testBedProvider = s)();
       const tcProvider = fixture.debugElement.injector.get(ValueService) as ValueService;
-      const tpcProvider = fixture.debugElement.children[0].injector.get(
-        ValueService,
-      ) as FakeValueService;
+      const tpcProvider = fixture.debugElement.children[0].injector.get(ValueService) as FakeValueService;
 
-      expect(testBedProvider).withContext('testBed/tc not same providers').not.toBe(tcProvider);
-      expect(testBedProvider).withContext('testBed/tpc not same providers').not.toBe(tpcProvider);
+      expect(testBedProvider)
+        .withContext('testBed/tc not same providers')
+        .not.toBe(tcProvider);
+      expect(testBedProvider)
+        .withContext('testBed/tpc not same providers')
+        .not.toBe(tpcProvider);
 
       expect(testBedProvider instanceof ValueService)
         .withContext('testBedProvider is ValueService')
@@ -496,18 +537,11 @@ describe('demo (with TestBed):', () => {
 
     it('can access template local variables as references', () => {
       const fixture = TestBed.configureTestingModule({
-        imports: [
-          ShellComponent,
-          NeedsContentComponent,
-          Child1Component,
-          Child2Component,
-          Child3Component,
-        ],
+        declarations: [ShellComponent, NeedsContentComponent, Child1Component, Child2Component, Child3Component],
       })
         .overrideComponent(ShellComponent, {
           set: {
             selector: 'test-shell',
-            imports: [NeedsContentComponent, Child1Component, Child2Component, Child3Component],
             template: `
           <needs-content #nc>
             <child-1 #content text="My"></child-1>
@@ -516,8 +550,8 @@ describe('demo (with TestBed):', () => {
             <child-3 #content text="fleas"></child-3>
             <div #content>!</div>
           </needs-content>
-          `,
-          },
+          `
+          }
         })
         .createComponent(ShellComponent);
 
@@ -531,22 +565,26 @@ describe('demo (with TestBed):', () => {
         .withContext('three different child components and an ElementRef with #content')
         .toBe(4);
 
-      expect(el.references['nc']).withContext('#nc reference to component').toBe(comp);
+      expect(el.references['nc'])
+        .withContext('#nc reference to component')
+        .toBe(comp);
 
       // #docregion custom-predicate
       // Filter for DebugElements with a #content reference
-      const contentRefs = el.queryAll((de) => de.references['content']);
+      const contentRefs = el.queryAll( de => de.references['content']);
       // #enddocregion custom-predicate
-      expect(contentRefs.length).withContext('elements w/ a #content reference').toBe(4);
+      expect(contentRefs.length)
+        .withContext('elements w/ a #content reference')
+        .toBe(4);
     });
+
   });
 
   describe('nested (one-deep) component override', () => {
+
     beforeEach(() => {
       TestBed.configureTestingModule({
-        imports: [ParentComponent, FakeChildComponent],
-      }).overrideComponent(ParentComponent, {
-        set: { imports: [FakeChildComponent] },
+        declarations: [ParentComponent, FakeChildComponent]
       });
     });
 
@@ -558,11 +596,10 @@ describe('demo (with TestBed):', () => {
   });
 
   describe('nested (two-deep) component override', () => {
+
     beforeEach(() => {
       TestBed.configureTestingModule({
-        imports: [ParentComponent, FakeChildWithGrandchildComponent, FakeGrandchildComponent],
-      }).overrideComponent(ParentComponent, {
-        set: { imports: [FakeChildWithGrandchildComponent, FakeGrandchildComponent] },
+        declarations: [ParentComponent, FakeChildWithGrandchildComponent, FakeGrandchildComponent]
       });
     });
 
@@ -580,7 +617,8 @@ describe('demo (with TestBed):', () => {
 
     beforeEach(() => {
       TestBed.configureTestingModule({
-        imports: [FormsModule, MyIfChildComponent, MyIfParentComponent],
+        imports: [FormsModule],
+        declarations: [MyIfChildComponent, MyIfParentComponent]
       });
 
       fixture = TestBed.createComponent(MyIfParentComponent);
@@ -588,7 +626,9 @@ describe('demo (with TestBed):', () => {
     });
 
     it('should instantiate parent component', () => {
-      expect(parent).withContext('parent component should exist').not.toBeNull();
+      expect(parent)
+        .withContext('parent component should exist')
+        .not.toBeNull();
     });
 
     it('parent component OnInit should NOT be called before first detectChanges()', () => {
@@ -630,7 +670,9 @@ describe('demo (with TestBed):', () => {
       expect(child.ngOnChangesCounter)
         .withContext('expected 2 changes: initial value and changed value')
         .toBe(2);
-      expect(child.childValue).withContext('childValue should eq changed parent value').toBe('foo');
+      expect(child.childValue)
+        .withContext('childValue should eq changed parent value')
+        .toBe('foo');
     });
 
     // must be async test to see child flow to parent
@@ -640,19 +682,21 @@ describe('demo (with TestBed):', () => {
 
       child.childValue = 'bar';
 
-      return new Promise<void>((resolve) => {
+      return new Promise<void>(resolve => {
         // Wait one JS engine turn!
         setTimeout(() => resolve(), 0);
-      }).then(() => {
-        fixture.detectChanges();
+      })
+        .then(() => {
+          fixture.detectChanges();
 
-        expect(child.ngOnChangesCounter)
-          .withContext('expected 2 changes: initial value and changed value')
-          .toBe(2);
-        expect(parent.parentValue)
-          .withContext('parentValue should eq changed parent value')
-          .toBe('bar');
-      });
+          expect(child.ngOnChangesCounter)
+            .withContext('expected 2 changes: initial value and changed value')
+            .toBe(2);
+          expect(parent.parentValue)
+            .withContext('parentValue should eq changed parent value')
+            .toBe('bar');
+        });
+
     }));
 
     it('clicking "Close Child" triggers child OnDestroy', () => {
@@ -671,25 +715,22 @@ describe('demo (with TestBed):', () => {
      * Get the MyIfChildComp from parent; fail w/ good message if cannot.
      */
     function getChild() {
+
       let childDe: DebugElement; // DebugElement that should hold the MyIfChildComp
 
       // The Hard Way: requires detailed knowledge of the parent template
       try {
         childDe = fixture.debugElement.children[4].children[0];
-      } catch (err) {
-        /* we'll report the error */
-      }
+      } catch (err) { /* we'll report the error */ }
 
       // DebugElement.queryAll: if we wanted all of many instances:
-      childDe = fixture.debugElement.queryAll(
-        (de) => de.componentInstance instanceof MyIfChildComponent,
-      )[0];
+      childDe = fixture.debugElement
+        .queryAll(de => de.componentInstance instanceof MyIfChildComponent)[0];
 
       // WE'LL USE THIS APPROACH !
       // DebugElement.query: find first instance (if any)
-      childDe = fixture.debugElement.query(
-        (de) => de.componentInstance instanceof MyIfChildComponent,
-      );
+      childDe = fixture.debugElement
+        .query(de => de.componentInstance instanceof MyIfChildComponent);
 
       if (childDe && childDe.componentInstance) {
         child = childDe.componentInstance;
@@ -700,30 +741,27 @@ describe('demo (with TestBed):', () => {
       return child;
     }
   });
+
 });
 ////////// Fakes ///////////
 
 @Component({
-  standalone: true,
   selector: 'child-1',
-  template: 'Fake Child',
+  template: 'Fake Child'
 })
-class FakeChildComponent {}
+class FakeChildComponent { }
 
 @Component({
-  standalone: true,
+  selector: 'child-1',
+  template: 'Fake Child(<grandchild-1></grandchild-1>)'
+})
+class FakeChildWithGrandchildComponent { }
+
+@Component({
   selector: 'grandchild-1',
-  template: 'Fake Grandchild',
+  template: 'Fake Grandchild'
 })
-class FakeGrandchildComponent {}
-
-@Component({
-  standalone: true,
-  selector: 'child-1',
-  imports: [FakeGrandchildComponent],
-  template: 'Fake Child(<grandchild-1></grandchild-1>)',
-})
-class FakeChildWithGrandchildComponent {}
+class FakeGrandchildComponent { }
 
 @Injectable()
 class FakeValueService extends ValueService {

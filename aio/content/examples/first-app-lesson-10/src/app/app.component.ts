@@ -1,18 +1,15 @@
 import { Component } from '@angular/core';
 import { HomeComponent } from './home/home.component';
-// #docregion import-router-module
-import { RouterModule } from '@angular/router';
-// #enddocregion
+import { RouterLink, RouterOutlet } from '@angular/router';
+
 @Component({
   selector: 'app-root',
   standalone: true,
-  // #docregion import-router-module-deco
   imports: [
     HomeComponent,
-    RouterModule,
+    RouterLink,
+    RouterOutlet,
   ],
-  // #enddocregion
-  // #docregion add-router-outlet
   template: `
     <main>
       <a [routerLink]="['/']">
@@ -25,7 +22,6 @@ import { RouterModule } from '@angular/router';
       </section>
     </main>
   `,
-  // #enddocregion
   styleUrls: ['./app.component.css'],
 })
 export class AppComponent {

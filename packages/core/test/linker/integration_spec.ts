@@ -7,7 +7,7 @@
  */
 
 import {CommonModule, DOCUMENT, ɵgetDOM as getDOM} from '@angular/common';
-import {Attribute, Compiler, Component, ComponentFactory, ComponentRef, ContentChildren, createComponent, Directive, EnvironmentInjector, EventEmitter, Host, HostBinding, HostListener, Inject, Injectable, InjectionToken, Injector, Input, NgModule, NgModuleRef, NO_ERRORS_SCHEMA, OnDestroy, Output, Pipe, reflectComponentType, SkipSelf, ViewChild, ViewRef, ɵsetClassDebugInfo} from '@angular/core';
+import {Attribute, Compiler, Component, ComponentFactory, ComponentRef, ContentChildren, Directive, EventEmitter, Host, HostBinding, HostListener, Inject, Injectable, InjectionToken, Injector, Input, NgModule, NgModuleRef, NO_ERRORS_SCHEMA, OnDestroy, Output, Pipe, SkipSelf, ViewChild, ViewRef} from '@angular/core';
 import {ChangeDetectionStrategy, ChangeDetectorRef, PipeTransform} from '@angular/core/src/change_detection/change_detection';
 import {ComponentFactoryResolver} from '@angular/core/src/linker/component_factory_resolver';
 import {ElementRef} from '@angular/core/src/linker/element_ref';
@@ -16,7 +16,6 @@ import {TemplateRef} from '@angular/core/src/linker/template_ref';
 import {ViewContainerRef} from '@angular/core/src/linker/view_container_ref';
 import {EmbeddedViewRef} from '@angular/core/src/linker/view_ref';
 import {fakeAsync, getTestBed, TestBed, tick, waitForAsync} from '@angular/core/testing';
-import {TestBedCompiler} from '@angular/core/testing/src/test_bed_compiler';
 import {createMouseEvent, dispatchEvent, el, isCommentNode} from '@angular/platform-browser/testing/src/browser_util';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
 
@@ -404,7 +403,7 @@ describe('integration tests', function() {
         const fixture = TestBed.createComponent(MyComp);
 
         expect(fixture.debugElement.children[0].children[0].references!['alice'])
-            .toBeInstanceOf(ChildComp);
+            .toBeAnInstanceOf(ChildComp);
       });
 
       it('should assign a directive to a ref-', () => {
@@ -414,7 +413,7 @@ describe('integration tests', function() {
         const fixture = TestBed.createComponent(MyComp);
 
         expect(fixture.debugElement.children[0].children[0].references!['localdir'])
-            .toBeInstanceOf(ExportDir);
+            .toBeAnInstanceOf(ExportDir);
       });
 
       it('should assign a directive to a ref when it has multiple exportAs names', () => {
@@ -426,9 +425,9 @@ describe('integration tests', function() {
 
         const fixture = TestBed.createComponent(MyComp);
         expect(fixture.debugElement.children[0].references!['x'])
-            .toBeInstanceOf(DirectiveWithMultipleExportAsNames);
+            .toBeAnInstanceOf(DirectiveWithMultipleExportAsNames);
         expect(fixture.debugElement.children[0].references!['y'])
-            .toBeInstanceOf(DirectiveWithMultipleExportAsNames);
+            .toBeAnInstanceOf(DirectiveWithMultipleExportAsNames);
       });
 
       it('should make the assigned component accessible in property bindings, even if they were declared before the component',
@@ -454,8 +453,8 @@ describe('integration tests', function() {
 
         const alice = pEl.children[0].references!['alice'];
         const bob = pEl.children[1].references!['bob'];
-        expect(alice).toBeInstanceOf(ChildComp);
-        expect(bob).toBeInstanceOf(ChildComp);
+        expect(alice).toBeAnInstanceOf(ChildComp);
+        expect(bob).toBeAnInstanceOf(ChildComp);
         expect(alice).not.toBe(bob);
       });
 
@@ -465,7 +464,7 @@ describe('integration tests', function() {
         TestBed.overrideComponent(MyComp, {set: {template}});
         const fixture = TestBed.createComponent(MyComp);
 
-        expect(fixture.debugElement.children[0].references!['alice']).toBeInstanceOf(ChildComp);
+        expect(fixture.debugElement.children[0].references!['alice']).toBeAnInstanceOf(ChildComp);
       });
 
       it('should assign the element instance to a user-defined variable', () => {
@@ -496,7 +495,7 @@ describe('integration tests', function() {
         const fixture = TestBed.createComponent(MyComp);
 
         expect(fixture.debugElement.children[0].children[0].references!['superAlice'])
-            .toBeInstanceOf(ChildComp);
+            .toBeAnInstanceOf(ChildComp);
       });
     });
 
@@ -653,7 +652,7 @@ describe('integration tests', function() {
 
       const childComponent =
           fixture.debugElement.children[0].children[0].children[0].references!['child'];
-      expect(childComponent.myHost).toBeInstanceOf(SomeDirective);
+      expect(childComponent.myHost).toBeAnInstanceOf(SomeDirective);
     });
 
     it('should create a component that injects an @Host through viewcontainer directive', () => {
@@ -675,7 +674,7 @@ describe('integration tests', function() {
       const tc = fixture.debugElement.children[0].children[0].children[0];
 
       const childComponent = tc.references!['child'];
-      expect(childComponent.myHost).toBeInstanceOf(SomeDirective);
+      expect(childComponent.myHost).toBeAnInstanceOf(SomeDirective);
     });
 
     it('should support events via EventEmitter on regular elements', waitForAsync(() => {
@@ -881,7 +880,8 @@ describe('integration tests', function() {
       @Directive({selector: '[host-listener]', host: {'(click)': 'doIt(id, unknownProp)'}})
       class DirectiveWithHostListener {
         id = 'one';
-        receivedArgs: any[] = [];
+        // TODO(issue/24571): remove '!'.
+        receivedArgs!: any[];
 
         doIt(...args: any[]) {
           this.receivedArgs = args;
@@ -1073,12 +1073,14 @@ describe('integration tests', function() {
           const compiler = TestBed.inject(Compiler);
           const myModule =
               compiler.compileModuleSync(MyModule).create(TestBed.inject(NgModuleRef).injector);
+          const myCompFactory =
+              TestBed.inject(ComponentFactoryResolver).resolveComponentFactory(MyComp);
 
           // Note: MyComp was declared as entryComponent in the RootModule,
           // but we pass MyModule to the createComponent call.
           // -> expect the providers of MyModule!
-          const compRef =
-              compFixture.componentInstance.vc.createComponent(MyComp, {ngModuleRef: myModule});
+          const compRef = compFixture.componentInstance.vc.createComponent(
+              myCompFactory, undefined, undefined, undefined, myModule);
           expect(compRef.instance.someToken).toBe('someValue');
         });
 
@@ -1205,8 +1207,8 @@ describe('integration tests', function() {
       TestBed.overrideComponent(MyComp, {set: {template}});
       const fixture = TestBed.createComponent(MyComp);
 
-      const comp = fixture.debugElement.children[0].children[0].references['consuming'];
-      expect(comp.injectable).toBeInstanceOf(InjectableService);
+      const comp = fixture.debugElement.children[0].children[0].references!['consuming'];
+      expect(comp.injectable).toBeAnInstanceOf(InjectableService);
     });
 
     it('should support viewProviders', () => {
@@ -1221,8 +1223,8 @@ describe('integration tests', function() {
       TestBed.overrideComponent(DirectiveProvidingInjectableInView, {set: {template}});
       const fixture = TestBed.createComponent(DirectiveProvidingInjectableInView);
 
-      const comp = fixture.debugElement.children[0].references['consuming'];
-      expect(comp.injectable).toBeInstanceOf(InjectableService);
+      const comp = fixture.debugElement.children[0].references!['consuming'];
+      expect(comp.injectable).toBeAnInstanceOf(InjectableService);
     });
 
     it('should support unbounded lookup', () => {
@@ -1249,8 +1251,8 @@ describe('integration tests', function() {
       });
       const fixture = TestBed.createComponent(MyComp);
 
-      const comp = fixture.debugElement.children[0].children[0].references['dir'];
-      expect(comp.directive.injectable).toBeInstanceOf(InjectableService);
+      const comp = fixture.debugElement.children[0].children[0].references!['dir'];
+      expect(comp.directive.injectable).toBeAnInstanceOf(InjectableService);
     });
 
     it('should support the event-bus scenario', () => {
@@ -1298,7 +1300,7 @@ describe('integration tests', function() {
       TestBed.overrideComponent(MyComp, {set: {template}});
       const fixture = TestBed.createComponent(MyComp);
 
-      const providing = fixture.debugElement.children[0].references['providing'];
+      const providing = fixture.debugElement.children[0].references!['providing'];
       expect(providing.created).toBe(false);
 
       fixture.componentInstance.ctxBoolProp = true;
@@ -1381,15 +1383,30 @@ describe('integration tests', function() {
     });
 
     it('should use a default element name for components without selectors', () => {
+      let noSelectorComponentFactory: ComponentFactory<SomeComponent> = undefined!;
+
       @Component({template: '----'})
       class NoSelectorComponent {
       }
 
-      expect(reflectComponentType(NoSelectorComponent)?.selector).toBe('ng-component');
+      @Component({selector: 'some-comp', template: ''})
+      class SomeComponent {
+        constructor(componentFactoryResolver: ComponentFactoryResolver) {
+          // grab its own component factory
+          noSelectorComponentFactory =
+              componentFactoryResolver.resolveComponentFactory(NoSelectorComponent)!;
+        }
+      }
 
-      expect(createComponent(NoSelectorComponent, {
-               environmentInjector: TestBed.inject(EnvironmentInjector)
-             }).location.nativeElement.nodeName.toLowerCase())
+      TestBed.configureTestingModule({declarations: [SomeComponent, NoSelectorComponent]});
+
+      // get the factory
+      TestBed.createComponent(SomeComponent);
+
+      expect(noSelectorComponentFactory.selector).toBe('ng-component');
+
+      expect(noSelectorComponentFactory.create(Injector.NULL)
+                 .location.nativeElement.nodeName.toLowerCase())
           .toEqual('ng-component');
     });
   });
@@ -1452,7 +1469,7 @@ describe('integration tests', function() {
     @Component({selector: 'menu-item', template: ''})
     class DynamicMenuItem {
       @ViewChild('templateRef', {static: true}) templateRef!: TemplateRef<any>;
-      itemContent: string|undefined;
+      itemContent!: string;
     }
 
     @Component({selector: 'test', template: `<ng-container #menuItemsContainer></ng-container>`})
@@ -1952,41 +1969,6 @@ describe('integration tests', function() {
        }));
   });
 
-  describe('orphan components', () => {
-    it('should display correct error message for orphan component if forbidOrphanRendering option is set',
-       () => {
-         @Component({template: '...'})
-         class MainComp {
-         }
-         ɵsetClassDebugInfo(MainComp, {
-           className: 'MainComp',
-           filePath: 'test.ts',
-           lineNumber: 11,
-           forbidOrphanRendering: true,
-         });
-
-         TestBed.configureTestingModule({declarations: [MainComp]});
-         expect(() => TestBed.createComponent(MainComp))
-             .toThrowError(
-                 /^NG01001: Orphan component found\! Trying to render the component MainComp \(at test\.ts:11\) without first loading the NgModule that declares it/);
-       });
-
-    it('should not throw error for orphan component if forbidOrphanRendering option is not set',
-       () => {
-         @Component({template: '...'})
-         class MainComp {
-         }
-         ɵsetClassDebugInfo(MainComp, {
-           className: 'MainComp',
-           filePath: 'test.ts',
-           lineNumber: 11,
-         });
-
-         TestBed.configureTestingModule({declarations: [MainComp]});
-         expect(() => TestBed.createComponent(MainComp)).not.toThrow();
-       });
-  });
-
   if (getDOM().supportsDOMEvents) {
     describe('svg', () => {
       it('should support svg elements', () => {
@@ -2102,18 +2084,19 @@ class SimpleImperativeViewComponent {
 
 @Directive({selector: 'dynamic-vp'})
 class DynamicViewport {
+  private componentFactory: ComponentFactory<ChildCompUsingService>;
   private injector: Injector;
-  constructor(private vc: ViewContainerRef) {
+  constructor(private vc: ViewContainerRef, componentFactoryResolver: ComponentFactoryResolver) {
     const myService = new MyService();
     myService.greeting = 'dynamic greet';
 
-    this.injector = Injector.create(
-        {providers: [{provide: MyService, useValue: myService}], parent: vc.injector});
+    this.injector = Injector.create([{provide: MyService, useValue: myService}], vc.injector);
+    this.componentFactory =
+        componentFactoryResolver.resolveComponentFactory(ChildCompUsingService)!;
   }
 
   create(): ComponentRef<ChildCompUsingService> {
-    return this.vc.createComponent(
-        ChildCompUsingService, {index: this.vc.length, injector: this.injector});
+    return this.vc.createComponent(this.componentFactory, this.vc.length, this.injector);
   }
 
   insert(viewRef: ViewRef, index?: number): ViewRef {
@@ -2143,12 +2126,14 @@ class MyDir2 {
 
 @Directive({selector: '[title]', inputs: ['title']})
 class DirectiveWithTitle {
-  title: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  title!: string;
 }
 
 @Directive({selector: '[title]', inputs: ['title'], host: {'[title]': 'title'}})
 class DirectiveWithTitleAndHostProperty {
-  title: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  title!: string;
 }
 
 @Component({selector: 'event-cmp', template: '<div (click)="noop()"></div>'})
@@ -2223,6 +2208,7 @@ class PushCmpWithHostEvent {
 })
 class PushCmpWithAsyncPipe {
   numberOfChecks: number = 0;
+  // TODO(issue/24571): remove '!'.
   resolve!: (result: any) => void;
   promise: Promise<any>;
 
@@ -2447,7 +2433,8 @@ class DirectiveListeningDomEventNoPrevent {
 
 @Directive({selector: '[id]', inputs: ['id']})
 class IdDir {
-  id: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  id!: string;
 }
 
 @Directive({selector: '[customEvent]'})
@@ -2514,6 +2501,7 @@ class ToolbarViewContainer {
   template: 'TOOLBAR(<div *ngFor="let  part of query" [toolbarVc]="part"></div>)',
 })
 class ToolbarComponent {
+  // TODO(issue/24571): remove '!'.
   @ContentChildren(ToolbarPart) query!: QueryList<ToolbarPart>;
   ctxProp: string = 'hello world';
 
@@ -2723,10 +2711,12 @@ class ComponentWithTemplate {
 class DirectiveWithPropDecorators {
   target: any;
 
-  @Input('elProp') dirProp: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  @Input('elProp') dirProp!: string;
   @Output('elEvent') event = new EventEmitter();
 
-  @HostBinding('attr.my-attr') myAttr: string|undefined;
+  // TODO(issue/24571): remove '!'.
+  @HostBinding('attr.my-attr') myAttr!: string;
   @HostListener('click', ['$event.target'])
   onClick(target: any) {
     this.target = target;

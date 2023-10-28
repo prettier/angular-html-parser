@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {InjectionToken, SchemaMetadata, ɵDeferBlockBehavior as DeferBlockBehavior} from '@angular/core';
+import {InjectionToken, SchemaMetadata} from '@angular/core';
 
 
 /** Whether test modules should be torn down by default. */
@@ -31,12 +31,13 @@ export class TestComponentRenderer {
 /**
  * @publicApi
  */
-export const ComponentFixtureAutoDetect = new InjectionToken<boolean>('ComponentFixtureAutoDetect');
+export const ComponentFixtureAutoDetect =
+    new InjectionToken<boolean[]>('ComponentFixtureAutoDetect');
 
 /**
  * @publicApi
  */
-export const ComponentFixtureNoNgZone = new InjectionToken<boolean>('ComponentFixtureNoNgZone');
+export const ComponentFixtureNoNgZone = new InjectionToken<boolean[]>('ComponentFixtureNoNgZone');
 
 /**
  * @publicApi
@@ -51,22 +52,16 @@ export interface TestModuleMetadata {
    * Whether NG0304 runtime errors should be thrown when unknown elements are present in component's
    * template. Defaults to `false`, where the error is simply logged. If set to `true`, the error is
    * thrown.
-   * @see [NG8001](/errors/NG8001) for the description of the problem and how to fix it
+   * @see https://angular.io/errors/NG8001 for the description of the problem and how to fix it
    */
   errorOnUnknownElements?: boolean;
   /**
    * Whether errors should be thrown when unknown properties are present in component's template.
    * Defaults to `false`, where the error is simply logged.
    * If set to `true`, the error is thrown.
-   * @see [NG8002](/errors/NG8002) for the description of the error and how to fix it
+   * @see https://angular.io/errors/NG8002 for the description of the error and how to fix it
    */
   errorOnUnknownProperties?: boolean;
-
-  /**
-   * Whether defer blocks should behave with manual triggering or play through normally.
-   * Defaults to `manual`.
-   */
-  deferBlockBehavior?: DeferBlockBehavior;
 }
 
 /**
@@ -81,14 +76,14 @@ export interface TestEnvironmentOptions {
    * Whether errors should be thrown when unknown elements are present in component's template.
    * Defaults to `false`, where the error is simply logged.
    * If set to `true`, the error is thrown.
-   * @see [NG8001](/errors/NG8001) for the description of the error and how to fix it
+   * @see https://angular.io/errors/NG8001 for the description of the error and how to fix it
    */
   errorOnUnknownElements?: boolean;
   /**
    * Whether errors should be thrown when unknown properties are present in component's template.
    * Defaults to `false`, where the error is simply logged.
    * If set to `true`, the error is thrown.
-   * @see [NG8002](/errors/NG8002) for the description of the error and how to fix it
+   * @see https://angular.io/errors/NG8002 for the description of the error and how to fix it
    */
   errorOnUnknownProperties?: boolean;
 }

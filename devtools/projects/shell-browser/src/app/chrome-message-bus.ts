@@ -73,7 +73,6 @@ export class ChromeMessageBus extends MessageBus<Events> {
     this._port.postMessage({
       topic,
       args,
-      __ignore_ng_zone__: true,
     });
     return true;
   }

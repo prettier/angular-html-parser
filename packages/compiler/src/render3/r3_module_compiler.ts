@@ -45,44 +45,31 @@ export enum R3SelectorScopeMode {
 }
 
 /**
- * The type of the NgModule meta data.
- * - Global: Used for full and partial compilation modes which mainly includes R3References.
- * - Local: Used for the local compilation mode which mainly includes the raw expressions as appears
- * in the NgModule decorator.
+ * Metadata required by the module compiler to generate a module def (`ɵmod`) for a type.
  */
-export enum R3NgModuleMetadataKind {
-  Global,
-  Local,
-}
-
-interface R3NgModuleMetadataCommon {
-  kind: R3NgModuleMetadataKind;
-
+export interface R3NgModuleMetadata {
   /**
    * An expression representing the module type being compiled.
    */
   type: R3Reference;
 
   /**
-   * How to emit the selector scope values (declarations, imports, exports).
+   * An expression representing the module type being compiled, intended for use within a class
+   * definition itself.
+   *
+   * This can differ from the outer `type` if the class is being compiled by ngcc and is inside
+   * an IIFE structure that uses a different name internally.
    */
-  selectorScopeMode: R3SelectorScopeMode;
+  internalType: o.Expression;
 
   /**
-   * The set of schemas that declare elements to be allowed in the NgModule.
+   * An expression intended for use by statements that are adjacent (i.e. tightly coupled) to but
+   * not internal to a class definition.
+   *
+   * This can differ from the outer `type` if the class is being compiled by ngcc and is inside
+   * an IIFE structure that uses a different name internally.
    */
-  schemas: R3Reference[]|null;
-
-  /** Unique ID or expression representing the unique ID of an NgModule. */
-  id: o.Expression|null;
-}
-
-/**
- * Metadata required by the module compiler in full/partial mode to generate a module def (`ɵmod`)
- * for a type.
- */
-export interface R3NgModuleMetadataGlobal extends R3NgModuleMetadataCommon {
-  kind: R3NgModuleMetadataKind.Global;
+  adjacentType: o.Expression;
 
   /**
    * An array of expressions representing the bootstrap components specified by the module.
@@ -116,48 +103,23 @@ export interface R3NgModuleMetadataGlobal extends R3NgModuleMetadataCommon {
   exports: R3Reference[];
 
   /**
+   * How to emit the selector scope values (declarations, imports, exports).
+   */
+  selectorScopeMode: R3SelectorScopeMode;
+
+  /**
    * Whether to generate closure wrappers for bootstrap, declarations, imports, and exports.
    */
   containsForwardDecls: boolean;
+
+  /**
+   * The set of schemas that declare elements to be allowed in the NgModule.
+   */
+  schemas: R3Reference[]|null;
+
+  /** Unique ID or expression representing the unique ID of an NgModule. */
+  id: o.Expression|null;
 }
-
-/**
- * Metadata required by the module compiler in local mode to generate a module def (`ɵmod`) for a
- * type.
- */
-export interface R3NgModuleMetadataLocal extends R3NgModuleMetadataCommon {
-  kind: R3NgModuleMetadataKind.Local;
-
-  /**
-   * The output expression representing the bootstrap components specified by the module.
-   */
-  bootstrapExpression: o.Expression|null;
-
-  /**
-   * The output expression representing the declarations of the module.
-   */
-  declarationsExpression: o.Expression|null;
-
-  /**
-   * The output expression representing the imports of the module.
-   */
-  importsExpression: o.Expression|null;
-
-  /**
-   * The output expression representing the exports of the module.
-   */
-  exportsExpression: o.Expression|null;
-
-  /**
-   * Local compilation mode always requires scope to be handled using side effect function calls.
-   */
-  selectorScopeMode: R3SelectorScopeMode.SideEffect;
-}
-
-/**
- * Metadata required by the module compiler to generate a module def (`ɵmod`) for a type.
- */
-export type R3NgModuleMetadata = R3NgModuleMetadataGlobal|R3NgModuleMetadataLocal;
 
 /**
  * The shape of the object literal that is passed to the `ɵɵdefineNgModule()` call.
@@ -200,33 +162,43 @@ interface R3NgModuleDefMap {
  * Construct an `R3NgModuleDef` for the given `R3NgModuleMetadata`.
  */
 export function compileNgModule(meta: R3NgModuleMetadata): R3CompiledExpression {
+  const {
+    adjacentType,
+    internalType,
+    bootstrap,
+    declarations,
+    imports,
+    exports,
+    schemas,
+    containsForwardDecls,
+    selectorScopeMode,
+    id
+  } = meta;
+
   const statements: o.Statement[] = [];
   const definitionMap = new DefinitionMap<R3NgModuleDefMap>();
-  definitionMap.set('type', meta.type.value);
+  definitionMap.set('type', internalType);
 
-  // Assign bootstrap definition. In local compilation mode (i.e., for
-  // `R3NgModuleMetadataKind.LOCAL`) we assign the bootstrap field using the runtime
-  // `ɵɵsetNgModuleScope`.
-  if (meta.kind === R3NgModuleMetadataKind.Global && meta.bootstrap.length > 0) {
-    definitionMap.set('bootstrap', refsToArray(meta.bootstrap, meta.containsForwardDecls));
+  if (bootstrap.length > 0) {
+    definitionMap.set('bootstrap', refsToArray(bootstrap, containsForwardDecls));
   }
 
-  if (meta.selectorScopeMode === R3SelectorScopeMode.Inline) {
+  if (selectorScopeMode === R3SelectorScopeMode.Inline) {
     // If requested to emit scope information inline, pass the `declarations`, `imports` and
     // `exports` to the `ɵɵdefineNgModule()` call directly.
 
-    if (meta.declarations.length > 0) {
-      definitionMap.set('declarations', refsToArray(meta.declarations, meta.containsForwardDecls));
+    if (declarations.length > 0) {
+      definitionMap.set('declarations', refsToArray(declarations, containsForwardDecls));
     }
 
-    if (meta.imports.length > 0) {
-      definitionMap.set('imports', refsToArray(meta.imports, meta.containsForwardDecls));
+    if (imports.length > 0) {
+      definitionMap.set('imports', refsToArray(imports, containsForwardDecls));
     }
 
-    if (meta.exports.length > 0) {
-      definitionMap.set('exports', refsToArray(meta.exports, meta.containsForwardDecls));
+    if (exports.length > 0) {
+      definitionMap.set('exports', refsToArray(exports, containsForwardDecls));
     }
-  } else if (meta.selectorScopeMode === R3SelectorScopeMode.SideEffect) {
+  } else if (selectorScopeMode === R3SelectorScopeMode.SideEffect) {
     // In this mode, scope information is not passed into `ɵɵdefineNgModule` as it
     // would prevent tree-shaking of the declarations, imports and exports references. Instead, it's
     // patched onto the NgModule definition with a `ɵɵsetNgModuleScope` call that's guarded by the
@@ -239,17 +211,16 @@ export function compileNgModule(meta: R3NgModuleMetadata): R3CompiledExpression 
     // Selector scope emit was not requested, so skip it.
   }
 
-  if (meta.schemas !== null && meta.schemas.length > 0) {
-    definitionMap.set('schemas', o.literalArr(meta.schemas.map(ref => ref.value)));
+  if (schemas !== null && schemas.length > 0) {
+    definitionMap.set('schemas', o.literalArr(schemas.map(ref => ref.value)));
   }
 
-  if (meta.id !== null) {
-    definitionMap.set('id', meta.id);
+  if (id !== null) {
+    definitionMap.set('id', id);
 
     // Generate a side-effectful call to register this NgModule by its id, as per the semantics of
     // NgModule ids.
-    statements.push(
-        o.importExpr(R3.registerNgModuleType).callFn([meta.type.value, meta.id]).toStmt());
+    statements.push(o.importExpr(R3.registerNgModuleType).callFn([adjacentType, id]).toStmt());
   }
 
   const expression =
@@ -287,20 +258,9 @@ export function compileNgModuleDeclarationExpression(meta: R3DeclareNgModuleFaca
   return o.importExpr(R3.defineNgModule).callFn([definitionMap.toLiteralMap()]);
 }
 
-export function createNgModuleType(meta: R3NgModuleMetadata): o.ExpressionType {
-  if (meta.kind === R3NgModuleMetadataKind.Local) {
-    return new o.ExpressionType(meta.type.value);
-  }
-
-  const {
-    type: moduleType,
-    declarations,
-    exports,
-    imports,
-    includeImportTypes,
-    publicDeclarationTypes
-  } = meta;
-
+export function createNgModuleType(
+    {type: moduleType, declarations, exports, imports, includeImportTypes, publicDeclarationTypes}:
+        R3NgModuleMetadata): o.ExpressionType {
   return new o.ExpressionType(o.importExpr(R3.NgModuleDeclaration, [
     new o.ExpressionType(moduleType.type),
     publicDeclarationTypes === null ? tupleTypeOf(declarations) :
@@ -317,45 +277,21 @@ export function createNgModuleType(meta: R3NgModuleMetadata): o.ExpressionType {
  * symbols to become tree-shakeable.
  */
 function generateSetNgModuleScopeCall(meta: R3NgModuleMetadata): o.Statement|null {
-  const scopeMap = new DefinitionMap<{
-    declarations: o.Expression,
-    imports: o.Expression,
-    exports: o.Expression,
-    bootstrap: o.Expression
-  }>();
+  const {adjacentType: moduleType, declarations, imports, exports, containsForwardDecls} = meta;
 
-  if (meta.kind === R3NgModuleMetadataKind.Global) {
-    if (meta.declarations.length > 0) {
-      scopeMap.set('declarations', refsToArray(meta.declarations, meta.containsForwardDecls));
-    }
-  } else {
-    if (meta.declarationsExpression) {
-      scopeMap.set('declarations', meta.declarationsExpression);
-    }
+  const scopeMap = new DefinitionMap<
+      {declarations: o.Expression, imports: o.Expression, exports: o.Expression}>();
+
+  if (declarations.length > 0) {
+    scopeMap.set('declarations', refsToArray(declarations, containsForwardDecls));
   }
 
-  if (meta.kind === R3NgModuleMetadataKind.Global) {
-    if (meta.imports.length > 0) {
-      scopeMap.set('imports', refsToArray(meta.imports, meta.containsForwardDecls));
-    }
-  } else {
-    if (meta.importsExpression) {
-      scopeMap.set('imports', meta.importsExpression);
-    }
+  if (imports.length > 0) {
+    scopeMap.set('imports', refsToArray(imports, containsForwardDecls));
   }
 
-  if (meta.kind === R3NgModuleMetadataKind.Global) {
-    if (meta.exports.length > 0) {
-      scopeMap.set('exports', refsToArray(meta.exports, meta.containsForwardDecls));
-    }
-  } else {
-    if (meta.exportsExpression) {
-      scopeMap.set('exports', meta.exportsExpression);
-    }
-  }
-
-  if (meta.kind === R3NgModuleMetadataKind.Local && meta.bootstrapExpression) {
-    scopeMap.set('bootstrap', meta.bootstrapExpression);
+  if (exports.length > 0) {
+    scopeMap.set('exports', refsToArray(exports, containsForwardDecls));
   }
 
   if (Object.keys(scopeMap.values).length === 0) {
@@ -365,7 +301,7 @@ function generateSetNgModuleScopeCall(meta: R3NgModuleMetadata): o.Statement|nul
   // setNgModuleScope(...)
   const fnCall = new o.InvokeFunctionExpr(
       /* fn */ o.importExpr(R3.setNgModuleScope),
-      /* args */[meta.type.value, scopeMap.toLiteralMap()]);
+      /* args */[moduleType, scopeMap.toLiteralMap()]);
 
   // (ngJitMode guard) && setNgModuleScope(...)
   const guardedCall = jitOnlyGuardedExpression(fnCall);

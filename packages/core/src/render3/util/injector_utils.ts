@@ -19,16 +19,17 @@ export function hasParentInjector(parentLocation: RelativeInjectorLocation): boo
 export function getParentInjectorIndex(parentLocation: RelativeInjectorLocation): number {
   ngDevMode && assertNumber(parentLocation, 'Number expected');
   ngDevMode && assertNotEqual(parentLocation as any, -1, 'Not a valid state.');
-  const parentInjectorIndex = parentLocation & RelativeInjectorLocationFlags.InjectorIndexMask;
+  const parentInjectorIndex =
+      (parentLocation as any as number) & RelativeInjectorLocationFlags.InjectorIndexMask;
   ngDevMode &&
       assertGreaterThan(
           parentInjectorIndex, HEADER_OFFSET,
           'Parent injector must be pointing past HEADER_OFFSET.');
-  return parentLocation & RelativeInjectorLocationFlags.InjectorIndexMask;
+  return (parentLocation as any as number) & RelativeInjectorLocationFlags.InjectorIndexMask;
 }
 
 export function getParentInjectorViewOffset(parentLocation: RelativeInjectorLocation): number {
-  return parentLocation >> RelativeInjectorLocationFlags.ViewOffsetShift;
+  return (parentLocation as any as number) >> RelativeInjectorLocationFlags.ViewOffsetShift;
 }
 
 /**

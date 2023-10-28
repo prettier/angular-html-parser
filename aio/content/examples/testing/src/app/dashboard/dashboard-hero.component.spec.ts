@@ -1,3 +1,4 @@
+
 // #docplaster
 import { DebugElement } from '@angular/core';
 import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
@@ -5,7 +6,6 @@ import { By } from '@angular/platform-browser';
 import { first } from 'rxjs/operators';
 
 import { addMatchers, click } from '../../testing';
-import { appProviders } from '../app.config';
 import { Hero } from '../model/hero';
 
 import { DashboardHeroComponent } from './dashboard-hero.component';
@@ -16,7 +16,7 @@ describe('DashboardHeroComponent class only', () => {
   // #docregion class-only
   it('raises the selected event when clicked', () => {
     const comp = new DashboardHeroComponent();
-    const hero: Hero = { id: 42, name: 'Test' };
+    const hero: Hero = {id: 42, name: 'Test'};
     comp.hero = hero;
 
     comp.selected.pipe(first()).subscribe((selectedHero: Hero) => expect(selectedHero).toBe(hero));
@@ -34,12 +34,10 @@ describe('DashboardHeroComponent when tested directly', () => {
 
   beforeEach(waitForAsync(() => {
     // #docregion setup, config-testbed
-    TestBed.configureTestingModule({
-      providers: appProviders,
-      imports: [DashboardHeroComponent],
-    })
-      // #enddocregion setup, config-testbed
-      .compileComponents();
+    TestBed
+        .configureTestingModule({declarations: [DashboardHeroComponent]})
+        // #enddocregion setup, config-testbed
+        .compileComponents();
   }));
 
   beforeEach(() => {
@@ -52,7 +50,7 @@ describe('DashboardHeroComponent when tested directly', () => {
     heroEl = heroDe.nativeElement;
 
     // mock the hero supplied by the parent component
-    expectedHero = { id: 42, name: 'Test Name' };
+    expectedHero = {id: 42, name: 'Test Name'};
 
     // simulate the parent setting the input property with that hero
     comp.hero = expectedHero;
@@ -72,7 +70,7 @@ describe('DashboardHeroComponent when tested directly', () => {
   // #docregion click-test
   it('should raise selected event when clicked (triggerEventHandler)', () => {
     let selectedHero: Hero | undefined;
-    comp.selected.pipe(first()).subscribe((hero: Hero) => (selectedHero = hero));
+    comp.selected.pipe(first()).subscribe((hero: Hero) => selectedHero = hero);
 
     // #docregion trigger-event-handler
     heroDe.triggerEventHandler('click');
@@ -84,7 +82,7 @@ describe('DashboardHeroComponent when tested directly', () => {
   // #docregion click-test-2
   it('should raise selected event when clicked (element.click)', () => {
     let selectedHero: Hero | undefined;
-    comp.selected.pipe(first()).subscribe((hero: Hero) => (selectedHero = hero));
+    comp.selected.pipe(first()).subscribe((hero: Hero) => selectedHero = hero);
 
     heroEl.click();
     expect(selectedHero).toBe(expectedHero);
@@ -94,9 +92,9 @@ describe('DashboardHeroComponent when tested directly', () => {
   // #docregion click-test-3
   it('should raise selected event when clicked (click helper with DebugElement)', () => {
     let selectedHero: Hero | undefined;
-    comp.selected.pipe(first()).subscribe((hero: Hero) => (selectedHero = hero));
+    comp.selected.pipe(first()).subscribe((hero: Hero) => selectedHero = hero);
 
-    click(heroDe); // click helper with DebugElement
+    click(heroDe);  // click helper with DebugElement
 
     expect(selectedHero).toBe(expectedHero);
   });
@@ -104,9 +102,9 @@ describe('DashboardHeroComponent when tested directly', () => {
 
   it('should raise selected event when clicked (click helper with native element)', () => {
     let selectedHero: Hero | undefined;
-    comp.selected.pipe(first()).subscribe((hero: Hero) => (selectedHero = hero));
+    comp.selected.pipe(first()).subscribe((hero: Hero) => selectedHero = hero);
 
-    click(heroEl); // click helper with native element
+    click(heroEl);  // click helper with native element
 
     expect(selectedHero).toBe(expectedHero);
   });
@@ -121,12 +119,10 @@ describe('DashboardHeroComponent when inside a test host', () => {
 
   beforeEach(waitForAsync(() => {
     // #docregion test-host-setup
-    TestBed.configureTestingModule({
-      providers: appProviders,
-      imports: [DashboardHeroComponent, TestHostComponent],
-    })
-      // #enddocregion test-host-setup
-      .compileComponents();
+    TestBed
+        .configureTestingModule({declarations: [DashboardHeroComponent, TestHostComponent]})
+        // #enddocregion test-host-setup
+        .compileComponents();
   }));
 
   beforeEach(() => {
@@ -135,7 +131,7 @@ describe('DashboardHeroComponent when inside a test host', () => {
     fixture = TestBed.createComponent(TestHostComponent);
     testHost = fixture.componentInstance;
     heroEl = fixture.nativeElement.querySelector('.hero');
-    fixture.detectChanges(); // trigger initial data binding
+    fixture.detectChanges();  // trigger initial data binding
     // #enddocregion test-host-setup
   });
 
@@ -158,12 +154,13 @@ import { Component } from '@angular/core';
 
 // #docregion test-host
 @Component({
-  standalone: true,
-  imports: [DashboardHeroComponent],
-  template: ` <dashboard-hero [hero]="hero" (selected)="onSelected($event)"> </dashboard-hero>`,
+  template: `
+    <dashboard-hero
+      [hero]="hero" (selected)="onSelected($event)">
+    </dashboard-hero>`
 })
 class TestHostComponent {
-  hero: Hero = { id: 42, name: 'Test Name' };
+  hero: Hero = {id: 42, name: 'Test Name'};
   selectedHero: Hero | undefined;
   onSelected(hero: Hero) {
     this.selectedHero = hero;

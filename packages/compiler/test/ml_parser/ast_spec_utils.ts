@@ -66,8 +66,7 @@ class _Humanizer implements html.Visitor {
   }
 
   visitCdata(cdata: html.CDATA, context: any): any {
-    const res = this._appendContext(
-        cdata, [html.CDATA, cdata.value, this.elDepth, ...cdata.tokens.map(token => token.parts)]);
+    const res = this._appendContext(cdata, [html.CDATA, cdata.value, this.elDepth, ...cdata.tokens.map(token => token.parts)]);
     this.result.push(res);
   }
 
@@ -93,22 +92,6 @@ class _Humanizer implements html.Visitor {
     const res =
         this._appendContext(expansionCase, [html.ExpansionCase, expansionCase.value, this.elDepth]);
     this.result.push(res);
-  }
-
-  visitBlock(block: html.Block, context: any) {
-    const res = this._appendContext(block, [html.Block, block.name, this.elDepth++]);
-    if (this.includeSourceSpan) {
-      res.push(block.startSourceSpan.toString() ?? null);
-      res.push(block.endSourceSpan?.toString() ?? null);
-    }
-    this.result.push(res);
-    html.visitAll(this, block.parameters);
-    html.visitAll(this, block.children);
-    this.elDepth--;
-  }
-
-  visitBlockParameter(parameter: html.BlockParameter, context: any) {
-    this.result.push(this._appendContext(parameter, [html.BlockParameter, parameter.expression]));
   }
 
   private _appendContext(ast: html.Node, input: any[]): any[] {

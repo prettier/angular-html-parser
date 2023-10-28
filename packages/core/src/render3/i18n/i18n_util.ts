@@ -15,7 +15,6 @@ import {LView, TView} from '../interfaces/view';
 import {assertTNodeType} from '../node_assert';
 import {setI18nHandling} from '../node_manipulation';
 import {getInsertInFrontOfRNodeWithI18n, processI18nInsertBefore} from '../node_manipulation_i18n';
-
 import {addTNodeAndUpdateInsertBeforeIndex} from './i18n_insert_before_index';
 
 
@@ -36,7 +35,7 @@ export function getTIcu(tView: TView, index: number): TIcu|null {
   const value = tView.data[index] as null | TIcu | TIcuContainerNode | string;
   if (value === null || typeof value === 'string') return null;
   if (ngDevMode &&
-      !(value.hasOwnProperty('tView') || value.hasOwnProperty('currentCaseLViewIndex'))) {
+      !(value.hasOwnProperty('tViews') || value.hasOwnProperty('currentCaseLViewIndex'))) {
     throwError('We expect to get \'null\'|\'TIcu\'|\'TIcuContainer\', but got: ' + value);
   }
   // Here the `value.hasOwnProperty('currentCaseLViewIndex')` is a polymorphic read as it can be
@@ -67,7 +66,7 @@ export function setTIcu(tView: TView, index: number, tIcu: TIcu): void {
   const tNode = tView.data[index] as null | TIcuContainerNode;
   ngDevMode &&
       assertEqual(
-          tNode === null || tNode.hasOwnProperty('tView'), true,
+          tNode === null || tNode.hasOwnProperty('tViews'), true,
           'We expect to get \'null\'|\'TIcuContainer\'');
   if (tNode === null) {
     tView.data[index] = tIcu;

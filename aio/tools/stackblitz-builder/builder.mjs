@@ -139,8 +139,11 @@ export class StackblitzBuilder {
 
   _addStackblitzrc(postData) {
     postData['project[files][.stackblitzrc]'] = JSON.stringify({
-      installDependencies: false,
-      startCommand: 'npm install --legacy-peer-deps && npm start'
+      installDependencies: true,
+      startCommand: 'turbo start',
+      env: {
+        ENABLE_CJS_IMPORTS: true
+      }
     });
   }
 
@@ -252,8 +255,7 @@ export class StackblitzBuilder {
   _initConfigAndCollectFileNames(configFileName) {
     const config = this._parseConfig(configFileName);
 
-    // Should only include non-binary files since Stackblitz doesn't support uploading binary files
-    const defaultIncludes = ['**/*.ts', '**/*.js', '**/*.css', '**/*.html', '**/*.md', '**/*.json', '**/*.svg'];
+    const defaultIncludes = ['**/*.ts', '**/*.js', '**/*.css', '**/*.html', '**/*.md', '**/*.json', '**/*.png', '**/*.svg'];
     const boilerplateIncludes = ['src/environments/*.*', 'src/polyfills.ts', '*.json'];
     if (config.files) {
       if (config.files.length > 0) {
@@ -297,16 +299,6 @@ export class StackblitzBuilder {
       dot: true // Include subpaths that begin with '.' when using a wildcard inclusion.
                 // Needed to include the bazel .cache folder on Linux.
     });
-
-    // We want to throw an Error if there are binary images 
-    const binaryImagePaths = ['**/*.jpg', '**/*.png','**/*.gif'].map(fileName => path.join(config.basePath, fileName));
-    const binaryImageFilenames = globbySync(binaryImagePaths, {
-      ignore: ['**/node_modules/**'],
-    }).map(filePath => path.basename(filePath));
-
-    if(binaryImageFilenames.length > 0) {
-      throw new Error(`${config.description} contains binary images :\n ${binaryImageFilenames.join(',\n')}`)
-    }
 
     return config;
   }

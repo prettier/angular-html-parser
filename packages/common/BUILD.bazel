@@ -1,7 +1,6 @@
 load("@build_bazel_rules_nodejs//:index.bzl", "generated_file_test")
 load("//packages/common/locales:index.bzl", "generate_base_currencies_file")
 load("//tools:defaults.bzl", "api_golden_test", "api_golden_test_npm_package", "ng_module", "ng_package")
-load("@npm//@angular/build-tooling/bazel/api-gen:generate_api_docs.bzl", "generate_api_docs")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -53,6 +52,7 @@ ng_package(
         "//integration:__subpackages__",
         "//packages/bazel/test/ng_package:__pkg__",
         "//packages/compiler-cli/integrationtest:__pkg__",
+        "//packages/compiler-cli/ngcc/test:__pkg__",
         "//packages/compiler-cli/test:__pkg__",
         "//packages/compiler-cli/test/diagnostics:__pkg__",
         "//packages/compiler-cli/test/transformers:__pkg__",
@@ -94,11 +94,4 @@ filegroup(
         "*.ts",
         "src/**/*.ts",
     ]) + ["PACKAGE.md"],
-)
-
-generate_api_docs(
-    name = "common_docs",
-    srcs = [":files_for_docgen"],
-    entry_point = ":index.ts",
-    module_name = "@angular/common",
 )

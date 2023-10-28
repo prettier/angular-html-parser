@@ -68,7 +68,6 @@ export class SamePageMessageBus extends MessageBus<Events> {
           source: this._source,
           topic,
           args,
-          __ignore_ng_zone__: true,
         },
         '*');
     return true;

@@ -65,19 +65,6 @@ import {humanizeDom} from './ast_spec_utils';
       expect(parseAndRemoveWS('   \n foo  \t ')).toEqual([[html.Text, ' foo ', 0, [' foo ']]]);
     });
 
-    it('should remove whitespace inside of blocks', () => {
-      const markup = '@if (cond) {<br>  <br>\t<br>\n<br>}';
-
-      expect(parseAndRemoveWS(markup)).toEqual([
-        [html.Block, 'if', 0],
-        [html.BlockParameter, 'cond'],
-        [html.Element, 'br', 1],
-        [html.Element, 'br', 1],
-        [html.Element, 'br', 1],
-        [html.Element, 'br', 1],
-      ]);
-    });
-
     it('should not replace &nbsp;', () => {
       expect(parseAndRemoveWS('&nbsp;')).toEqual([
         [html.Text, '\u00a0', 0, [''], ['\u00a0', '&nbsp;'], ['']]

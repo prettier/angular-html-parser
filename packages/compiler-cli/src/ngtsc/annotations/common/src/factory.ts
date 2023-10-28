@@ -14,22 +14,10 @@ export type CompileFactoryFn = (metadata: R3FactoryMetadata) => CompileResult;
 
 export function compileNgFactoryDefField(metadata: R3FactoryMetadata): CompileResult {
   const res = compileFactoryFunction(metadata);
-  return {
-    name: 'ɵfac',
-    initializer: res.expression,
-    statements: res.statements,
-    type: res.type,
-    deferrableImports: null
-  };
+  return {name: 'ɵfac', initializer: res.expression, statements: res.statements, type: res.type};
 }
 
 export function compileDeclareFactory(metadata: R3FactoryMetadata): CompileResult {
   const res = compileDeclareFactoryFunction(metadata);
-  return {
-    name: 'ɵfac',
-    initializer: res.expression,
-    statements: res.statements,
-    type: res.type,
-    deferrableImports: null
-  };
+  return {name: 'ɵfac', initializer: res.expression, statements: res.statements, type: res.type};
 }

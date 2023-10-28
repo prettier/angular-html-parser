@@ -335,45 +335,37 @@ describe(
           });
 
           it('should output error to console if ignoreConsoleErrorUncaughtError is false',
-             async () => {
-               await jasmine.spyOnGlobalErrorsAsync(() => {
+             (done) => {
+               Zone.current.fork({name: 'promise-error'}).run(() => {
+                 (Zone as any)[Zone.__symbol__('ignoreConsoleErrorUncaughtError')] = false;
                  const originalConsoleError = console.error;
-                 Zone.current.fork({name: 'promise-error'}).run(() => {
-                   (Zone as any)[Zone.__symbol__('ignoreConsoleErrorUncaughtError')] = false;
-                   console.error = jasmine.createSpy('consoleErr');
-                   const p = new Promise((resolve, reject) => {
-                     throw new Error('promise error');
-                   });
+                 console.error = jasmine.createSpy('consoleErr');
+                 const p = new Promise((resolve, reject) => {
+                   throw new Error('promise error');
                  });
-                 return new Promise(res => {
-                   setTimeout(() => {
-                     expect(console.error).toHaveBeenCalled();
-                     console.error = originalConsoleError;
-                     res();
-                   });
-                 });
+                 setTimeout(() => {
+                   expect(console.error).toHaveBeenCalled();
+                   console.error = originalConsoleError;
+                   done();
+                 }, 10);
                });
              });
 
           it('should not output error to console if ignoreConsoleErrorUncaughtError is true',
-             async () => {
-               await jasmine.spyOnGlobalErrorsAsync(() => {
+             (done) => {
+               Zone.current.fork({name: 'promise-error'}).run(() => {
+                 (Zone as any)[Zone.__symbol__('ignoreConsoleErrorUncaughtError')] = true;
                  const originalConsoleError = console.error;
-                 Zone.current.fork({name: 'promise-error'}).run(() => {
-                   (Zone as any)[Zone.__symbol__('ignoreConsoleErrorUncaughtError')] = true;
-                   console.error = jasmine.createSpy('consoleErr');
-                   const p = new Promise((resolve, reject) => {
-                     throw new Error('promise error');
-                   });
+                 console.error = jasmine.createSpy('consoleErr');
+                 const p = new Promise((resolve, reject) => {
+                   throw new Error('promise error');
                  });
-                 return new Promise(res => {
-                   setTimeout(() => {
-                     expect(console.error).not.toHaveBeenCalled();
-                     console.error = originalConsoleError;
-                     (Zone as any)[Zone.__symbol__('ignoreConsoleErrorUncaughtError')] = false;
-                     res();
-                   });
-                 });
+                 setTimeout(() => {
+                   expect(console.error).not.toHaveBeenCalled();
+                   console.error = originalConsoleError;
+                   (Zone as any)[Zone.__symbol__('ignoreConsoleErrorUncaughtError')] = false;
+                   done();
+                 }, 10);
                });
              });
 

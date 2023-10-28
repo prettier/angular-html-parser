@@ -9,8 +9,8 @@
 import {Type} from '@angular/compiler';
 import ts from 'typescript';
 
-import {ImportRewriter, ReferenceEmitter} from '../../imports';
-import {ClassDeclaration, ReflectionHost} from '../../reflection';
+import {ImportRewriter} from '../../imports';
+import {ClassDeclaration} from '../../reflection';
 import {ImportManager, translateType} from '../../translator';
 
 import {DtsTransform} from './api';
@@ -54,12 +54,10 @@ export class DtsTransformRegistry {
 }
 
 export function declarationTransformFactory(
-    transformRegistry: DtsTransformRegistry, reflector: ReflectionHost,
-    refEmitter: ReferenceEmitter, importRewriter: ImportRewriter,
+    transformRegistry: DtsTransformRegistry, importRewriter: ImportRewriter,
     importPrefix?: string): ts.TransformerFactory<ts.SourceFile> {
   return (context: ts.TransformationContext) => {
-    const transformer =
-        new DtsTransformer(context, reflector, refEmitter, importRewriter, importPrefix);
+    const transformer = new DtsTransformer(context, importRewriter, importPrefix);
     return (fileOrBundle) => {
       if (ts.isBundle(fileOrBundle)) {
         // Only attempt to transform source files.
@@ -79,8 +77,7 @@ export function declarationTransformFactory(
  */
 class DtsTransformer {
   constructor(
-      private ctx: ts.TransformationContext, private reflector: ReflectionHost,
-      private refEmitter: ReferenceEmitter, private importRewriter: ImportRewriter,
+      private ctx: ts.TransformationContext, private importRewriter: ImportRewriter,
       private importPrefix?: string) {}
 
   /**
@@ -101,7 +98,7 @@ class DtsTransformer {
     };
 
     // Recursively scan through the AST and process all nodes as desired.
-    sf = ts.visitNode(sf, visitor, ts.isSourceFile) || sf;
+    sf = ts.visitNode(sf, visitor);
 
     // Add new imports for this file.
     return addImports(imports, sf);
@@ -136,8 +133,7 @@ class DtsTransformer {
         // not yet been incorporated. Otherwise, `newClazz.members` holds the latest class members.
         const inputMembers = (clazz === newClazz ? elements : newClazz.members);
 
-        newClazz = transform.transformClass(
-            newClazz, inputMembers, this.reflector, this.refEmitter, imports);
+        newClazz = transform.transformClass(newClazz, inputMembers, imports);
       }
     }
 
@@ -185,7 +181,6 @@ export class IvyDeclarationDtsTransform implements DtsTransform {
 
   transformClass(
       clazz: ts.ClassDeclaration, members: ReadonlyArray<ts.ClassElement>,
-      reflector: ReflectionHost, refEmitter: ReferenceEmitter,
       imports: ImportManager): ts.ClassDeclaration {
     const original = ts.getOriginalNode(clazz) as ClassDeclaration;
 
@@ -196,8 +191,7 @@ export class IvyDeclarationDtsTransform implements DtsTransform {
 
     const newMembers = fields.map(decl => {
       const modifiers = [ts.factory.createModifier(ts.SyntaxKind.StaticKeyword)];
-      const typeRef =
-          translateType(decl.type, original.getSourceFile(), reflector, refEmitter, imports);
+      const typeRef = translateType(decl.type, imports);
       markForEmitAsSingleLine(typeRef);
       return ts.factory.createPropertyDeclaration(
           /* modifiers */ modifiers,

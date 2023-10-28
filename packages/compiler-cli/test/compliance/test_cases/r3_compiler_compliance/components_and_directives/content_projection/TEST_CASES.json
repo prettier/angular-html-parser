@@ -52,15 +52,6 @@
           "files": [
             "nested_template.js"
           ]
-        },
-        {
-          "failureMessage": "Invalid content projection instructions generated",
-          "files": [
-            {
-              "expected": "nested_template_consts.js",
-              "generated": "nested_template.js"
-            }
-          ]
         }
       ]
     },
@@ -74,15 +65,6 @@
           "failureMessage": "Invalid content projection instructions generated",
           "files": [
             "root_and_nested.js"
-          ]
-        },
-        {
-          "failureMessage": "Invalid content projection instructions generated",
-          "files": [
-            {
-              "expected": "root_and_nested_consts.js",
-              "generated": "root_and_nested.js"
-            }
           ]
         }
       ]
@@ -141,8 +123,7 @@
             "ng_content_with_structural_dir.js"
           ]
         }
-      ],
-      "skipForTemplatePipeline": true
+      ]
     }
   ]
 }

@@ -2,18 +2,15 @@
 import { Component, OnInit, Host, SkipSelf, Optional } from '@angular/core';
 import { FlowerService } from '../flower.service';
 import { AnimalService } from '../animal.service';
-import { InspectorComponent } from '../inspector/inspector.component';
 
 // #docregion provide-animal-service
 @Component({
-  standalone: true,
   selector: 'app-child',
   templateUrl: './child.component.html',
   styleUrls: ['./child.component.css'],
   // provide services
   providers: [{ provide: FlowerService, useValue: { emoji: '🌻' } }],
-  viewProviders: [{ provide: AnimalService, useValue: { emoji: '🐶' } }],
-  imports: [InspectorComponent]
+  viewProviders: [{ provide: AnimalService, useValue: { emoji: '🐶' } }]
 })
 
 export class ChildComponent {

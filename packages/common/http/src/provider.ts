@@ -10,8 +10,7 @@ import {EnvironmentProviders, inject, InjectionToken, makeEnvironmentProviders, 
 
 import {HttpBackend, HttpHandler} from './backend';
 import {HttpClient} from './client';
-import {FetchBackend} from './fetch';
-import {HTTP_INTERCEPTOR_FNS, HttpInterceptorFn, HttpInterceptorHandler, legacyInterceptorFnFactory, PRIMARY_HTTP_BACKEND} from './interceptor';
+import {HTTP_INTERCEPTOR_FNS, HttpInterceptorFn, HttpInterceptorHandler, legacyInterceptorFnFactory} from './interceptor';
 import {jsonpCallbackContext, JsonpCallbackContext, JsonpClientBackend, jsonpInterceptorFn} from './jsonp';
 import {HttpXhrBackend} from './xhr';
 import {HttpXsrfCookieExtractor, HttpXsrfTokenExtractor, XSRF_COOKIE_NAME, XSRF_ENABLED, XSRF_HEADER_NAME, xsrfInterceptorFn} from './xsrf';
@@ -28,7 +27,6 @@ export enum HttpFeatureKind {
   NoXsrfProtection,
   JsonpSupport,
   RequestsMadeViaParent,
-  Fetch,
 }
 
 /**
@@ -57,26 +55,12 @@ function makeHttpFeature<KindT extends HttpFeatureKind>(
  * feature functions to `provideHttpClient`. For example, HTTP interceptors can be added using the
  * `withInterceptors(...)` feature.
  *
- * <div class="alert is-helpful">
- *
- * It's strongly recommended to enable
- * [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) for applications that use
- * Server-Side Rendering for better performance and compatibility. To enable `fetch`, add
- * `withFetch()` feature to the `provideHttpClient()` call at the root of the application:
- *
- * ```
- * provideHttpClient(withFetch());
- * ```
- *
- * </div>
- *
- * @see {@link withInterceptors}
- * @see {@link withInterceptorsFromDi}
- * @see {@link withXsrfConfiguration}
- * @see {@link withNoXsrfProtection}
- * @see {@link withJsonpSupport}
- * @see {@link withRequestsMadeViaParent}
- * @see {@link withFetch}
+ * @see withInterceptors
+ * @see withInterceptorsFromDi
+ * @see withXsrfConfiguration
+ * @see withNoXsrfProtection
+ * @see withJsonpSupport
+ * @see withRequestsMadeViaParent
  */
 export function provideHttpClient(...features: HttpFeature<HttpFeatureKind>[]):
     EnvironmentProviders {
@@ -117,8 +101,8 @@ export function provideHttpClient(...features: HttpFeature<HttpFeatureKind>[]):
  * Adds one or more functional-style HTTP interceptors to the configuration of the `HttpClient`
  * instance.
  *
- * @see {@link HttpInterceptorFn}
- * @see {@link provideHttpClient}
+ * @see HttpInterceptorFn
+ * @see provideHttpClient
  * @publicApi
  */
 export function withInterceptors(interceptorFns: HttpInterceptorFn[]):
@@ -141,9 +125,9 @@ const LEGACY_INTERCEPTOR_FN = new InjectionToken<HttpInterceptorFn>('LEGACY_INTE
  * Prefer `withInterceptors` and functional interceptors instead, as support for DI-provided
  * interceptors may be phased out in a later release.
  *
- * @see {@link HttpInterceptor}
- * @see {@link HTTP_INTERCEPTORS}
- * @see {@link provideHttpClient}
+ * @see HttpInterceptor
+ * @see HTTP_INTERCEPTORS
+ * @see provideHttpClient
  */
 export function withInterceptorsFromDi(): HttpFeature<HttpFeatureKind.LegacyInterceptors> {
   // Note: the legacy interceptor function is provided here via an intermediate token
@@ -169,7 +153,7 @@ export function withInterceptorsFromDi(): HttpFeature<HttpFeatureKind.LegacyInte
  *
  * This feature is incompatible with the `withNoXsrfProtection` feature.
  *
- * @see {@link provideHttpClient}
+ * @see provideHttpClient
  */
 export function withXsrfConfiguration(
     {cookieName, headerName}: {cookieName?: string, headerName?: string}):
@@ -190,7 +174,7 @@ export function withXsrfConfiguration(
  *
  * This feature is incompatible with the `withXsrfConfiguration` feature.
  *
- * @see {@link provideHttpClient}
+ * @see provideHttpClient
  */
 export function withNoXsrfProtection(): HttpFeature<HttpFeatureKind.NoXsrfProtection> {
   return makeHttpFeature(HttpFeatureKind.NoXsrfProtection, [
@@ -204,7 +188,7 @@ export function withNoXsrfProtection(): HttpFeature<HttpFeatureKind.NoXsrfProtec
 /**
  * Add JSONP support to the configuration of the current `HttpClient` instance.
  *
- * @see {@link provideHttpClient}
+ * @see provideHttpClient
  */
 export function withJsonpSupport(): HttpFeature<HttpFeatureKind.JsonpSupport> {
   return makeHttpFeature(HttpFeatureKind.JsonpSupport, [
@@ -231,7 +215,7 @@ export function withJsonpSupport(): HttpFeature<HttpFeatureKind.JsonpSupport> {
  * "bubble up" until either reaching the root level or an `HttpClient` which was not configured with
  * this option.
  *
- * @see {@link provideHttpClient}
+ * @see provideHttpClient
  * @developerPreview
  */
 export function withRequestsMadeViaParent(): HttpFeature<HttpFeatureKind.RequestsMadeViaParent> {
@@ -247,33 +231,5 @@ export function withRequestsMadeViaParent(): HttpFeature<HttpFeatureKind.Request
         return handlerFromParent;
       },
     },
-  ]);
-}
-
-
-/**
- * Configures the current `HttpClient` instance to make requests using the fetch API.
- *
- * This `FetchBackend` requires the support of the Fetch API which is available on all evergreen
- * browsers and on NodeJS from v18 onward.
- *
- * Note: The Fetch API doesn't support progress report on uploads.
- *
- * @publicApi
- * @developerPreview
- */
-export function withFetch(): HttpFeature<HttpFeatureKind.Fetch> {
-  if ((typeof ngDevMode === 'undefined' || ngDevMode) && typeof fetch !== 'function') {
-    // TODO: Create a runtime error
-    // TODO: Use ENVIRONMENT_INITIALIZER to contextualize the error message (browser or server)
-    throw new Error(
-        'The `withFetch` feature of HttpClient requires the `fetch` API to be available. ' +
-        'If you run the code in a Node environment, make sure you use Node v18.10 or later.');
-  }
-
-  return makeHttpFeature(HttpFeatureKind.Fetch, [
-    FetchBackend,
-    {provide: HttpBackend, useExisting: FetchBackend},
-    {provide: PRIMARY_HTTP_BACKEND, useExisting: FetchBackend},
   ]);
 }

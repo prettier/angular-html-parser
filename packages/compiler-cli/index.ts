@@ -26,7 +26,7 @@ export * from './src/ngtsc/logging';
 export * from './src/ngtsc/file_system';
 
 // Exports for dealing with the `ngtsc` program.
-export {NgTscPlugin, PluginCompilerHost} from './src/ngtsc/tsc_plugin';
+export {NgTscPlugin} from './src/ngtsc/tsc_plugin';
 export {NgtscProgram} from './src/ngtsc/program';
 export {OptimizeFor} from './src/ngtsc/typecheck/api';
 
@@ -35,8 +35,5 @@ export {OptimizeFor} from './src/ngtsc/typecheck/api';
 // TODO(devversion): Remove these duplicate exports once devmode&prodmode is combined/ESM.
 export {ConsoleLogger, Logger, LogLevel} from './src/ngtsc/logging';
 export {NodeJSFileSystem} from './src/ngtsc/file_system';
-
-// Export documentation entities for Angular-internal API doc generation.
-export * from './src/ngtsc/docs/src/entities';
 
 setFileSystem(new NodeJSFileSystem());

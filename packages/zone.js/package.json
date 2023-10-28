@@ -1,6 +1,6 @@
 {
   "name": "zone.js",
-  "version": "0.14.0",
+  "version": "0.12.0",
   "description": "Zones for JavaScript",
   "main": "./bundles/zone.umd.js",
   "module": "./fesm2015/zone.js",
@@ -13,12 +13,12 @@
   "devDependencies": {
     "@externs/nodejs": "^1.5.0",
     "@types/node": "^10.9.4",
-    "domino": "https://github.com/angular/domino.git#f2435fe1f9f7c91ade0bd472c4723e5eacd7d19a",
-    "google-closure-compiler": "^20230802.0.0",
+    "domino": "2.1.6",
+    "google-closure-compiler": "^20221102.0.0",
     "jest": "^29.0",
     "jest-environment-jsdom": "^29.0.3",
     "jest-environment-node": "^29.0.3",
-    "mocha": "^10.2.0",
+    "mocha": "^10.0.0",
     "mock-require": "3.0.3",
     "promises-aplus-tests": "^2.1.2"
   },
@@ -43,34 +43,7 @@
   "bugs": {
     "url": "https://github.com/angular/angular/issues"
   },
-  "exports": {
-    "./package.json": {
-      "default": "./package.json"
-    },
-    ".": {
-      "types": "./zone.d.ts",
-      "require": "./bundles/zone.umd.js",
-      "default": "./fesm2015/zone.js"
-    },
-    "./testing": {
-      "require": "./bundles/zone-testing.umd.js",
-      "default": "./fesm2015/zone-testing.js"
-    },
-    "./node": {
-      "require": "./bundles/zone-node.umd.js",
-      "default": "./fesm2015/zone-node.js"
-    },
-    "./mix": {
-      "require": "./bundles/zone-mix.umd.js",
-      "default": "./fesm2015/zone-mix.js"
-    },
-    "./plugins/*.min": {
-      "require": "./bundles/*.umd.min.js",
-      "default": "./fesm2015/*.min.js"
-    },
-    "./plugins/*": {
-      "require": "./bundles/*.umd.js",
-      "default": "./fesm2015/*.js"
-    }
+  "publishConfig":{
+    "registry":"https://wombat-dressing-room.appspot.com"
   }
 }

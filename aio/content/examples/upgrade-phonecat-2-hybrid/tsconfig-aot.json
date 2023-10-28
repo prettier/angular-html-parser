@@ -22,7 +22,6 @@
     "app/main.ts"
   ],
   "angularCompilerOptions": {
-    "disableTypeScriptVersionCheck": true,
     "skipMetadataEmit": true
   }
 }

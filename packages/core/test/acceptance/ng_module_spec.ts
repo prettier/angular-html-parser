@@ -12,6 +12,7 @@ import {KNOWN_CONTROL_FLOW_DIRECTIVES} from '@angular/core/src/render3/instructi
 import {TestBed} from '@angular/core/testing';
 import {BrowserModule} from '@angular/platform-browser';
 import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
+import {expect} from '@angular/platform-browser/testing/src/matchers';
 import {withBody} from '@angular/private/testing';
 
 describe('NgModule', () => {
@@ -22,6 +23,34 @@ describe('NgModule', () => {
   @Component({template: 'hello'})
   class TestCmp2 {
   }
+
+  describe('entryComponents', () => {
+    it('should throw when specified entry component is not added to a module', () => {
+      @NgModule({entryComponents: [TestCmp, [TestCmp2]]})
+      class MyModule {
+      }
+
+      TestBed.configureTestingModule({imports: [MyModule]});
+
+      expect(() => {
+        TestBed.createComponent(TestCmp);
+        TestBed.createComponent(TestCmp2);
+      }).toThrowError(/not part of any NgModule/);
+    });
+
+    it('should not throw when specified entry component is added to a module', () => {
+      @NgModule({declarations: [TestCmp, TestCmp2], entryComponents: [TestCmp, [TestCmp2]]})
+      class MyModule {
+      }
+
+      TestBed.configureTestingModule({imports: [MyModule]});
+
+      expect(() => {
+        TestBed.createComponent(TestCmp);
+        TestBed.createComponent(TestCmp2);
+      }).not.toThrow();
+    });
+  });
 
   describe('bootstrap', () => {
     it('should throw when specified bootstrap component is not added to a module', () => {
@@ -971,13 +1000,13 @@ describe('NgModule', () => {
 
       // Simple case, just passing NgModule class.
       const ngModuleRef = createNgModule(AppModule);
-      expect(ngModuleRef).toBeInstanceOf(NgModuleRef);
+      expect(ngModuleRef).toBeAnInstanceOf(NgModuleRef);
       expect(ngModuleRef.injector.get(TOKEN_A)).toBe('TokenValueA');
       expect(ngModuleRef.injector.get(TOKEN_B, null)).toBe(null);
 
       // Both NgModule and parent Injector are present.
       const ngModuleRef2 = createNgModule(ChildModule, ngModuleRef.injector /* parent injector */);
-      expect(ngModuleRef2).toBeInstanceOf(NgModuleRef);
+      expect(ngModuleRef2).toBeAnInstanceOf(NgModuleRef);
       expect(ngModuleRef2.injector.get(TOKEN_A)).toBe('TokenValueA');
       expect(ngModuleRef2.injector.get(TOKEN_B)).toBe('TokenValueB');
     });
@@ -1021,6 +1050,6 @@ describe('NgModule', () => {
 
        TestBed.configureTestingModule({imports: [MyModule]});
        TestBed.createComponent(TestCmp);
-       expect(componentInstance).toBeInstanceOf(TestCmp);
+       expect(componentInstance).toBeAnInstanceOf(TestCmp);
      });
 });

@@ -24,7 +24,6 @@ declare global {
    * Finally, ngDevMode may not have been defined at all.
    */
   const ngDevMode: null|NgDevModePerfCounters;
-
   interface NgDevModePerfCounters {
     namedConstructors: boolean;
     firstCreatePass: number;
@@ -49,11 +48,6 @@ declare global {
     rendererAppendChild: number;
     rendererInsertBefore: number;
     rendererCreateComment: number;
-    hydratedNodes: number;
-    hydratedComponents: number;
-    dehydratedViewsRemoved: number;
-    dehydratedViewsCleanupRuns: number;
-    componentsSkippedHydration: number;
   }
 }
 
@@ -83,11 +77,6 @@ export function ngDevModeResetPerfCounters(): NgDevModePerfCounters {
     rendererAppendChild: 0,
     rendererInsertBefore: 0,
     rendererCreateComment: 0,
-    hydratedNodes: 0,
-    hydratedComponents: 0,
-    dehydratedViewsRemoved: 0,
-    dehydratedViewsCleanupRuns: 0,
-    componentsSkippedHydration: 0,
   };
 
   // Make sure to refer to ngDevMode as ['ngDevMode'] for closure.

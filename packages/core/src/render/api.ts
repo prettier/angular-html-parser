@@ -94,7 +94,8 @@ export abstract class Renderer2 {
    * If null or undefined, the view engine won't call it.
    * This is used as a performance optimization for production mode.
    */
-  destroyNode: ((node: any) => void)|null = null;
+  // TODO(issue/24571): remove '!'.
+  destroyNode!: ((node: any) => void)|null;
   /**
    * Appends a child to a given parent node in the host element DOM.
    * @param parent The parent node.
@@ -138,6 +139,7 @@ export abstract class Renderer2 {
    * in the host element's DOM.
    * @param node The child node to query.
    * @returns The parent node, or null if there is no parent.
+   * For WebWorkers, always returns true.
    * This is because the check is synchronous,
    * and the caller can't rely on checking for null.
    */
@@ -146,6 +148,7 @@ export abstract class Renderer2 {
    * Implement this callback to get the next sibling node of a given node
    * in the host element's DOM.
    * @returns The sibling node, or null if there is no sibling.
+   * For WebWorkers, always returns a value.
    * This is because the check is synchronous,
    * and the caller can't rely on checking for null.
    */
@@ -240,15 +243,4 @@ export function injectRenderer2(): Renderer2 {
   const tNode = getCurrentTNode()!;
   const nodeAtIndex = getComponentLViewByIndex(tNode.index, lView);
   return (isLView(nodeAtIndex) ? nodeAtIndex : lView)[RENDERER] as Renderer2;
-}
-
-/**
- * This enum is meant to be used by `ɵtype` properties of the different renderers implemented
- * by the framework
- *
- * We choose to not add `ɵtype` to `Renderer2` to no expose it to the public API.
- */
-export const enum AnimationRendererType {
-  Regular = 0,
-  Delegated = 1,
 }

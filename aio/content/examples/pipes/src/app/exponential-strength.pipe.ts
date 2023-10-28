@@ -1,3 +1,4 @@
+// #docregion
 import { Pipe, PipeTransform } from '@angular/core';
 /*
  * Raise the value exponentially
@@ -8,10 +9,7 @@ import { Pipe, PipeTransform } from '@angular/core';
  *   {{ 2 | exponentialStrength:10 }}
  *   formats to: 1024
 */
-@Pipe({
-  standalone: true,
-  name: 'exponentialStrength'
-})
+@Pipe({name: 'exponentialStrength'})
 export class ExponentialStrengthPipe implements PipeTransform {
   transform(value: number, exponent = 1): number {
     return Math.pow(value, exponent);

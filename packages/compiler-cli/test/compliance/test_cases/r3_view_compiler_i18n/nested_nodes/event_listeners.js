@@ -1,4 +1,4 @@
-consts: () => {
+consts: function() {
   __i18nMsg__('Hello', [], {}, {})
   return [
     [__AttributeMarker.Bindings__, "click"],

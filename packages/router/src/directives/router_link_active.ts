@@ -108,7 +108,7 @@ export class RouterLinkActive implements OnChanges, OnDestroy, AfterContentInit 
    *
    * These options are passed to the `Router.isActive()` function.
    *
-   * @see {@link Router#isActive}
+   * @see Router.isActive
    */
   @Input() routerLinkActiveOptions: {exact: boolean}|IsActiveMatchOptions = {exact: false};
 
@@ -189,7 +189,7 @@ export class RouterLinkActive implements OnChanges, OnDestroy, AfterContentInit 
 
   private update(): void {
     if (!this.links || !this.router.navigated) return;
-    queueMicrotask(() => {
+    Promise.resolve().then(() => {
       const hasActiveLinks = this.hasActiveLinks();
       if (this._isActive !== hasActiveLinks) {
         this._isActive = hasActiveLinks;

@@ -100,7 +100,7 @@ A single HTML element can have its CSS class list and style values bound to mult
 
 ## What’s next
 
-* [Component styles](/guide/component-styles)
-* [Introduction to Angular animations](/guide/animations)
+* [Component styles](https://angular.io/guide/component-styles)
+* [Introduction to Angular animations](https://angular.io/guide/animations)
 
 @reviewed 2022-05-09

@@ -31,7 +31,7 @@ export class I18nComponent {
 
 export class FrLocalization extends NgLocalization {
   public static PROVIDE = {provide: NgLocalization, useClass: FrLocalization, deps: []};
-  override getPluralCategory(value: number): string {
+  getPluralCategory(value: number): string {
     switch (value) {
       case 0:
       case 1:

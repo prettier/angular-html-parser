@@ -150,11 +150,6 @@ export enum PerfPhase {
   LsSignatureHelp,
 
   /**
-   * Time spent by the Angular Language Service calculating outlining spans.
-   */
-  OutliningSpans,
-
-  /**
    * Tracks the number of `PerfPhase`s, and must appear at the end of the list.
    */
   LAST,

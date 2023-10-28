@@ -32,7 +32,7 @@ function $MyComponent_div_3_Template$(rf, ctx) {
 …
 decls: 4,
 vars: 3,
-consts: () => {
+consts: function() {
   __i18nIcuMsg__('{VAR_SELECT, select, male {male} female {female} other {other}}', [['VAR_SELECT', String.raw`\uFFFD0\uFFFD`]], {}) __i18nIcuMsg__('{VAR_SELECT, select, 10 {ten} 20 {twenty} other {other}}', [['VAR_SELECT', String.raw`\uFFFD0\uFFFD`]], {})
   __i18nIcuMsg__('{VAR_SELECT, select, 0 {no emails} 1 {one email} other {{INTERPOLATION} emails}}', [ ['VAR_SELECT', String.raw`\uFFFD0\uFFFD`], ['INTERPOLATION', String.raw`\uFFFD1\uFFFD`]], {})
   return [
@@ -50,7 +50,8 @@ template: function MyComponent_Template(rf, ctx) {
     $r3$.ɵɵelementStart(0, "div");
     $r3$.ɵɵi18n(1, 0);
     $r3$.ɵɵelementEnd();
-    $r3$.ɵɵtemplate(2, $MyComponent_div_2_Template$, 4, 1, "div", 1)(3, $MyComponent_div_3_Template$, 4, 2, "div", 2);
+    $r3$.ɵɵtemplate(2, $MyComponent_div_2_Template$, 4, 1, "div", 1);
+    $r3$.ɵɵtemplate(3, $MyComponent_div_3_Template$, 4, 2, "div", 2);
   }
   if (rf & 2) {
     $r3$.ɵɵadvance(1);

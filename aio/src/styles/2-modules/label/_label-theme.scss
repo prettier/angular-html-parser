@@ -14,8 +14,7 @@
       &.deprecated,
       &.security,
       &.impure-pipe,
-      &.dev-preview,
-      &.experimental {
+      &.dev-preview {
         background-color: constants.$brightred;
       }
 
@@ -23,7 +22,6 @@
         color: inherit;
         line-height: inherit;
         font-size: inherit;
-        font-weight: inherit;
       }
     }
 
@@ -31,8 +29,7 @@
       color: constants.$white;
       background-color: constants.$accentblue;
 
-      @each $name,
-      $symbol in constants.$api-symbols {
+      @each $name, $symbol in constants.$api-symbols {
         &.#{$name} {
           background: map.get($symbol, background);
         }

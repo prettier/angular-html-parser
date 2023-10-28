@@ -1,7 +1,7 @@
 // #docplaster
 import { Injectable } from '@angular/core';
 import {
-  HttpInterceptor, HttpHandler, HttpRequest
+  HttpEvent, HttpInterceptor, HttpHandler, HttpRequest
 } from '@angular/common/http';
 
 // #docregion

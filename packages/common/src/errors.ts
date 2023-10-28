@@ -13,15 +13,12 @@
 export const enum RuntimeErrorCode {
   // NgSwitch errors
   PARENT_NG_SWITCH_NOT_FOUND = 2000,
-  EQUALITY_NG_SWITCH_DIFFERENCE = 2001,
 
   // Pipe errors
   INVALID_PIPE_ARGUMENT = 2100,
 
   // NgForOf errors
   NG_FOR_MISSING_DIFFER = -2200,
-
-  // Keep 2800 - 2900 for Http Errors.
 
   // Image directive errors
   UNEXPECTED_SRC_ATTR = 2950,
@@ -36,6 +33,5 @@ export const enum RuntimeErrorCode {
   OVERSIZED_IMAGE = 2960,
   TOO_MANY_PRELOADED_IMAGES = 2961,
   MISSING_BUILTIN_LOADER = 2962,
-  MISSING_NECESSARY_LOADER = 2963,
-  LCP_IMG_NGSRC_MODIFIED = 2964,
+  NGSRCSET_WITHOUT_LOADER = 2963,
 }
