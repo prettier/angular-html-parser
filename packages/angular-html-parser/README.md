@@ -70,9 +70,9 @@ interface Options {
     attrs: Array<{prefix: string; name: string; value?: string | undefined}>
   ) => void | ng.TagContentType;
   /**
-   * tokenize blocks (Angular Control Flow Syntax)
+   * tokenize angular control flow block syntax
    */
-  tokenizeBlocks?: boolean,
+  tokenizeAngularBlocks?: boolean,
 }
 ```
 

@@ -70,7 +70,7 @@ describe("AST format", () => {
 
   it("should have `type` property when tokenizeBlocks is enabled", () => {
     const input = `@if (user.isHuman) { <p>Hello human</p> }`;
-    const ast = parse(input, { tokenizeBlocks: true });
+    const ast = parse(input, { tokenizeAngularBlocks: true });
     expect(ast.rootNodes).toEqual([
       jasmine.objectContaining({
         name: "if",
