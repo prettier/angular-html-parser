@@ -138,6 +138,8 @@ export class BlockParameter implements BaseNode {
   }
 
   readonly type = 'blockParameter';
+  readonly startSourceSpan: null = null;
+  readonly endSourceSpan: null = null;
 }
 
 export interface Visitor {
