@@ -90,7 +90,7 @@
     },
     {
       "description": "should correctly skip contexts as needed",
-      "inputFIles": [
+      "inputFiles": [
         "template_context_skip.ts"
       ],
       "expectations": [
@@ -107,7 +107,7 @@
     },
     {
       "description": "should support <ng-template>",
-      "inputFIles": [
+      "inputFiles": [
         "ng_template.ts"
       ],
       "expectations": [
@@ -124,7 +124,7 @@
     },
     {
       "description": "should support local refs on <ng-template>",
-      "inputFIles": [
+      "inputFiles": [
         "ng_template_local_ref.ts"
       ],
       "expectations": [
@@ -142,7 +142,7 @@
     },
     {
       "description": "should support directive outputs on <ng-template>",
-      "inputFIles": [
+      "inputFiles": [
         "ng_template_output.ts"
       ],
       "expectations": [
@@ -160,7 +160,7 @@
     },
     {
       "description": "should allow directive inputs as an interpolated prop on <ng-template>",
-      "inputFIles": [
+      "inputFiles": [
         "ng_template_interpolated_prop.ts"
       ],
       "expectations": [
@@ -177,7 +177,7 @@
     },
     {
       "description": "should allow directive inputs as an interpolated prop on <ng-template> (with structural directives)",
-      "inputFIles": [
+      "inputFiles": [
         "ng_template_interpolated_prop_with_structural_directive.ts"
       ],
       "expectations": [
@@ -214,7 +214,7 @@
     },
     {
       "description": "should create unique template function names for ng-content templates",
-      "inputFIles": [
+      "inputFiles": [
         "unique_template_function_names_ng_content.ts"
       ],
       "expectations": [
@@ -225,7 +225,7 @@
     },
     {
       "description": "should create unique listener function names even for similar nested template structures",
-      "inputFIles": [
+      "inputFiles": [
         "unique_listener_function_names.ts"
       ],
       "expectations": [
@@ -236,7 +236,7 @@
     },
     {
       "description": "should support pipes in template bindings",
-      "inputFIles": [
+      "inputFiles": [
         "template_binding_pipe.ts"
       ],
       "expectations": [
@@ -253,7 +253,7 @@
     },
     {
       "description": "should safely nest ternary operations",
-      "inputFIles": [
+      "inputFiles": [
         "nested_ternary_operation.ts"
       ],
       "expectations": [
@@ -270,7 +270,7 @@
     },
     {
       "description": "should handle shorthand property declarations in templates",
-      "inputFIles": [
+      "inputFiles": [
         "shorthand_property_declaration.ts"
       ],
       "expectations": [
@@ -287,7 +287,7 @@
     },
     {
       "description": "should allow self-closing custom elements in templates",
-      "inputFIles": [
+      "inputFiles": [
         "self_closing_tags.ts"
       ],
       "expectations": [
@@ -304,7 +304,7 @@
     },
     {
       "description": "should not confuse self-closing tag for an end tag",
-      "inputFIles": [
+      "inputFiles": [
         "self_closing_tags_nested.ts"
       ],
       "expectations": [
@@ -321,7 +321,7 @@
     },
     {
       "description": "should handle structural directive on ng-template",
-      "inputFIles": [
+      "inputFiles": [
         "template_with_structural_directive.ts"
       ],
       "expectations": [
