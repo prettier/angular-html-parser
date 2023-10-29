@@ -3,7 +3,9 @@
   "cases": [
     {
       "description": "should create listener instruction on element",
-      "inputFiles": ["element_listener.ts"],
+      "inputFiles": [
+        "element_listener.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -18,7 +20,9 @@
     },
     {
       "description": "should create listener instruction on other components",
-      "inputFiles": ["component_listener.ts"],
+      "inputFiles": [
+        "component_listener.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -33,7 +37,9 @@
     },
     {
       "description": "should create multiple listener instructions that share a view snapshot",
-      "inputFiles": ["shared_snapshot_listeners.ts"],
+      "inputFiles": [
+        "shared_snapshot_listeners.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -48,7 +54,9 @@
     },
     {
       "description": "local refs in listeners defined before the local refs",
-      "inputFiles": ["local_ref_before_listener.ts"],
+      "inputFiles": [
+        "local_ref_before_listener.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -73,7 +81,9 @@
     },
     {
       "description": "should chain multiple listeners on the same element",
-      "inputFiles": ["same_element_chained_listeners.ts"],
+      "inputFiles": [
+        "same_element_chained_listeners.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -88,7 +98,9 @@
     },
     {
       "description": "should chain multiple listeners across elements",
-      "inputFiles": ["cross_element_chained_listeners.ts"],
+      "inputFiles": [
+        "cross_element_chained_listeners.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -103,7 +115,9 @@
     },
     {
       "description": "should chain multiple listeners on the same template",
-      "inputFiles": ["template_chained_listeners.ts"],
+      "inputFiles": [
+        "template_chained_listeners.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -118,7 +132,9 @@
     },
     {
       "description": "should not generate the $event argument if it is not being used in a template",
-      "inputFiles": ["no_event_arg_listener.ts"],
+      "inputFiles": [
+        "no_event_arg_listener.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -133,7 +149,9 @@
     },
     {
       "description": "should not generate the $event argument if it is not being used in a host listener",
-      "inputFiles": ["no_event_arg_host_listener.ts"],
+      "inputFiles": [
+        "no_event_arg_host_listener.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -148,7 +166,9 @@
     },
     {
       "description": "should generate the $event argument if it is being used in a host listener",
-      "inputFiles": ["has_event_arg_host_listener.ts"],
+      "inputFiles": [
+        "has_event_arg_host_listener.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -163,7 +183,9 @@
     },
     {
       "description": "should assume $event is referring to the event variable in a listener by default",
-      "inputFiles": ["event_arg_listener_implicit_meaning.ts"],
+      "inputFiles": [
+        "event_arg_listener_implicit_meaning.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -178,7 +200,9 @@
     },
     {
       "description": "should preserve accesses to $event if it is done through `this` in a listener",
-      "inputFiles": ["event_explicit_access.ts"],
+      "inputFiles": [
+        "event_explicit_access.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -192,7 +216,9 @@
     },
     {
       "description": "should not assume that $event is referring to an event object inside a property",
-      "inputFiles": ["event_in_property_binding.ts"],
+      "inputFiles": [
+        "event_in_property_binding.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -207,7 +233,9 @@
     },
     {
       "description": "should assume $event is referring to the event variable in a listener by default inside a host binding",
-      "inputFiles": ["event_arg_host_listener_implicit_meaning.ts"],
+      "inputFiles": [
+        "event_arg_host_listener_implicit_meaning.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -222,7 +250,9 @@
     },
     {
       "description": "should preserve accesses to $event if it is done through `this` in a listener inside a host binding",
-      "inputFiles": ["event_host_explicit_access.ts"],
+      "inputFiles": [
+        "event_host_explicit_access.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -237,7 +267,9 @@
     },
     {
       "description": "should generate the view restoration statements if a keyed write is used in an event listener from within an ng-template",
-      "inputFiles": ["implicit_receiver_keyed_write_inside_template.ts"],
+      "inputFiles": [
+        "implicit_receiver_keyed_write_inside_template.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -252,7 +284,9 @@
     },
     {
       "description": "should reference correct context in listener inside embedded view",
-      "inputFiles": ["embedded_view_listener_context.ts"],
+      "inputFiles": [
+        "embedded_view_listener_context.ts"
+      ],
       "expectations": [
         {
           "files": [

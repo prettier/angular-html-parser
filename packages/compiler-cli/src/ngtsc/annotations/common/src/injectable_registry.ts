@@ -9,7 +9,6 @@ import {R3DependencyMetadata} from '@angular/compiler';
 
 import {hasInjectableFields} from '../../../metadata';
 import {ClassDeclaration, ReflectionHost} from '../../../reflection';
-import {CompilationMode} from '../../../transform';
 
 import {getConstructorDependencies, unwrapConstructorDependencies} from './di';
 
