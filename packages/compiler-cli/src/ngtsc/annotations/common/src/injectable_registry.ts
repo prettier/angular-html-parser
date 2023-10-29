@@ -43,8 +43,7 @@ export class InjectableClassRegistry {
       return null;
     }
 
-    const ctorDeps =
-        getConstructorDependencies(declaration, this.host, this.isCore, CompilationMode.FULL);
+    const ctorDeps = getConstructorDependencies(declaration, this.host, this.isCore);
     const meta: InjectableMeta = {
       ctorDeps: unwrapConstructorDependencies(ctorDeps),
     };
