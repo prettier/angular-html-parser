@@ -3,15 +3,21 @@
   "cases": [
     {
       "description": "should map simple element with content (full compile)",
-      "inputFiles": ["simple_element.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "simple_element.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map simple element with content (partial compile)",
-      "inputFiles": ["simple_element.ts"],
+      "inputFiles": [
+        "simple_element.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -22,22 +28,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map void element (full compile)",
-      "inputFiles": ["void_element.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "void_element.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map void element (partial compile)",
-      "inputFiles": ["void_element.ts"],
+      "inputFiles": [
+        "void_element.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -48,22 +62,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a mix of interpolated and static content (full compile)",
-      "inputFiles": ["interpolation_basic.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "interpolation_basic.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a mix of interpolated and static content (partial compile)",
-      "inputFiles": ["interpolation_basic.ts"],
+      "inputFiles": [
+        "interpolation_basic.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -74,22 +96,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a complex interpolated expression (full compile)",
-      "inputFiles": ["interpolation_complex.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "interpolation_complex.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a complex interpolated expression (partial compile)",
-      "inputFiles": ["interpolation_complex.ts"],
+      "inputFiles": [
+        "interpolation_complex.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -100,22 +130,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map interpolated properties (full compile)",
-      "inputFiles": ["interpolation_properties.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "interpolation_properties.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map interpolated properties (partial compile)",
-      "inputFiles": ["interpolation_properties.ts"],
+      "inputFiles": [
+        "interpolation_properties.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -126,22 +164,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map interpolation with pipe (full compile)",
-      "inputFiles": ["interpolation_with_pipe.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "interpolation_with_pipe.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map interpolation with pipe (partial compile)",
-      "inputFiles": ["interpolation_with_pipe.ts"],
+      "inputFiles": [
+        "interpolation_with_pipe.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -152,22 +198,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a simple input binding expression (full compile)",
-      "inputFiles": ["input_binding_simple.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "input_binding_simple.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a simple input binding expression (partial compile)",
-      "inputFiles": ["input_binding_simple.ts"],
+      "inputFiles": [
+        "input_binding_simple.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -178,22 +232,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a complex input binding expression (full compile)",
-      "inputFiles": ["input_binding_complex.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "input_binding_complex.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a complex input binding expression (partial compile)",
-      "inputFiles": ["input_binding_complex.ts"],
+      "inputFiles": [
+        "input_binding_complex.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -204,22 +266,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a longhand input binding expression (full compile)",
-      "inputFiles": ["input_binding_longhand.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "input_binding_longhand.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a longhand input binding expression (partial compile)",
-      "inputFiles": ["input_binding_longhand.ts"],
+      "inputFiles": [
+        "input_binding_longhand.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -230,22 +300,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a simple output binding expression (full compile)",
-      "inputFiles": ["output_binding_simple.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "output_binding_simple.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a simple output binding expression (partial compile)",
-      "inputFiles": ["output_binding_simple.ts"],
+      "inputFiles": [
+        "output_binding_simple.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -256,22 +334,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a complex output binding expression (full compile)",
-      "inputFiles": ["output_binding_complex.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "output_binding_complex.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a complex output binding expression (partial compile)",
-      "inputFiles": ["output_binding_complex.ts"],
+      "inputFiles": [
+        "output_binding_complex.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -282,22 +368,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a longhand output binding expression (full compile)",
-      "inputFiles": ["output_binding_longhand.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "output_binding_longhand.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a longhand output binding expression (partial compile)",
-      "inputFiles": ["output_binding_longhand.ts"],
+      "inputFiles": [
+        "output_binding_longhand.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -308,15 +402,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a two-way binding expression (full compile)",
-      "inputFiles": ["two_way_binding_simple.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "two_way_binding_simple.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -324,7 +424,9 @@
     },
     {
       "description": "should map a two-way binding expression (partial compile)",
-      "inputFiles": ["two_way_binding_simple.ts"],
+      "inputFiles": [
+        "two_way_binding_simple.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -335,15 +437,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a longhand two-way binding expression (full compile)",
-      "inputFiles": ["two_way_binding_longhand.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "two_way_binding_longhand.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -351,7 +459,9 @@
     },
     {
       "description": "should map a longhand two-way binding expression (partial compile)",
-      "inputFiles": ["two_way_binding_longhand.ts"],
+      "inputFiles": [
+        "two_way_binding_longhand.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -362,22 +472,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a class input binding (full compile)",
-      "inputFiles": ["input_binding_class.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "input_binding_class.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map a class input binding (partial compile)",
-      "inputFiles": ["input_binding_class.ts"],
+      "inputFiles": [
+        "input_binding_class.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -388,22 +506,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map *ngIf scenario (full compile)",
-      "inputFiles": ["ng_if_simple.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "ng_if_simple.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map *ngIf scenario (partial compile)",
-      "inputFiles": ["ng_if_simple.ts"],
+      "inputFiles": [
+        "ng_if_simple.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -414,22 +540,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map ng-template [ngIf] scenario (full compile)",
-      "inputFiles": ["ng_if_templated.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "ng_if_templated.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map ng-template [ngIf] scenario (partial compile)",
-      "inputFiles": ["ng_if_templated.ts"],
+      "inputFiles": [
+        "ng_if_templated.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -440,15 +574,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map *ngFor scenario (full compile)",
-      "inputFiles": ["ng_for_simple.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "ng_for_simple.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -456,7 +596,9 @@
     },
     {
       "description": "should map *ngFor scenario (partial compile)",
-      "inputFiles": ["ng_for_simple.ts"],
+      "inputFiles": [
+        "ng_for_simple.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -467,15 +609,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map ng-template [ngFor] scenario (full compile)",
-      "inputFiles": ["ng_for_templated.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "ng_for_templated.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -483,7 +631,9 @@
     },
     {
       "description": "should map ng-template [ngFor] scenario (partial compile)",
-      "inputFiles": ["ng_for_templated.ts"],
+      "inputFiles": [
+        "ng_for_templated.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -494,22 +644,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map default and selected projection (full compile)",
-      "inputFiles": ["projection.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "projection.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should map default and selected projection (partial compile)",
-      "inputFiles": ["projection.ts"],
+      "inputFiles": [
+        "projection.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -520,15 +678,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create simple i18n message source-mapping (full compile)",
-      "inputFiles": ["i18n_message_simple.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "i18n_message_simple.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -536,7 +700,9 @@
     },
     {
       "description": "should create simple i18n message source-mapping (partial compile)",
-      "inputFiles": ["i18n_message_simple.ts"],
+      "inputFiles": [
+        "i18n_message_simple.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -547,15 +713,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create placeholder i18n message source-mappings (full compile)",
-      "inputFiles": ["i18n_message_placeholder.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "i18n_message_placeholder.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -563,7 +735,9 @@
     },
     {
       "description": "should create placeholder i18n message source-mappings (partial compile)",
-      "inputFiles": ["i18n_message_placeholder.ts"],
+      "inputFiles": [
+        "i18n_message_placeholder.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -574,15 +748,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should handle encoded entities in i18n message source-mappings (full compile)",
-      "inputFiles": ["i18n_message_placeholder_entities.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "i18n_message_placeholder_entities.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -590,7 +770,9 @@
     },
     {
       "description": "should handle encoded entities in i18n message source-mappings (partial compile)",
-      "inputFiles": ["i18n_message_placeholder_entities.ts"],
+      "inputFiles": [
+        "i18n_message_placeholder_entities.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -601,15 +783,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should correctly handle collapsed whitespace in interpolation placeholder i18n message source-mappings (full compile)",
-      "inputFiles": ["i18n_message_interpolation_whitespace.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "i18n_message_interpolation_whitespace.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -617,7 +805,9 @@
     },
     {
       "description": "should correctly handle collapsed whitespace in interpolation placeholder i18n message source-mappings (partial compile)",
-      "inputFiles": ["i18n_message_interpolation_whitespace.ts"],
+      "inputFiles": [
+        "i18n_message_interpolation_whitespace.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -628,15 +818,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should correctly handle collapsed whitespace in element placeholder i18n message source-mappings (full compile)",
-      "inputFiles": ["i18n_message_element_whitespace.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "i18n_message_element_whitespace.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -644,7 +840,9 @@
     },
     {
       "description": "should correctly handle collapsed whitespace in element placeholder i18n message source-mappings (partial compile)",
-      "inputFiles": ["i18n_message_element_whitespace.ts"],
+      "inputFiles": [
+        "i18n_message_element_whitespace.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -655,15 +853,21 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create tag (container) placeholder i18n message source-mappings (full compile)",
-      "inputFiles": ["i18n_message_container_tag.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "i18n_message_container_tag.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       },
@@ -671,7 +875,9 @@
     },
     {
       "description": "should create tag (container) placeholder i18n message source-mappings (partial compile)",
-      "inputFiles": ["i18n_message_container_tag.ts"],
+      "inputFiles": [
+        "i18n_message_container_tag.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -682,22 +888,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create (simple string) inline template source-mapping (full compile)",
-      "inputFiles": ["update_mode.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "update_mode.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create (simple string) inline template source-mapping (partial compile)",
-      "inputFiles": ["update_mode.ts"],
+      "inputFiles": [
+        "update_mode.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -708,22 +922,30 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create correct inline template source-mapping when the source contains escape sequences (full compile)",
-      "inputFiles": ["escape_sequences.ts"],
-      "compilationModeFilter": ["full compile"],
+      "inputFiles": [
+        "escape_sequences.ts"
+      ],
+      "compilationModeFilter": [
+        "full compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
     },
     {
       "description": "should create correct inline template source-mapping when the source contains escape sequences (partial compile)",
-      "inputFiles": ["escape_sequences.ts"],
+      "inputFiles": [
+        "escape_sequences.ts"
+      ],
       "expectations": [
         {
           "files": [
@@ -734,7 +956,9 @@
           ]
         }
       ],
-      "compilationModeFilter": ["linked compile"],
+      "compilationModeFilter": [
+        "linked compile"
+      ],
       "compilerOptions": {
         "sourceMap": true
       }
