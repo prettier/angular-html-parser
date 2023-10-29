@@ -155,8 +155,7 @@
           ],
           "failureMessage": "Incorrect template"
         }
-      ],
-      "skipForTemplatePipeline": true
+      ]
     },
     {
       "description": "should allow directive inputs as an interpolated prop on <ng-template>",
@@ -208,7 +207,13 @@
       ],
       "expectations": [
         {
-          "extraChecks": [["verifyUniqueFunctions", "Template", 16]]
+          "extraChecks": [
+            [
+              "verifyUniqueFunctions",
+              "Template",
+              16
+            ]
+          ]
         }
       ]
     },
@@ -219,7 +224,13 @@
       ],
       "expectations": [
         {
-          "extraChecks": [["verifyUniqueFunctions", "Template", 4]]
+          "extraChecks": [
+            [
+              "verifyUniqueFunctions",
+              "Template",
+              4
+            ]
+          ]
         }
       ]
     },
@@ -230,7 +241,13 @@
       ],
       "expectations": [
         {
-          "extraChecks": [["verifyUniqueFunctions", "listener", 3]]
+          "extraChecks": [
+            [
+              "verifyUniqueFunctions",
+              "listener",
+              3
+            ]
+          ]
         }
       ]
     },
