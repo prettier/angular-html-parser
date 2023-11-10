@@ -56,12 +56,12 @@ export class WhitespaceVisitor implements html.Visitor {
       // but still visit all attributes to eliminate one used as a market to preserve WS
       return new html.Element(
           element.name, html.visitAll(this, element.attrs), element.children, element.sourceSpan,
-          element.startSourceSpan, element.endSourceSpan, element.i18n);
+          element.startSourceSpan, element.endSourceSpan, null);
     }
 
     return new html.Element(
         element.name, element.attrs, visitAllWithSiblings(this, element.children),
-        element.sourceSpan, element.startSourceSpan, element.endSourceSpan, element.i18n);
+        element.sourceSpan, element.startSourceSpan, element.endSourceSpan, null);
   }
 
   visitAttribute(attribute: html.Attribute, context: any): any {
@@ -91,7 +91,7 @@ export class WhitespaceVisitor implements html.Visitor {
 
     if (isNotBlank) {
       return new html.CDATA(
-          replaceNgsp(cdata.value).replace(WS_REPLACE_REGEXP, ' '), cdata.sourceSpan);
+          replaceNgsp(cdata.value).replace(WS_REPLACE_REGEXP, ' '), cdata.sourceSpan, []);
     }
 
     return null;

@@ -101,6 +101,11 @@ class HtmlAstToIvyAst implements html.Visitor {
 
   constructor(private bindingParser: BindingParser, private options: Render3ParseOptions) {}
 
+  // implements html.Visitor
+  visit?(node: html.Node, context: any) {}
+  visitCdata(text: html.CDATA, context: any) {}
+  visitDocType(docType: html.DocType, context: any) {}
+
   // HTML visitor
   visitElement(element: html.Element): t.Node|null {
     const isI18nRootElement = isI18nRootNode(element.i18n);
@@ -383,7 +388,7 @@ class HtmlAstToIvyAst implements html.Visitor {
         }
 
         result = {
-          node: new t.UnknownBlock(block.name, block.sourceSpan, block.nameSpan),
+          node: new t.UnknownBlock(block.name, block.sourceSpan, block.sourceSpan),
           errors: [new ParseError(block.sourceSpan, errorMessage)],
         };
         break;
@@ -618,6 +623,11 @@ class HtmlAstToIvyAst implements html.Visitor {
 }
 
 class NonBindableVisitor implements html.Visitor {
+  // implements html.Visitor
+  visit?(node: html.Node, context: any) {}
+  visitCdata(text: html.CDATA, context: any) {}
+  visitDocType(docType: html.DocType, context: any) {}
+
   visitElement(ast: html.Element): t.Element|null {
     const preparsedElement = preparseElement(ast);
     if (preparsedElement.type === PreparsedElementType.SCRIPT ||

@@ -54,6 +54,11 @@ class _I18nVisitor implements html.Visitor {
       private _expressionParser: ExpressionParser,
       private _interpolationConfig: InterpolationConfig) {}
 
+  // implements html.Visitor
+  visit?(node: html.Node, context: any) {}
+  visitCdata(text: html.CDATA, context: any) {}
+  visitDocType(docType: html.DocType, context: any) {}
+
   public toI18nMessage(
       nodes: html.Node[], meaning = '', description = '', customId = '',
       visitNodeFn: VisitNodeFn|undefined): i18n.Message {

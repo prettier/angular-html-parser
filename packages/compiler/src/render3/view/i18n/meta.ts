@@ -55,6 +55,11 @@ export class I18nMetaVisitor implements html.Visitor {
       private interpolationConfig: InterpolationConfig = DEFAULT_INTERPOLATION_CONFIG,
       private keepI18nAttrs = false, private enableI18nLegacyMessageIdFormat = false) {}
 
+  // implements html.Visitor
+  visit?(node: html.Node, context: any) {}
+  visitCdata(text: html.CDATA, context: any) {}
+  visitDocType(docType: html.DocType, context: any) {}
+
   private _generateI18nMessage(
       nodes: html.Node[], meta: string|i18n.I18nMeta = '',
       visitNodeFn?: VisitNodeFn): i18n.Message {

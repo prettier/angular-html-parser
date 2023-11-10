@@ -163,7 +163,7 @@ export function createSwitchBlock(
     }
 
     if ((node.name !== 'case' || node.parameters.length === 0) && node.name !== 'default') {
-      unknownBlocks.push(new t.UnknownBlock(node.name, node.sourceSpan, node.nameSpan));
+      unknownBlocks.push(new t.UnknownBlock(node.name, node.sourceSpan, node.sourceSpan));
       continue;
     }
 

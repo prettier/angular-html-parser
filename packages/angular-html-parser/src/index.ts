@@ -85,3 +85,5 @@ export {
   ParseSourceFile,
 } from "../../compiler/src/parse_util.js";
 export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.js";
+export { htmlAstToRender3Ast } from '../../compiler/src/render3/r3_template_transform.js';
+export { makeBindingParser } from '../../compiler/src/render3/view/template';
