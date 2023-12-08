@@ -62,7 +62,7 @@ export function parse(
     input,
     "angular-html-parser",
     {
-      tokenizeExpansionForms: false,
+      tokenizeExpansionForms: tokenizeAngularBlocks,
       interpolationConfig: undefined,
       canSelfClose,
       allowHtmComponentClosingTags,
