@@ -68,6 +68,8 @@ export class ExpansionCase implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitExpansionCase(this, context);
   }
+
+  readonly type = 'expansionCase';
 }
 
 export class Attribute extends NodeWithI18n {
