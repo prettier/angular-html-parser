@@ -208,6 +208,10 @@ export class LetDeclaration implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitLetDeclaration(this, context);
   }
+
+  readonly type = 'letDeclaration';
+  readonly startSourceSpan: null = null;
+  readonly endSourceSpan: null = null;
 }
 
 export interface Visitor {
