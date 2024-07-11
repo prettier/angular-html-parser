@@ -210,6 +210,8 @@ export class LetDeclaration implements BaseNode {
   }
 
   readonly type = 'letDeclaration';
+  readonly startSourceSpan: null = null;
+  readonly endSourceSpan: null = null;
 }
 
 export interface Visitor {
