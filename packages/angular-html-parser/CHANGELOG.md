@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [6.0.1](https://github.com/prettier/angular-html-parser/compare/v6.0.0...v6.0.1) (2024-07-11)
 
+Support `LetDeclaration`
+
 ## [6.0.0](https://github.com/prettier/angular-html-parser/compare/v5.2.0...v6.0.0) (2024-07-11)
 
 Sync with upstream.
