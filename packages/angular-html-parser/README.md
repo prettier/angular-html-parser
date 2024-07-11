@@ -73,6 +73,10 @@ interface Options {
    * tokenize angular control flow block syntax
    */
   tokenizeAngularBlocks?: boolean,
+  /**
+   * tokenize angular let declaration syntax
+   */
+  tokenizeAngularLetDeclaration?: boolean,
 }
 ```
 

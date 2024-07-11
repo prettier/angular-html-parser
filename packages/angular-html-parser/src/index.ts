@@ -45,6 +45,10 @@ export interface ParseOptions {
    * tokenize angular control flow block syntax
    */
   tokenizeAngularBlocks?: boolean,
+  /**
+   * tokenize angular let declaration syntax
+   */
+  tokenizeAngularLetDeclaration?: boolean,
 }
 
 export function parse(
@@ -57,6 +61,7 @@ export function parse(
     isTagNameCaseSensitive = false,
     getTagContentType,
     tokenizeAngularBlocks = false,
+    tokenizeAngularLetDeclaration = false,
   } = options;
   return getParser().parse(
     input,
@@ -67,6 +72,7 @@ export function parse(
       canSelfClose,
       allowHtmComponentClosingTags,
       tokenizeBlocks: tokenizeAngularBlocks,
+      tokenizeLet: tokenizeAngularLetDeclaration,
     },
     isTagNameCaseSensitive,
     getTagContentType,
