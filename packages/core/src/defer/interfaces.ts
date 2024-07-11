@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import type {Provider} from '../di/interface/provider';
 import type {DependencyType} from '../render3/interfaces/definition';
 
 /**
@@ -53,10 +54,10 @@ export const MINIMUM_SLOT = 0;
 export const LOADING_AFTER_SLOT = 1;
 
 /** Configuration object for a loading block as it is stored in the component constants. */
-export type DeferredLoadingBlockConfig = [minimumTime: number|null, afterTime: number|null];
+export type DeferredLoadingBlockConfig = [minimumTime: number | null, afterTime: number | null];
 
 /** Configuration object for a placeholder block as it is stored in the component constants. */
-export type DeferredPlaceholderBlockConfig = [minimumTime: number|null];
+export type DeferredPlaceholderBlockConfig = [minimumTime: number | null];
 
 /**
  * Describes the data shared across all instances of a defer block.
@@ -71,32 +72,32 @@ export interface TDeferBlockDetails {
   /**
    * Index in an LView and TData arrays where a template for the loading block can be found.
    */
-  loadingTmplIndex: number|null;
+  loadingTmplIndex: number | null;
 
   /**
    * Extra configuration parameters (such as `after` and `minimum`) for the loading block.
    */
-  loadingBlockConfig: DeferredLoadingBlockConfig|null;
+  loadingBlockConfig: DeferredLoadingBlockConfig | null;
 
   /**
    * Index in an LView and TData arrays where a template for the placeholder block can be found.
    */
-  placeholderTmplIndex: number|null;
+  placeholderTmplIndex: number | null;
 
   /**
    * Extra configuration parameters (such as `after` and `minimum`) for the placeholder block.
    */
-  placeholderBlockConfig: DeferredPlaceholderBlockConfig|null;
+  placeholderBlockConfig: DeferredPlaceholderBlockConfig | null;
 
   /**
    * Index in an LView and TData arrays where a template for the error block can be found.
    */
-  errorTmplIndex: number|null;
+  errorTmplIndex: number | null;
 
   /**
    * Compiler-generated function that loads all dependencies for a defer block.
    */
-  dependencyResolverFn: DependencyResolverFn|null;
+  dependencyResolverFn: DependencyResolverFn | null;
 
   /**
    * Keeps track of the current loading state of defer block dependencies.
@@ -108,14 +109,19 @@ export interface TDeferBlockDetails {
    * are multiple instances of a defer block (e.g. if it was used inside of an *ngFor),
    * which all await the same set of dependencies.
    */
-  loadingPromise: Promise<unknown>|null;
+  loadingPromise: Promise<unknown> | null;
+
+  /**
+   * List of providers collected from all NgModules that were imported by
+   * standalone components used within this defer block.
+   */
+  providers: Provider[] | null;
 }
 
 /**
  * Describes the current state of this defer block instance.
  *
  * @publicApi
- * @developerPreview
  */
 export enum DeferBlockState {
   /** The placeholder block content is rendered */
@@ -164,35 +170,35 @@ export interface LDeferBlockDetails extends Array<unknown> {
   /**
    * Currently rendered block state.
    */
-  [DEFER_BLOCK_STATE]: DeferBlockState|DeferBlockInternalState;
+  [DEFER_BLOCK_STATE]: DeferBlockState | DeferBlockInternalState;
 
   /**
    * Block state that was requested when another state was rendered.
    */
-  [NEXT_DEFER_BLOCK_STATE]: DeferBlockState|null;
+  [NEXT_DEFER_BLOCK_STATE]: DeferBlockState | null;
 
   /**
    * Timestamp indicating when the current state can be switched to
    * the next one, in case teh current state has `minimum` parameter.
    */
-  [STATE_IS_FROZEN_UNTIL]: number|null;
+  [STATE_IS_FROZEN_UNTIL]: number | null;
 
   /**
    * Contains a reference to a cleanup function which cancels a timeout
    * when Angular waits before rendering loading state. This is used when
    * the loading block has the `after` parameter configured.
    */
-  [LOADING_AFTER_CLEANUP_FN]: VoidFunction|null;
+  [LOADING_AFTER_CLEANUP_FN]: VoidFunction | null;
 
   /**
    * List of cleanup functions for regular triggers.
    */
-  [TRIGGER_CLEANUP_FNS]: VoidFunction[]|null;
+  [TRIGGER_CLEANUP_FNS]: VoidFunction[] | null;
 
   /**
    * List of cleanup functions for prefetch triggers.
    */
-  [PREFETCH_TRIGGER_CLEANUP_FNS]: VoidFunction[]|null;
+  [PREFETCH_TRIGGER_CLEANUP_FNS]: VoidFunction[] | null;
 }
 
 /**
@@ -205,17 +211,17 @@ export interface DeferBlockConfig {
 /**
  * Options for configuring defer blocks behavior.
  * @publicApi
- * @developerPreview
  */
 export enum DeferBlockBehavior {
   /**
    * Manual triggering mode for defer blocks. Provides control over when defer blocks render
-   * and which state they render. This is the default behavior in test environments.
+   * and which state they render.
    */
   Manual,
 
   /**
    * Playthrough mode for defer blocks. This mode behaves like defer blocks would in a browser.
+   * This is the default behavior in test environments.
    */
   Playthrough,
 }
@@ -232,7 +238,7 @@ export interface DeferBlockDependencyInterceptor {
   /**
    * Invoked for each defer block when dependency loading function is accessed.
    */
-  intercept(dependencyFn: DependencyResolverFn|null): DependencyResolverFn|null;
+  intercept(dependencyFn: DependencyResolverFn | null): DependencyResolverFn | null;
 
   /**
    * Allows to configure an interceptor function.

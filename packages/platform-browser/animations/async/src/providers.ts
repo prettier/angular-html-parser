@@ -7,18 +7,25 @@
  */
 
 import {DOCUMENT} from '@angular/common';
-import {ANIMATION_MODULE_TYPE, NgZone, Provider, RendererFactory2} from '@angular/core';
+import {
+  ANIMATION_MODULE_TYPE,
+  EnvironmentProviders,
+  makeEnvironmentProviders,
+  NgZone,
+  RendererFactory2,
+  ɵperformanceMarkFeature as performanceMarkFeature,
+} from '@angular/core';
 import {ɵDomRendererFactory2 as DomRendererFactory2} from '@angular/platform-browser';
 
 import {AsyncAnimationRendererFactory} from './async_animation_renderer';
 
 /**
- * Returns the set of [dependency-injection providers](guide/glossary#provider)
+ * Returns the set of dependency-injection providers
  * to enable animations in an application. See [animations guide](guide/animations)
  * to learn more about animations in Angular.
  *
  * When you use this function instead of the eager `provideAnimations()`, animations won't be
- * renderered until the renderer is loaded.
+ * rendered until the renderer is loaded.
  *
  * @usageNotes
  *
@@ -38,10 +45,12 @@ import {AsyncAnimationRendererFactory} from './async_animation_renderer';
  * @param type pass `'noop'` as argument to disable animations.
  *
  * @publicApi
- * @developerPreview
  */
-export function provideAnimationsAsync(type: 'animations'|'noop' = 'animations'): Provider[] {
-  return [
+export function provideAnimationsAsync(
+  type: 'animations' | 'noop' = 'animations',
+): EnvironmentProviders {
+  performanceMarkFeature('NgAsyncAnimations');
+  return makeEnvironmentProviders([
     {
       provide: RendererFactory2,
       useFactory: (doc: Document, renderer: DomRendererFactory2, zone: NgZone) => {
@@ -53,5 +62,5 @@ export function provideAnimationsAsync(type: 'animations'|'noop' = 'animations')
       provide: ANIMATION_MODULE_TYPE,
       useValue: type === 'noop' ? 'NoopAnimations' : 'BrowserAnimations',
     },
-  ];
+  ]);
 }

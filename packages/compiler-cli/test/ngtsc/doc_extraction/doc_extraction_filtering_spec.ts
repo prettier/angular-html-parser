@@ -12,7 +12,7 @@ import {loadStandardTestFiles} from '@angular/compiler-cli/src/ngtsc/testing';
 
 import {NgtscTestEnvironment} from '../env';
 
-const testFiles = loadStandardTestFiles({fakeCore: true, fakeCommon: true});
+const testFiles = loadStandardTestFiles({fakeCommon: true});
 
 runInEachFileSystem(() => {
   let env!: NgtscTestEnvironment;
@@ -24,7 +24,9 @@ runInEachFileSystem(() => {
     });
 
     it('should not extract Angular-private symbols', () => {
-      env.write('index.ts', `
+      env.write(
+        'index.ts',
+        `
         export class ɵUserProfile {}
         export class _SliderWidget {}
         export const ɵPI = 3.14;
@@ -37,7 +39,8 @@ runInEachFileSystem(() => {
         export type _DifferentBoolean = boolean;
         export enum ɵToppings { Tomato, Onion }
         export enum _Sauces { Buffalo, Garlic }
-      `);
+      `,
+      );
 
       const docs: DocEntry[] = env.driveDocsExtraction('index.ts');
       expect(docs.length).toBe(0);

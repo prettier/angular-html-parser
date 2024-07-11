@@ -6,7 +6,23 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {APP_BOOTSTRAP_LISTENER, ApplicationRef, inject, InjectionToken, makeStateKey, Provider, StateKey, TransferState, ɵformatRuntimeError as formatRuntimeError, ɵtruncateMiddle as truncateMiddle, ɵwhenStable as whenStable} from '@angular/core';
+import {
+  APP_BOOTSTRAP_LISTENER,
+  ApplicationRef,
+  inject,
+  InjectionToken,
+  makeStateKey,
+  PLATFORM_ID,
+  Provider,
+  StateKey,
+  TransferState,
+  ɵformatRuntimeError as formatRuntimeError,
+  ɵperformanceMarkFeature as performanceMarkFeature,
+  ɵtruncateMiddle as truncateMiddle,
+  ɵwhenStable as whenStable,
+  ɵRuntimeError as RuntimeError,
+} from '@angular/core';
+import {isPlatformServer} from '@angular/common';
 import {Observable, of} from 'rxjs';
 import {tap} from 'rxjs/operators';
 
@@ -15,6 +31,7 @@ import {HttpHeaders} from './headers';
 import {HTTP_ROOT_INTERCEPTOR_FNS, HttpHandlerFn} from './interceptor';
 import {HttpRequest} from './request';
 import {HttpEvent, HttpResponse} from './response';
+import {HttpParams} from './params';
 
 /**
  * Options to configure how TransferCache should be used to cache requests made via HttpClient.
@@ -26,14 +43,47 @@ import {HttpEvent, HttpResponse} from './response';
  * @param includePostRequests Enables caching for POST requests. By default, only GET and HEAD
  *     requests are cached. This option can be enabled if POST requests are used to retrieve data
  *     (for example using GraphQL).
+ * @param includeRequestsWithAuthHeaders Enables caching of requests containing either `Authorization`
+ *     or `Proxy-Authorization` headers. By default, these requests are excluded from caching.
  *
  * @publicApi
  */
 export type HttpTransferCacheOptions = {
-  includeHeaders?: string[],
-  filter?: (req: HttpRequest<unknown>) => boolean,
-  includePostRequests?: boolean
+  includeHeaders?: string[];
+  filter?: (req: HttpRequest<unknown>) => boolean;
+  includePostRequests?: boolean;
+  includeRequestsWithAuthHeaders?: boolean;
 };
+
+/**
+ * If your application uses different HTTP origins to make API calls (via `HttpClient`) on the server and
+ * on the client, the `HTTP_TRANSFER_CACHE_ORIGIN_MAP` token allows you to establish a mapping
+ * between those origins, so that `HttpTransferCache` feature can recognize those requests as the same
+ * ones and reuse the data cached on the server during hydration on the client.
+ *
+ * **Important note**: the `HTTP_TRANSFER_CACHE_ORIGIN_MAP` token should *only* be provided in
+ * the *server* code of your application (typically in the `app.server.config.ts` script). Angular throws an
+ * error if it detects that the token is defined while running on the client.
+ *
+ * @usageNotes
+ *
+ * When the same API endpoint is accessed via `http://internal-domain.com:8080` on the server and
+ * via `https://external-domain.com` on the client, you can use the following configuration:
+ * ```typescript
+ * // in app.server.config.ts
+ * {
+ *     provide: HTTP_TRANSFER_CACHE_ORIGIN_MAP,
+ *     useValue: {
+ *         'http://internal-domain.com:8080': 'https://external-domain.com'
+ *     }
+ * }
+ * ```
+ *
+ * @publicApi
+ */
+export const HTTP_TRANSFER_CACHE_ORIGIN_MAP = new InjectionToken<Record<string, string>>(
+  ngDevMode ? 'HTTP_TRANSFER_CACHE_ORIGIN_MAP' : '',
+);
 
 /**
  * Keys within cached response data structure.
@@ -43,9 +93,8 @@ export const BODY = 'b';
 export const HEADERS = 'h';
 export const STATUS = 's';
 export const STATUS_TEXT = 'st';
-export const URL = 'u';
+export const REQ_URL = 'u';
 export const RESPONSE_TYPE = 'rt';
-
 
 interface TransferHttpResponse {
   /** body */
@@ -57,7 +106,7 @@ interface TransferHttpResponse {
   /** statusText */
   [STATUS_TEXT]?: string;
   /** url */
-  [URL]?: string;
+  [REQ_URL]?: string;
   /** responseType */
   [RESPONSE_TYPE]?: HttpRequest<unknown>['responseType'];
 }
@@ -66,8 +115,9 @@ interface CacheOptions extends HttpTransferCacheOptions {
   isCacheActive: boolean;
 }
 
-const CACHE_OPTIONS =
-    new InjectionToken<CacheOptions>(ngDevMode ? 'HTTP_TRANSFER_STATE_CACHE_OPTIONS' : '');
+const CACHE_OPTIONS = new InjectionToken<CacheOptions>(
+  ngDevMode ? 'HTTP_TRANSFER_STATE_CACHE_OPTIONS' : '',
+);
 
 /**
  * A list of allowed HTTP methods to cache.
@@ -75,22 +125,45 @@ const CACHE_OPTIONS =
 const ALLOWED_METHODS = ['GET', 'HEAD'];
 
 export function transferCacheInterceptorFn(
-    req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> {
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+): Observable<HttpEvent<unknown>> {
   const {isCacheActive, ...globalOptions} = inject(CACHE_OPTIONS);
   const {transferCache: requestOptions, method: requestMethod} = req;
 
   // In the following situations we do not want to cache the request
-  if (!isCacheActive ||
-      // POST requests are allowed either globally or at request level
-      (requestMethod === 'POST' && !globalOptions.includePostRequests && !requestOptions) ||
-      (requestMethod !== 'POST' && !ALLOWED_METHODS.includes(requestMethod)) ||
-      requestOptions === false ||  //
-      (globalOptions.filter?.(req)) === false) {
+  if (
+    !isCacheActive ||
+    requestOptions === false ||
+    // POST requests are allowed either globally or at request level
+    (requestMethod === 'POST' && !globalOptions.includePostRequests && !requestOptions) ||
+    (requestMethod !== 'POST' && !ALLOWED_METHODS.includes(requestMethod)) ||
+    // Do not cache request that require authorization when includeRequestsWithAuthHeaders is falsey
+    (!globalOptions.includeRequestsWithAuthHeaders && hasAuthHeaders(req)) ||
+    globalOptions.filter?.(req) === false
+  ) {
     return next(req);
   }
 
   const transferState = inject(TransferState);
-  const storeKey = makeCacheKey(req);
+
+  const originMap: Record<string, string> | null = inject(HTTP_TRANSFER_CACHE_ORIGIN_MAP, {
+    optional: true,
+  });
+  const isServer = isPlatformServer(inject(PLATFORM_ID));
+  if (originMap && !isServer) {
+    throw new RuntimeError(
+      RuntimeErrorCode.HTTP_ORIGIN_MAP_USED_IN_CLIENT,
+      ngDevMode &&
+        'Angular detected that the `HTTP_TRANSFER_CACHE_ORIGIN_MAP` token is configured and ' +
+          'present in the client side code. Please ensure that this token is only provided in the ' +
+          'server code of the application.',
+    );
+  }
+
+  const requestUrl = isServer && originMap ? mapRequestOriginUrl(req.url, originMap) : req.url;
+
+  const storeKey = makeCacheKey(req, requestUrl);
   const response = transferState.get(storeKey, null);
 
   let headersToInclude = globalOptions.includeHeaders;
@@ -106,10 +179,10 @@ export function transferCacheInterceptorFn(
       [HEADERS]: httpHeaders,
       [STATUS]: status,
       [STATUS_TEXT]: statusText,
-      [URL]: url
+      [REQ_URL]: url,
     } = response;
     // Request found in cache. Respond using it.
-    let body: ArrayBuffer|Blob|string|undefined = undecodedBody;
+    let body: ArrayBuffer | Blob | string | undefined = undecodedBody;
 
     switch (responseType) {
       case 'arraybuffer':
@@ -131,40 +204,43 @@ export function transferCacheInterceptorFn(
       headers = appendMissingHeadersDetection(req.url, headers, headersToInclude ?? []);
     }
 
-
     return of(
-        new HttpResponse({
-          body,
-          headers,
-          status,
-          statusText,
-          url,
-        }),
+      new HttpResponse({
+        body,
+        headers,
+        status,
+        statusText,
+        url,
+      }),
     );
   }
 
-
-  // Request not found in cache. Make the request and cache it.
+  // Request not found in cache. Make the request and cache it if on the server.
   return next(req).pipe(
-      tap((event: HttpEvent<unknown>) => {
-        if (event instanceof HttpResponse) {
-          transferState.set<TransferHttpResponse>(storeKey, {
-            [BODY]: event.body,
-            [HEADERS]: getFilteredHeaders(event.headers, headersToInclude),
-            [STATUS]: event.status,
-            [STATUS_TEXT]: event.statusText,
-            [URL]: event.url || '',
-            [RESPONSE_TYPE]: req.responseType,
-          });
-        }
-      }),
+    tap((event: HttpEvent<unknown>) => {
+      if (event instanceof HttpResponse && isServer) {
+        transferState.set<TransferHttpResponse>(storeKey, {
+          [BODY]: event.body,
+          [HEADERS]: getFilteredHeaders(event.headers, headersToInclude),
+          [STATUS]: event.status,
+          [STATUS_TEXT]: event.statusText,
+          [REQ_URL]: requestUrl,
+          [RESPONSE_TYPE]: req.responseType,
+        });
+      }
+    }),
   );
 }
 
+/** @returns true when the requests contains autorization related headers. */
+function hasAuthHeaders(req: HttpRequest<unknown>): boolean {
+  return req.headers.has('authorization') || req.headers.has('proxy-authorization');
+}
+
 function getFilteredHeaders(
-    headers: HttpHeaders,
-    includeHeaders: string[]|undefined,
-    ): Record<string, string[]> {
+  headers: HttpHeaders,
+  includeHeaders: string[] | undefined,
+): Record<string, string[]> {
   if (!includeHeaders) {
     return {};
   }
@@ -180,12 +256,29 @@ function getFilteredHeaders(
   return headersMap;
 }
 
-function makeCacheKey(request: HttpRequest<any>): StateKey<TransferHttpResponse> {
-  // make the params encoded same as a url so it's easy to identify
-  const {params, method, responseType, url} = request;
-  const encodedParams = params.keys().sort().map((k) => `${k}=${params.getAll(k)}`).join('&');
-  const key = method + '.' + responseType + '.' + url + '?' + encodedParams;
+function sortAndConcatParams(params: HttpParams | URLSearchParams): string {
+  return [...params.keys()]
+    .sort()
+    .map((k) => `${k}=${params.getAll(k)}`)
+    .join('&');
+}
 
+function makeCacheKey(
+  request: HttpRequest<any>,
+  mappedRequestUrl: string,
+): StateKey<TransferHttpResponse> {
+  // make the params encoded same as a url so it's easy to identify
+  const {params, method, responseType} = request;
+  const encodedParams = sortAndConcatParams(params);
+
+  let serializedBody = request.serializeBody();
+  if (serializedBody instanceof URLSearchParams) {
+    serializedBody = sortAndConcatParams(serializedBody);
+  } else if (typeof serializedBody !== 'string') {
+    serializedBody = '';
+  }
+
+  const key = [method, responseType, mappedRequestUrl, serializedBody, encodedParams].join('|');
   const hash = generateHash(key);
 
   return makeStateKey(hash);
@@ -201,7 +294,7 @@ function generateHash(value: string): string {
   let hash = 0;
 
   for (const char of value) {
-    hash = Math.imul(31, hash) + char.charCodeAt(0) << 0;
+    hash = (Math.imul(31, hash) + char.charCodeAt(0)) << 0;
   }
 
   // Force positive number hash.
@@ -227,15 +320,15 @@ export function withHttpTransferCache(cacheOptions: HttpTransferCacheOptions): P
     {
       provide: CACHE_OPTIONS,
       useFactory: (): CacheOptions => {
-        performance.mark('mark_use_counter', {detail: {feature: 'NgHttpTransferCache'}});
+        performanceMarkFeature('NgHttpTransferCache');
         return {isCacheActive: true, ...cacheOptions};
-      }
+      },
     },
     {
       provide: HTTP_ROOT_INTERCEPTOR_FNS,
       useValue: transferCacheInterceptorFn,
       multi: true,
-      deps: [TransferState, CACHE_OPTIONS]
+      deps: [TransferState, CACHE_OPTIONS],
     },
     {
       provide: APP_BOOTSTRAP_LISTENER,
@@ -249,18 +342,20 @@ export function withHttpTransferCache(cacheOptions: HttpTransferCacheOptions): P
             cacheState.isCacheActive = false;
           });
         };
-      }
-    }
+      },
+    },
   ];
 }
-
 
 /**
  * This function will add a proxy to an HttpHeader to intercept calls to get/has
  * and log a warning if the header entry requested has been removed
  */
 function appendMissingHeadersDetection(
-    url: string, headers: HttpHeaders, headersToInclude: string[]): HttpHeaders {
+  url: string,
+  headers: HttpHeaders,
+  headersToInclude: string[],
+): HttpHeaders {
   const warningProduced = new Set();
   return new Proxy<HttpHeaders>(headers, {
     get(target: HttpHeaders, prop: keyof HttpHeaders): unknown {
@@ -273,28 +368,54 @@ function appendMissingHeadersDetection(
 
       return (headerName: string) => {
         // We log when the key has been removed and a warning hasn't been produced for the header
-        const key = (prop + ':' + headerName).toLowerCase();  // e.g. `get:cache-control`
+        const key = (prop + ':' + headerName).toLowerCase(); // e.g. `get:cache-control`
         if (!headersToInclude.includes(headerName) && !warningProduced.has(key)) {
           warningProduced.add(key);
           const truncatedUrl = truncateMiddle(url);
 
           // TODO: create Error guide for this warning
-          console.warn(formatRuntimeError(
+          console.warn(
+            formatRuntimeError(
               RuntimeErrorCode.HEADERS_ALTERED_BY_TRANSFER_CACHE,
-              `Angular detected that the \`${
-                  headerName}\` header is accessed, but the value of the header ` +
-                  `was not transferred from the server to the client by the HttpTransferCache. ` +
-                  `To include the value of the \`${headerName}\` header for the \`${
-                      truncatedUrl}\` request, ` +
-                  `use the \`includeHeaders\` list. The \`includeHeaders\` can be defined either ` +
-                  `on a request level by adding the \`transferCache\` parameter, or on an application ` +
-                  `level by adding the \`httpCacheTransfer.includeHeaders\` argument to the ` +
-                  `\`provideClientHydration()\` call. `));
+              `Angular detected that the \`${headerName}\` header is accessed, but the value of the header ` +
+                `was not transferred from the server to the client by the HttpTransferCache. ` +
+                `To include the value of the \`${headerName}\` header for the \`${truncatedUrl}\` request, ` +
+                `use the \`includeHeaders\` list. The \`includeHeaders\` can be defined either ` +
+                `on a request level by adding the \`transferCache\` parameter, or on an application ` +
+                `level by adding the \`httpCacheTransfer.includeHeaders\` argument to the ` +
+                `\`provideClientHydration()\` call. `,
+            ),
+          );
         }
 
         // invoking the original method
         return (value as Function).apply(target, [headerName]);
       };
-    }
+    },
   });
+}
+
+function mapRequestOriginUrl(url: string, originMap: Record<string, string>): string {
+  const origin = new URL(url, 'resolve://').origin;
+  const mappedOrigin = originMap[origin];
+  if (!mappedOrigin) {
+    return url;
+  }
+
+  if (typeof ngDevMode === 'undefined' || ngDevMode) {
+    verifyMappedOrigin(mappedOrigin);
+  }
+
+  return url.replace(origin, mappedOrigin);
+}
+
+function verifyMappedOrigin(url: string): void {
+  if (new URL(url, 'resolve://').pathname !== '/') {
+    throw new RuntimeError(
+      RuntimeErrorCode.HTTP_ORIGIN_MAP_CONTAINS_PATH,
+      'Angular detected a URL with a path segment in the value provided for the ' +
+        `\`HTTP_TRANSFER_CACHE_ORIGIN_MAP\` token: ${url}. The map should only contain origins ` +
+        'without any other segments.',
+    );
+  }
 }

@@ -9,8 +9,6 @@
 import {InjectionToken} from '@angular/core';
 
 import {OnSameUrlNavigation} from './models';
-import {UrlSerializer, UrlTree} from './url_tree';
-
 
 /**
  * Error handler that is invoked when a navigation error occurs.
@@ -21,6 +19,10 @@ import {UrlSerializer, UrlTree} from './url_tree';
  *
  * @publicApi
  * @deprecated Subscribe to the `Router` events and watch for `NavigationError` instead.
+ *   If the ErrorHandler is used to prevent unhandled promise rejections when navigation
+ *   errors occur, use the `resolveNavigationPromiseOnError` option instead.
+ *
+ * @see RouterConfigOptions
  */
 export type ErrorHandler = (error: any) => any;
 
@@ -43,7 +45,7 @@ export type ErrorHandler = (error: any) => any;
  *
  * @publicApi
  */
-export type InitialNavigation = 'disabled'|'enabledBlocking'|'enabledNonBlocking';
+export type InitialNavigation = 'disabled' | 'enabledBlocking' | 'enabledNonBlocking';
 
 /**
  * Extra configuration options that can be used with the `withRouterConfig` function.
@@ -72,7 +74,7 @@ export interface RouterConfigOptions {
    *
    * The default value is `replace` when not set.
    */
-  canceledNavigationResolution?: 'replace'|'computed';
+  canceledNavigationResolution?: 'replace' | 'computed';
 
   /**
    * Configures the default for handling a navigation request to the current URL.
@@ -100,7 +102,7 @@ export interface RouterConfigOptions {
    * `a;foo=bar/b`.
    *
    */
-  paramsInheritanceStrategy?: 'emptyOnly'|'always';
+  paramsInheritanceStrategy?: 'emptyOnly' | 'always';
 
   /**
    * Defines when the router updates the browser URL. By default ('deferred'),
@@ -109,7 +111,16 @@ export interface RouterConfigOptions {
    * Updating the URL early allows you to handle a failure of navigation by
    * showing an error message with the URL that failed.
    */
-  urlUpdateStrategy?: 'deferred'|'eager';
+  urlUpdateStrategy?: 'deferred' | 'eager';
+
+  /**
+   * When `true`, the `Promise` will instead resolve with `false`, as it does with other failed
+   * navigations (for example, when guards are rejected).
+
+   * Otherwise the `Promise` returned by the Router's navigation with be rejected
+   * if an error occurs.
+   */
+  resolveNavigationPromiseOnError?: boolean;
 }
 
 /**
@@ -126,7 +137,7 @@ export interface InMemoryScrollingOptions {
    * Anchor scrolling does not happen on 'popstate'. Instead, we restore the position
    * that we stored or scroll to the top.
    */
-  anchorScrolling?: 'disabled'|'enabled';
+  anchorScrolling?: 'disabled' | 'enabled';
 
   /**
    * Configures if the scroll position needs to be restored when navigating back.
@@ -162,7 +173,7 @@ export interface InMemoryScrollingOptions {
    * }
    * ```
    */
-  scrollPositionRestoration?: 'disabled'|'enabled'|'top';
+  scrollPositionRestoration?: 'disabled' | 'enabled' | 'top';
 }
 
 /**
@@ -222,6 +233,10 @@ export interface ExtraOptions extends InMemoryScrollingOptions, RouterConfigOpti
    * If the handler throws an exception, the navigation Promise is rejected with the exception.
    *
    * @deprecated Subscribe to the `Router` events and watch for `NavigationError` instead.
+   *   If the ErrorHandler is used to prevent unhandled promise rejections when navigation
+   *   errors occur, use the `resolveNavigationPromiseOnError` option instead.
+   *
+   * @see RouterConfigOptions
    */
   errorHandler?: (error: any) => any;
 
@@ -239,16 +254,18 @@ export interface ExtraOptions extends InMemoryScrollingOptions, RouterConfigOpti
    * When given a function, the router invokes the function every time
    * it restores scroll position.
    */
-  scrollOffset?: [number, number]|(() => [number, number]);
+  scrollOffset?: [number, number] | (() => [number, number]);
 }
 
 /**
- * A [DI token](guide/glossary/#di-token) for the router service.
+ * A DI token for the router service.
  *
  * @publicApi
  */
 export const ROUTER_CONFIGURATION = new InjectionToken<ExtraOptions>(
-    (typeof ngDevMode === 'undefined' || ngDevMode) ? 'router config' : '', {
-      providedIn: 'root',
-      factory: () => ({}),
-    });
+  typeof ngDevMode === 'undefined' || ngDevMode ? 'router config' : '',
+  {
+    providedIn: 'root',
+    factory: () => ({}),
+  },
+);

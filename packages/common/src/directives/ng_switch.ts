@@ -6,17 +6,26 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Directive, DoCheck, Host, Input, Optional, TemplateRef, ViewContainerRef, ɵformatRuntimeError as formatRuntimeError, ɵRuntimeError as RuntimeError} from '@angular/core';
+import {
+  Directive,
+  DoCheck,
+  Host,
+  Input,
+  Optional,
+  TemplateRef,
+  ViewContainerRef,
+  ɵRuntimeError as RuntimeError,
+} from '@angular/core';
 
 import {RuntimeErrorCode} from '../errors';
-
-import {NG_SWITCH_USE_STRICT_EQUALS} from './ng_switch_equality';
 
 export class SwitchView {
   private _created = false;
 
   constructor(
-      private _viewContainerRef: ViewContainerRef, private _templateRef: TemplateRef<Object>) {}
+    private _viewContainerRef: ViewContainerRef,
+    private _templateRef: TemplateRef<Object>,
+  ) {}
 
   create(): void {
     this._created = true;
@@ -100,7 +109,7 @@ export class SwitchView {
  * @publicApi
  * @see {@link NgSwitchCase}
  * @see {@link NgSwitchDefault}
- * @see [Structural Directives](guide/structural-directives)
+ * @see [Structural Directives](guide/directives/structural-directives)
  *
  */
 @Directive({
@@ -135,19 +144,8 @@ export class NgSwitch {
 
   /** @internal */
   _matchCase(value: any): boolean {
-    const matched =
-        NG_SWITCH_USE_STRICT_EQUALS ? value === this._ngSwitch : value == this._ngSwitch;
-    if ((typeof ngDevMode === 'undefined' || ngDevMode) && matched !== (value == this._ngSwitch)) {
-      console.warn(formatRuntimeError(
-          RuntimeErrorCode.EQUALITY_NG_SWITCH_DIFFERENCE,
-          'As of Angular v17 the NgSwitch directive uses strict equality comparison === instead of == to match different cases. ' +
-              `Previously the case value "${
-                  stringifyValue(value)}" matched switch expression value "${
-                  stringifyValue(
-                      this._ngSwitch)}", but this is no longer the case with the stricter equality check. ` +
-              'Your comparison results return different results using === vs. == and you should adjust your ngSwitch expression and / or values to conform with the strict equality requirements.'));
-    }
-    this._lastCasesMatched = this._lastCasesMatched || matched;
+    const matched = value === this._ngSwitch;
+    this._lastCasesMatched ||= matched;
     this._lastCaseCheckIndex++;
     if (this._lastCaseCheckIndex === this._caseCount) {
       this._updateDefaultCases(!this._lastCasesMatched);
@@ -192,8 +190,8 @@ export class NgSwitch {
  * that defines the subtree to be selected if the value of the match expression
  * matches the value of the switch expression.
  *
- * Unlike JavaScript, which uses strict equality, Angular uses loose equality.
- * This means that the empty string, `""` matches 0.
+ * As of Angular v17 the NgSwitch directive uses strict equality comparison (`===`) instead of
+ * loose equality (`==`) to match different cases.
  *
  * @publicApi
  * @see {@link NgSwitch}
@@ -212,8 +210,10 @@ export class NgSwitchCase implements DoCheck {
   @Input() ngSwitchCase: any;
 
   constructor(
-      viewContainer: ViewContainerRef, templateRef: TemplateRef<Object>,
-      @Optional() @Host() private ngSwitch: NgSwitch) {
+    viewContainer: ViewContainerRef,
+    templateRef: TemplateRef<Object>,
+    @Optional() @Host() private ngSwitch: NgSwitch,
+  ) {
     if ((typeof ngDevMode === 'undefined' || ngDevMode) && !ngSwitch) {
       throwNgSwitchProviderNotFoundError('ngSwitchCase', 'NgSwitchCase');
     }
@@ -251,8 +251,10 @@ export class NgSwitchCase implements DoCheck {
 })
 export class NgSwitchDefault {
   constructor(
-      viewContainer: ViewContainerRef, templateRef: TemplateRef<Object>,
-      @Optional() @Host() ngSwitch: NgSwitch) {
+    viewContainer: ViewContainerRef,
+    templateRef: TemplateRef<Object>,
+    @Optional() @Host() ngSwitch: NgSwitch,
+  ) {
     if ((typeof ngDevMode === 'undefined' || ngDevMode) && !ngSwitch) {
       throwNgSwitchProviderNotFoundError('ngSwitchDefault', 'NgSwitchDefault');
     }
@@ -263,11 +265,11 @@ export class NgSwitchDefault {
 
 function throwNgSwitchProviderNotFoundError(attrName: string, directiveName: string): never {
   throw new RuntimeError(
-      RuntimeErrorCode.PARENT_NG_SWITCH_NOT_FOUND,
-      `An element with the "${attrName}" attribute ` +
-          `(matching the "${
-              directiveName}" directive) must be located inside an element with the "ngSwitch" attribute ` +
-          `(matching "NgSwitch" directive)`);
+    RuntimeErrorCode.PARENT_NG_SWITCH_NOT_FOUND,
+    `An element with the "${attrName}" attribute ` +
+      `(matching the "${directiveName}" directive) must be located inside an element with the "ngSwitch" attribute ` +
+      `(matching "NgSwitch" directive)`,
+  );
 }
 
 function stringifyValue(value: unknown): string {

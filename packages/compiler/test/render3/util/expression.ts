@@ -23,7 +23,7 @@ class ExpressionSourceHumanizer extends e.RecursiveAstVisitor implements t.Visit
   // This method is defined to reconcile the type of ExpressionSourceHumanizer
   // since both RecursiveAstVisitor and Visitor define the visit() method in
   // their interfaces.
-  override visit(node: e.AST|t.Node, context?: any) {
+  override visit(node: e.AST | t.Node, context?: any) {
     if (node instanceof e.AST) {
       node.visit(this, context);
     } else {
@@ -136,7 +136,9 @@ class ExpressionSourceHumanizer extends e.RecursiveAstVisitor implements t.Visit
   visitBoundText(ast: t.BoundText) {
     ast.value.visit(this);
   }
-  visitContent(ast: t.Content) {}
+  visitContent(ast: t.Content) {
+    t.visitAll(this, ast.children);
+  }
   visitText(ast: t.Text) {}
   visitUnknownBlock(block: t.UnknownBlock) {}
   visitIcu(ast: t.Icu) {
@@ -182,7 +184,7 @@ class ExpressionSourceHumanizer extends e.RecursiveAstVisitor implements t.Visit
 
   visitForLoopBlock(block: t.ForLoopBlock) {
     block.item.visit(this);
-    t.visitAll(this, Object.values(block.contextVariables));
+    t.visitAll(this, block.contextVariables);
     block.expression.visit(this);
     t.visitAll(this, block.children);
     block.empty?.visit(this);
@@ -200,6 +202,10 @@ class ExpressionSourceHumanizer extends e.RecursiveAstVisitor implements t.Visit
     block.expression?.visit(this);
     block.expressionAlias?.visit(this);
     t.visitAll(this, block.children);
+  }
+
+  visitLetDeclaration(decl: t.LetDeclaration) {
+    decl.value.visit(this);
   }
 }
 

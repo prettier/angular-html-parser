@@ -21,10 +21,10 @@ const REPLACEMENTS = new Map<ir.OpKind, [ir.OpKind, ir.OpKind]>([
 const IGNORED_OP_KINDS = new Set([ir.OpKind.Pipe]);
 
 /**
- * Replace sequences of mergable elements (e.g. `ElementStart` and `ElementEnd`) with a consolidated
- * element (e.g. `Element`).
+ * Replace sequences of mergable instructions (e.g. `ElementStart` and `ElementEnd`) with a
+ * consolidated instruction (e.g. `Element`).
  */
-export function phaseEmptyElements(job: CompilationJob): void {
+export function collapseEmptyInstructions(job: CompilationJob): void {
   for (const unit of job.units) {
     for (const op of unit.create) {
       // Find end ops that may be able to be merged.
@@ -35,7 +35,7 @@ export function phaseEmptyElements(job: CompilationJob): void {
       const [startKind, mergedKind] = opReplacements;
 
       // Locate the previous (non-ignored) op.
-      let prevOp: ir.CreateOp|null = op.prev;
+      let prevOp: ir.CreateOp | null = op.prev;
       while (prevOp !== null && IGNORED_OP_KINDS.has(prevOp.kind)) {
         prevOp = prevOp.prev;
       }

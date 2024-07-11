@@ -12,7 +12,7 @@ import {NoopAnimationDriver} from './render/animation_driver';
 import {AnimationEngine} from './render/animation_engine_next';
 import {WebAnimationsDriver} from './render/web_animations/web_animations_driver';
 
-export function createEngine(type: 'animations'|'noop', doc: Document): AnimationEngine {
+export function createEngine(type: 'animations' | 'noop', doc: Document): AnimationEngine {
   // TODO: find a way to make this tree shakable.
   if (type === 'noop') {
     return new AnimationEngine(doc, new NoopAnimationDriver(), new NoopAnimationStyleNormalizer());

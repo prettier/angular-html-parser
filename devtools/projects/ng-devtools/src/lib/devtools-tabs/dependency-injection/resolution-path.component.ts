@@ -6,56 +6,81 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {afterRender, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild} from '@angular/core';
+import {SerializedInjector} from 'protocol';
 
-import {D3GraphRenderer, InjectorTreeNode, InjectorTreeVisualizer} from './injector-tree-visualizer';
+import {InjectorTreeNode, InjectorTreeVisualizer} from './injector-tree-visualizer';
 
 @Component({
   selector: 'ng-resolution-path',
   template: `
-      <section>
-        <svg #svgContainer class="svg-container">
-            <g #mainGroup></g>
-        </svg>
-      </section>
+    <section class="injector-graph">
+      <svg #svgContainer>
+        <g #mainGroup></g>
+      </svg>
+    </section>
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
     `,
-  styles: [`:host { display: block; }`],
-  standalone: true
+  ],
+  standalone: true,
 })
-export class ResolutionPathComponent implements OnDestroy {
-  @ViewChild('svgContainer', {static: true}) private svgContainer: ElementRef;
-  @ViewChild('mainGroup', {static: true}) private g: ElementRef;
+export class ResolutionPathComponent implements OnDestroy, AfterViewInit {
+  @ViewChild('svgContainer', {static: true}) private svgContainer!: ElementRef;
+  @ViewChild('mainGroup', {static: true}) private g!: ElementRef;
 
-  @Input() orientation: 'horizontal'|'vertical' = 'horizontal';
+  @Input() orientation: 'horizontal' | 'vertical' = 'horizontal';
 
-  private injectorTree: InjectorTreeVisualizer;
-  private pathNode: InjectorTreeNode;
+  private injectorTree!: InjectorTreeVisualizer;
+  private pathNode!: InjectorTreeNode;
 
   @Input()
-  set path(path: InjectorTreeNode[]) {
-    path = path.slice().reverse();
+  set path(path: SerializedInjector[]) {
+    const serializedInjectors = path.slice().reverse();
+    const injectorTreeNodes: InjectorTreeNode[] = [];
 
-    let injectorIndex = 0;
-    for (const injector of path) {
-      if (injectorIndex !== path.length - 1) {
-        injector.children = [path[injectorIndex + 1]];
-      } else {
-        injector.children = [];
-      }
-      injectorIndex++;
+    // map serialized injectors to injector tree nodes
+    for (const serializedInjector of serializedInjectors) {
+      injectorTreeNodes.push({injector: serializedInjector, children: []});
     }
 
-    this.pathNode = path[0];
+    // set injector tree node children
+    for (const [index, injectorTreeNode] of injectorTreeNodes.entries()) {
+      if (index !== injectorTreeNodes.length - 1) {
+        injectorTreeNode.children = [injectorTreeNodes[index + 1]];
+      } else {
+        injectorTreeNode.children = [];
+      }
+    }
+
+    this.pathNode = injectorTreeNodes[0];
+    this.injectorTree?.render?.(this.pathNode);
   }
 
-  constructor() {
-    afterRender(() => {
-      this.injectorTree = new InjectorTreeVisualizer(new D3GraphRenderer(
-          this.svgContainer.nativeElement, this.g.nativeElement, this.orientation,
-          this.orientation === 'horizontal' ? [75, 200] : [20, 75]));
+  ngOnInit(): void {
+    this.injectorTree = new InjectorTreeVisualizer(
+      this.svgContainer.nativeElement,
+      this.g.nativeElement,
+      {
+        orientation: this.orientation,
+      },
+    );
 
-      this.injectorTree.render([this.pathNode]);
+    if (this.pathNode) {
+      this.injectorTree.render(this.pathNode);
+    }
+
+    this.injectorTree.onNodeClick((_, node) => {
+      this.injectorTree.snapToNode(node);
     });
+  }
+
+  ngAfterViewInit(): void {
+    this.injectorTree.snapToRoot(0.7);
   }
 
   ngOnDestroy(): void {

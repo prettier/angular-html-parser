@@ -16,23 +16,13 @@ This context and getter function mechanism allows for signal dependencies of a c
 
 ### Writable signals: `signal()`
 
-The `createSignal()` function produces a specific type of signal that tracks a stored value. In addition to providing a getter function, these signals can be wired up with additional APIs for changing the value of the signal (along with notifying any dependents of the change). These include the `.set` operation for replacing the signal value, `.update` for deriving a new value, and `.mutate` for performing internal mutation of the current value. In Angular, these are exposed as functions on the signal getter itself. For example:
+The `createSignal()` function produces a specific type of signal that tracks a stored value. In addition to providing a getter function, these signals can be wired up with additional APIs for changing the value of the signal (along with notifying any dependents of the change). These include the `.set` operation for replacing the signal value, and `.update` for deriving a new value. In Angular, these are exposed as functions on the signal getter itself. For example:
 
 ```typescript
 const counter = signal(0);
 
 counter.set(2);
 counter.update(count => count + 1);
-```
-
-The signal value can be also updated in-place, using the dedicated `.mutate` method:
-
-```typescript
-const todoList = signal<Todo[]>([]);
-
-todoList.mutate(list => {
-  list.push({title: 'One more task', completed: false});
-});
 ```
 
 #### Equality
@@ -77,7 +67,7 @@ Effects do not execute synchronously with the set (see the section on glitch-fre
 
 ## Producer and Consumer
 
-Internally, the signals implementation is defined in terms of two abstractions, producers and consumers.Producers represents values which can deliver change notifications, such as the various flavors of `Signal`s. Consumers represents a reactive context which may depend on some number of producers. In other words, producers produce reactivity, and consumers consume it.
+Internally, the signals implementation is defined in terms of two abstractions, producers and consumers. Producers represents values which can deliver change notifications, such as the various flavors of `Signal`s. Consumers represents a reactive context which may depend on some number of producers. In other words, producers produce reactivity, and consumers consume it.
 
 Implementers of either abstraction define a node object which implements the `ReactiveNode` interface, which models participation in the reactive graph. Any `ReactiveNode` can act in the role of a producer, a consumer, or both, by interacting with the appropriate subset of APIs. For example, `WritableSignal`s implement `ReactiveNode` but only operate against the producer APIs, since `WritableSignal`s don't consume other signal values.
 

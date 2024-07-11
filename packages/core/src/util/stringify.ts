@@ -45,10 +45,14 @@ export function stringify(token: any): string {
  * @param after after string.
  * @returns concatenated string.
  */
-export function concatStringsWithSpace(before: string|null, after: string|null): string {
-  return (before == null || before === '') ?
-      (after === null ? '' : after) :
-      ((after == null || after === '') ? before : before + ' ' + after);
+export function concatStringsWithSpace(before: string | null, after: string | null): string {
+  return before == null || before === ''
+    ? after === null
+      ? ''
+      : after
+    : after == null || after === ''
+      ? before
+      : before + ' ' + after;
 }
 
 /**
@@ -56,7 +60,7 @@ export function concatStringsWithSpace(before: string|null, after: string|null):
  *
  * @param string
  * @param maxLength of the output string
- * @returns elispsed string with ... in the middle
+ * @returns ellipsed string with ... in the middle
  */
 export function truncateMiddle(str: string, maxLength = 100): string {
   if (!str || maxLength < 1 || str.length <= maxLength) return str;

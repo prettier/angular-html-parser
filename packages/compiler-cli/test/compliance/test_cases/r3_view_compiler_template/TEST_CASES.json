@@ -10,8 +10,7 @@
         {
           "files": [
             {
-              "expected": "nested_template_context_template.js",
-              "templatePipelineExpected": "nested_template_context.pipeline.js",
+              "expected": "nested_template_context.pipeline.js",
               "generated": "nested_template_context.js"
             }
           ],
@@ -79,8 +78,7 @@
         {
           "files": [
             {
-              "expected": "ng_for_parent_context_variables_template.js",
-              "templatePipelineExpected": "ng_for_parent_context_variables.pipeline.js",
+              "expected": "ng_for_parent_context_variables.pipeline.js",
               "generated": "ng_for_parent_context_variables.js"
             }
           ],
@@ -137,8 +135,7 @@
           ],
           "failureMessage": "Incorrect template"
         }
-      ],
-      "skipForTemplatePipeline": true
+      ]
     },
     {
       "description": "should support directive outputs on <ng-template>",
@@ -303,6 +300,17 @@
       ]
     },
     {
+      "description": "should handle a bindings on plain ng-template elements",
+      "inputFiles": [
+        "ng_template_bindings.ts"
+      ],
+      "expectations": [
+        {
+          "failureMessage": "Incorrect template"
+        }
+      ]
+    },
+    {
       "description": "should allow self-closing custom elements in templates",
       "inputFiles": [
         "self_closing_tags.ts"
@@ -340,6 +348,50 @@
       "description": "should handle structural directive on ng-template",
       "inputFiles": [
         "template_with_structural_directive.ts"
+      ],
+      "expectations": [
+        {
+          "failureMessage": "Incorrect template"
+        }
+      ]
+    },
+    {
+      "description": "should handle self-closing structural directives",
+      "inputFiles": [
+        "self_closing_structural_directives.ts"
+      ],
+      "expectations": [
+        {
+          "failureMessage": "Incorrect template"
+        }
+      ]
+    },
+    {
+      "description": "should handle ngFor context variables when used in bindings",
+      "inputFiles": [
+        "ng_for_context_in_attr_binding.ts"
+      ],
+      "expectations": [
+        {
+          "failureMessage": "Incorrect template"
+        }
+      ]
+    },
+    {
+      "description": "should handle attribute bindings inside an ng-template",
+      "inputFiles": [
+        "attr_binding_on_structural_inside_ng_template.ts"
+      ],
+      "expectations": [
+        {
+          "failureMessage": "Incorrect template"
+        }
+      ]
+    },
+    {
+      "description": "should handle implict contezt in ng-template",
+      "inputFiles": [
+        "ng_template_implicit.ts"
       ],
       "expectations": [
         {

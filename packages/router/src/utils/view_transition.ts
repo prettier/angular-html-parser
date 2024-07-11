@@ -6,18 +6,25 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-/// <reference types="@types/dom-view-transitions" />
+/// <reference types="dom-view-transitions" />
 
 import {DOCUMENT} from '@angular/common';
-import {afterNextRender, InjectionToken, Injector, NgZone, runInInjectionContext} from '@angular/core';
+import {
+  afterNextRender,
+  InjectionToken,
+  Injector,
+  NgZone,
+  runInInjectionContext,
+} from '@angular/core';
 
 import {ActivatedRouteSnapshot} from '../router_state';
 
-export const CREATE_VIEW_TRANSITION =
-    new InjectionToken<typeof createViewTransition>(ngDevMode ? 'view transition helper' : '');
-export const VIEW_TRANSITION_OPTIONS =
-    new InjectionToken<ViewTransitionsFeatureOptions&{skipNextTransition: boolean}>(
-        ngDevMode ? 'view transition options' : '');
+export const CREATE_VIEW_TRANSITION = new InjectionToken<typeof createViewTransition>(
+  ngDevMode ? 'view transition helper' : '',
+);
+export const VIEW_TRANSITION_OPTIONS = new InjectionToken<
+  ViewTransitionsFeatureOptions & {skipNextTransition: boolean}
+>(ngDevMode ? 'view transition options' : '');
 
 /**
  * Options to configure the View Transitions integration in the Router.
@@ -60,19 +67,19 @@ export interface ViewTransitionInfo {
     /**
      * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/finished
      */
-    finished: Promise<void>,
+    finished: Promise<void>;
     /**
      * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/ready
      */
-    ready: Promise<void>,
+    ready: Promise<void>;
     /**
      * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/updateCallbackDone
      */
-    updateCallbackDone: Promise<void>,
+    updateCallbackDone: Promise<void>;
     /**
      * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/skipTransition
      */
-    skipTransition(): void,
+    skipTransition(): void;
   };
   /**
    * The `ActivatedRouteSnapshot` that the navigation is transitioning from.
@@ -91,14 +98,20 @@ export interface ViewTransitionInfo {
  * @returns A Promise that resolves when the view transition callback begins.
  */
 export function createViewTransition(
-    injector: Injector, from: ActivatedRouteSnapshot, to: ActivatedRouteSnapshot): Promise<void> {
+  injector: Injector,
+  from: ActivatedRouteSnapshot,
+  to: ActivatedRouteSnapshot,
+): Promise<void> {
   const transitionOptions = injector.get(VIEW_TRANSITION_OPTIONS);
   const document = injector.get(DOCUMENT);
   // Create promises outside the Angular zone to avoid causing extra change detections
   return injector.get(NgZone).runOutsideAngular(() => {
     if (!document.startViewTransition || transitionOptions.skipNextTransition) {
       transitionOptions.skipNextTransition = false;
-      return Promise.resolve();
+      // The timing of `startViewTransition` is closer to a macrotask. It won't be called
+      // until the current event loop exits so we use a promise resolved in a timeout instead
+      // of Promise.resolve().
+      return new Promise((resolve) => setTimeout(resolve));
     }
 
     let resolveViewTransitionStarted: () => void;
@@ -125,7 +138,10 @@ export function createViewTransition(
  * Creates a promise that resolves after next render.
  */
 function createRenderPromise(injector: Injector) {
-  return new Promise<void>(resolve => {
-    afterNextRender(resolve, {injector});
+  return new Promise<void>((resolve) => {
+    // Wait for the microtask queue to empty after the next render happens (by waiting a macrotask).
+    // This ensures any follow-up renders in the microtask queue are completed before the
+    // view transition starts animating.
+    afterNextRender({read: () => setTimeout(resolve)}, {injector});
   });
 }

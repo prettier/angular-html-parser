@@ -8,7 +8,7 @@
 
 import * as o from '../../../../output/output_ast';
 import * as ir from '../../ir';
-import type {CompilationJob, CompilationUnit} from '../compilation';
+import type {CompilationJob} from '../compilation';
 
 /**
  * Find all assignments and usages of temporary variables, which are linked to each other with cross
@@ -19,15 +19,16 @@ import type {CompilationJob, CompilationUnit} from '../compilation';
  * in the double keyed read `a?.[f()]?.[f()]`, the two function calls have non-overlapping scopes.
  * Implement an algorithm for reuse.
  */
-export function phaseTemporaryVariables(cpl: CompilationJob): void {
-  for (const unit of cpl.units) {
+export function generateTemporaryVariables(job: CompilationJob): void {
+  for (const unit of job.units) {
     unit.create.prepend(generateTemporaries(unit.create) as Array<ir.StatementOp<ir.CreateOp>>);
     unit.update.prepend(generateTemporaries(unit.update) as Array<ir.StatementOp<ir.UpdateOp>>);
   }
 }
 
-function generateTemporaries(ops: ir.OpList<ir.CreateOp|ir.UpdateOp>):
-    Array<ir.StatementOp<ir.CreateOp|ir.UpdateOp>> {
+function generateTemporaries(
+  ops: ir.OpList<ir.CreateOp | ir.UpdateOp>,
+): Array<ir.StatementOp<ir.CreateOp | ir.UpdateOp>> {
   let opCount = 0;
   let generatedStatements: Array<ir.StatementOp<ir.UpdateOp>> = [];
 
@@ -74,11 +75,13 @@ function generateTemporaries(ops: ir.OpList<ir.CreateOp|ir.UpdateOp>):
 
     // Add declarations for the temp vars.
     generatedStatements.push(
-        ...Array.from(new Set(defs.values()))
-            .map(name => ir.createStatementOp<ir.UpdateOp>(new o.DeclareVarStmt(name))));
+      ...Array.from(new Set(defs.values())).map((name) =>
+        ir.createStatementOp<ir.UpdateOp>(new o.DeclareVarStmt(name)),
+      ),
+    );
     opCount++;
 
-    if (op.kind === ir.OpKind.Listener) {
+    if (op.kind === ir.OpKind.Listener || op.kind === ir.OpKind.TwoWayListener) {
       op.handlerOps.prepend(generateTemporaries(op.handlerOps) as ir.UpdateOp[]);
     }
   }
@@ -90,7 +93,9 @@ function generateTemporaries(ops: ir.OpList<ir.CreateOp|ir.UpdateOp>):
  * Assigns a name to the temporary variable in the given temporary variable expression.
  */
 function assignName(
-    names: Map<ir.XrefId, string>, expr: ir.AssignTemporaryExpr|ir.ReadTemporaryExpr) {
+  names: Map<ir.XrefId, string>,
+  expr: ir.AssignTemporaryExpr | ir.ReadTemporaryExpr,
+) {
   const name = names.get(expr.xref);
   if (name === undefined) {
     throw new Error(`Found xref with unassigned name: ${expr.xref}`);

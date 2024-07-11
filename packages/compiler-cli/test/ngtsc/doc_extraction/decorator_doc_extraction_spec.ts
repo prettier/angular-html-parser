@@ -7,13 +7,17 @@
  */
 
 import {DocEntry} from '@angular/compiler-cli/src/ngtsc/docs';
-import {DecoratorEntry, DecoratorType, EntryType} from '@angular/compiler-cli/src/ngtsc/docs/src/entities';
+import {
+  DecoratorEntry,
+  DecoratorType,
+  EntryType,
+} from '@angular/compiler-cli/src/ngtsc/docs/src/entities';
 import {runInEachFileSystem} from '@angular/compiler-cli/src/ngtsc/file_system/testing';
 import {loadStandardTestFiles} from '@angular/compiler-cli/src/ngtsc/testing';
 
 import {NgtscTestEnvironment} from '../env';
 
-const testFiles = loadStandardTestFiles({fakeCore: true, fakeCommon: true});
+const testFiles = loadStandardTestFiles({fakeCommon: true});
 
 runInEachFileSystem(() => {
   let env!: NgtscTestEnvironment;
@@ -24,14 +28,16 @@ runInEachFileSystem(() => {
       env.tsconfig();
     });
 
-    it('should extract class decorators that define options in an interface', () => {
-      env.write('index.ts', `
+    it('should extract class decorators that define members in an interface', () => {
+      env.write(
+        'index.ts',
+        `
         export interface Component {
           /** The template. */
           template: string;
         }
 
-        export interface ComponentDecorator { 
+        export interface ComponentDecorator {
           /** The description. */
           (obj?: Component): any;
         }
@@ -39,7 +45,8 @@ runInEachFileSystem(() => {
         function makeDecorator(): ComponentDecorator { return () => {}; }
 
         export const Component: ComponentDecorator = makeDecorator();
-      `);
+      `,
+      );
 
       const docs: DocEntry[] = env.driveDocsExtraction('index.ts');
       expect(docs.length).toBe(1);
@@ -50,20 +57,22 @@ runInEachFileSystem(() => {
       expect(decoratorEntry.entryType).toBe(EntryType.Decorator);
       expect(decoratorEntry.decoratorType).toBe(DecoratorType.Class);
 
-      expect(decoratorEntry.options.length).toBe(1);
-      expect(decoratorEntry.options[0].name).toBe('template');
-      expect(decoratorEntry.options[0].type).toBe('string');
-      expect(decoratorEntry.options[0].description).toBe('The template.');
+      expect(decoratorEntry.members.length).toBe(1);
+      expect(decoratorEntry.members[0].name).toBe('template');
+      expect(decoratorEntry.members[0].type).toBe('string');
+      expect(decoratorEntry.members[0].description).toBe('The template.');
     });
 
     it('should extract property decorators', () => {
-      env.write('index.ts', `
+      env.write(
+        'index.ts',
+        `
         export interface Input {
           /** The alias. */
           alias: string;
         }
 
-        export interface InputDecorator { 
+        export interface InputDecorator {
           /** The description. */
           (alias: string): any;
         }
@@ -71,7 +80,8 @@ runInEachFileSystem(() => {
         function makePropDecorator(): InputDecorator { return () => {}); }
 
         export const Input: InputDecorator = makePropDecorator();
-      `);
+      `,
+      );
 
       const docs: DocEntry[] = env.driveDocsExtraction('index.ts');
       expect(docs.length).toBe(1);
@@ -82,14 +92,16 @@ runInEachFileSystem(() => {
       expect(decoratorEntry.entryType).toBe(EntryType.Decorator);
       expect(decoratorEntry.decoratorType).toBe(DecoratorType.Member);
 
-      expect(decoratorEntry.options.length).toBe(1);
-      expect(decoratorEntry.options[0].name).toBe('alias');
-      expect(decoratorEntry.options[0].type).toBe('string');
-      expect(decoratorEntry.options[0].description).toBe('The alias.');
+      expect(decoratorEntry.members.length).toBe(1);
+      expect(decoratorEntry.members[0].name).toBe('alias');
+      expect(decoratorEntry.members[0].type).toBe('string');
+      expect(decoratorEntry.members[0].description).toBe('The alias.');
     });
 
     it('should extract property decorators with a type alias', () => {
-      env.write('index.ts', `
+      env.write(
+        'index.ts',
+        `
         interface Query {
           /** The read. */
           read: string;
@@ -97,7 +109,7 @@ runInEachFileSystem(() => {
 
         export type ViewChild = Query;
 
-        export interface ViewChildDecorator { 
+        export interface ViewChildDecorator {
           /** The description. */
           (alias: string): any;
         }
@@ -105,7 +117,8 @@ runInEachFileSystem(() => {
         function makePropDecorator(): ViewChildDecorator { return () => {}); }
 
         export const ViewChild: ViewChildDecorator = makePropDecorator();
-      `);
+      `,
+      );
 
       const docs: DocEntry[] = env.driveDocsExtraction('index.ts');
       expect(docs.length).toBe(1);
@@ -116,20 +129,22 @@ runInEachFileSystem(() => {
       expect(decoratorEntry.entryType).toBe(EntryType.Decorator);
       expect(decoratorEntry.decoratorType).toBe(DecoratorType.Member);
 
-      expect(decoratorEntry.options.length).toBe(1);
-      expect(decoratorEntry.options[0].name).toBe('read');
-      expect(decoratorEntry.options[0].type).toBe('string');
-      expect(decoratorEntry.options[0].description).toBe('The read.');
+      expect(decoratorEntry.members.length).toBe(1);
+      expect(decoratorEntry.members[0].name).toBe('read');
+      expect(decoratorEntry.members[0].type).toBe('string');
+      expect(decoratorEntry.members[0].description).toBe('The read.');
     });
 
     it('should extract param decorators', () => {
-      env.write('index.ts', `
+      env.write(
+        'index.ts',
+        `
         export interface Inject {
           /** The token. */
           token: string;
         }
 
-        export interface InjectDecorator { 
+        export interface InjectDecorator {
           /** The description. */
           (token: string) => any;
         }
@@ -137,7 +152,8 @@ runInEachFileSystem(() => {
         function makePropDecorator(): InjectDecorator { return () => {}; }
 
         export const Inject: InjectDecorator = makeParamDecorator();
-      `);
+      `,
+      );
 
       const docs: DocEntry[] = env.driveDocsExtraction('index.ts');
       expect(docs.length).toBe(1);
@@ -148,10 +164,10 @@ runInEachFileSystem(() => {
       expect(decoratorEntry.entryType).toBe(EntryType.Decorator);
       expect(decoratorEntry.decoratorType).toBe(DecoratorType.Parameter);
 
-      expect(decoratorEntry.options.length).toBe(1);
-      expect(decoratorEntry.options[0].name).toBe('token');
-      expect(decoratorEntry.options[0].type).toBe('string');
-      expect(decoratorEntry.options[0].description).toBe('The token.');
+      expect(decoratorEntry.members.length).toBe(1);
+      expect(decoratorEntry.members[0].name).toBe('token');
+      expect(decoratorEntry.members[0].type).toBe('string');
+      expect(decoratorEntry.members[0].description).toBe('The token.');
     });
   });
 });

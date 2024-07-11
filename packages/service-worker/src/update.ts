@@ -9,13 +9,18 @@
 import {Injectable} from '@angular/core';
 import {NEVER, Observable} from 'rxjs';
 
-import {ERR_SW_NOT_SUPPORTED, NgswCommChannel, UnrecoverableStateEvent, VersionEvent} from './low_level';
+import {
+  ERR_SW_NOT_SUPPORTED,
+  NgswCommChannel,
+  UnrecoverableStateEvent,
+  VersionEvent,
+} from './low_level';
 
 /**
  * Subscribe to update notifications from the Service Worker, trigger update
  * checks, and forcibly activate updates.
  *
- * @see {@link guide/service-worker-communications Service worker communication guide}
+ * @see {@link ecosystem/service-workers/communications Service worker communication guide}
  *
  * @publicApi
  */
@@ -89,8 +94,8 @@ export class SwUpdate {
    * <div class="alert is-important">
    *
    * Updating a client without reloading can easily result in a broken application due to a version
-   * mismatch between the [application shell](guide/glossary#app-shell) and other page resources,
-   * such as [lazy-loaded chunks](guide/glossary#lazy-loading), whose filenames may change between
+   * mismatch between the application shell and other page resources,
+   * such as lazy-loaded chunks, whose filenames may change between
    * versions.
    *
    * Only use this method, if you are certain it is safe for your specific use case.

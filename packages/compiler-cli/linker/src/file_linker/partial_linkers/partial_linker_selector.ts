@@ -12,6 +12,7 @@ import {Logger} from '../../../../src/ngtsc/logging';
 import {createGetSourceFile} from '../get_source_file';
 import {LinkerEnvironment} from '../linker_environment';
 
+import {PartialClassMetadataAsyncLinkerVersion1} from './partial_class_metadata_async_linker_1';
 import {PartialClassMetadataLinkerVersion1} from './partial_class_metadata_linker_1';
 import {PartialComponentLinkerVersion1} from './partial_component_linker_1';
 import {PartialDirectiveLinkerVersion1} from './partial_directive_linker_1';
@@ -31,9 +32,17 @@ export const ɵɵngDeclareInjectable = 'ɵɵngDeclareInjectable';
 export const ɵɵngDeclareInjector = 'ɵɵngDeclareInjector';
 export const ɵɵngDeclareNgModule = 'ɵɵngDeclareNgModule';
 export const ɵɵngDeclarePipe = 'ɵɵngDeclarePipe';
+export const ɵɵngDeclareClassMetadataAsync = 'ɵɵngDeclareClassMetadataAsync';
 export const declarationFunctions = [
-  ɵɵngDeclareDirective, ɵɵngDeclareClassMetadata, ɵɵngDeclareComponent, ɵɵngDeclareFactory,
-  ɵɵngDeclareInjectable, ɵɵngDeclareInjector, ɵɵngDeclareNgModule, ɵɵngDeclarePipe
+  ɵɵngDeclareDirective,
+  ɵɵngDeclareClassMetadata,
+  ɵɵngDeclareComponent,
+  ɵɵngDeclareFactory,
+  ɵɵngDeclareInjectable,
+  ɵɵngDeclareInjector,
+  ɵɵngDeclareNgModule,
+  ɵɵngDeclarePipe,
+  ɵɵngDeclareClassMetadataAsync,
 ];
 
 export interface LinkerRange<TExpression> {
@@ -66,13 +75,18 @@ export interface LinkerRange<TExpression> {
  * be added to the end of the collection, and the version of the previous linker should be updated.
  */
 export function createLinkerMap<TStatement, TExpression>(
-    environment: LinkerEnvironment<TStatement, TExpression>, sourceUrl: AbsoluteFsPath,
-    code: string): Map<string, LinkerRange<TExpression>[]> {
+  environment: LinkerEnvironment<TStatement, TExpression>,
+  sourceUrl: AbsoluteFsPath,
+  code: string,
+): Map<string, LinkerRange<TExpression>[]> {
   const linkers = new Map<string, LinkerRange<TExpression>[]>();
   const LATEST_VERSION_RANGE = getRange('<=', PLACEHOLDER_VERSION);
 
   linkers.set(ɵɵngDeclareDirective, [
     {range: LATEST_VERSION_RANGE, linker: new PartialDirectiveLinkerVersion1(sourceUrl, code)},
+  ]);
+  linkers.set(ɵɵngDeclareClassMetadataAsync, [
+    {range: LATEST_VERSION_RANGE, linker: new PartialClassMetadataAsyncLinkerVersion1()},
   ]);
   linkers.set(ɵɵngDeclareClassMetadata, [
     {range: LATEST_VERSION_RANGE, linker: new PartialClassMetadataLinkerVersion1()},
@@ -81,7 +95,10 @@ export function createLinkerMap<TStatement, TExpression>(
     {
       range: LATEST_VERSION_RANGE,
       linker: new PartialComponentLinkerVersion1(
-          createGetSourceFile(sourceUrl, code, environment.sourceFileLoader), sourceUrl, code)
+        createGetSourceFile(sourceUrl, code, environment.sourceFileLoader),
+        sourceUrl,
+        code,
+      ),
     },
   ]);
   linkers.set(ɵɵngDeclareFactory, [
@@ -96,7 +113,7 @@ export function createLinkerMap<TStatement, TExpression>(
   linkers.set(ɵɵngDeclareNgModule, [
     {
       range: LATEST_VERSION_RANGE,
-      linker: new PartialNgModuleLinkerVersion1(environment.options.linkerJitMode)
+      linker: new PartialNgModuleLinkerVersion1(environment.options.linkerJitMode),
     },
   ]);
   linkers.set(ɵɵngDeclarePipe, [
@@ -123,9 +140,10 @@ export function createLinkerMap<TStatement, TExpression>(
  */
 export class PartialLinkerSelector<TExpression> {
   constructor(
-      private readonly linkers: Map<string, LinkerRange<TExpression>[]>,
-      private readonly logger: Logger,
-      private readonly unknownDeclarationVersionHandling: 'ignore'|'warn'|'error') {}
+    private readonly linkers: Map<string, LinkerRange<TExpression>[]>,
+    private readonly logger: Logger,
+    private readonly unknownDeclarationVersionHandling: 'ignore' | 'warn' | 'error',
+  ) {}
 
   /**
    * Returns true if there are `PartialLinker` classes that can handle functions with this name.
@@ -158,9 +176,9 @@ export class PartialLinkerSelector<TExpression> {
     }
 
     const message =
-        `This application depends upon a library published using Angular version ${version}, ` +
-        `which requires Angular version ${minVersion} or newer to work correctly.\n` +
-        `Consider upgrading your application to use a more recent version of Angular.`;
+      `This application depends upon a library published using Angular version ${version}, ` +
+      `which requires Angular version ${minVersion} or newer to work correctly.\n` +
+      `Consider upgrading your application to use a more recent version of Angular.`;
 
     if (this.unknownDeclarationVersionHandling === 'error') {
       throw new Error(message);
@@ -184,7 +202,12 @@ export class PartialLinkerSelector<TExpression> {
  * @param versionStr the version given in the partial declaration
  * @returns A semver range for the provided `version` and comparator.
  */
-function getRange(comparator: '<='|'>=', versionStr: string): semver.Range {
+function getRange(comparator: '<=' | '>=', versionStr: string): semver.Range {
+  // If the provided version is exactly `0.0.0` then we are known to be running with an unpublished
+  // version of angular and assume that all ranges are compatible.
+  if (versionStr === '0.0.0' && (PLACEHOLDER_VERSION as string) === '0.0.0') {
+    return new semver.Range('*.*.*');
+  }
   const version = new semver.SemVer(versionStr);
   // Wipe out any prerelease versions
   version.prerelease = [];

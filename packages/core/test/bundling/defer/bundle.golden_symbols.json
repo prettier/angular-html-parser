@@ -57,6 +57,9 @@
     "name": "CIRCULAR"
   },
   {
+    "name": "COMPLETE_NOTIFICATION"
+  },
+  {
     "name": "COMPONENT_REGEX"
   },
   {
@@ -66,7 +69,16 @@
     "name": "CSP_NONCE"
   },
   {
+    "name": "CachedInjectorService"
+  },
+  {
     "name": "ChainedInjector"
+  },
+  {
+    "name": "ChangeDetectionScheduler"
+  },
+  {
+    "name": "ChangeDetectionSchedulerImpl"
   },
   {
     "name": "ChangeDetectionStrategy"
@@ -90,10 +102,7 @@
     "name": "ComponentRef2"
   },
   {
-    "name": "ConnectableObservable"
-  },
-  {
-    "name": "ConnectableSubscriber"
+    "name": "ConsumerObserver"
   },
   {
     "name": "DEFAULT_APP_ID"
@@ -135,10 +144,7 @@
     "name": "DeferDependenciesLoadingState"
   },
   {
-    "name": "DistinctUntilChangedOperator"
-  },
-  {
-    "name": "DistinctUntilChangedSubscriber"
+    "name": "DestroyRef"
   },
   {
     "name": "DomAdapter"
@@ -156,7 +162,13 @@
     "name": "EMPTY_OBJ"
   },
   {
+    "name": "EMPTY_OBSERVER"
+  },
+  {
     "name": "EMPTY_PAYLOAD"
+  },
+  {
+    "name": "EMPTY_SUBSCRIPTION"
   },
   {
     "name": "ENVIRONMENT_INITIALIZER"
@@ -183,6 +195,9 @@
     "name": "ErrorHandler"
   },
   {
+    "name": "EventDelegationPlugin"
+  },
+  {
     "name": "EventEmitter"
   },
   {
@@ -192,16 +207,16 @@
     "name": "EventManagerPlugin"
   },
   {
+    "name": "EventType"
+  },
+  {
+    "name": "GLOBAL_EVENT_DELEGATION"
+  },
+  {
     "name": "GenericBrowserDomAdapter"
   },
   {
-    "name": "HAS_CHILD_VIEWS_TO_REFRESH"
-  },
-  {
-    "name": "HAS_TRANSPLANTED_VIEWS"
-  },
-  {
-    "name": "INJECTOR2"
+    "name": "INJECTOR"
   },
   {
     "name": "INJECTOR_DEF_TYPES"
@@ -216,9 +231,6 @@
     "name": "INTERNAL_BROWSER_PLATFORM_PROVIDERS"
   },
   {
-    "name": "InitialRenderPendingTasks"
-  },
-  {
     "name": "InjectFlags"
   },
   {
@@ -228,7 +240,13 @@
     "name": "Injector"
   },
   {
+    "name": "InputFlags"
+  },
+  {
     "name": "KeyEventsPlugin"
+  },
+  {
+    "name": "LContainerFlags"
   },
   {
     "name": "LOADING_AFTER_SLOT"
@@ -259,18 +277,6 @@
   },
   {
     "name": "MOVED_VIEWS"
-  },
-  {
-    "name": "MapOperator"
-  },
-  {
-    "name": "MapSubscriber"
-  },
-  {
-    "name": "MergeMapOperator"
-  },
-  {
-    "name": "MergeMapSubscriber"
   },
   {
     "name": "NAMESPACE_URIS"
@@ -360,10 +366,16 @@
     "name": "NodeInjector"
   },
   {
+    "name": "NodeInjectorDestroyRef"
+  },
+  {
     "name": "NodeInjectorFactory"
   },
   {
     "name": "NoneEncapsulationDomRenderer"
+  },
+  {
+    "name": "NoopNgZone"
   },
   {
     "name": "NullInjector"
@@ -373,6 +385,9 @@
   },
   {
     "name": "Observable"
+  },
+  {
+    "name": "OperatorSubscriber"
   },
   {
     "name": "PLATFORM_DESTROY_LISTENERS"
@@ -393,6 +408,9 @@
     "name": "PRESERVE_HOST_CONTENT_DEFAULT"
   },
   {
+    "name": "PendingTasks"
+  },
+  {
     "name": "R3Injector"
   },
   {
@@ -405,22 +423,16 @@
     "name": "REMOVE_STYLES_ON_COMPONENT_DESTROY"
   },
   {
-    "name": "RefCountOperator"
-  },
-  {
-    "name": "RefCountSubscriber"
-  },
-  {
     "name": "RendererFactory2"
   },
   {
     "name": "RendererStyleFlags2"
   },
   {
-    "name": "RootViewRef"
+    "name": "RuntimeError"
   },
   {
-    "name": "RuntimeError"
+    "name": "SIGNAL"
   },
   {
     "name": "SIMPLE_CHANGES_STORE"
@@ -447,22 +459,10 @@
     "name": "SimpleChange"
   },
   {
-    "name": "SimpleInnerSubscriber"
-  },
-  {
-    "name": "SimpleOuterSubscriber"
-  },
-  {
     "name": "StandaloneService"
   },
   {
     "name": "Subject"
-  },
-  {
-    "name": "SubjectSubscriber"
-  },
-  {
-    "name": "SubjectSubscription"
   },
   {
     "name": "Subscriber"
@@ -471,10 +471,7 @@
     "name": "Subscription"
   },
   {
-    "name": "SwitchMapOperator"
-  },
-  {
-    "name": "SwitchMapSubscriber"
+    "name": "TEMPORARY_CONSUMER_NODE"
   },
   {
     "name": "TESTABILITY"
@@ -498,9 +495,6 @@
     "name": "UnsubscriptionError"
   },
   {
-    "name": "VERSION"
-  },
-  {
     "name": "VIEW_REFS"
   },
   {
@@ -510,10 +504,22 @@
     "name": "ViewRef"
   },
   {
-    "name": "ZONE_IS_STABLE_OBSERVABLE"
+    "name": "ZONELESS_ENABLED"
+  },
+  {
+    "name": "ZONELESS_SCHEDULER_DISABLED"
+  },
+  {
+    "name": "ZoneStablePendingTask"
+  },
+  {
+    "name": "_ComponentFactoryResolver"
   },
   {
     "name": "_DOM"
+  },
+  {
+    "name": "_Injector"
   },
   {
     "name": "_NullComponentFactoryResolver"
@@ -534,10 +540,10 @@
     "name": "_applyRootElementTransformImpl"
   },
   {
-    "name": "_currentInjector"
+    "name": "_bind"
   },
   {
-    "name": "_enable_super_gross_mode_that_will_cause_bad_things"
+    "name": "_currentInjector"
   },
   {
     "name": "_findMatchingDehydratedViewImpl"
@@ -553,6 +559,9 @@
   },
   {
     "name": "_injectImplementation"
+  },
+  {
+    "name": "_isRefreshingViews"
   },
   {
     "name": "_keyMap"
@@ -582,19 +591,13 @@
     "name": "_wasLastNodeCreated"
   },
   {
-    "name": "_wrapInTimeout"
-  },
-  {
     "name": "activeConsumer"
   },
   {
     "name": "addDepsToRegistry"
   },
   {
-    "name": "addLViewToLContainer"
-  },
-  {
-    "name": "addPropertyAlias"
+    "name": "addPropertyBinding"
   },
   {
     "name": "addToViewTree"
@@ -624,7 +627,13 @@
     "name": "applyToElementOrContainer"
   },
   {
+    "name": "applyValueToInputField"
+  },
+  {
     "name": "applyView"
+  },
+  {
+    "name": "arrRemove"
   },
   {
     "name": "assertConsumerNode"
@@ -634,6 +643,9 @@
   },
   {
     "name": "baseElement"
+  },
+  {
+    "name": "bind"
   },
   {
     "name": "bloomHasToken"
@@ -646,6 +658,9 @@
   },
   {
     "name": "callHooks"
+  },
+  {
+    "name": "captureNodeBindings"
   },
   {
     "name": "checkStable"
@@ -675,12 +690,6 @@
     "name": "configureViewWithDirective"
   },
   {
-    "name": "connectableObservableDescriptor"
-  },
-  {
-    "name": "consumerAfterComputation"
-  },
-  {
     "name": "consumerBeforeComputation"
   },
   {
@@ -688,6 +697,12 @@
   },
   {
     "name": "consumerIsLive"
+  },
+  {
+    "name": "consumerPollProducersForChange"
+  },
+  {
+    "name": "context"
   },
   {
     "name": "convertToBitFlags"
@@ -705,6 +720,12 @@
     "name": "createElementRef"
   },
   {
+    "name": "createEnvironmentInjector"
+  },
+  {
+    "name": "createErrorClass"
+  },
+  {
     "name": "createInjector"
   },
   {
@@ -717,16 +738,22 @@
     "name": "createNodeInjector"
   },
   {
+    "name": "createNotification"
+  },
+  {
     "name": "createTView"
   },
   {
-    "name": "currentConsumer"
+    "name": "declareTemplate"
   },
   {
     "name": "deepForEach"
   },
   {
     "name": "deepForEachProvider"
+  },
+  {
+    "name": "defaultErrorHandler"
   },
   {
     "name": "defer_component_exports"
@@ -739,6 +766,9 @@
   },
   {
     "name": "detachView"
+  },
+  {
+    "name": "detachViewFromDOM"
   },
   {
     "name": "detectChangesInChildComponents"
@@ -756,19 +786,28 @@
     "name": "detectChangesInViewIfAttached"
   },
   {
+    "name": "detectChangesInViewIfRequired"
+  },
+  {
     "name": "detectChangesInternal"
   },
   {
     "name": "diPublicInInjector"
   },
   {
-    "name": "empty"
-  },
-  {
     "name": "enterDI"
   },
   {
     "name": "enterView"
+  },
+  {
+    "name": "epoch"
+  },
+  {
+    "name": "errorContext"
+  },
+  {
+    "name": "execFinalizer"
   },
   {
     "name": "executeCheckHooks"
@@ -795,25 +834,16 @@
     "name": "findAttrIndexInNode"
   },
   {
-    "name": "flattenUnsubscriptionErrors"
-  },
-  {
     "name": "forEachSingleProvider"
   },
   {
     "name": "forwardRef"
   },
   {
-    "name": "from"
-  },
-  {
-    "name": "fromArray"
+    "name": "freeConsumers"
   },
   {
     "name": "generateInitialInputs"
-  },
-  {
-    "name": "generatePropertyAliases"
   },
   {
     "name": "getBeforeNodeForView"
@@ -861,6 +891,9 @@
     "name": "getFirstNativeNode"
   },
   {
+    "name": "getInjectImplementation"
+  },
+  {
     "name": "getInjectableDef"
   },
   {
@@ -903,6 +936,9 @@
     "name": "getOrCreateComponentTView"
   },
   {
+    "name": "getOrCreateEnvironmentInjector"
+  },
+  {
     "name": "getOrCreateInjectable"
   },
   {
@@ -936,16 +972,10 @@
     "name": "getPromiseCtor"
   },
   {
-    "name": "getReactiveLViewConsumer"
-  },
-  {
     "name": "getSelectedIndex"
   },
   {
     "name": "getSimpleChangesStore"
-  },
-  {
-    "name": "getSymbolIterator"
   },
   {
     "name": "getTDeferBlockDetails"
@@ -963,13 +993,19 @@
     "name": "handleError"
   },
   {
+    "name": "handleStoppedNotification"
+  },
+  {
+    "name": "handleUnhandledError"
+  },
+  {
+    "name": "hasApplyArgsData"
+  },
+  {
     "name": "hasInSkipHydrationBlockFlag"
   },
   {
     "name": "hasTagAndTypeMatch"
-  },
-  {
-    "name": "hostReportError"
   },
   {
     "name": "icuContainerIterate"
@@ -990,7 +1026,7 @@
     "name": "init_BehaviorSubject"
   },
   {
-    "name": "init_ConnectableObservable"
+    "name": "init_NotificationFactories"
   },
   {
     "name": "init_ObjectUnsubscribedError"
@@ -999,13 +1035,10 @@
     "name": "init_Observable"
   },
   {
-    "name": "init_Observer"
+    "name": "init_OperatorSubscriber"
   },
   {
     "name": "init_Subject"
-  },
-  {
-    "name": "init_SubjectSubscription"
   },
   {
     "name": "init_Subscriber"
@@ -1015,6 +1048,9 @@
   },
   {
     "name": "init_UnsubscriptionError"
+  },
+  {
+    "name": "init_action_resolver"
   },
   {
     "name": "init_advance"
@@ -1050,10 +1086,19 @@
     "name": "init_application_module"
   },
   {
+    "name": "init_application_ngmodule_factory_compiler"
+  },
+  {
     "name": "init_application_ref"
   },
   {
     "name": "init_application_tokens"
+  },
+  {
+    "name": "init_apply_value_input_field"
+  },
+  {
+    "name": "init_arrRemove"
   },
   {
     "name": "init_array_utils"
@@ -1074,10 +1119,16 @@
     "name": "init_attribute"
   },
   {
+    "name": "init_attribute2"
+  },
+  {
     "name": "init_attribute_interpolation"
   },
   {
     "name": "init_attrs_utils"
+  },
+  {
+    "name": "init_authoring"
   },
   {
     "name": "init_bindings"
@@ -1086,7 +1137,16 @@
     "name": "init_bypass"
   },
   {
-    "name": "init_canReportError"
+    "name": "init_cache"
+  },
+  {
+    "name": "init_cached_injector_service"
+  },
+  {
+    "name": "init_callback_scheduler"
+  },
+  {
+    "name": "init_chained_injector"
   },
   {
     "name": "init_change_detection"
@@ -1102,6 +1162,9 @@
   },
   {
     "name": "init_change_detector_ref"
+  },
+  {
+    "name": "init_char"
   },
   {
     "name": "init_class_differ"
@@ -1206,6 +1269,12 @@
     "name": "init_core_render3_private_export"
   },
   {
+    "name": "init_createErrorClass"
+  },
+  {
+    "name": "init_create_application"
+  },
+  {
     "name": "init_create_injector"
   },
   {
@@ -1272,7 +1341,7 @@
     "name": "init_discovery_utils"
   },
   {
-    "name": "init_distinctUntilChanged"
+    "name": "init_dispatcher"
   },
   {
     "name": "init_document"
@@ -1311,6 +1380,9 @@
     "name": "init_equality"
   },
   {
+    "name": "init_errorContext"
+  },
+  {
     "name": "init_error_details_base_url"
   },
   {
@@ -1335,10 +1407,46 @@
     "name": "init_errors_di"
   },
   {
-    "name": "init_esm2015"
+    "name": "init_esm"
+  },
+  {
+    "name": "init_event"
+  },
+  {
+    "name": "init_event_contract_container"
+  },
+  {
+    "name": "init_event_contract_defines"
+  },
+  {
+    "name": "init_event_delegation"
+  },
+  {
+    "name": "init_event_delegation_utils"
+  },
+  {
+    "name": "init_event_dispatch"
+  },
+  {
+    "name": "init_event_dispatcher"
   },
   {
     "name": "init_event_emitter"
+  },
+  {
+    "name": "init_event_info"
+  },
+  {
+    "name": "init_event_replay"
+  },
+  {
+    "name": "init_event_type"
+  },
+  {
+    "name": "init_eventcontract"
+  },
+  {
+    "name": "init_exhaustive_check_no_changes"
   },
   {
     "name": "init_fields"
@@ -1348,12 +1456,6 @@
   },
   {
     "name": "init_framework_injector_profiler"
-  },
-  {
-    "name": "init_from"
-  },
-  {
-    "name": "init_fromArray"
   },
   {
     "name": "init_get_current_view"
@@ -1371,13 +1473,16 @@
     "name": "init_hooks"
   },
   {
-    "name": "init_hostReportError"
+    "name": "init_host_attribute_token"
   },
   {
     "name": "init_host_directives_feature"
   },
   {
     "name": "init_host_property"
+  },
+  {
+    "name": "init_host_tag_name_token"
   },
   {
     "name": "init_html_sanitizer"
@@ -1387,6 +1492,9 @@
   },
   {
     "name": "init_i18n2"
+  },
+  {
+    "name": "init_i18n3"
   },
   {
     "name": "init_i18n_apply"
@@ -1434,9 +1542,6 @@
     "name": "init_inherit_definition_feature"
   },
   {
-    "name": "init_initial_render_pending_tasks"
-  },
-  {
     "name": "init_initializer_token"
   },
   {
@@ -1476,7 +1581,16 @@
     "name": "init_injector_utils"
   },
   {
-    "name": "init_innerSubscribe"
+    "name": "init_input"
+  },
+  {
+    "name": "init_input_flags"
+  },
+  {
+    "name": "init_input_signal"
+  },
+  {
+    "name": "init_input_signal_node"
   },
   {
     "name": "init_input_transforms_feature"
@@ -1497,28 +1611,7 @@
     "name": "init_interpolation"
   },
   {
-    "name": "init_isArray"
-  },
-  {
-    "name": "init_isArrayLike"
-  },
-  {
     "name": "init_isFunction"
-  },
-  {
-    "name": "init_isInteropObservable"
-  },
-  {
-    "name": "init_isIterable"
-  },
-  {
-    "name": "init_isObject"
-  },
-  {
-    "name": "init_isPromise"
-  },
-  {
-    "name": "init_isScheduler"
   },
   {
     "name": "init_is_dev_mode"
@@ -1530,16 +1623,22 @@
     "name": "init_iterable_differs"
   },
   {
-    "name": "init_iterator"
+    "name": "init_jit_options"
   },
   {
-    "name": "init_jit_options"
+    "name": "init_key_code"
   },
   {
     "name": "init_keyvalue_differs"
   },
   {
     "name": "init_lang"
+  },
+  {
+    "name": "init_let_declaration"
+  },
+  {
+    "name": "init_lift"
   },
   {
     "name": "init_linker"
@@ -1572,15 +1671,6 @@
     "name": "init_mark_view_dirty"
   },
   {
-    "name": "init_merge"
-  },
-  {
-    "name": "init_mergeAll"
-  },
-  {
-    "name": "init_mergeMap"
-  },
-  {
     "name": "init_metadata"
   },
   {
@@ -1596,13 +1686,16 @@
     "name": "init_misc_utils"
   },
   {
+    "name": "init_model"
+  },
+  {
+    "name": "init_model_signal"
+  },
+  {
     "name": "init_module"
   },
   {
     "name": "init_module_patch"
-  },
-  {
-    "name": "init_multicast"
   },
   {
     "name": "init_namespace"
@@ -1650,6 +1743,9 @@
     "name": "init_ng_zone"
   },
   {
+    "name": "init_ng_zone_scheduling"
+  },
+  {
     "name": "init_node"
   },
   {
@@ -1671,19 +1767,31 @@
     "name": "init_noop"
   },
   {
+    "name": "init_noop2"
+  },
+  {
     "name": "init_null_injector"
   },
   {
     "name": "init_observable"
   },
   {
-    "name": "init_of"
-  },
-  {
     "name": "init_operators"
   },
   {
+    "name": "init_output"
+  },
+  {
+    "name": "init_output_emitter_ref"
+  },
+  {
     "name": "init_partial"
+  },
+  {
+    "name": "init_pending_tasks"
+  },
+  {
+    "name": "init_performance"
   },
   {
     "name": "init_pipe"
@@ -1695,7 +1803,13 @@
     "name": "init_pipe3"
   },
   {
+    "name": "init_platform"
+  },
+  {
     "name": "init_platform_core_providers"
+  },
+  {
+    "name": "init_platform_ref"
   },
   {
     "name": "init_profiler"
@@ -1708,6 +1822,9 @@
   },
   {
     "name": "init_property2"
+  },
+  {
+    "name": "init_property3"
   },
   {
     "name": "init_property_interpolation"
@@ -1731,10 +1848,25 @@
     "name": "init_pure_function"
   },
   {
+    "name": "init_queries"
+  },
+  {
+    "name": "init_queries2"
+  },
+  {
+    "name": "init_queries_signals"
+  },
+  {
     "name": "init_query"
   },
   {
     "name": "init_query_list"
+  },
+  {
+    "name": "init_query_reactive"
+  },
+  {
+    "name": "init_queue_state_update"
   },
   {
     "name": "init_r3_injector"
@@ -1743,13 +1875,7 @@
     "name": "init_r3_symbols"
   },
   {
-    "name": "init_raf"
-  },
-  {
     "name": "init_reactive_lview_consumer"
-  },
-  {
-    "name": "init_refCount"
   },
   {
     "name": "init_reflection_capabilities"
@@ -1764,31 +1890,19 @@
     "name": "init_render3"
   },
   {
+    "name": "init_reportUnhandledError"
+  },
+  {
     "name": "init_resource_loading"
   },
   {
-    "name": "init_rxSubscriber"
+    "name": "init_restriction"
   },
   {
     "name": "init_sanitization"
   },
   {
     "name": "init_sanitizer"
-  },
-  {
-    "name": "init_scheduleArray"
-  },
-  {
-    "name": "init_scheduleIterable"
-  },
-  {
-    "name": "init_scheduleObservable"
-  },
-  {
-    "name": "init_schedulePromise"
-  },
-  {
-    "name": "init_scheduled"
   },
   {
     "name": "init_schema"
@@ -1804,9 +1918,6 @@
   },
   {
     "name": "init_set_debug_info"
-  },
-  {
-    "name": "init_share"
   },
   {
     "name": "init_shared"
@@ -1863,24 +1974,6 @@
     "name": "init_styling_parser"
   },
   {
-    "name": "init_subscribeTo"
-  },
-  {
-    "name": "init_subscribeToArray"
-  },
-  {
-    "name": "init_subscribeToIterable"
-  },
-  {
-    "name": "init_subscribeToObservable"
-  },
-  {
-    "name": "init_subscribeToPromise"
-  },
-  {
-    "name": "init_switchMap"
-  },
-  {
     "name": "init_template"
   },
   {
@@ -1896,10 +1989,10 @@
     "name": "init_text_interpolation"
   },
   {
-    "name": "init_timer_scheduler"
+    "name": "init_timeoutProvider"
   },
   {
-    "name": "init_toSubscriber"
+    "name": "init_timer_scheduler"
   },
   {
     "name": "init_tokens"
@@ -1920,10 +2013,16 @@
     "name": "init_trusted_types_bypass"
   },
   {
+    "name": "init_two_way"
+  },
+  {
     "name": "init_type"
   },
   {
     "name": "init_type_checks"
+  },
+  {
+    "name": "init_types"
   },
   {
     "name": "init_untracked"
@@ -1942,6 +2041,9 @@
   },
   {
     "name": "init_utils2"
+  },
+  {
+    "name": "init_utils3"
   },
   {
     "name": "init_version"
@@ -1983,7 +2085,16 @@
     "name": "init_weak_ref"
   },
   {
+    "name": "init_write_to_directive_input"
+  },
+  {
     "name": "init_zone"
+  },
+  {
+    "name": "init_zoneless_scheduling"
+  },
+  {
+    "name": "init_zoneless_scheduling_impl"
   },
   {
     "name": "initializeDirectives"
@@ -1993,6 +2104,9 @@
   },
   {
     "name": "injectArgs"
+  },
+  {
+    "name": "injectDestroyRef"
   },
   {
     "name": "injectElementRef"
@@ -2007,9 +2121,6 @@
     "name": "injectableDefOrInjectorDefFactory"
   },
   {
-    "name": "innerSubscribe"
-  },
-  {
     "name": "insertBloom"
   },
   {
@@ -2019,7 +2130,7 @@
     "name": "internalImportProvidersFrom"
   },
   {
-    "name": "invertObject"
+    "name": "internalProvideZoneChangeDetection"
   },
   {
     "name": "invokeAllTriggerCleanupFns"
@@ -2032,12 +2143,6 @@
   },
   {
     "name": "invokeTriggerCleanupFns"
-  },
-  {
-    "name": "isArray"
-  },
-  {
-    "name": "isArrayLike"
   },
   {
     "name": "isComponentDef"
@@ -2079,7 +2184,7 @@
     "name": "isNodeMatchingSelectorList"
   },
   {
-    "name": "isObject"
+    "name": "isPlatformBrowser"
   },
   {
     "name": "isPlatformServer"
@@ -2091,13 +2196,13 @@
     "name": "isPromise"
   },
   {
-    "name": "isPromise2"
+    "name": "isRefreshingViews"
   },
   {
-    "name": "isScheduler"
+    "name": "isRootView"
   },
   {
-    "name": "isStableFactory"
+    "name": "isSubscription"
   },
   {
     "name": "isTemplateNode"
@@ -2110,9 +2215,6 @@
   },
   {
     "name": "isValueProvider"
-  },
-  {
-    "name": "iterator"
   },
   {
     "name": "lastNodeWasCreated"
@@ -2151,19 +2253,16 @@
     "name": "markViewForRefresh"
   },
   {
-    "name": "maybeWrapInNotSelector"
+    "name": "markedFeatures"
   },
   {
-    "name": "mergeAll"
+    "name": "maybeWrapInNotSelector"
   },
   {
     "name": "mergeHostAttribute"
   },
   {
     "name": "mergeHostAttrs"
-  },
-  {
-    "name": "mergeMap"
   },
   {
     "name": "nativeAppendChild"
@@ -2193,6 +2292,9 @@
     "name": "noop"
   },
   {
+    "name": "noop2"
+  },
+  {
     "name": "notFoundValueOrThrow"
   },
   {
@@ -2205,6 +2307,12 @@
     "name": "onLeave"
   },
   {
+    "name": "parseAndConvertBindingsForDefinition"
+  },
+  {
+    "name": "performanceMarkFeature"
+  },
+  {
     "name": "populateDehydratedViewsInLContainer"
   },
   {
@@ -2214,13 +2322,10 @@
     "name": "producerRemoveLiveConsumerAtIndex"
   },
   {
+    "name": "producerUpdateValueVersion"
+  },
+  {
     "name": "profiler"
-  },
-  {
-    "name": "provideZoneChangeDetection"
-  },
-  {
-    "name": "refCount"
   },
   {
     "name": "refreshContentQueries"
@@ -2241,6 +2346,9 @@
     "name": "removeFromArray"
   },
   {
+    "name": "removeLViewOnDestroy"
+  },
+  {
     "name": "renderComponent"
   },
   {
@@ -2251,6 +2359,9 @@
   },
   {
     "name": "renderView"
+  },
+  {
+    "name": "requiresRefreshOrTraversal"
   },
   {
     "name": "resetPreOrderHookFlags"
@@ -2265,16 +2376,16 @@
     "name": "retrieveHydrationInfo"
   },
   {
-    "name": "rxSubscriber"
-  },
-  {
     "name": "saveNameToExportMap"
   },
   {
     "name": "saveResolvedLocalsInData"
   },
   {
-    "name": "scheduleArray"
+    "name": "scheduleCallbackWithMicrotask"
+  },
+  {
+    "name": "scheduleCallbackWithRafRace"
   },
   {
     "name": "searchTokensOnInjector"
@@ -2316,6 +2427,9 @@
     "name": "setInputsFromAttrs"
   },
   {
+    "name": "setIsRefreshingViews"
+  },
+  {
     "name": "setSelectedIndex"
   },
   {
@@ -2323,12 +2437,6 @@
   },
   {
     "name": "setupStaticAttributes"
-  },
-  {
-    "name": "share"
-  },
-  {
-    "name": "shareSubjectFactory"
   },
   {
     "name": "shimStylesContent"
@@ -2346,31 +2454,16 @@
     "name": "stringifyCSSSelector"
   },
   {
-    "name": "subscribeTo"
-  },
-  {
-    "name": "subscribeToArray"
-  },
-  {
-    "name": "subscribeToIterable"
-  },
-  {
-    "name": "subscribeToObservable"
-  },
-  {
-    "name": "subscribeToPromise"
-  },
-  {
-    "name": "switchMap"
-  },
-  {
-    "name": "throwError"
-  },
-  {
     "name": "throwProviderNotFoundError"
   },
   {
+    "name": "timeoutProvider"
+  },
+  {
     "name": "toRefArray"
+  },
+  {
+    "name": "trackMovedView"
   },
   {
     "name": "uniqueIdCounter"
@@ -2385,10 +2478,10 @@
     "name": "updateMicroTaskStatus"
   },
   {
-    "name": "urlParsingNode"
+    "name": "viewAttachedToChangeDetector"
   },
   {
-    "name": "viewAttachedToChangeDetector"
+    "name": "viewShouldHaveReactiveConsumer"
   },
   {
     "name": "walkProviderTree"
@@ -2410,9 +2503,6 @@
   },
   {
     "name": "ɵɵdefer"
-  },
-  {
-    "name": "ɵɵdeferWhen"
   },
   {
     "name": "ɵɵdefineComponent"

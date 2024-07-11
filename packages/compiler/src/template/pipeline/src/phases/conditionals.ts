@@ -11,9 +11,9 @@ import * as ir from '../../ir';
 import {ComponentCompilationJob} from '../compilation';
 
 /**
- * Collapse the various conditions of conditional ops into a single test expression.
+ * Collapse the various conditions of conditional ops (if, switch) into a single test expression.
  */
-export function phaseConditionals(job: ComponentCompilationJob): void {
+export function generateConditionalExpressions(job: ComponentCompilationJob): void {
   for (const unit of job.units) {
     for (const op of unit.ops()) {
       if (op.kind !== ir.OpKind.Conditional) {
@@ -25,8 +25,8 @@ export function phaseConditionals(job: ComponentCompilationJob): void {
       // Any case with a `null` condition is `default`. If one exists, default to it instead.
       const defaultCase = op.conditions.findIndex((cond) => cond.expr === null);
       if (defaultCase >= 0) {
-        const xref = op.conditions.splice(defaultCase, 1)[0].target;
-        test = new ir.SlotLiteralExpr(xref);
+        const slot = op.conditions.splice(defaultCase, 1)[0].targetSlot;
+        test = new ir.SlotLiteralExpr(slot);
       } else {
         // By default, a switch evaluates to `-1`, causing no template to be displayed.
         test = o.literal(-1);
@@ -44,16 +44,24 @@ export function phaseConditionals(job: ComponentCompilationJob): void {
         }
         if (tmp !== null) {
           const useTmp = i === 0 ? tmp : new ir.ReadTemporaryExpr(tmp.xref);
-          conditionalCase.expr =
-              new o.BinaryOperatorExpr(o.BinaryOperator.Identical, useTmp, conditionalCase.expr);
+          conditionalCase.expr = new o.BinaryOperatorExpr(
+            o.BinaryOperator.Identical,
+            useTmp,
+            conditionalCase.expr,
+          );
         } else if (conditionalCase.alias !== null) {
           const caseExpressionTemporaryXref = job.allocateXrefId();
-          conditionalCase.expr =
-              new ir.AssignTemporaryExpr(conditionalCase.expr, caseExpressionTemporaryXref);
+          conditionalCase.expr = new ir.AssignTemporaryExpr(
+            conditionalCase.expr,
+            caseExpressionTemporaryXref,
+          );
           op.contextValue = new ir.ReadTemporaryExpr(caseExpressionTemporaryXref);
         }
         test = new o.ConditionalExpr(
-            conditionalCase.expr, new ir.SlotLiteralExpr(conditionalCase.target), test);
+          conditionalCase.expr,
+          new ir.SlotLiteralExpr(conditionalCase.targetSlot),
+          test,
+        );
       }
 
       // Save the resulting aggregate Joost-expression.

@@ -8,8 +8,8 @@
 
 import {MessageBundle} from '@angular/compiler/src/i18n/message_bundle';
 import {Xmb} from '@angular/compiler/src/i18n/serializers/xmb';
+import {DEFAULT_INTERPOLATION_CONFIG} from '@angular/compiler/src/ml_parser/defaults';
 import {HtmlParser} from '@angular/compiler/src/ml_parser/html_parser';
-import {DEFAULT_INTERPOLATION_CONFIG} from '@angular/compiler/src/ml_parser/interpolation_config';
 
 describe('XMB serializer', () => {
   const HTML = `
@@ -22,7 +22,8 @@ describe('XMB serializer', () => {
 <p i18n="@@baz">{ count, plural, =0 { { sex, select, other {<p>deeply nested</p>}} }}</p>
 <p i18n>Test: { count, plural, =0 { { sex, select, other {<p>deeply nested</p>}} } =other {a lot}}</p>
 <p i18n>multi
-lines</p>`;
+lines</p>
+<p i18n>translatable element @if (foo) {with} @else if (bar) {blocks}</p>`;
 
   const XMB = `<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE messagebundle [
@@ -46,7 +47,7 @@ lines</p>`;
 
 <!ELEMENT ex (#PCDATA)>
 ]>
-<messagebundle>
+<messagebundle handler="angular">
   <msg id="7056919470098446707"><source>file.ts:3</source>translatable element <ph name="START_BOLD_TEXT"><ex>&lt;b&gt;</ex>&lt;b&gt;</ph>with placeholders<ph name="CLOSE_BOLD_TEXT"><ex>&lt;/b&gt;</ex>&lt;/b&gt;</ph> <ph name="INTERPOLATION"><ex>{{ interpolation}}</ex>{{ interpolation}}</ph></msg>
   <msg id="2981514368455622387"><source>file.ts:4</source>{VAR_PLURAL, plural, =0 {<ph name="START_PARAGRAPH"><ex>&lt;p&gt;</ex>&lt;p&gt;</ph>test<ph name="CLOSE_PARAGRAPH"><ex>&lt;/p&gt;</ex>&lt;/p&gt;</ph>} }</msg>
   <msg id="7999024498831672133" desc="d" meaning="m"><source>file.ts:5</source>foo</msg>
@@ -57,6 +58,7 @@ lines</p>`;
   <msg id="5229984852258993423"><source>file.ts:9</source>{VAR_PLURAL, plural, =0 {{VAR_SELECT, select, other {<ph name="START_PARAGRAPH"><ex>&lt;p&gt;</ex>&lt;p&gt;</ph>deeply nested<ph name="CLOSE_PARAGRAPH"><ex>&lt;/p&gt;</ex>&lt;/p&gt;</ph>} } } =other {a lot} }</msg>
   <msg id="2340165783990709777"><source>file.ts:10,11</source>multi
 lines</msg>
+  <msg id="6618832065070552029"><source>file.ts:12</source>translatable element <ph name="START_BLOCK_IF"><ex>@if</ex>@if</ph>with<ph name="CLOSE_BLOCK_IF"><ex>}</ex>}</ph> <ph name="START_BLOCK_ELSE_IF"><ex>@else if</ex>@else if</ph>blocks<ph name="CLOSE_BLOCK_ELSE_IF"><ex>}</ex>}</ph></msg>
 </messagebundle>
 `;
 
@@ -74,9 +76,8 @@ lines</msg>
   });
 });
 
-
-function toXmb(html: string, url: string, locale: string|null = null): string {
-  const catalog = new MessageBundle(new HtmlParser, [], {}, locale);
+function toXmb(html: string, url: string, locale: string | null = null): string {
+  const catalog = new MessageBundle(new HtmlParser(), [], {}, locale);
   const serializer = new Xmb();
 
   catalog.updateFromTemplate(html, url, DEFAULT_INTERPOLATION_CONFIG);

@@ -13,7 +13,11 @@ import type {XrefId} from './operations';
 /**
  * Union type for the different kinds of variables.
  */
-export type SemanticVariable = ContextVariable|IdentifierVariable|SavedViewVariable|AliasVariable;
+export type SemanticVariable =
+  | ContextVariable
+  | IdentifierVariable
+  | SavedViewVariable
+  | AliasVariable;
 
 export interface SemanticVariableBase {
   kind: SemanticVariableKind;
@@ -21,7 +25,7 @@ export interface SemanticVariableBase {
   /**
    * Name assigned to this variable in generated code, or `null` if not yet assigned.
    */
-  name: string|null;
+  name: string | null;
 }
 
 /**
@@ -52,6 +56,11 @@ export interface IdentifierVariable extends SemanticVariableBase {
    * The identifier whose value in the template is tracked in this variable.
    */
   identifier: string;
+
+  /**
+   * Whether the variable was declared locally within the same view or somewhere else.
+   */
+  local: boolean;
 }
 
 /**

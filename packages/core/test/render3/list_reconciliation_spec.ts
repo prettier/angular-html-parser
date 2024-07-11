@@ -35,7 +35,9 @@ class LoggingLiveCollection<T, V> extends LiveCollection<T, V> {
   private logs: any[][] = [];
 
   constructor(
-      private arr: T[], private itemFactory: ItemAdapter<T, V> = new NoopItemFactory<T, V>()) {
+    private arr: T[],
+    private itemFactory: ItemAdapter<T, V> = new NoopItemFactory<T, V>(),
+  ) {
     super();
   }
 
@@ -109,7 +111,10 @@ describe('list reconciliation', () => {
       reconcile(pc, ['a', 'b', 'c'], trackByIdentity);
 
       expect(pc.getCollection()).toEqual(['a', 'b', 'c']);
-      expect(pc.getLogs()).toEqual([['create', 2, 'c'], ['attach', 2, 'c']]);
+      expect(pc.getLogs()).toEqual([
+        ['create', 2, 'c'],
+        ['attach', 2, 'c'],
+      ]);
     });
 
     it('should swap items', () => {
@@ -147,7 +152,6 @@ describe('list reconciliation', () => {
         ['attach', 1, 'd'],
       ]);
     });
-
 
     it('should delete items in the middle', () => {
       const pc = new LoggingLiveCollection(['a', 'x', 'b', 'c']);
@@ -261,19 +265,25 @@ describe('list reconciliation', () => {
     });
 
     it('should create / reuse duplicated items as needed', () => {
-      const pc = new LoggingLiveCollection([1, 1, 2, 3]);
-      reconcile(pc, [2, 3, 1, 1, 1, 4], trackByIdentity);
+      const trackByKey = (idx: number, item: {k: number}) => item.k;
+      const pc = new LoggingLiveCollection<{k: number}, {k: number}>([
+        {k: 1},
+        {k: 1},
+        {k: 2},
+        {k: 3},
+      ]);
+      reconcile(pc, [{k: 2}, {k: 3}, {k: 1}, {k: 1}, {k: 1}, {k: 4}], trackByKey);
 
-      expect(pc.getCollection()).toEqual([2, 3, 1, 1, 1, 4]);
+      expect(pc.getCollection()).toEqual([{k: 2}, {k: 3}, {k: 1}, {k: 1}, {k: 1}, {k: 4}]);
       expect(pc.getLogs()).toEqual([
-        ['detach', 0, 1],
-        ['detach', 0, 1],
-        ['attach', 2, 1],
-        ['attach', 3, 1],
-        ['create', 4, 1],
-        ['attach', 4, 1],
-        ['create', 5, 4],
-        ['attach', 5, 4],
+        ['detach', 0, {k: 1}],
+        ['detach', 0, {k: 1}],
+        ['attach', 2, {k: 1}],
+        ['attach', 3, {k: 1}],
+        ['create', 4, {k: 1}],
+        ['attach', 4, {k: 1}],
+        ['create', 5, {k: 4}],
+        ['attach', 5, {k: 4}],
       ]);
     });
   });
@@ -292,7 +302,10 @@ describe('list reconciliation', () => {
       reconcile(pc, new Set(['a', 'b', 'c']), trackByIdentity);
 
       expect(pc.getCollection()).toEqual(['a', 'b', 'c']);
-      expect(pc.getLogs()).toEqual([['create', 2, 'c'], ['attach', 2, 'c']]);
+      expect(pc.getLogs()).toEqual([
+        ['create', 2, 'c'],
+        ['attach', 2, 'c'],
+      ]);
     });
 
     it('should add multiple items in the middle', () => {
@@ -409,14 +422,21 @@ describe('list reconciliation', () => {
 
     it('should update when tracking by key - fast path from the end', () => {
       const pc = new LoggingLiveCollection(
-          [], new RepeaterLikeItemFactory<KeyValueItem<string, string>>());
+        [],
+        new RepeaterLikeItemFactory<KeyValueItem<string, string>>(),
+      );
 
       reconcile(pc, [{k: 'o', v: 'o'}], trackByKey);
-      expect(pc.getCollection()).toEqual([
-        {index: 0, implicit: {k: 'o', v: 'o'}},
-      ]);
+      expect(pc.getCollection()).toEqual([{index: 0, implicit: {k: 'o', v: 'o'}}]);
 
-      reconcile(pc, [{k: 'n', v: 'n'}, {k: 'o', v: 'oo'}], trackByKey);
+      reconcile(
+        pc,
+        [
+          {k: 'n', v: 'n'},
+          {k: 'o', v: 'oo'},
+        ],
+        trackByKey,
+      );
       expect(pc.getCollection()).toEqual([
         {index: 0, implicit: {k: 'n', v: 'n'}},
         // TODO: this scenario shows situation where the index is not correctly updated
@@ -426,60 +446,73 @@ describe('list reconciliation', () => {
 
     it('should update when swapping on the fast path', () => {
       const pc = new LoggingLiveCollection(
-          [], new RepeaterLikeItemFactory<KeyValueItem<number, string>>());
+        [],
+        new RepeaterLikeItemFactory<KeyValueItem<number, string>>(),
+      );
 
-      reconcile(pc, [{k: 0, v: 'a'}, {k: 1, v: 'b'}, {k: 2, v: 'c'}], trackByKey as any);
-      expect(pc.getCollection())
-          .toEqual(
-              [
-                {index: 0, implicit: {k: 0, v: 'a'}},
-                {index: 1, implicit: {k: 1, v: 'b'}},
-                {index: 2, implicit: {k: 2, v: 'c'}},
-              ],
-          );
+      reconcile(
+        pc,
+        [
+          {k: 0, v: 'a'},
+          {k: 1, v: 'b'},
+          {k: 2, v: 'c'},
+        ],
+        trackByKey as any,
+      );
+      expect(pc.getCollection()).toEqual([
+        {index: 0, implicit: {k: 0, v: 'a'}},
+        {index: 1, implicit: {k: 1, v: 'b'}},
+        {index: 2, implicit: {k: 2, v: 'c'}},
+      ]);
 
-      reconcile(pc, [{k: 2, v: 'cc'}, {k: 1, v: 'bb'}, {k: 0, v: 'aa'}], trackByKey as any);
-      expect(pc.getCollection())
-          .toEqual(
-              [
-                {index: 0, implicit: {k: 2, v: 'cc'}},
-                {index: 1, implicit: {k: 1, v: 'bb'}},
-                {index: 2, implicit: {k: 0, v: 'aa'}},
-              ],
-          );
+      reconcile(
+        pc,
+        [
+          {k: 2, v: 'cc'},
+          {k: 1, v: 'bb'},
+          {k: 0, v: 'aa'},
+        ],
+        trackByKey as any,
+      );
+      expect(pc.getCollection()).toEqual([
+        {index: 0, implicit: {k: 2, v: 'cc'}},
+        {index: 1, implicit: {k: 1, v: 'bb'}},
+        {index: 2, implicit: {k: 0, v: 'aa'}},
+      ]);
     });
 
     it('should update when moving forward on the fast path', () => {
       const pc = new LoggingLiveCollection(
-          [], new RepeaterLikeItemFactory<KeyValueItem<number, string>>());
+        [],
+        new RepeaterLikeItemFactory<KeyValueItem<number, string>>(),
+      );
       reconcile(
-          pc,
-          [
-            {k: 0, v: 'a'},
-            {k: 1, v: 'b'},
-            {k: 2, v: 'c'},
-            {k: 3, v: 'd'},
-          ],
-          trackByKey as any);
-      expect(pc.getCollection())
-          .toEqual(
-              [
-                {index: 0, implicit: {k: 0, v: 'a'}},
-                {index: 1, implicit: {k: 1, v: 'b'}},
-                {index: 2, implicit: {k: 2, v: 'c'}},
-                {index: 3, implicit: {k: 3, v: 'd'}},
-              ],
-          );
+        pc,
+        [
+          {k: 0, v: 'a'},
+          {k: 1, v: 'b'},
+          {k: 2, v: 'c'},
+          {k: 3, v: 'd'},
+        ],
+        trackByKey as any,
+      );
+      expect(pc.getCollection()).toEqual([
+        {index: 0, implicit: {k: 0, v: 'a'}},
+        {index: 1, implicit: {k: 1, v: 'b'}},
+        {index: 2, implicit: {k: 2, v: 'c'}},
+        {index: 3, implicit: {k: 3, v: 'd'}},
+      ]);
 
       reconcile(
-          pc,
-          [
-            {k: 0, v: 'aa'},
-            {k: 3, v: 'dd'},
-            {k: 1, v: 'bb'},
-            {k: 2, v: 'cc'},
-          ],
-          trackByKey as any);
+        pc,
+        [
+          {k: 0, v: 'aa'},
+          {k: 3, v: 'dd'},
+          {k: 1, v: 'bb'},
+          {k: 2, v: 'cc'},
+        ],
+        trackByKey as any,
+      );
       expect(pc.getCollection()).toEqual([
         {index: 0, implicit: {k: 0, v: 'aa'}},
         {index: 1, implicit: {k: 3, v: 'dd'}},

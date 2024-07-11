@@ -6,8 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import * as o from '../../../../output/output_ast';
-import {Identifiers as R3} from '../../../../render3/r3_identifiers';
 import * as ir from '../../ir';
 import {CompilationJob} from '../compilation';
 
@@ -21,13 +19,16 @@ import {CompilationJob} from '../compilation';
  * The reification step is also capable of performing this transformation, but doing it early in the
  * pipeline allows other phases to accurately know what instruction will be emitted.
  */
-export function phaseCollapseSingletonInterpolations(job: CompilationJob): void {
+export function collapseSingletonInterpolations(job: CompilationJob): void {
   for (const unit of job.units) {
     for (const op of unit.update) {
       const eligibleOpKind = op.kind === ir.OpKind.Attribute;
-      if (eligibleOpKind && op.expression instanceof ir.Interpolation &&
-          op.expression.strings.length === 2 &&
-          op.expression.strings.every((s: string) => s === '')) {
+      if (
+        eligibleOpKind &&
+        op.expression instanceof ir.Interpolation &&
+        op.expression.strings.length === 2 &&
+        op.expression.strings.every((s: string) => s === '')
+      ) {
         op.expression = op.expression.expressions[0];
       }
     }

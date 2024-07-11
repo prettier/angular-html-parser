@@ -6,7 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import * as o from '../../../../output/output_ast';
 import * as ir from '../../ir';
 import type {CompilationJob} from '../compilation';
 import {createOpXrefMap} from '../util/elements';
@@ -15,14 +14,14 @@ import {createOpXrefMap} from '../util/elements';
  * Attributes of `ng-content` named 'select' are specifically removed, because they control which
  * content matches as a property of the `projection`, and are not a plain attribute.
  */
-export function phaseRemoveContentSelectors(job: CompilationJob): void {
+export function removeContentSelectors(job: CompilationJob): void {
   for (const unit of job.units) {
     const elements = createOpXrefMap(unit);
-    for (const op of unit.update) {
+    for (const op of unit.ops()) {
       switch (op.kind) {
         case ir.OpKind.Binding:
           const target = lookupInXrefMap(elements, op.target);
-          if (op.name.toLowerCase() === 'select' && target.kind === ir.OpKind.Projection) {
+          if (isSelectAttribute(op.name) && target.kind === ir.OpKind.Projection) {
             ir.OpList.remove<ir.UpdateOp>(op);
           }
           break;
@@ -31,11 +30,17 @@ export function phaseRemoveContentSelectors(job: CompilationJob): void {
   }
 }
 
+function isSelectAttribute(name: string) {
+  return name.toLowerCase() === 'select';
+}
+
 /**
  * Looks up an element in the given map by xref ID.
  */
-function lookupInXrefMap(map: Map<ir.XrefId, ir.ConsumesSlotOpTrait&ir.CreateOp>, xref: ir.XrefId):
-    ir.ConsumesSlotOpTrait&ir.CreateOp {
+function lookupInXrefMap(
+  map: Map<ir.XrefId, ir.ConsumesSlotOpTrait & ir.CreateOp>,
+  xref: ir.XrefId,
+): ir.ConsumesSlotOpTrait & ir.CreateOp {
   const el = map.get(xref);
   if (el === undefined) {
     throw new Error('All attributes should have an slottable target.');

@@ -6,4 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-export {HTTP_ROOT_INTERCEPTOR_FNS as ɵHTTP_ROOT_INTERCEPTOR_FNS} from './interceptor';
+export {
+  HTTP_ROOT_INTERCEPTOR_FNS as ɵHTTP_ROOT_INTERCEPTOR_FNS,
+  REQUESTS_CONTRIBUTE_TO_STABILITY as ɵREQUESTS_CONTRIBUTE_TO_STABILITY,
+} from './interceptor';
