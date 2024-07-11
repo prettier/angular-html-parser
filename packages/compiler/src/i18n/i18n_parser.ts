@@ -170,6 +170,10 @@ class _I18nVisitor implements html.Visitor {
 
   visitBlockParameter(_parameter: html.BlockParameter, _context: I18nMessageVisitorContext) {}
 
+  visitLetDeclaration(decl: html.LetDeclaration, context: any) {
+    return null;
+  }
+
   /**
    * Convert, text and interpolated tokens up into text and placeholder pieces.
    *

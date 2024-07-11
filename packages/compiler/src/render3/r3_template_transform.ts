@@ -324,6 +324,10 @@ class HtmlAstToIvyAst implements html.Visitor {
     return null;
   }
 
+  visitLetDeclaration(decl: html.LetDeclaration, context: any) {
+    throw new Error('TODO: implement R3 LetDeclaration');
+  }
+
   visitBlockParameter() {
     return null;
   }
@@ -675,6 +679,10 @@ class NonBindableVisitor implements html.Visitor {
 
   visitBlockParameter(parameter: html.BlockParameter, context: any) {
     return null;
+  }
+
+  visitLetDeclaration(decl: html.LetDeclaration, context: any) {
+    throw new Error('TODO: implement R3 LetDeclaration');
   }
 }
 

@@ -17,7 +17,7 @@ interface BaseNode {
 }
 
 export type Node =
-    Attribute|CDATA|Comment|DocType|Element|Expansion|ExpansionCase|Text|Block|BlockParameter;
+    Attribute|CDATA|Comment|DocType|Element|Expansion|ExpansionCase|Text|Block|BlockParameter|LetDeclaration;
 // Expansion|ExpansionCase -- not used by angular-html-parser, should be removed on publish
 
 export abstract class NodeWithI18n implements BaseNode {
@@ -144,6 +144,22 @@ export class BlockParameter implements BaseNode {
   readonly endSourceSpan: null = null;
 }
 
+export class LetDeclaration implements BaseNode {
+  constructor(
+    public name: string,
+    public value: string,
+    public sourceSpan: ParseSourceSpan,
+    readonly nameSpan: ParseSourceSpan,
+    public valueSpan: ParseSourceSpan,
+  ) {}
+
+  visit(visitor: Visitor, context: any): any {
+    return visitor.visitLetDeclaration(this, context);
+  }
+
+  readonly type = "letDeclaration";
+}
+
 export interface Visitor {
   // Returning a truthy value from `visit()` will prevent `visitAll()` from the call to the typed
   // method and result returned will become the result included in `visitAll()`s result array.
@@ -159,6 +175,7 @@ export interface Visitor {
   visitExpansionCase(expansionCase: ExpansionCase, context: any): any;
   visitBlock(block: Block, context: any): any;
   visitBlockParameter(parameter: BlockParameter, context: any): any;
+  visitLetDeclaration(decl: LetDeclaration, context: any): any;
 }
 
 export function visitAll(visitor: Visitor, nodes: Node[], context: any = null): any[] {
@@ -208,6 +225,8 @@ export class RecursiveVisitor implements Visitor {
   }
 
   visitBlockParameter(ast: BlockParameter, context: any): any {}
+
+  visitLetDeclaration(decl: LetDeclaration, context: any) {}
 
   private visitChildren<T extends Node>(
       context: any, cb: (visit: (<V extends Node>(children: V[]|undefined) => void)) => void) {
