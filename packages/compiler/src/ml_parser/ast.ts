@@ -28,6 +28,7 @@ export type Node =
   | Block
   | BlockParameter
   | LetDeclaration;
+  // Expansion|ExpansionCase -- not used by angular-html-parser, should be removed on publish
 
 export abstract class NodeWithI18n implements BaseNode {
   constructor(

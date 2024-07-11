@@ -477,9 +477,9 @@ class _TreeBuilder {
     );
     // Create a separate `startSpan` because `span` will be modified when there is an `end` span.
     const startSpan = new ParseSourceSpan(
-        startTagToken.sourceSpan.start,
-        end,
-        startTagToken.sourceSpan.fullStart,
+      startTagToken.sourceSpan.start,
+      end,
+      startTagToken.sourceSpan.fullStart,
     );
     const nameSpan = new ParseSourceSpan(
       startTagToken.sourceSpan.start.moveBy(1),
