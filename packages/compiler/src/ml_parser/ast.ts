@@ -26,7 +26,8 @@ export type Node =
   | ExpansionCase
   | Text
   | Block
-  | BlockParameter;
+  | BlockParameter
+  | LetDeclaration;
 
 export abstract class NodeWithI18n implements BaseNode {
   constructor(
