@@ -1,6 +1,6 @@
 {
   "name": "angular-html-parser",
-  "version": "6.0.2",
+  "version": "7.0.0",
   "description": "A HTML parser extracted from Angular with some modifications",
   "main": "./lib/angular-html-parser/src/index.js",
   "types": "./lib/angular-html-parser/src/index.d.ts",
