@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -59,9 +59,12 @@ import {
   getSymbolDisplayInfo,
   getTsSymbolDisplayInfo,
   unsafeCastDisplayInfoKindToScriptElementKind,
-} from './display_parts';
+} from './utils/display_parts';
 import {TargetContext, TargetNodeKind, TemplateTarget} from './template_target';
-import {getCodeActionToImportTheDirectiveDeclaration, standaloneTraitOrNgModule} from './ts_utils';
+import {
+  getCodeActionToImportTheDirectiveDeclaration,
+  standaloneTraitOrNgModule,
+} from './utils/ts_utils';
 import {filterAliasImports, isBoundEventWithSyntheticHandler, isWithin} from './utils';
 
 type PropertyExpressionCompletionBuilder = CompletionBuilder<

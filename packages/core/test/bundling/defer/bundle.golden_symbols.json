@@ -9,7 +9,10 @@
     "name": "APP_INITIALIZER"
   },
   {
-    "name": "AfterRenderEventManager"
+    "name": "AfterRenderManager"
+  },
+  {
+    "name": "AfterRenderPhase"
   },
   {
     "name": "AnonymousSubject"
@@ -180,6 +183,9 @@
     "name": "EVENT_MANAGER_PLUGINS"
   },
   {
+    "name": "EffectScheduler"
+  },
+  {
     "name": "ElementRef"
   },
   {
@@ -195,9 +201,6 @@
     "name": "ErrorHandler"
   },
   {
-    "name": "EventDelegationPlugin"
-  },
-  {
     "name": "EventEmitter"
   },
   {
@@ -205,12 +208,6 @@
   },
   {
     "name": "EventManagerPlugin"
-  },
-  {
-    "name": "EventType"
-  },
-  {
-    "name": "GLOBAL_EVENT_DELEGATION"
   },
   {
     "name": "GenericBrowserDomAdapter"
@@ -408,7 +405,7 @@
     "name": "PRESERVE_HOST_CONTENT_DEFAULT"
   },
   {
-    "name": "PendingTasks"
+    "name": "PendingTasksInternal"
   },
   {
     "name": "R3Injector"
@@ -430,6 +427,9 @@
   },
   {
     "name": "RuntimeError"
+  },
+  {
+    "name": "SCHEDULE_IN_ROOT_ZONE"
   },
   {
     "name": "SIGNAL"
@@ -510,7 +510,13 @@
     "name": "ZONELESS_SCHEDULER_DISABLED"
   },
   {
+    "name": "ZoneAwareEffectScheduler"
+  },
+  {
     "name": "ZoneStablePendingTask"
+  },
+  {
+    "name": "_AfterRenderImpl"
   },
   {
     "name": "_ComponentFactoryResolver"
@@ -550,9 +556,6 @@
   },
   {
     "name": "_getInsertInFrontOfRNodeWithI18n"
-  },
-  {
-    "name": "_global"
   },
   {
     "name": "_icuContainerIterate"
@@ -600,13 +603,16 @@
     "name": "addPropertyBinding"
   },
   {
-    "name": "addToViewTree"
+    "name": "addToEndOfViewTree"
   },
   {
     "name": "allocExpando"
   },
   {
     "name": "allocLFrame"
+  },
+  {
+    "name": "angularZoneInstanceIdProperty"
   },
   {
     "name": "appendChild"
@@ -639,6 +645,9 @@
     "name": "assertConsumerNode"
   },
   {
+    "name": "assertNotDestroyed"
+  },
+  {
     "name": "attachPatchData"
   },
   {
@@ -649,6 +658,9 @@
   },
   {
     "name": "bloomHasToken"
+  },
+  {
+    "name": "bootstrap"
   },
   {
     "name": "callHook"
@@ -688,6 +700,9 @@
   },
   {
     "name": "configureViewWithDirective"
+  },
+  {
+    "name": "consumerAfterComputation"
   },
   {
     "name": "consumerBeforeComputation"
@@ -741,6 +756,9 @@
     "name": "createNotification"
   },
   {
+    "name": "createStyleElement"
+  },
+  {
     "name": "createTView"
   },
   {
@@ -751,6 +769,9 @@
   },
   {
     "name": "deepForEachProvider"
+  },
+  {
+    "name": "defaultEquals"
   },
   {
     "name": "defaultErrorHandler"
@@ -889,6 +910,9 @@
   },
   {
     "name": "getFirstNativeNode"
+  },
+  {
+    "name": "getInitialLViewFlagsFromDef"
   },
   {
     "name": "getInjectImplementation"
@@ -1056,7 +1080,7 @@
     "name": "init_advance"
   },
   {
-    "name": "init_after_render_hooks"
+    "name": "init_after_render_effect"
   },
   {
     "name": "init_all"
@@ -1072,6 +1096,9 @@
   },
   {
     "name": "init_api3"
+  },
+  {
+    "name": "init_api4"
   },
   {
     "name": "init_api_flags"
@@ -1132,6 +1159,12 @@
   },
   {
     "name": "init_bindings"
+  },
+  {
+    "name": "init_bootstrap"
+  },
+  {
+    "name": "init_bootstrap_app_scoped"
   },
   {
     "name": "init_bypass"
@@ -1353,6 +1386,9 @@
     "name": "init_dom_triggers"
   },
   {
+    "name": "init_earlyeventcontract"
+  },
+  {
     "name": "init_effect"
   },
   {
@@ -1419,9 +1455,6 @@
     "name": "init_event_contract_defines"
   },
   {
-    "name": "init_event_delegation"
-  },
-  {
     "name": "init_event_delegation_utils"
   },
   {
@@ -1452,6 +1485,9 @@
     "name": "init_fields"
   },
   {
+    "name": "init_flags"
+  },
+  {
     "name": "init_forward_ref"
   },
   {
@@ -1470,7 +1506,13 @@
     "name": "init_graph"
   },
   {
+    "name": "init_hmr"
+  },
+  {
     "name": "init_hooks"
+  },
+  {
+    "name": "init_hooks2"
   },
   {
     "name": "init_host_attribute_token"
@@ -1665,6 +1707,9 @@
     "name": "init_lview_tracking"
   },
   {
+    "name": "init_manager"
+  },
+  {
     "name": "init_map"
   },
   {
@@ -1681,6 +1726,9 @@
   },
   {
     "name": "init_metadata_attr"
+  },
+  {
+    "name": "init_microtask_effect"
   },
   {
     "name": "init_misc_utils"
@@ -1788,6 +1836,9 @@
     "name": "init_partial"
   },
   {
+    "name": "init_patch"
+  },
+  {
     "name": "init_pending_tasks"
   },
   {
@@ -1807,6 +1858,9 @@
   },
   {
     "name": "init_platform_core_providers"
+  },
+  {
+    "name": "init_platform_destroy_listeners"
   },
   {
     "name": "init_platform_ref"
@@ -1866,9 +1920,6 @@
     "name": "init_query_reactive"
   },
   {
-    "name": "init_queue_state_update"
-  },
-  {
     "name": "init_r3_injector"
   },
   {
@@ -1897,6 +1948,9 @@
   },
   {
     "name": "init_restriction"
+  },
+  {
+    "name": "init_root_effect_scheduler"
   },
   {
     "name": "init_sanitization"
@@ -2058,6 +2112,12 @@
     "name": "init_view_container_ref"
   },
   {
+    "name": "init_view_context"
+  },
+  {
+    "name": "init_view_effect_runner"
+  },
+  {
     "name": "init_view_engine_compatibility_prebound"
   },
   {
@@ -2143,6 +2203,12 @@
   },
   {
     "name": "invokeTriggerCleanupFns"
+  },
+  {
+    "name": "isAngularZoneProperty"
+  },
+  {
+    "name": "isApplicationBootstrapConfig"
   },
   {
     "name": "isComponentDef"
@@ -2274,16 +2340,13 @@
     "name": "nativeInsertBefore"
   },
   {
-    "name": "nativeParentNode"
-  },
-  {
     "name": "nextNgElementId"
   },
   {
     "name": "ngOnChangesSetInput"
   },
   {
-    "name": "ngZoneApplicationErrorHandlerFactory"
+    "name": "ngZoneInstanceId"
   },
   {
     "name": "nonNull"
@@ -2343,6 +2406,9 @@
     "name": "remove"
   },
   {
+    "name": "removeElements"
+  },
+  {
     "name": "removeFromArray"
   },
   {
@@ -2374,6 +2440,9 @@
   },
   {
     "name": "retrieveHydrationInfo"
+  },
+  {
+    "name": "runEffectsInView"
   },
   {
     "name": "saveNameToExportMap"
@@ -2467,6 +2536,9 @@
   },
   {
     "name": "uniqueIdCounter"
+  },
+  {
+    "name": "unregisterLView"
   },
   {
     "name": "unwrapRNode"

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -346,6 +346,7 @@ function fakeDirective(ref: Reference<ClassDeclaration>): DirectiveMeta {
     isStandalone: false,
     isSignal: false,
     imports: null,
+    rawImports: null,
     schemas: null,
     decorator: null,
     hostDirectives: null,
@@ -354,6 +355,7 @@ function fakeDirective(ref: Reference<ClassDeclaration>): DirectiveMeta {
     preserveWhitespaces: false,
     isExplicitlyDeferred: false,
     deferredImports: null,
+    inputFieldNamesFromMetadataArray: null,
   };
 }
 

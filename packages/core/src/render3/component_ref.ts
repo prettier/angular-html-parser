@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {setActiveConsumer} from '@angular/core/primitives/signals';
@@ -30,7 +30,6 @@ import {Renderer2, RendererFactory2} from '../render/api';
 import {Sanitizer} from '../sanitization/sanitizer';
 import {assertDefined, assertGreaterThan, assertIndexInRange} from '../util/assert';
 
-import {AfterRenderEventManager} from './after_render_hooks';
 import {assertComponentType, assertNoDuplicateDirectives} from './assert';
 import {attachPatchData} from './context_discovery';
 import {getComponentDef} from './definition';
@@ -41,10 +40,11 @@ import {reportUnknownPropertyError} from './instructions/element_validation';
 import {markViewDirty} from './instructions/mark_view_dirty';
 import {renderView} from './instructions/render';
 import {
-  addToViewTree,
+  addToEndOfViewTree,
   createLView,
   createTView,
   executeContentQueries,
+  getInitialLViewFlagsFromDef,
   getOrCreateComponentTView,
   getOrCreateTNode,
   initializeDirectives,
@@ -88,6 +88,7 @@ import {debugStringifyTypeForError, stringifyForError} from './util/stringify_ut
 import {getComponentLViewByIndex, getNativeByTNode, getTNode} from './util/view_utils';
 import {ViewRef} from './view_ref';
 import {ChainedInjector} from './chained_injector';
+import {unregisterLView} from './interfaces/lview_tracking';
 
 export class ComponentFactoryResolver extends AbstractComponentFactoryResolver {
   /**
@@ -260,15 +261,11 @@ export class ComponentFactory<T> extends AbstractComponentFactory<T> {
       }
       const sanitizer = rootViewInjector.get(Sanitizer, null);
 
-      const afterRenderEventManager = rootViewInjector.get(AfterRenderEventManager, null);
       const changeDetectionScheduler = rootViewInjector.get(ChangeDetectionScheduler, null);
 
       const environment: LViewEnvironment = {
         rendererFactory,
         sanitizer,
-        // We don't use inline effects (yet).
-        inlineEffectRunner: null,
-        afterRenderEventManager,
         changeDetectionScheduler,
       };
 
@@ -335,6 +332,7 @@ export class ComponentFactory<T> extends AbstractComponentFactory<T> {
 
       let component: T;
       let tElementNode: TElementNode;
+      let componentView: LView | null = null;
 
       try {
         const rootComponentDef = this.componentDef;
@@ -356,7 +354,7 @@ export class ComponentFactory<T> extends AbstractComponentFactory<T> {
         }
 
         const hostTNode = createRootComponentTNode(rootLView, hostRNode);
-        const componentView = createRootComponentView(
+        componentView = createRootComponentView(
           hostTNode,
           hostRNode,
           rootComponentDef,
@@ -390,6 +388,14 @@ export class ComponentFactory<T> extends AbstractComponentFactory<T> {
           [LifecycleHooksFeature],
         );
         renderView(rootTView, rootLView, null);
+      } catch (e) {
+        // Stop tracking the views if creation failed since
+        // the consumer won't have a way to dereference them.
+        if (componentView !== null) {
+          unregisterLView(componentView);
+        }
+        unregisterLView(rootLView);
+        throw e;
       } finally {
         leaveView();
       }
@@ -528,17 +534,11 @@ function createRootComponentView(
     hydrationInfo = retrieveHydrationInfo(hostRNode, rootView[INJECTOR]!);
   }
   const viewRenderer = environment.rendererFactory.createRenderer(hostRNode, rootComponentDef);
-  let lViewFlags = LViewFlags.CheckAlways;
-  if (rootComponentDef.signals) {
-    lViewFlags = LViewFlags.SignalView;
-  } else if (rootComponentDef.onPush) {
-    lViewFlags = LViewFlags.Dirty;
-  }
   const componentView = createLView(
     rootView,
     getOrCreateComponentTView(rootComponentDef),
     null,
-    lViewFlags,
+    getInitialLViewFlagsFromDef(rootComponentDef),
     rootView[tNode.index],
     tNode,
     environment,
@@ -552,7 +552,7 @@ function createRootComponentView(
     markAsComponentHost(tView, tNode, rootDirectives.length - 1);
   }
 
-  addToViewTree(rootView, componentView);
+  addToEndOfViewTree(rootView, componentView);
 
   // Store component view at node index, with node as the HOST
   return (rootView[tNode.index] = componentView);
@@ -672,7 +672,7 @@ function projectNodes(
     // complex checks down the line.
     // We also normalize the length of the passed in projectable nodes (to match the number of
     // <ng-container> slots defined by a component).
-    projection.push(nodesforSlot != null ? Array.from(nodesforSlot) : null);
+    projection.push(nodesforSlot != null && nodesforSlot.length ? Array.from(nodesforSlot) : null);
   }
 }
 

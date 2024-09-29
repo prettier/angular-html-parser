@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {validateMatchingNode, validateNodeExists} from '../../hydration/error_handling';
 import {TEMPLATES} from '../../hydration/interfaces';
@@ -37,7 +37,7 @@ import {
 import {getConstant} from '../util/view_utils';
 
 import {
-  addToViewTree,
+  addToEndOfViewTree,
   createDirectivesInstances,
   createLContainer,
   createTView,
@@ -146,7 +146,7 @@ export function declareTemplate(
 
   const lContainer = createLContainer(comment, declarationLView, comment, tNode);
   declarationLView[adjustedIndex] = lContainer;
-  addToViewTree(declarationLView, lContainer);
+  addToEndOfViewTree(declarationLView, lContainer);
 
   // If hydration is enabled, looks up dehydrated views in the DOM
   // using hydration annotation info and stores those views on LContainer.

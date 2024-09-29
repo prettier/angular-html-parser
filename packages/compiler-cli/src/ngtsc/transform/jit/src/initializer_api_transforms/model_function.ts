@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {Decorator} from '@angular/compiler-cli/src/ngtsc/reflection';
@@ -20,6 +20,7 @@ import {createSyntheticAngularCoreDecoratorAccess, PropertyTransform} from './tr
  */
 export const signalModelTransform: PropertyTransform = (
   member,
+  sourceFile,
   host,
   factory,
   importTracker,
@@ -56,7 +57,6 @@ export const signalModelTransform: PropertyTransform = (
     ),
   ]);
 
-  const sourceFile = member.node.getSourceFile();
   const inputDecorator = createDecorator(
     'Input',
     // Config is cast to `any` because `isSignal` will be private, and in case this

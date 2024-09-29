@@ -9,7 +9,10 @@
     "name": "APP_INITIALIZER"
   },
   {
-    "name": "AfterRenderEventManager"
+    "name": "AfterRenderManager"
+  },
+  {
+    "name": "AfterRenderPhase"
   },
   {
     "name": "AnonymousSubject"
@@ -97,6 +100,9 @@
   },
   {
     "name": "ENVIRONMENT_INITIALIZER"
+  },
+  {
+    "name": "EffectScheduler"
   },
   {
     "name": "ElementRef"
@@ -267,7 +273,7 @@
     "name": "PRESERVE_HOST_CONTENT"
   },
   {
-    "name": "PendingTasks"
+    "name": "PendingTasksInternal"
   },
   {
     "name": "PlatformRef"
@@ -286,6 +292,9 @@
   },
   {
     "name": "RuntimeError"
+  },
+  {
+    "name": "SCHEDULE_IN_ROOT_ZONE"
   },
   {
     "name": "SIGNAL"
@@ -345,7 +354,13 @@
     "name": "ZONELESS_SCHEDULER_DISABLED"
   },
   {
+    "name": "ZoneAwareEffectScheduler"
+  },
+  {
     "name": "ZoneStablePendingTask"
+  },
+  {
+    "name": "_AfterRenderImpl"
   },
   {
     "name": "_ComponentFactoryResolver"
@@ -370,9 +385,6 @@
   },
   {
     "name": "_currentInjector"
-  },
-  {
-    "name": "_global"
   },
   {
     "name": "_icuContainerIterate"
@@ -402,6 +414,9 @@
     "name": "allocLFrame"
   },
   {
+    "name": "angularZoneInstanceIdProperty"
+  },
+  {
     "name": "applyNodes"
   },
   {
@@ -423,6 +438,9 @@
     "name": "assertConsumerNode"
   },
   {
+    "name": "assertNotDestroyed"
+  },
+  {
     "name": "attachPatchData"
   },
   {
@@ -433,6 +451,9 @@
   },
   {
     "name": "bloomHasToken"
+  },
+  {
+    "name": "bootstrap"
   },
   {
     "name": "callHook"
@@ -750,6 +771,12 @@
     "name": "invokeHostBindingsInCreationMode"
   },
   {
+    "name": "isAngularZoneProperty"
+  },
+  {
+    "name": "isApplicationBootstrapConfig"
+  },
+  {
     "name": "isComponentDef"
   },
   {
@@ -837,7 +864,7 @@
     "name": "ngOnChangesSetInput"
   },
   {
-    "name": "ngZoneApplicationErrorHandlerFactory"
+    "name": "ngZoneInstanceId"
   },
   {
     "name": "noop"
@@ -912,6 +939,9 @@
     "name": "retrieveHydrationInfo"
   },
   {
+    "name": "runEffectsInView"
+  },
+  {
     "name": "saveNameToExportMap"
   },
   {
@@ -976,6 +1006,9 @@
   },
   {
     "name": "uniqueIdCounter"
+  },
+  {
+    "name": "unregisterLView"
   },
   {
     "name": "unwrapRNode"

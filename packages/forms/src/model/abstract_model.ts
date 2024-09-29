@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -22,9 +22,8 @@ import {
   missingControlValueError,
   noControlsError,
 } from '../directives/reactive_errors';
-import {AsyncValidatorFn, ValidationErrors, ValidatorFn} from '../directives/validators';
+import type {AsyncValidatorFn, ValidationErrors, ValidatorFn} from '../directives/validators';
 import {RuntimeErrorCode} from '../errors';
-import {FormArray, FormGroup} from '../forms';
 import {
   addValidators,
   composeAsyncValidators,
@@ -33,6 +32,8 @@ import {
   removeValidators,
   toObservable,
 } from '../validators';
+import type {FormArray} from './form_array';
+import type {FormGroup} from './form_group';
 
 /**
  * Reports that a control is valid, meaning that no errors exist in the input value.

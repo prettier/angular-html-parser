@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {producerAccessed, SIGNAL, signalSetFn} from '@angular/core/primitives/signals';
@@ -25,7 +25,7 @@ import {OutputEmitterRef} from '../output/output_emitter_ref';
 import {OutputRef} from '../output/output_ref';
 
 /**
- * @developerPreview
+ * @publicAPI
  *
  * Options for model signals.
  */
@@ -43,7 +43,7 @@ export interface ModelOptions {
  * A model signal is a writeable signal that can be exposed as an output.
  * Whenever its value is updated, it emits to the output.
  *
- * @developerPreview
+ * @publicAPI
  */
 export interface ModelSignal<T> extends WritableSignal<T>, InputSignal<T>, OutputRef<T> {
   [SIGNAL]: InputSignalNode<T, T>;

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {initMockFileSystem} from '@angular/compiler-cli/src/ngtsc/file_system/testing';
@@ -568,6 +568,98 @@ describe('code fixes', () => {
       actionChangesMatch(actionChanges, `Import NewBarComponent from './bar' on FooComponent`, [
         [``, `, imports: [NewBarComponent]`],
       ]);
+    });
+  });
+
+  describe('unused standalone imports', () => {
+    it('should fix imports array where some imports are not used', () => {
+      const files = {
+        'app.ts': `
+         import {Component, Directive, Pipe} from '@angular/core';
+
+         @Directive({selector: '[used]', standalone: true})
+         export class UsedDirective {}
+
+         @Directive({selector: '[unused]', standalone: true})
+         export class UnusedDirective {}
+
+         @Pipe({name: 'unused', standalone: true})
+         export class UnusedPipe {}
+
+         @Component({
+          selector: 'used-cmp',
+          standalone: true,
+          template: '',
+         })
+         export class UsedComponent {}
+
+         @Component({
+           template: \`
+            <section>
+              <div></div>
+              <span used></span>
+              <div>
+                <used-cmp/>
+              </div>
+            </section>
+           \`,
+           standalone: true,
+           imports: [UnusedDirective, UsedDirective, UnusedPipe, UsedComponent],
+         })
+         export class AppComponent {}
+       `,
+      };
+
+      const project = createModuleAndProjectWithDeclarations(env, 'test', files);
+      const appFile = project.openFile('app.ts');
+
+      const fixesAllActions = project.getCombinedCodeFix(
+        'app.ts',
+        FixIdForCodeFixesAll.FIX_UNUSED_STANDALONE_IMPORTS,
+      );
+      expectIncludeReplacementTextForFileTextChange({
+        fileTextChanges: fixesAllActions.changes,
+        content: appFile.contents,
+        text: '[UnusedDirective, UsedDirective, UnusedPipe, UsedComponent]',
+        newText: '[UsedDirective, UsedComponent]',
+        fileName: 'app.ts',
+      });
+    });
+
+    it('should fix imports array where all imports are not used', () => {
+      const files = {
+        'app.ts': `
+         import {Component, Directive, Pipe} from '@angular/core';
+
+         @Directive({selector: '[unused]', standalone: true})
+         export class UnusedDirective {}
+
+         @Pipe({name: 'unused', standalone: true})
+         export class UnusedPipe {}
+
+         @Component({
+           template: '',
+           standalone: true,
+           imports: [UnusedDirective, UnusedPipe],
+         })
+         export class AppComponent {}
+       `,
+      };
+
+      const project = createModuleAndProjectWithDeclarations(env, 'test', files);
+      const appFile = project.openFile('app.ts');
+
+      const fixesAllActions = project.getCombinedCodeFix(
+        'app.ts',
+        FixIdForCodeFixesAll.FIX_UNUSED_STANDALONE_IMPORTS,
+      );
+      expectIncludeReplacementTextForFileTextChange({
+        fileTextChanges: fixesAllActions.changes,
+        content: appFile.contents,
+        text: '[UnusedDirective, UnusedPipe]',
+        newText: '[]',
+        fileName: 'app.ts',
+      });
     });
   });
 });

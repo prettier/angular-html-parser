@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {CommonModule, HashLocationStrategy, Location, LocationStrategy} from '@angular/common';
@@ -1897,6 +1897,46 @@ for (const browserAPI of ['navigation', 'history'] as const) {
       expect(TestBed.inject(Handler).handlerCalled).toBeTrue();
     });
 
+    it('can redirect from error handler with RouterModule.forRoot', async () => {
+      TestBed.configureTestingModule({
+        imports: [
+          RouterModule.forRoot(
+            [
+              {
+                path: 'throw',
+                canMatch: [
+                  () => {
+                    throw new Error('');
+                  },
+                ],
+                component: BlankCmp,
+              },
+              {path: 'error', component: BlankCmp},
+            ],
+            {
+              resolveNavigationPromiseOnError: true,
+              errorHandler: () => new RedirectCommand(coreInject(Router).parseUrl('/error')),
+            },
+          ),
+        ],
+      });
+      const router = TestBed.inject(Router);
+      let emitNavigationError = false;
+      let emitNavigationCancelWithRedirect = false;
+      router.events.subscribe((e) => {
+        if (e instanceof NavigationError) {
+          emitNavigationError = true;
+        }
+        if (e instanceof NavigationCancel && e.code === NavigationCancellationCode.Redirect) {
+          emitNavigationCancelWithRedirect = true;
+        }
+      });
+      await router.navigateByUrl('/throw');
+      expect(router.url).toEqual('/error');
+      expect(emitNavigationError).toBe(false);
+      expect(emitNavigationCancelWithRedirect).toBe(true);
+    });
+
     it('can redirect from error handler', async () => {
       TestBed.configureTestingModule({
         providers: [
@@ -2133,28 +2173,6 @@ for (const browserAPI of ['navigation', 'history'] as const) {
       expect(routerUrlBeforeEmittingError).toEqual('/simple');
       expect(locationUrlBeforeEmittingError).toEqual('/simple');
     }));
-
-    it('should support custom error handlers', fakeAsync(
-      inject([Router], (router: Router) => {
-        router.errorHandler = (error) => 'resolvedValue';
-        const fixture = createRoot(router, RootCmp);
-
-        router.resetConfig([{path: 'user/:name', component: UserCmp}]);
-
-        const recordedEvents: any[] = [];
-        router.events.forEach((e) => recordedEvents.push(e));
-
-        let e: any;
-        router.navigateByUrl('/invalid')!.then((_) => (e = _));
-        advance(fixture);
-        expect(e).toEqual(true);
-
-        expectEvents(recordedEvents, [
-          [NavigationStart, '/invalid'],
-          [NavigationError, '/invalid'],
-        ]);
-      }),
-    ));
 
     it('should recover from malformed uri errors', fakeAsync(
       inject([Router, Location], (router: Router, location: Location) => {

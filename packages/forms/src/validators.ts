@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -15,7 +15,7 @@ import {
 import {forkJoin, from, Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 
-import {
+import type {
   AsyncValidator,
   AsyncValidatorFn,
   ValidationErrors,
@@ -23,7 +23,7 @@ import {
   ValidatorFn,
 } from './directives/validators';
 import {RuntimeErrorCode} from './errors';
-import {AbstractControl} from './model/abstract_model';
+import type {AbstractControl} from './model/abstract_model';
 
 function isEmptyInputValue(value: any): boolean {
   /**

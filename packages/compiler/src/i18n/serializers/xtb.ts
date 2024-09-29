@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import * as ml from '../../ml_parser/ast';
@@ -57,7 +57,7 @@ export class Xtb extends Serializer {
   }
 
   override digest(message: i18n.Message): string {
-    return digest(message);
+    return digest(message, /* preservePlaceholders */ true);
   }
 
   override createNameMapper(message: i18n.Message): PlaceholderMapper {

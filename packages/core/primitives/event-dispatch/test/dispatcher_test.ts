@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import * as cache from '../src/cache';
@@ -154,19 +154,11 @@ function getRequiredElementById(id: string) {
 function createEventContract({
   container,
   eventTypes,
-  exportAddA11yClickSupport = false,
 }: {
   container: Element;
   eventTypes: Array<string | [string, string]>;
-  exportAddA11yClickSupport?: boolean;
 }): EventContract {
-  const eventContract = new EventContract(
-    new EventContractContainer(container),
-    /* useActionResolver= */ false,
-  );
-  if (exportAddA11yClickSupport) {
-    eventContract.exportAddA11yClickSupport();
-  }
+  const eventContract = new EventContract(new EventContractContainer(container));
   for (const eventType of eventTypes) {
     if (typeof eventType === 'string') {
       eventContract.addEvent(eventType);

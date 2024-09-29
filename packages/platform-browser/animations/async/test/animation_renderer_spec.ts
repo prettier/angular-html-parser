@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {
   animate,
@@ -21,14 +21,17 @@ import {
 } from '@angular/animations/browser';
 import {DOCUMENT} from '@angular/common';
 import {
+  afterNextRender,
   ANIMATION_MODULE_TYPE,
   Component,
+  inject,
   Injectable,
+  Injector,
   NgZone,
   RendererFactory2,
   RendererType2,
+  runInInjectionContext,
   ViewChild,
-  ɵChangeDetectionScheduler as ChangeDetectionScheduler,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {ɵDomRendererFactory2 as DomRendererFactory2} from '@angular/platform-browser';
@@ -38,7 +41,9 @@ import {el} from '@angular/platform-browser/testing/src/browser_util';
 import {
   AsyncAnimationRendererFactory,
   DynamicDelegationRenderer,
+  ɵASYNC_ANIMATION_LOADING_SCHEDULER_FN,
 } from '../src/async_animation_renderer';
+import {provideAnimationsAsync} from '../public_api';
 
 type AnimationBrowserModule = typeof import('@angular/animations/browser');
 
@@ -122,9 +127,8 @@ type AnimationBrowserModule = typeof import('@angular/animations/browser');
     it("should hook into the engine's insert operations when removing children", async () => {
       const renderer = await makeRenderer();
       const engine = (renderer as any).delegate.engine as MockAnimationEngine;
-      const container = el('<div></div>');
 
-      renderer.removeChild(container, element, false);
+      renderer.removeChild(null, element, false);
       expect(engine.captures['onRemove'].pop()).toEqual([element]);
     });
 
@@ -392,6 +396,52 @@ type AnimationBrowserModule = typeof import('@angular/animations/browser');
         assertHasParent(elm3);
         engine.flush();
         expect(engine.players.length).toEqual(1);
+      });
+    });
+
+    describe('custom scheduling', () => {
+      it('should be able to use a custom loading scheduler', async () => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [
+            provideAnimationsAsync(),
+            {
+              provide: ɵASYNC_ANIMATION_LOADING_SCHEDULER_FN,
+              useFactory: () => {
+                const injector = inject(Injector);
+                return <T>(loadFn: () => T) => {
+                  return new Promise<T>((res) => {
+                    runInInjectionContext(injector, () => afterNextRender(() => res(loadFn())));
+                  });
+                };
+              },
+            },
+          ],
+        });
+        const renderer = await makeRenderer();
+        expect(renderer).toBeInstanceOf(DynamicDelegationRenderer);
+        expect(renderer['delegate']).toBeInstanceOf(AnimationRenderer);
+      });
+
+      it('should handle scheduling error', async () => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+          providers: [
+            provideAnimationsAsync(),
+            {
+              provide: ɵASYNC_ANIMATION_LOADING_SCHEDULER_FN,
+              useValue: () => {
+                throw new Error('SchedulingError');
+              },
+            },
+          ],
+        });
+
+        try {
+          await makeRenderer();
+        } catch (err) {
+          expect((err as Error).message).toBe('SchedulingError');
+        }
       });
     });
   });

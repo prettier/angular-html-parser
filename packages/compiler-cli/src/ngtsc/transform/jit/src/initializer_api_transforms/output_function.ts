@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {isAngularDecorator, tryParseInitializerBasedOutput} from '../../../../annotations';
@@ -22,6 +22,7 @@ import {createSyntheticAngularCoreDecoratorAccess, PropertyTransform} from './tr
  */
 export const initializerApiOutputTransform: PropertyTransform = (
   member,
+  sourceFile,
   host,
   factory,
   importTracker,
@@ -43,7 +44,6 @@ export const initializerApiOutputTransform: PropertyTransform = (
     return member.node;
   }
 
-  const sourceFile = member.node.getSourceFile();
   const newDecorator = factory.createDecorator(
     factory.createCallExpression(
       createSyntheticAngularCoreDecoratorAccess(

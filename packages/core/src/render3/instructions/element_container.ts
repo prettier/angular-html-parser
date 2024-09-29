@@ -3,12 +3,13 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {validateMatchingNode, validateNodeExists} from '../../hydration/error_handling';
 import {locateNextRNode, siblingAfter} from '../../hydration/node_lookup_utils';
 import {
   getNgContainerSize,
+  isDisconnectedNode,
   markRNodeAsClaimedByHydration,
   setSegmentHead,
 } from '../../hydration/utils';
@@ -204,7 +205,11 @@ function locateOrCreateElementContainerNode(
 ): RComment {
   let comment: RComment;
   const hydrationInfo = lView[HYDRATION];
-  const isNodeCreationMode = !hydrationInfo || isInSkipHydrationBlock() || isDetachedByI18n(tNode);
+  const isNodeCreationMode =
+    !hydrationInfo ||
+    isInSkipHydrationBlock() ||
+    isDisconnectedNode(hydrationInfo, index) ||
+    isDetachedByI18n(tNode);
 
   lastNodeWasCreated(isNodeCreationMode);
 

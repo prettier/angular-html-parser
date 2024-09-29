@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {
   AST,
@@ -24,7 +24,7 @@ import {
 } from '@angular/compiler';
 import ts from 'typescript';
 
-import {DisplayInfoKind, SYMBOL_TEXT} from './display_parts';
+import {DisplayInfoKind, SYMBOL_TEXT} from './utils/display_parts';
 import {createQuickInfo, getTextSpanOfNode, isWithin, toTextSpan} from './utils';
 
 export function isDollarAny(node: TmplAstNode | AST): node is Call {
@@ -79,6 +79,8 @@ export function createQuickInfoForBuiltIn(
   if (node instanceof TmplAstDeferredTrigger) {
     if (node.prefetchSpan !== null && isWithin(cursorPositionInTemplate, node.prefetchSpan)) {
       partSpan = node.prefetchSpan;
+    } else if (node.hydrateSpan && isWithin(cursorPositionInTemplate, node.hydrateSpan)) {
+      partSpan = node.hydrateSpan;
     } else if (
       node.whenOrOnSourceSpan !== null &&
       isWithin(cursorPositionInTemplate, node.whenOrOnSourceSpan)
@@ -201,6 +203,13 @@ const BUILT_IN_NAMES_TO_DOC_MAP: {
     docString:
       'Keyword that indicates that the trigger configures when prefetching the defer block contents should start. You can use `on` and `when` conditions as prefetch triggers.',
     links: ['[Reference](https://angular.dev/guide/defer#prefetching)'],
+    displayInfoKind: DisplayInfoKind.KEYWORD,
+  },
+  'hydrate': {
+    docString:
+      "Keyword that indicates when the block's content will be hydrated. You can use `on` and `when` conditions as hydration triggers, or `hydrate never` to disable hydration for this block.",
+    // TODO(crisbeto): add link to partial hydration guide
+    links: [],
     displayInfoKind: DisplayInfoKind.KEYWORD,
   },
   'when': {

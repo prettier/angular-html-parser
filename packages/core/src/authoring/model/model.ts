@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {assertInInjectionContext} from '../../di';
@@ -31,7 +31,7 @@ export function modelRequiredFunction<T>(): ModelSignal<T> {
  * The function exposes an API for also declaring required models via the
  * `model.required` function.
  *
- * @developerPreview
+ * @publicAPI
  * @docsPrivate Ignored because `model` is the canonical API entry.
  */
 export interface ModelFunction {
@@ -98,7 +98,7 @@ export interface ModelFunction {
  * }
  * ```
  *
- * @developerPreview
+ * @publicAPI
  * @initializerApiFunction
  */
 export const model: ModelFunction = (() => {

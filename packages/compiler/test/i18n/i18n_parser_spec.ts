@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {digest, serializeNodes} from '@angular/compiler/src/i18n/digest';
@@ -374,5 +374,6 @@ export function _extractMessages(
     DEFAULT_INTERPOLATION_CONFIG,
     implicitTags,
     implicitAttrs,
+    /* preserveSignificantWhitespace */ true,
   ).messages;
 }

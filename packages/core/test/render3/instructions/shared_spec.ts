@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {createLView, createTNode, createTView} from '@angular/core/src/render3/instructions/shared';
@@ -72,8 +72,6 @@ export function enterViewWithOneDiv() {
     {
       rendererFactory,
       sanitizer: null,
-      inlineEffectRunner: null,
-      afterRenderEventManager: null,
       changeDetectionScheduler: null,
     },
     renderer,

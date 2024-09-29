@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {MessageBundle, Serializer, Xliff, Xliff2, Xmb} from '@angular/compiler';
@@ -57,7 +57,13 @@ export function i18nSerialize(
 
   switch (format) {
     case 'xmb':
-      serializer = new Xmb();
+      serializer = new Xmb(
+        // Whenever we disable whitespace preservation, we also want to stop preserving
+        // placeholders because they contain whitespace we want to drop too. Whitespace
+        // inside `{{ name }}` should be ignored for the same reasons as whitespace
+        // outside placeholders.
+        /* preservePlaceholders */ options.i18nPreserveWhitespaceForLegacyExtraction,
+      );
       break;
     case 'xliff2':
     case 'xlf2':

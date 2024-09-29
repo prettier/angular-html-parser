@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -100,10 +100,7 @@ function createEventContract({
   eventTypes: Array<string | [string, string]>;
   dispatcher?: jasmine.Spy<Dispatcher>;
 }): EventContract {
-  const eventContract = new EventContract(
-    eventContractContainerManager,
-    /* useActionResolver= */ false,
-  );
+  const eventContract = new EventContract(eventContractContainerManager);
   for (const eventType of eventTypes) {
     if (typeof eventType === 'string') {
       eventContract.addEvent(eventType);

@@ -75,7 +75,6 @@ bootstrapApplication(App, {
 });
 ```
 
-IMPORTANT: the Event Replay feature is currently in [Developer Preview](/reference/releases#developer-preview).
 
 ## Constraints
 
@@ -130,7 +129,7 @@ For a full reference on hydration related errors, visit the [Errors Reference Gu
 
 Some components may not work properly with hydration enabled due to some of the aforementioned issues, like [Direct DOM Manipulation](#direct-dom-manipulation). As a workaround, you can add the `ngSkipHydration` attribute to a component's tag in order to skip hydrating the entire component.
 
-```html
+```angular-html
 <app-example ngSkipHydration />
 ```
 

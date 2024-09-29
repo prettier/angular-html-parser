@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -98,6 +98,7 @@ function createTransformVisitor(
       ) {
         let hasChanged = false;
 
+        const sourceFile = originalNode.getSourceFile();
         const members = node.members.map((memberNode) => {
           if (!ts.isPropertyDeclaration(memberNode)) {
             return memberNode;
@@ -111,6 +112,7 @@ function createTransformVisitor(
           for (const transform of propertyTransforms) {
             const newNode = transform(
               {...member, node: memberNode},
+              sourceFile,
               host,
               ctx.factory,
               importTracker,

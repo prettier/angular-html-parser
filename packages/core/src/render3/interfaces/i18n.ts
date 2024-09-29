@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {SanitizerFn} from './sanitization';
@@ -345,6 +345,11 @@ export interface TI18n {
    * while the Update and Create OpCodes are used at runtime.
    */
   ast: Array<I18nNode>;
+
+  /**
+   * Index of a parent TNode, which represents a host node for this i18n block.
+   */
+  parentTNodeIndex: number;
 }
 
 /**

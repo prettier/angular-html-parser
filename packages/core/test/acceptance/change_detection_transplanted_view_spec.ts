@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {AsyncPipe, CommonModule, NgTemplateOutlet} from '@angular/common';
@@ -1105,6 +1105,7 @@ describe('change detection for transplanted views', () => {
     // goes and marks the root view dirty, which then starts the process all over again by
     // checking the declaration.
     expect(() => appRef.tick()).not.toThrow();
+    app.destroy();
   });
   it('does not cause infinite loops with exhaustive checkNoChanges', async () => {
     TestBed.configureTestingModule({

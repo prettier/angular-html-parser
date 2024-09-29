@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -301,6 +301,52 @@ describe('initializer API metadata transform', () => {
         @Directive({})
         class MyDir {
           someInput = input(0);
+        }
+      `,
+        false,
+        fakeDownlevelPreTransform,
+      );
+
+      expect(result).toContain(
+        omitLeadingWhitespace(`
+        __decorate([
+          i0.Input({ isSignal: true, alias: "someInput", required: false, transform: undefined })
+          ], MyDir.prototype, "someInput", void 0);
+      `),
+      );
+    });
+
+    // Tsickle may transform the class via the downlevel decorator transform in advance in G3.
+    // In addition, the property declaration may be transformed too, to add `@type` JSDocs in G3.
+    it('should migrate if the class member and class is transformed in advance', () => {
+      const fakeDownlevelPreTransform = (ctx: ts.TransformationContext) => {
+        return (sf: ts.SourceFile) => {
+          const visitor = (node: ts.Node) => {
+            // Updating the `{transform: () => {}} arrow function triggers both transforms.
+            if (ts.isArrowFunction(node)) {
+              return ctx.factory.updateArrowFunction(
+                node,
+                node.modifiers,
+                node.typeParameters,
+                node.parameters,
+                node.type,
+                node.equalsGreaterThanToken,
+                ctx.factory.createBlock([]),
+              );
+            }
+            return ts.visitEachChild(node, visitor, ctx);
+          };
+          return ts.visitEachChild(sf, visitor, ctx);
+        };
+      };
+
+      const result = transform(
+        `
+        import {input, Directive} from '@angular/core';
+
+        @Directive({})
+        class MyDir {
+          someInput = input({transform: () => {}});
         }
       `,
         false,

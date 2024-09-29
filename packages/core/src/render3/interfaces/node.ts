@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {KeyValueArray} from '../../util/array_utils';
 import {TStylingRange} from '../interfaces/styling';
@@ -120,6 +120,10 @@ export function isTNodeShape(value: unknown): value is TNode {
       typeof (value as TNode).insertBeforeIndex === 'number' ||
       Array.isArray((value as TNode).insertBeforeIndex))
   );
+}
+
+export function isLetDeclaration(tNode: TNode): boolean {
+  return !!(tNode.type & TNodeType.LetDeclaration);
 }
 
 /**

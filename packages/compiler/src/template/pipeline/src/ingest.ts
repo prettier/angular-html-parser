@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {ConstantPool} from '../../../constant_pool';
@@ -670,111 +670,163 @@ function ingestDeferBlock(unit: ViewCompilationUnit, deferBlock: t.DeferredBlock
   // Configure all defer `on` conditions.
   // TODO: refactor prefetch triggers to use a separate op type, with a shared superclass. This will
   // make it easier to refactor prefetch behavior in the future.
-  let prefetch = false;
-  let deferOnOps: ir.DeferOnOp[] = [];
-  let deferWhenOps: ir.DeferWhenOp[] = [];
-  for (const triggers of [deferBlock.triggers, deferBlock.prefetchTriggers]) {
-    if (triggers.idle !== undefined) {
-      const deferOnOp = ir.createDeferOnOp(
+  const deferOnOps: ir.DeferOnOp[] = [];
+  const deferWhenOps: ir.DeferWhenOp[] = [];
+
+  // Ingest the hydrate triggers first since they set up all the other triggers during SSR.
+  ingestDeferTriggers(
+    ir.DeferOpModifierKind.HYDRATE,
+    deferBlock.hydrateTriggers,
+    deferOnOps,
+    deferWhenOps,
+    unit,
+    deferXref,
+  );
+
+  ingestDeferTriggers(
+    ir.DeferOpModifierKind.NONE,
+    deferBlock.triggers,
+    deferOnOps,
+    deferWhenOps,
+    unit,
+    deferXref,
+  );
+
+  ingestDeferTriggers(
+    ir.DeferOpModifierKind.PREFETCH,
+    deferBlock.prefetchTriggers,
+    deferOnOps,
+    deferWhenOps,
+    unit,
+    deferXref,
+  );
+
+  // If no (non-prefetching or hydrating) defer triggers were provided, default to `idle`.
+  const hasConcreteTrigger =
+    deferOnOps.some((op) => op.modifier === ir.DeferOpModifierKind.NONE) ||
+    deferWhenOps.some((op) => op.modifier === ir.DeferOpModifierKind.NONE);
+
+  if (!hasConcreteTrigger) {
+    deferOnOps.push(
+      ir.createDeferOnOp(
         deferXref,
         {kind: ir.DeferTriggerKind.Idle},
-        prefetch,
-        triggers.idle.sourceSpan,
-      );
-      deferOnOps.push(deferOnOp);
-    }
-    if (triggers.immediate !== undefined) {
-      const deferOnOp = ir.createDeferOnOp(
-        deferXref,
-        {kind: ir.DeferTriggerKind.Immediate},
-        prefetch,
-        triggers.immediate.sourceSpan,
-      );
-      deferOnOps.push(deferOnOp);
-    }
-    if (triggers.timer !== undefined) {
-      const deferOnOp = ir.createDeferOnOp(
-        deferXref,
-        {kind: ir.DeferTriggerKind.Timer, delay: triggers.timer.delay},
-        prefetch,
-        triggers.timer.sourceSpan,
-      );
-      deferOnOps.push(deferOnOp);
-    }
-    if (triggers.hover !== undefined) {
-      const deferOnOp = ir.createDeferOnOp(
-        deferXref,
-        {
-          kind: ir.DeferTriggerKind.Hover,
-          targetName: triggers.hover.reference,
-          targetXref: null,
-          targetSlot: null,
-          targetView: null,
-          targetSlotViewSteps: null,
-        },
-        prefetch,
-        triggers.hover.sourceSpan,
-      );
-      deferOnOps.push(deferOnOp);
-    }
-    if (triggers.interaction !== undefined) {
-      const deferOnOp = ir.createDeferOnOp(
-        deferXref,
-        {
-          kind: ir.DeferTriggerKind.Interaction,
-          targetName: triggers.interaction.reference,
-          targetXref: null,
-          targetSlot: null,
-          targetView: null,
-          targetSlotViewSteps: null,
-        },
-        prefetch,
-        triggers.interaction.sourceSpan,
-      );
-      deferOnOps.push(deferOnOp);
-    }
-    if (triggers.viewport !== undefined) {
-      const deferOnOp = ir.createDeferOnOp(
-        deferXref,
-        {
-          kind: ir.DeferTriggerKind.Viewport,
-          targetName: triggers.viewport.reference,
-          targetXref: null,
-          targetSlot: null,
-          targetView: null,
-          targetSlotViewSteps: null,
-        },
-        prefetch,
-        triggers.viewport.sourceSpan,
-      );
-      deferOnOps.push(deferOnOp);
-    }
-    if (triggers.when !== undefined) {
-      if (triggers.when.value instanceof e.Interpolation) {
-        // TemplateDefinitionBuilder supports this case, but it's very strange to me. What would it
-        // even mean?
-        throw new Error(`Unexpected interpolation in defer block when trigger`);
-      }
-      const deferOnOp = ir.createDeferWhenOp(
-        deferXref,
-        convertAst(triggers.when.value, unit.job, triggers.when.sourceSpan),
-        prefetch,
-        triggers.when.sourceSpan,
-      );
-      deferWhenOps.push(deferOnOp);
-    }
-
-    // If no (non-prefetching) defer triggers were provided, default to `idle`.
-    if (deferOnOps.length === 0 && deferWhenOps.length === 0) {
-      deferOnOps.push(
-        ir.createDeferOnOp(deferXref, {kind: ir.DeferTriggerKind.Idle}, false, null!),
-      );
-    }
-    prefetch = true;
+        ir.DeferOpModifierKind.NONE,
+        null!,
+      ),
+    );
   }
 
   unit.create.push(deferOnOps);
   unit.update.push(deferWhenOps);
+}
+
+function ingestDeferTriggers(
+  modifier: ir.DeferOpModifierKind,
+  triggers: Readonly<t.DeferredBlockTriggers>,
+  onOps: ir.DeferOnOp[],
+  whenOps: ir.DeferWhenOp[],
+  unit: ViewCompilationUnit,
+  deferXref: ir.XrefId,
+) {
+  if (triggers.idle !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {kind: ir.DeferTriggerKind.Idle},
+      modifier,
+      triggers.idle.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.immediate !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {kind: ir.DeferTriggerKind.Immediate},
+      modifier,
+      triggers.immediate.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.timer !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {kind: ir.DeferTriggerKind.Timer, delay: triggers.timer.delay},
+      modifier,
+      triggers.timer.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.hover !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {
+        kind: ir.DeferTriggerKind.Hover,
+        targetName: triggers.hover.reference,
+        targetXref: null,
+        targetSlot: null,
+        targetView: null,
+        targetSlotViewSteps: null,
+      },
+      modifier,
+      triggers.hover.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.interaction !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {
+        kind: ir.DeferTriggerKind.Interaction,
+        targetName: triggers.interaction.reference,
+        targetXref: null,
+        targetSlot: null,
+        targetView: null,
+        targetSlotViewSteps: null,
+      },
+      modifier,
+      triggers.interaction.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.viewport !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {
+        kind: ir.DeferTriggerKind.Viewport,
+        targetName: triggers.viewport.reference,
+        targetXref: null,
+        targetSlot: null,
+        targetView: null,
+        targetSlotViewSteps: null,
+      },
+      modifier,
+      triggers.viewport.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.never !== undefined) {
+    const deferOnOp = ir.createDeferOnOp(
+      deferXref,
+      {kind: ir.DeferTriggerKind.Never},
+      modifier,
+      triggers.never.sourceSpan,
+    );
+    onOps.push(deferOnOp);
+  }
+  if (triggers.when !== undefined) {
+    if (triggers.when.value instanceof e.Interpolation) {
+      // TemplateDefinitionBuilder supports this case, but it's very strange to me. What would it
+      // even mean?
+      throw new Error(`Unexpected interpolation in defer block when trigger`);
+    }
+    const deferOnOp = ir.createDeferWhenOp(
+      deferXref,
+      convertAst(triggers.when.value, unit.job, triggers.when.sourceSpan),
+      modifier,
+      triggers.when.sourceSpan,
+    );
+    whenOps.push(deferOnOp);
+  }
 }
 
 function ingestIcu(unit: ViewCompilationUnit, icu: t.Icu) {

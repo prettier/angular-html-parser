@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -160,7 +160,7 @@ import {
 import {
   _extractTemplateStyleUrls,
   extractComponentStyleUrls,
-  extractStyleResources,
+  extractInlineStyleResources,
   extractTemplate,
   makeResourceNotFoundError,
   ParsedTemplateWithSource,
@@ -251,6 +251,8 @@ export class ComponentDecoratorHandler
     private readonly enableLetSyntax: boolean,
     private readonly localCompilationExtraImportsTracker: LocalCompilationExtraImportsTracker | null,
     private readonly jitDeclarationRegistry: JitDeclarationRegistry,
+    private readonly i18nPreserveSignificantWhitespace: boolean,
+    private readonly strictStandalone: boolean,
   ) {
     this.extractTemplateOptions = {
       enableI18nLegacyMessageIdFormat: this.enableI18nLegacyMessageIdFormat,
@@ -258,6 +260,7 @@ export class ComponentDecoratorHandler
       usePoisonedData: this.usePoisonedData,
       enableBlockSyntax: this.enableBlockSyntax,
       enableLetSyntax: this.enableLetSyntax,
+      preserveSignificantWhitespace: this.i18nPreserveSignificantWhitespace,
     };
   }
 
@@ -278,6 +281,7 @@ export class ComponentDecoratorHandler
     usePoisonedData: boolean;
     enableBlockSyntax: boolean;
     enableLetSyntax: boolean;
+    preserveSignificantWhitespace?: boolean;
   };
 
   readonly precedence = HandlerPrecedence.PRIMARY;
@@ -347,44 +351,61 @@ export class ComponentDecoratorHandler
       this.defaultPreserveWhitespaces,
       this.extractTemplateOptions,
       this.compilationMode,
-    ).then((template: ParsedTemplateWithSource | null): Promise<void> | undefined => {
-      if (template === null) {
-        return undefined;
-      }
+    ).then(
+      (template): {templateUrl?: string; templateStyles: string[]; templateStyleUrls: string[]} => {
+        if (template === null) {
+          return {templateStyles: [], templateStyleUrls: []};
+        }
 
-      return Promise.all(template.styleUrls.map((styleUrl) => resolveStyleUrl(styleUrl))).then(
-        () => undefined,
-      );
-    });
+        let templateUrl;
+        if (template.sourceMapping.type === 'external') {
+          templateUrl = template.sourceMapping.templateUrl;
+        }
+
+        return {
+          templateUrl,
+          templateStyles: template.styles,
+          templateStyleUrls: template.styleUrls,
+        };
+      },
+    );
 
     // Extract all the styleUrls in the decorator.
     const componentStyleUrls = extractComponentStyleUrls(this.evaluator, component);
 
-    // Extract inline styles, process, and cache for use in synchronous analyze phase
-    let inlineStyles;
-    if (component.has('styles')) {
-      const litStyles = parseDirectiveStyles(component, this.evaluator, this.compilationMode);
-      if (litStyles === null) {
-        this.preanalyzeStylesCache.set(node, null);
-      } else {
-        inlineStyles = Promise.all(
-          litStyles.map((style) =>
+    return templateAndTemplateStyleResources.then(async (templateInfo) => {
+      // Extract inline styles, process, and cache for use in synchronous analyze phase
+      let styles: string[] | null = null;
+      const rawStyles = parseDirectiveStyles(component, this.evaluator, this.compilationMode);
+      if (rawStyles?.length) {
+        styles = await Promise.all(
+          rawStyles.map((style) =>
             this.resourceLoader.preprocessInline(style, {type: 'style', containingFile}),
           ),
-        ).then((styles) => {
-          this.preanalyzeStylesCache.set(node, styles);
-        });
+        );
       }
-    } else {
-      this.preanalyzeStylesCache.set(node, null);
-    }
+      if (templateInfo.templateStyles) {
+        styles ??= [];
+        styles.push(
+          ...(await Promise.all(
+            templateInfo.templateStyles.map((style) =>
+              this.resourceLoader.preprocessInline(style, {
+                type: 'style',
+                containingFile: templateInfo.templateUrl ?? containingFile,
+              }),
+            ),
+          )),
+        );
+      }
 
-    // Wait for both the template and all styleUrl resources to resolve.
-    return Promise.all([
-      templateAndTemplateStyleResources,
-      inlineStyles,
-      ...componentStyleUrls.map((styleUrl) => resolveStyleUrl(styleUrl.url)),
-    ]).then(() => undefined);
+      this.preanalyzeStylesCache.set(node, styles);
+
+      // Wait for both the template and all styleUrl resources to resolve.
+      await Promise.all([
+        ...componentStyleUrls.map((styleUrl) => resolveStyleUrl(styleUrl.url)),
+        ...templateInfo.templateStyleUrls.map((url) => resolveStyleUrl(url)),
+      ]);
+    });
   }
 
   analyze(
@@ -411,6 +432,7 @@ export class ComponentDecoratorHandler
       this.annotateForClosureCompiler,
       this.compilationMode,
       this.elementSchemaRegistry.getDefaultComponentElementName(),
+      this.strictStandalone,
     );
     // `extractDirectiveMetadata` returns `jitForced = true` when the `@Component` has
     // set `jit: true`. In this case, compilation of the decorator is skipped. Returning
@@ -629,6 +651,7 @@ export class ComponentDecoratorHandler
           usePoisonedData: this.usePoisonedData,
           enableBlockSyntax: this.enableBlockSyntax,
           enableLetSyntax: this.enableLetSyntax,
+          preserveSignificantWhitespace: this.i18nPreserveSignificantWhitespace,
         },
         this.compilationMode,
       );
@@ -664,7 +687,7 @@ export class ComponentDecoratorHandler
     // component.
     let styles: string[] = [];
 
-    const styleResources = extractStyleResources(this.resourceLoader, component, containingFile);
+    const styleResources = extractInlineStyleResources(component);
     const styleUrls: StyleUrlMeta[] = [
       ...extractComponentStyleUrls(this.evaluator, component),
       ..._extractTemplateStyleUrls(template),
@@ -673,6 +696,16 @@ export class ComponentDecoratorHandler
     for (const styleUrl of styleUrls) {
       try {
         const resourceUrl = this.resourceLoader.resolve(styleUrl.url, containingFile);
+        if (
+          styleUrl.source === ResourceTypeForDiagnostics.StylesheetFromDecorator &&
+          ts.isStringLiteralLike(styleUrl.expression)
+        ) {
+          // Only string literal values from the decorator are considered style resources
+          styleResources.add({
+            path: absoluteFrom(resourceUrl),
+            expression: styleUrl.expression,
+          });
+        }
         const resourceStr = this.resourceLoader.load(resourceUrl);
         styles.push(resourceStr);
         if (this.depTracker !== null) {
@@ -694,11 +727,7 @@ export class ComponentDecoratorHandler
             ? ResourceTypeForDiagnostics.StylesheetFromDecorator
             : ResourceTypeForDiagnostics.StylesheetFromTemplate;
         diagnostics.push(
-          makeResourceNotFoundError(
-            styleUrl.url,
-            styleUrl.nodeForError,
-            resourceType,
-          ).toDiagnostic(),
+          makeResourceNotFoundError(styleUrl.url, styleUrl.expression, resourceType).toDiagnostic(),
         );
       }
     }
@@ -743,9 +772,10 @@ export class ComponentDecoratorHandler
           styles.push(...litStyles);
         }
       }
-    }
-    if (template.styles.length > 0) {
-      styles.push(...template.styles);
+
+      if (template.styles.length > 0) {
+        styles.push(...template.styles);
+      }
     }
 
     // Collect all explicitly deferred symbols from the `@Component.deferredImports` field
@@ -775,6 +805,7 @@ export class ComponentDecoratorHandler
       analysis: {
         baseClass: readBaseClass(node, this.reflector, this.evaluator),
         inputs,
+        inputFieldNamesFromMetadataArray: directiveResult.inputFieldNamesFromMetadataArray,
         outputs,
         hostDirectives,
         rawHostDirectives,
@@ -861,6 +892,7 @@ export class ComponentDecoratorHandler
       selector: analysis.meta.selector,
       exportAs: analysis.meta.exportAs,
       inputs: analysis.inputs,
+      inputFieldNamesFromMetadataArray: analysis.inputFieldNamesFromMetadataArray,
       outputs: analysis.outputs,
       queries: analysis.meta.queries.map((query) => query.propertyName),
       isComponent: true,
@@ -872,6 +904,7 @@ export class ComponentDecoratorHandler
       isStandalone: analysis.meta.isStandalone,
       isSignal: analysis.meta.isSignal,
       imports: analysis.resolvedImports,
+      rawImports: analysis.rawImports,
       deferredImports: analysis.resolvedDeferredImports,
       animationTriggerNames: analysis.animationTriggerNames,
       schemas: analysis.schemas,

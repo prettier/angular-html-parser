@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -106,6 +106,7 @@ export interface DirectiveHandlerData {
   classMetadata: R3ClassMetadata | null;
   providersRequiringFactory: Set<Reference<ClassDeclaration>> | null;
   inputs: ClassPropertyMapping<InputMapping>;
+  inputFieldNamesFromMetadataArray: Set<string>;
   outputs: ClassPropertyMapping;
   isPoisoned: boolean;
   isStructural: boolean;
@@ -135,6 +136,7 @@ export class DirectiveDecoratorHandler
     private includeClassMetadata: boolean,
     private readonly compilationMode: CompilationMode,
     private readonly jitDeclarationRegistry: JitDeclarationRegistry,
+    private readonly strictStandalone: boolean,
   ) {}
 
   readonly precedence = HandlerPrecedence.PRIMARY;
@@ -189,6 +191,7 @@ export class DirectiveDecoratorHandler
       this.annotateForClosureCompiler,
       this.compilationMode,
       /* defaultSelector */ null,
+      this.strictStandalone,
     );
     // `extractDirectiveMetadata` returns `jitForced = true` when the `@Directive` has
     // set `jit: true`. In this case, compilation of the decorator is skipped. Returning
@@ -212,6 +215,7 @@ export class DirectiveDecoratorHandler
     return {
       analysis: {
         inputs: directiveResult.inputs,
+        inputFieldNamesFromMetadataArray: directiveResult.inputFieldNamesFromMetadataArray,
         outputs: directiveResult.outputs,
         meta: analysis,
         hostDirectives: directiveResult.hostDirectives,
@@ -255,6 +259,7 @@ export class DirectiveDecoratorHandler
       selector: analysis.meta.selector,
       exportAs: analysis.meta.exportAs,
       inputs: analysis.inputs,
+      inputFieldNamesFromMetadataArray: analysis.inputFieldNamesFromMetadataArray,
       outputs: analysis.outputs,
       queries: analysis.meta.queries.map((query) => query.propertyName),
       isComponent: false,
@@ -267,6 +272,7 @@ export class DirectiveDecoratorHandler
       isStandalone: analysis.meta.isStandalone,
       isSignal: analysis.meta.isSignal,
       imports: null,
+      rawImports: null,
       deferredImports: null,
       schemas: null,
       ngContentSelectors: null,

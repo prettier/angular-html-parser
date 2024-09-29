@@ -3,10 +3,10 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
-import {Sanitizer, Type, ɵAfterRenderEventManager as AfterRenderEventManager} from '@angular/core';
+import {Sanitizer, Type} from '@angular/core';
 import {stringifyElement} from '@angular/platform-browser/testing/src/browser_util';
 
 import {extractDirectiveDef} from '../../src/render3/definition';
@@ -114,8 +114,6 @@ export class ViewFixture {
       {
         rendererFactory,
         sanitizer: sanitizer || null,
-        afterRenderEventManager: new AfterRenderEventManager(),
-        inlineEffectRunner: null,
         changeDetectionScheduler: null,
       },
       hostRenderer,

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {forwardRef, resolveForwardRef} from '../../di/forward_ref';
@@ -155,6 +155,14 @@ export const angularCoreEnv: {[name: string]: unknown} = (() => ({
   'ɵɵdeferPrefetchOnHover': r3.ɵɵdeferPrefetchOnHover,
   'ɵɵdeferPrefetchOnInteraction': r3.ɵɵdeferPrefetchOnInteraction,
   'ɵɵdeferPrefetchOnViewport': r3.ɵɵdeferPrefetchOnViewport,
+  'ɵɵdeferHydrateWhen': r3.ɵɵdeferHydrateWhen,
+  'ɵɵdeferHydrateNever': r3.ɵɵdeferHydrateNever,
+  'ɵɵdeferHydrateOnIdle': r3.ɵɵdeferHydrateOnIdle,
+  'ɵɵdeferHydrateOnImmediate': r3.ɵɵdeferHydrateOnImmediate,
+  'ɵɵdeferHydrateOnTimer': r3.ɵɵdeferHydrateOnTimer,
+  'ɵɵdeferHydrateOnHover': r3.ɵɵdeferHydrateOnHover,
+  'ɵɵdeferHydrateOnInteraction': r3.ɵɵdeferHydrateOnInteraction,
+  'ɵɵdeferHydrateOnViewport': r3.ɵɵdeferHydrateOnViewport,
   'ɵɵdeferEnableTimerScheduling': r3.ɵɵdeferEnableTimerScheduling,
   'ɵɵrepeater': r3.ɵɵrepeater,
   'ɵɵrepeaterCreate': r3.ɵɵrepeaterCreate,
@@ -207,4 +215,6 @@ export const angularCoreEnv: {[name: string]: unknown} = (() => ({
   'ɵɵtwoWayProperty': r3.ɵɵtwoWayProperty,
   'ɵɵtwoWayBindingSet': r3.ɵɵtwoWayBindingSet,
   'ɵɵtwoWayListener': r3.ɵɵtwoWayListener,
+
+  'ɵɵreplaceMedata': r3.ɵɵreplaceMedata,
 }))();

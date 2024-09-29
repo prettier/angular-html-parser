@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {initMockFileSystem} from '@angular/compiler-cli/src/ngtsc/file_system/testing';
@@ -107,11 +107,11 @@ describe('get outlining spans', () => {
 
         @Component({
           template: \`
-          @if (1) {
+          @if (val1) {
             if1
-          } @else if (2) {
+          } @else if (val2) {
             elseif2
-          } @else if (3) {
+          } @else if (val3) {
             elseif3
           } @else {
             else block
@@ -119,6 +119,9 @@ describe('get outlining spans', () => {
           \`
         })
         export class AppCmp {
+          val1: any;
+          val2: any;
+          val3: any;
         }`,
     };
     const env = LanguageServiceTestEnv.setup();

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {ConstantPool} from '../../constant_pool';
@@ -625,11 +625,18 @@ function compileStyles(styles: string[], selector: string, hostSelector: string)
  * is using the `ViewEncapsulation.Emulated` mode.
  *
  * @param style The content of a CSS stylesheet.
+ * @param componentIdentifier The identifier to use within the CSS rules.
  * @returns The encapsulated content for the style.
  */
-export function encapsulateStyle(style: string): string {
+export function encapsulateStyle(style: string, componentIdentifier?: string): string {
   const shadowCss = new ShadowCss();
-  return shadowCss.shimCssText(style, CONTENT_ATTR, HOST_ATTR);
+  const selector = componentIdentifier
+    ? CONTENT_ATTR.replace(COMPONENT_VARIABLE, componentIdentifier)
+    : CONTENT_ATTR;
+  const hostSelector = componentIdentifier
+    ? HOST_ATTR.replace(COMPONENT_VARIABLE, componentIdentifier)
+    : HOST_ATTR;
+  return shadowCss.shimCssText(style, selector, hostSelector);
 }
 
 function createHostDirectivesType(meta: R3DirectiveMetadata): o.Type {

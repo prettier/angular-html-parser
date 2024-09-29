@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -69,7 +69,7 @@ import {
 } from './diagnostics';
 import {DomSchemaChecker} from './dom';
 import {Environment} from './environment';
-import {astToTypescript, NULL_AS_ANY} from './expression';
+import {astToTypescript, ANY_EXPRESSION} from './expression';
 import {OutOfBandDiagnosticRecorder} from './oob';
 import {
   tsCallMethod,
@@ -763,7 +763,7 @@ class TcbInvalidReferenceOp extends TcbOp {
 
   override execute(): ts.Identifier {
     const id = this.tcb.allocateId();
-    this.scope.addStatement(tsCreateVariable(id, NULL_AS_ANY));
+    this.scope.addStatement(tsCreateVariable(id, ANY_EXPRESSION));
     return id;
   }
 }
@@ -2586,6 +2586,12 @@ class Scope {
   private appendDeferredBlock(block: TmplAstDeferredBlock): void {
     this.appendDeferredTriggers(block, block.triggers);
     this.appendDeferredTriggers(block, block.prefetchTriggers);
+
+    // Only the `when` hydration trigger needs to be checked.
+    if (block.hydrateTriggers.when) {
+      this.opQueue.push(new TcbExpressionOp(this.tcb, this, block.hydrateTriggers.when.value));
+    }
+
     this.appendChildren(block);
 
     if (block.placeholder !== null) {
@@ -2785,7 +2791,7 @@ class TcbExpressionTranslator {
         this.tcb.oobRecorder.missingPipe(this.tcb.id, ast);
 
         // Use an 'any' value to at least allow the rest of the expression to be checked.
-        pipe = NULL_AS_ANY;
+        pipe = ANY_EXPRESSION;
       } else if (
         pipeMeta.isExplicitlyDeferred &&
         this.tcb.boundTarget.getEagerlyUsedPipes().includes(ast.name)
@@ -2795,7 +2801,7 @@ class TcbExpressionTranslator {
         this.tcb.oobRecorder.deferredPipeUsedEagerly(this.tcb.id, ast);
 
         // Use an 'any' value to at least allow the rest of the expression to be checked.
-        pipe = NULL_AS_ANY;
+        pipe = ANY_EXPRESSION;
       } else {
         // Use a variable declared as the pipe's type.
         pipe = this.tcb.env.pipeInst(
@@ -2916,7 +2922,7 @@ function tcbCallTypeCtor(
     } else {
       // A type constructor is required to be called with all input properties, so any unset
       // inputs are simply assigned a value of type `any` to ignore them.
-      return ts.factory.createPropertyAssignment(propertyName, NULL_AS_ANY);
+      return ts.factory.createPropertyAssignment(propertyName, ANY_EXPRESSION);
     }
   });
 

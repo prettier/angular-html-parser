@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -213,7 +213,7 @@ export class NgForOf<T, U extends NgIterable<T> = NgIterable<T>> implements DoCh
 
   /**
    * A reference to the template that is stamped out for each item in the iterable.
-   * @see [template reference variable](guide/templates/reference-variables)
+   * @see [template reference variable](guide/templates/variables#template-reference-variables)
    */
   @Input()
   set ngForTemplate(value: TemplateRef<NgForOfContext<T, U>>) {

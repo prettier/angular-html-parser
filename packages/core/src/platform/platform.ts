@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -15,7 +15,8 @@ import {InjectionToken, Injector, StaticProvider} from '../di';
 import {INJECTOR_SCOPE} from '../di/scope';
 import {RuntimeError, RuntimeErrorCode} from '../errors';
 
-import {PLATFORM_DESTROY_LISTENERS, PlatformRef} from './platform_ref';
+import {PlatformRef} from './platform_ref';
+import {PLATFORM_DESTROY_LISTENERS} from './platform_destroy_listeners';
 
 let _platformInjector: Injector | null = null;
 

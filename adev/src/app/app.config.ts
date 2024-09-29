@@ -32,6 +32,7 @@ import {
   TitleStrategy,
   createUrlTreeFromSnapshot,
   provideRouter,
+  withComponentInputBinding,
   withInMemoryScrolling,
   withViewTransitions,
 } from '@angular/router';
@@ -44,7 +45,6 @@ import {CustomErrorHandler} from './core/services/errors-handling/error-handler'
 import {ExampleContentLoader} from './core/services/example-content-loader.service';
 import {ReuseTutorialsRouteStrategy} from './features/tutorial/tutorials-route-reuse-strategy';
 import {routes} from './routes';
-import {ReferenceScrollHandler} from './features/references/services/reference-scroll-handler.service';
 import {CURRENT_MAJOR_VERSION} from './core/providers/current-version';
 import {AppScroller} from './app-scroller';
 
@@ -70,6 +70,7 @@ export const appConfig: ApplicationConfig = {
           }
         },
       }),
+      withComponentInputBinding(),
     ),
     provideExperimentalZonelessChangeDetection(),
     provideClientHydration(),
@@ -104,6 +105,5 @@ export const appConfig: ApplicationConfig = {
       deps: [DOCUMENT],
     },
     {provide: TitleStrategy, useClass: ADevTitleStrategy},
-    ReferenceScrollHandler,
   ],
 };

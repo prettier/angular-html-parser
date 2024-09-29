@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -210,6 +210,9 @@ export function compileComponent(type: Type<any>, metadata: Component): void {
         }
       }
       return ngComponentDef;
+    },
+    set: (def: ComponentDef<unknown> | null) => {
+      ngComponentDef = def;
     },
     // Make the property configurable in dev mode to allow overriding in tests
     configurable: !!ngDevMode,

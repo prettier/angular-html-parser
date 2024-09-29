@@ -3,13 +3,16 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {initMockFileSystem} from '@angular/compiler-cli/src/ngtsc/file_system/testing';
 import ts from 'typescript';
 
-import {DisplayInfoKind, unsafeCastDisplayInfoKindToScriptElementKind} from '../src/display_parts';
+import {
+  DisplayInfoKind,
+  unsafeCastDisplayInfoKindToScriptElementKind,
+} from '../src/utils/display_parts';
 import {LanguageServiceTestEnv, OpenBuffer} from '../testing';
 
 const DIR_WITH_INPUT = {

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {Injectable} from '../di/injectable';
@@ -67,7 +67,7 @@ export class Compiler {
   }
 
   /**
-   * Same as {@link #compileModuleSync} but also creates ComponentFactories for all components.
+   * Same as {@link Compiler#compileModuleSync compileModuleSync} but also creates ComponentFactories for all components.
    */
   compileModuleAndAllComponentsSync<T>(moduleType: Type<T>): ModuleWithComponentFactories<T> {
     const ngModuleFactory = this.compileModuleSync(moduleType);
@@ -84,7 +84,7 @@ export class Compiler {
   }
 
   /**
-   * Same as {@link #compileModuleAsync} but also creates ComponentFactories for all components.
+   * Same as {@link Compiler#compileModuleAsync compileModuleAsync} but also creates ComponentFactories for all components.
    */
   compileModuleAndAllComponentsAsync<T>(
     moduleType: Type<T>,

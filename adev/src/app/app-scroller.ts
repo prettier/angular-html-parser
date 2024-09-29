@@ -41,6 +41,13 @@ export class AppScroller {
           this._lastScrollEvent = e;
         }),
         filter(() => !this.disableScrolling),
+        filter(() => {
+          const info = this.router.lastSuccessfulNavigation?.extras.info as Record<
+            'disableScrolling',
+            boolean
+          >;
+          return !info?.['disableScrolling'];
+        }),
         switchMap((e) => {
           return firstValueFrom(
             this.appRef.isStable.pipe(
@@ -64,7 +71,7 @@ export class AppScroller {
     const {anchor, position} = this._lastScrollEvent;
 
     // Don't scroll during rendering
-    this.cancelScroll = afterNextRender(
+    const ref = afterNextRender(
       {
         write: () => {
           if (position) {
@@ -77,6 +84,9 @@ export class AppScroller {
         },
       },
       {injector: this.injector},
-    ).destroy;
+    );
+    this.cancelScroll = () => {
+      ref.destroy();
+    };
   }
 }

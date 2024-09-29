@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {initMockFileSystem} from '@angular/compiler-cli/src/ngtsc/file_system/testing';
@@ -14,7 +14,7 @@ import {createModuleAndProjectWithDeclarations, LanguageServiceTestEnv, Project}
 function quickInfoSkeleton(): {[fileName: string]: string} {
   return {
     'app.ts': `
-        import {Component, Directive, EventEmitter, Input, NgModule, Output, Pipe, PipeTransform, model} from '@angular/core';
+        import {Component, Directive, EventEmitter, Input, NgModule, Output, Pipe, PipeTransform, model, signal} from '@angular/core';
         import {CommonModule} from '@angular/common';
 
         export interface Address {
@@ -60,6 +60,18 @@ function quickInfoSkeleton(): {[fileName: string]: string} {
           setTitle(newTitle: string) {}
           trackByFn!: any;
           name!: any;
+          someObject = {
+            someProp: 'prop',
+            someSignal: signal<number>(0),
+            someMethod: (): number => 1,
+            nested: {
+              helloWorld: () => {
+                return {
+                  nestedMethod: () => 1
+                }
+              }
+            }
+          };
         }
 
         @Directive({
@@ -331,14 +343,6 @@ describe('quick info', () => {
         });
       });
 
-      it('should work for $event from native element', () => {
-        expectQuickInfo({
-          templateOverride: `<div (click)="myClick($e¦vent)"></div>`,
-          expectedSpanText: '$event',
-          expectedDisplayString: '(parameter) $event: MouseEvent',
-        });
-      });
-
       it('should work for click output from native element', () => {
         expectQuickInfo({
           templateOverride: `<div (cl¦ick)="myClick($event)"></div>`,
@@ -422,6 +426,23 @@ describe('quick info', () => {
         });
       });
 
+      it('should work for accessed function calls', () => {
+        expectQuickInfo({
+          templateOverride: `<div (click)="someObject.some¦Method()"></div>`,
+          expectedSpanText: 'someMethod',
+          expectedDisplayString: '(property) someMethod: () => number',
+        });
+      });
+
+      it('should work for accessed very nested function calls', () => {
+        expectQuickInfo({
+          templateOverride: `<div (click)="someObject.nested.helloWor¦ld().nestedMethod()"></div>`,
+          expectedSpanText: 'helloWorld',
+          expectedDisplayString:
+            '(property) helloWorld: () => {\n    nestedMethod: () => number;\n}',
+        });
+      });
+
       it('should find members in an attribute interpolation', () => {
         expectQuickInfo({
           templateOverride: `<div string-model model="{{tit¦le}}"></div>`,
@@ -479,6 +500,44 @@ describe('quick info', () => {
         const info = appFile.getQuickInfoAtPosition()!;
         expect(toText(info.displayParts)).toEqual('(method) myFunc(): void');
         expect(toText(info.documentation)).toEqual('Documentation for myFunc.');
+      });
+
+      it('should work for safe signal calls', () => {
+        const files = {
+          'app.ts': `import {Component, Signal} from '@angular/core';
+            @Component({template: '<div [id]="something?.value()"></div>'})
+            export class AppCmp {
+              something!: {
+                /** Documentation for value. */
+                value: Signal<number>;
+              };
+            }`,
+        };
+        const project = createModuleAndProjectWithDeclarations(env, 'test_project', files);
+        const appFile = project.openFile('app.ts');
+        appFile.moveCursorToText('something?.va¦lue()');
+        const info = appFile.getQuickInfoAtPosition()!;
+        expect(toText(info.displayParts)).toEqual('(property) value: Signal<number>');
+        expect(toText(info.documentation)).toEqual('Documentation for value.');
+      });
+
+      it('should work for signal calls', () => {
+        const files = {
+          'app.ts': `import {Component, signal} from '@angular/core';
+            @Component({template: '<div [id]="something.value()"></div>'})
+            export class AppCmp {
+              something = {
+                /** Documentation for value. */
+                value: signal(0)
+              };
+            }`,
+        };
+        const project = createModuleAndProjectWithDeclarations(env, 'test_project', files);
+        const appFile = project.openFile('app.ts');
+        appFile.moveCursorToText('something.va¦lue()');
+        const info = appFile.getQuickInfoAtPosition()!;
+        expect(toText(info.displayParts)).toEqual('(property) value: WritableSignal\n() => number');
+        expect(toText(info.documentation)).toEqual('Documentation for value.');
       });
 
       it('should work for accessed properties in writes', () => {
@@ -646,6 +705,14 @@ describe('quick info', () => {
             });
           });
 
+          it('hydrate (when)', () => {
+            expectQuickInfo({
+              templateOverride: `@defer (hydra¦te when title) { }`,
+              expectedSpanText: 'hydrate',
+              expectedDisplayString: '(keyword) hydrate',
+            });
+          });
+
           it('on', () => {
             expectQuickInfo({
               templateOverride: `@defer (o¦n immediate) { } `,
@@ -659,6 +726,14 @@ describe('quick info', () => {
               templateOverride: `@defer (prefet¦ch on immediate) { }`,
               expectedSpanText: 'prefetch',
               expectedDisplayString: '(keyword) prefetch',
+            });
+          });
+
+          it('hydrate (on)', () => {
+            expectQuickInfo({
+              templateOverride: `@defer (hydra¦te on immediate) { }`,
+              expectedSpanText: 'hydrate',
+              expectedDisplayString: '(keyword) hydrate',
             });
           });
         });
@@ -703,12 +778,20 @@ describe('quick info', () => {
           expectedDisplayString: '(variable) aliasName: [{ readonly name: "name"; }]',
         });
       });
+
+      it('if block alias variable', () => {
+        expectQuickInfo({
+          templateOverride: `@if (someObject.some¦Signal(); as aliasName) {}`,
+          expectedSpanText: 'someSignal',
+          expectedDisplayString: '(property) someSignal: WritableSignal\n() => number',
+        });
+      });
     });
 
     describe('let declarations', () => {
       it('should get quick info for a let declaration', () => {
         expectQuickInfo({
-          templateOverride: `@let na¦me = 'Frodo';`,
+          templateOverride: `@let na¦me = 'Frodo'; {{name}}`,
           expectedSpanText: `@let name = 'Frodo'`,
           expectedDisplayString: `(let) name: "Frodo"`,
         });

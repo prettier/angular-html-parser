@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -157,7 +157,7 @@ describe('type check blocks', () => {
         'const _ctor1: <T extends string = any>(init: Pick<i0.Dir<T>, "fieldA" | "fieldB">) => i0.Dir<T> = null!;',
       );
       expect(actual).toContain(
-        'var _t1 = _ctor1({ "fieldA": (((this).foo)), "fieldB": null as any });',
+        'var _t1 = _ctor1({ "fieldA": (((this).foo)), "fieldB": 0 as any });',
       );
     });
 
@@ -963,6 +963,7 @@ describe('type check blocks', () => {
       useInlineTypeConstructors: true,
       suggestionsForSuboptimalTypeInference: false,
       controlFlowPreventingContentProjection: 'warning',
+      unusedStandaloneImports: 'warning',
       allowSignalsInTwoWayBindings: true,
     };
 
@@ -1235,11 +1236,11 @@ describe('type check blocks', () => {
       it('should use undefined for safe navigation operations when enabled', () => {
         const block = tcb(TEMPLATE, DIRECTIVES);
         expect(block).toContain(
-          '(null as any ? (null as any ? (((this).a))!.method : undefined)!() : undefined)',
+          '(0 as any ? (0 as any ? (((this).a))!.method : undefined)!() : undefined)',
         );
-        expect(block).toContain('(null as any ? (((this).a))!.b : undefined)');
-        expect(block).toContain('(null as any ? (((this).a))![0] : undefined)');
-        expect(block).toContain('(null as any ? (((((this).a)).optionalMethod))!() : undefined)');
+        expect(block).toContain('(0 as any ? (((this).a))!.b : undefined)');
+        expect(block).toContain('(0 as any ? (((this).a))![0] : undefined)');
+        expect(block).toContain('(0 as any ? (((((this).a)).optionalMethod))!() : undefined)');
       });
       it("should use an 'any' type for safe navigation operations when disabled", () => {
         const DISABLED_CONFIG: TypeCheckingConfig = {
@@ -1258,13 +1259,13 @@ describe('type check blocks', () => {
       const TEMPLATE = `{{a.method()?.b}} {{a()?.method()}} {{a.method()?.[0]}} {{a.method()?.otherMethod?.()}}`;
       it('should check the presence of a property/method on the receiver when enabled', () => {
         const block = tcb(TEMPLATE, DIRECTIVES);
-        expect(block).toContain('(null as any ? ((((this).a)).method())!.b : undefined)');
+        expect(block).toContain('(0 as any ? ((((this).a)).method())!.b : undefined)');
         expect(block).toContain(
-          '(null as any ? (null as any ? ((this).a())!.method : undefined)!() : undefined)',
+          '(0 as any ? (0 as any ? ((this).a())!.method : undefined)!() : undefined)',
         );
-        expect(block).toContain('(null as any ? ((((this).a)).method())![0] : undefined)');
+        expect(block).toContain('(0 as any ? ((((this).a)).method())![0] : undefined)');
         expect(block).toContain(
-          '(null as any ? ((null as any ? ((((this).a)).method())!.otherMethod : undefined))!() : undefined)',
+          '(0 as any ? ((0 as any ? ((((this).a)).method())!.otherMethod : undefined))!() : undefined)',
         );
       });
       it('should not check the presence of a property/method on the receiver when disabled', () => {
@@ -1669,6 +1670,16 @@ describe('type check blocks', () => {
     it('should generate `prefetch when` trigger', () => {
       const TEMPLATE = `
         @defer (prefetch when shouldShow() && isVisible) {
+          {{main()}}
+        }
+      `;
+
+      expect(tcb(TEMPLATE)).toContain('((this).shouldShow()) && (((this).isVisible));');
+    });
+
+    it('should generate `hydrate when` trigger', () => {
+      const TEMPLATE = `
+        @defer (hydrate when shouldShow() && isVisible) {
           {{main()}}
         }
       `;

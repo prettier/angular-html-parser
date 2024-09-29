@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {DOCUMENT, NgIf} from '@angular/common';
@@ -193,10 +193,9 @@ describe('component', () => {
       expect(match).toBeDefined();
       expect(match.length).toEqual(2);
       expect(html).toMatch(
-        `<leaf ${match[0].replace('_nghost', '_ngcontent')}="" ${match[1]}=""><span ${match[1].replace(
-          '_nghost',
-          '_ngcontent',
-        )}="">bar</span></leaf></div>`,
+        `<leaf ${match[0].replace('_nghost', '_ngcontent')}="" ${
+          match[1]
+        }=""><span ${match[1].replace('_nghost', '_ngcontent')}="">bar</span></leaf></div>`,
       );
     });
   });
@@ -738,6 +737,7 @@ describe('component', () => {
       componentRef.instance.name = 'ZoneJS';
       componentRef.changeDetectorRef.detectChanges();
       expect(hostElement.textContent).toBe('Hello ZoneJS!');
+      componentRef.destroy();
     });
 
     it('should create an instance of an NgModule-based component', () => {
@@ -797,6 +797,7 @@ describe('component', () => {
 
       componentRef.changeDetectorRef.detectChanges();
       expect(hostElement.innerHTML.replace(/\s*/g, '')).toBe('<p>1</p>|<p>2</p>|<p>3</p>');
+      componentRef.destroy();
     });
 
     it('should be able to inject tokens from EnvironmentInjector', () => {
@@ -817,6 +818,7 @@ describe('component', () => {
       componentRef.changeDetectorRef.detectChanges();
 
       expect(hostElement.textContent).toBe('Token: EnvironmentInjector(A)');
+      componentRef.destroy();
     });
 
     it('should be able to use NodeInjector from the node hierarchy', () => {
@@ -890,6 +892,7 @@ describe('component', () => {
       expect(hostElement.tagName.toLowerCase()).toBe(selector);
 
       expect(hostElement.textContent).toBe('Hello Angular!');
+      componentRef.destroy();
     });
 
     it(
@@ -917,6 +920,7 @@ describe('component', () => {
         expect(hostElement.tagName.toLowerCase()).toBe('div');
 
         expect(hostElement.textContent).toBe('Hello Angular!');
+        componentRef.destroy();
       },
     );
 

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import * as o from '../output/output_ast';
@@ -252,6 +252,32 @@ export class Identifiers {
     name: 'ɵɵdeferPrefetchOnViewport',
     moduleName: CORE,
   };
+  static deferHydrateWhen: o.ExternalReference = {name: 'ɵɵdeferHydrateWhen', moduleName: CORE};
+  static deferHydrateNever: o.ExternalReference = {name: 'ɵɵdeferHydrateNever', moduleName: CORE};
+  static deferHydrateOnIdle: o.ExternalReference = {
+    name: 'ɵɵdeferHydrateOnIdle',
+    moduleName: CORE,
+  };
+  static deferHydrateOnImmediate: o.ExternalReference = {
+    name: 'ɵɵdeferHydrateOnImmediate',
+    moduleName: CORE,
+  };
+  static deferHydrateOnTimer: o.ExternalReference = {
+    name: 'ɵɵdeferHydrateOnTimer',
+    moduleName: CORE,
+  };
+  static deferHydrateOnHover: o.ExternalReference = {
+    name: 'ɵɵdeferHydrateOnHover',
+    moduleName: CORE,
+  };
+  static deferHydrateOnInteraction: o.ExternalReference = {
+    name: 'ɵɵdeferHydrateOnInteraction',
+    moduleName: CORE,
+  };
+  static deferHydrateOnViewport: o.ExternalReference = {
+    name: 'ɵɵdeferHydrateOnViewport',
+    moduleName: CORE,
+  };
   static deferEnableTimerScheduling: o.ExternalReference = {
     name: 'ɵɵdeferEnableTimerScheduling',
     moduleName: CORE,
@@ -383,6 +409,8 @@ export class Identifiers {
 
   static forwardRef: o.ExternalReference = {name: 'forwardRef', moduleName: CORE};
   static resolveForwardRef: o.ExternalReference = {name: 'resolveForwardRef', moduleName: CORE};
+
+  static replaceMetadata: o.ExternalReference = {name: 'ɵɵreplaceMedata', moduleName: CORE};
 
   static ɵɵdefineInjectable: o.ExternalReference = {name: 'ɵɵdefineInjectable', moduleName: CORE};
   static declareInjectable: o.ExternalReference = {name: 'ɵɵngDeclareInjectable', moduleName: CORE};

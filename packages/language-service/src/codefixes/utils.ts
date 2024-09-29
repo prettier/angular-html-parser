@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {absoluteFrom} from '@angular/compiler-cli';
@@ -137,4 +137,5 @@ export enum FixIdForCodeFixesAll {
   FIX_MISSING_MEMBER = 'fixMissingMember',
   FIX_INVALID_BANANA_IN_BOX = 'fixInvalidBananaInBox',
   FIX_MISSING_IMPORT = 'fixMissingImport',
+  FIX_UNUSED_STANDALONE_IMPORTS = 'fixUnusedStandaloneImports',
 }

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -514,8 +514,10 @@ runInEachFileSystem(() => {
 
         const diags = env.driveDiagnostics();
         expect(diags.length).toBe(1);
-        expect(diags[0].messageText).toBe(
-          `Type '{ id: number; }' is not assignable to type '{ id: string; }'.`,
+        expect(diags[0].messageText).toEqual(
+          jasmine.objectContaining({
+            messageText: `Type '{ id: number; }' is not assignable to type '{ id: string; }'.`,
+          }),
         );
       });
 
@@ -547,7 +549,9 @@ runInEachFileSystem(() => {
         const diags = env.driveDiagnostics();
         expect(diags.length).toBe(1);
         expect(diags[0].messageText).toEqual(
-          `Type '{ id: number; }' is not assignable to type '{ id: string; }'.`,
+          jasmine.objectContaining({
+            messageText: `Type '{ id: number; }' is not assignable to type '{ id: string; }'.`,
+          }),
         );
       });
 

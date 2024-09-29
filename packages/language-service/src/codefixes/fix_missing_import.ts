@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {ASTWithName, TmplAstElement} from '@angular/compiler';
@@ -19,7 +19,10 @@ import {
 import ts from 'typescript';
 
 import {getTargetAtPosition, TargetNodeKind} from '../template_target';
-import {getCodeActionToImportTheDirectiveDeclaration, standaloneTraitOrNgModule} from '../ts_utils';
+import {
+  getCodeActionToImportTheDirectiveDeclaration,
+  standaloneTraitOrNgModule,
+} from '../utils/ts_utils';
 import {getDirectiveMatchesForElementTag} from '../utils';
 
 import {CodeActionContext, CodeActionMeta, FixIdForCodeFixesAll} from './utils';

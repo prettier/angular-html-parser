@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -35,9 +35,7 @@ export class BrowserDomAdapter extends GenericBrowserDomAdapter {
     el.dispatchEvent(evt);
   }
   override remove(node: Node): void {
-    if (node.parentNode) {
-      node.parentNode.removeChild(node);
-    }
+    (node as Element | Text | Comment).remove();
   }
   override createElement(tagName: string, doc?: Document): HTMLElement {
     doc = doc || this.getDefaultDocument();

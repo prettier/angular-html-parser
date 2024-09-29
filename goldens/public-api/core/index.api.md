@@ -50,8 +50,20 @@ export function afterRender<E = never, W = never, M = never>(spec: {
 export function afterRender(callback: VoidFunction, options?: AfterRenderOptions): AfterRenderRef;
 
 // @public
+export function afterRenderEffect(callback: (onCleanup: EffectCleanupRegisterFn) => void, options?: Omit<AfterRenderOptions, 'phase'>): AfterRenderRef;
+
+// @public
+export function afterRenderEffect<E = never, W = never, M = never>(spec: {
+    earlyRead?: (onCleanup: EffectCleanupRegisterFn) => E;
+    write?: (...args: [...ɵFirstAvailableSignal<[E]>, EffectCleanupRegisterFn]) => W;
+    mixedReadWrite?: (...args: [...ɵFirstAvailableSignal<[W, E]>, EffectCleanupRegisterFn]) => M;
+    read?: (...args: [...ɵFirstAvailableSignal<[M, W, E]>, EffectCleanupRegisterFn]) => void;
+}, options?: Omit<AfterRenderOptions, 'phase'>): AfterRenderRef;
+
+// @public
 export interface AfterRenderOptions {
     injector?: Injector;
+    manualCleanup?: boolean;
     // @deprecated
     phase?: AfterRenderPhase;
 }
@@ -137,6 +149,8 @@ export class ApplicationRef {
     tick(): void;
     get viewCount(): number;
     // (undocumented)
+    whenStable(): Promise<void>;
+    // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<ApplicationRef, never>;
     // (undocumented)
     static ɵprov: i0.ɵɵInjectableDeclaration<ApplicationRef>;
@@ -174,6 +188,7 @@ export function booleanAttribute(value: unknown): boolean;
 
 // @public
 export interface BootstrapOptions {
+    // @deprecated
     ignoreChangesOutsideZone?: boolean;
     ngZone?: NgZone | 'zone.js' | 'noop';
     ngZoneEventCoalescing?: boolean;
@@ -433,7 +448,9 @@ export interface CreateComputedOptions<T> {
 
 // @public
 export interface CreateEffectOptions {
+    // @deprecated (undocumented)
     allowSignalWrites?: boolean;
+    forceRoot?: true;
     injector?: Injector;
     manualCleanup?: boolean;
 }
@@ -692,13 +709,6 @@ export interface ExistingProvider extends ExistingSansProvider {
 // @public
 export interface ExistingSansProvider {
     useExisting: any;
-}
-
-// @public
-export class ExperimentalPendingTasks {
-    add(): () => void;
-    // (undocumented)
-    static ɵprov: unknown;
 }
 
 // @public
@@ -971,7 +981,9 @@ export interface InputDecorator {
 export interface InputFunction {
     <T>(): InputSignal<T | undefined>;
     <T>(initialValue: T, opts?: InputOptionsWithoutTransform<T>): InputSignal<T>;
+    <T>(initialValue: undefined, opts: InputOptionsWithoutTransform<T>): InputSignal<T | undefined>;
     <T, TransformT>(initialValue: T, opts: InputOptionsWithTransform<T, TransformT>): InputSignalWithTransform<T, TransformT>;
+    <T, TransformT>(initialValue: undefined, opts: InputOptionsWithTransform<T | undefined, TransformT>): InputSignalWithTransform<T | undefined, TransformT>;
     required: {
         <T>(opts?: InputOptionsWithoutTransform<T>): InputSignal<T>;
         <T, TransformT>(opts: InputOptionsWithTransform<T, TransformT>): InputSignalWithTransform<T, TransformT>;
@@ -1003,7 +1015,7 @@ export interface InputSignalWithTransform<T, TransformT> extends Signal<T> {
     // (undocumented)
     [ɵINPUT_SIGNAL_BRAND_WRITE_TYPE]: TransformT;
     // (undocumented)
-    [SIGNAL]: InputSignalNode<T, TransformT>;
+    [SIGNAL]: ɵInputSignalNode<T, TransformT>;
 }
 
 // @public
@@ -1146,7 +1158,7 @@ export interface ModelOptions {
 // @public
 export interface ModelSignal<T> extends WritableSignal<T>, InputSignal<T>, OutputRef<T> {
     // (undocumented)
-    [SIGNAL]: InputSignalNode<T, T>;
+    [SIGNAL]: ɵInputSignalNode<T, T>;
 }
 
 // @public @deprecated
@@ -1220,10 +1232,10 @@ export class NgProbeToken {
 
 // @public
 export class NgZone {
-    constructor({ enableLongStackTrace, shouldCoalesceEventChangeDetection, shouldCoalesceRunChangeDetection, }: {
-        enableLongStackTrace?: boolean | undefined;
-        shouldCoalesceEventChangeDetection?: boolean | undefined;
-        shouldCoalesceRunChangeDetection?: boolean | undefined;
+    constructor(options: {
+        enableLongStackTrace?: boolean;
+        shouldCoalesceEventChangeDetection?: boolean;
+        shouldCoalesceRunChangeDetection?: boolean;
     });
     static assertInAngularZone(): void;
     static assertNotInAngularZone(): void;
@@ -1246,6 +1258,7 @@ export class NgZone {
 // @public
 export interface NgZoneOptions {
     eventCoalescing?: boolean;
+    // @deprecated
     ignoreChangesOutsideZone?: boolean;
     runCoalescing?: boolean;
 }
@@ -1330,6 +1343,14 @@ export interface OutputRefSubscription {
 
 // @public @deprecated
 export const PACKAGE_ROOT_URL: InjectionToken<string>;
+
+// @public
+export class PendingTasks {
+    add(): () => void;
+    run<T>(fn: () => Promise<T>): Promise<T>;
+    // (undocumented)
+    static ɵprov: unknown;
+}
 
 // @public
 export interface Pipe {

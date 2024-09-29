@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {
   AST,
@@ -30,7 +30,7 @@ import {
 } from '@angular/compiler-cli/src/ngtsc/typecheck/api';
 import ts from 'typescript';
 
-import {DisplayInfoKind, SYMBOL_PUNC, SYMBOL_SPACE, SYMBOL_TEXT} from './display_parts';
+import {DisplayInfoKind, SYMBOL_PUNC, SYMBOL_SPACE, SYMBOL_TEXT} from './utils/display_parts';
 import {
   createDollarAnyQuickInfo,
   createNgTemplateQuickInfo,
@@ -126,8 +126,10 @@ export class QuickInfoBuilder {
   private getQuickInfoForElementSymbol(symbol: ElementSymbol): ts.QuickInfo {
     const {templateNode} = symbol;
     const matches = getDirectiveMatchesForElementTag(templateNode, symbol.directives);
-    if (matches.size > 0) {
-      return this.getQuickInfoForDirectiveSymbol(matches.values().next().value, templateNode);
+    const directiveSymbol = matches.size > 0 ? matches.values().next().value : null;
+
+    if (directiveSymbol) {
+      return this.getQuickInfoForDirectiveSymbol(directiveSymbol, templateNode);
     }
 
     return createQuickInfo(
@@ -202,11 +204,9 @@ export class QuickInfoBuilder {
       symbol.host.templateNode,
       symbol.host.directives,
     );
-    if (directives.size === 0) {
-      return undefined;
-    }
 
-    return this.getQuickInfoForDirectiveSymbol(directives.values().next().value);
+    const directiveSymbol = directives.size > 0 ? directives.values().next().value : null;
+    return directiveSymbol ? this.getQuickInfoForDirectiveSymbol(directiveSymbol) : undefined;
   }
 
   private getQuickInfoForDirectiveSymbol(

@@ -3,11 +3,10 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {ApplicationRef} from '../application/application_ref';
-import {APP_ID} from '../application/application_tokens';
 import {isDetachedByI18n} from '../i18n/utils';
 import {ViewEncapsulation} from '../metadata';
 import {Renderer2} from '../render';
@@ -15,7 +14,7 @@ import {assertTNode} from '../render3/assert';
 import {collectNativeNodes, collectNativeNodesInLContainer} from '../render3/collect_native_nodes';
 import {getComponentDef} from '../render3/definition';
 import {CONTAINER_HEADER_OFFSET, LContainer} from '../render3/interfaces/container';
-import {isTNodeShape, TNode, TNodeType} from '../render3/interfaces/node';
+import {isLetDeclaration, isTNodeShape, TNode, TNodeType} from '../render3/interfaces/node';
 import {RElement} from '../render3/interfaces/renderer_dom';
 import {
   hasI18n,
@@ -401,7 +400,7 @@ function serializeLView(lView: LView, context: HydrationContext): SerializedView
     : null;
   // Iterate over DOM element references in an LView.
   for (let i = HEADER_OFFSET; i < tView.bindingStartIndex; i++) {
-    const tNode = tView.data[i] as TNode;
+    const tNode = tView.data[i];
     const noOffsetIndex = i - HEADER_OFFSET;
 
     // Attempt to serialize any i18n data for the given slot. We do this first, as i18n
@@ -527,8 +526,10 @@ function serializeLView(lView: LView, context: HydrationContext): SerializedView
 
       ngh[CONTAINERS] ??= {};
       ngh[CONTAINERS][noOffsetIndex] = serializeLContainer(lView[i], context);
-    } else if (Array.isArray(lView[i])) {
+    } else if (Array.isArray(lView[i]) && !isLetDeclaration(tNode)) {
       // This is a component, annotate the host node with an `ngh` attribute.
+      // Note: Let declarations that return an array are also storing an array in the LView,
+      // we need to exclude them.
       const targetNode = unwrapRNode(lView[i][HOST]!);
       if (!(targetNode as HTMLElement).hasAttribute(SKIP_HYDRATION_ATTR_NAME)) {
         annotateHostElementForHydration(targetNode as RElement, lView[i], context);
@@ -584,6 +585,12 @@ function conditionallyAnnotateNodePath(
   lView: LView<unknown>,
   excludedParentNodes: Set<number> | null,
 ) {
+  if (isProjectionTNode(tNode)) {
+    // Do not annotate projection nodes (<ng-content />), since
+    // they don't have a corresponding DOM node representing them.
+    return;
+  }
+
   // Handle case #1 described above.
   if (
     tNode.projectionNext &&

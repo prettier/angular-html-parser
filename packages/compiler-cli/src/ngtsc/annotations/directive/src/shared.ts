@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -115,6 +115,7 @@ export function extractDirectiveMetadata(
   annotateForClosureCompiler: boolean,
   compilationMode: CompilationMode,
   defaultSelector: string | null,
+  strictStandalone: boolean,
 ):
   | {
       jitForced: false;
@@ -125,6 +126,7 @@ export function extractDirectiveMetadata(
       isStructural: boolean;
       hostDirectives: HostDirectiveMeta[] | null;
       rawHostDirectives: ts.Expression | null;
+      inputFieldNamesFromMetadataArray: Set<string>;
     }
   | {jitForced: true} {
   let directive: Map<string, ts.Expression>;
@@ -341,6 +343,14 @@ export function extractDirectiveMetadata(
       throw createValueHasWrongTypeError(expr, resolved, `standalone flag must be a boolean`);
     }
     isStandalone = resolved;
+
+    if (!isStandalone && strictStandalone) {
+      throw new FatalDiagnosticError(
+        ErrorCode.NON_STANDALONE_NOT_ALLOWED,
+        expr,
+        `Only standalone components/directives are allowed when 'strictStandalone' is enabled.`,
+      );
+    }
   }
   let isSignal = false;
   if (directive.has('signals')) {
@@ -416,6 +426,10 @@ export function extractDirectiveMetadata(
     isStructural,
     hostDirectives,
     rawHostDirectives,
+    // Track inputs from class metadata. This is useful for migration efforts.
+    inputFieldNamesFromMetadataArray: new Set(
+      Object.values(inputsFromMeta).map((i) => i.classPropertyName),
+    ),
   };
 }
 

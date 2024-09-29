@@ -968,7 +968,7 @@ export const RECOMMENDATIONS: Step[] = [
     level: ApplicationComplexity.Basic,
     step: 'v11 browser support',
     action:
-      'Support for IE9, IE10, and IE mobile has been removed. This was announced in the [v10 update](http://blog.angular.io/version-10-of-angular-now-available-78960babd41#c357). ',
+      'Support for IE9, IE10, and IE mobile has been removed. This was announced in the [v10 update](http://blog.angular.dev/version-10-of-angular-now-available-78960babd41#c357). ',
   },
   {
     possibleIn: 1100,
@@ -2094,7 +2094,7 @@ export const RECOMMENDATIONS: Step[] = [
     level: ApplicationComplexity.Basic,
     step: 'v17 zone.js support',
     action:
-      'Make sure that you are using a supported version of Zone.js before you upgrade your application. Angular v16 supports Zone.js version 0.14.x or later.',
+      'Make sure that you are using a supported version of Zone.js before you upgrade your application. Angular v17 supports Zone.js version 0.14.x or later.',
   },
   {
     possibleIn: 1700,
@@ -2258,9 +2258,9 @@ export const RECOMMENDATIONS: Step[] = [
     possibleIn: 1800,
     necessaryAsOf: 1800,
     level: ApplicationComplexity.Medium,
-    step: '18.0.0. Opt-out of caching for HTTP requests with auth headers',
+    step: '18.0.0. Opt-in of caching for HTTP requests with auth headers',
     action:
-      'Use `includeRequestsWithAuthHeaders: true` in `withHttpTransferCache` to opt-out of caching for HTTP requests that require authorization.',
+      'Use `includeRequestsWithAuthHeaders: true` in `withHttpTransferCache` to opt-in of caching for HTTP requests that require authorization.',
   },
   {
     possibleIn: 1800,

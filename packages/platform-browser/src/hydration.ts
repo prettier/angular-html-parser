@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {HttpTransferCacheOptions, ɵwithHttpTransferCache} from '@angular/common/http';
@@ -19,6 +19,7 @@ import {
   ɵwithDomHydration as withDomHydration,
   ɵwithEventReplay,
   ɵwithI18nSupport,
+  ɵZONELESS_ENABLED as ZONELESS_ENABLED,
 } from '@angular/core';
 
 import {RuntimeErrorCode} from './errors';
@@ -111,7 +112,6 @@ export function withI18nSupport(): HydrationFeature<HydrationFeatureKind.I18nSup
  *   providers: [provideClientHydration(withEventReplay())]
  * });
  * ```
- * @developerPreview
  * @publicApi
  * @see {@link provideClientHydration}
  */
@@ -130,9 +130,10 @@ function provideZoneJsCompatibilityDetector(): Provider[] {
       provide: ENVIRONMENT_INITIALIZER,
       useValue: () => {
         const ngZone = inject(NgZone);
+        const isZoneless = inject(ZONELESS_ENABLED);
         // Checking `ngZone instanceof NgZone` would be insufficient here,
         // because custom implementations might use NgZone as a base class.
-        if (ngZone.constructor !== NgZone) {
+        if (!isZoneless && ngZone.constructor !== NgZone) {
           const console = inject(Console);
           const message = formatRuntimeError(
             RuntimeErrorCode.UNSUPPORTED_ZONEJS_INSTANCE,
@@ -160,9 +161,12 @@ function provideZoneJsCompatibilityDetector(): Provider[] {
  * transferring this cache to the client to avoid extra HTTP requests. Learn more about data caching
  * [here](guide/ssr#caching-data-when-using-httpclient).
  *
- * These functions allow you to disable some of the default features or configure features
+ * These functions allow you to disable some of the default features or enable new ones:
+ *
  * * {@link withNoHttpTransferCache} to disable HTTP transfer cache
  * * {@link withHttpTransferCacheOptions} to configure some HTTP transfer cache options
+ * * {@link withI18nSupport} to enable hydration support for i18n blocks
+ * * {@link withEventReplay} to enable support for replaying user events
  *
  * @usageNotes
  *
@@ -187,6 +191,8 @@ function provideZoneJsCompatibilityDetector(): Provider[] {
  *
  * @see {@link withNoHttpTransferCache}
  * @see {@link withHttpTransferCacheOptions}
+ * @see {@link withI18nSupport}
+ * @see {@link withEventReplay}
  *
  * @param features Optional features to configure additional router behaviors.
  * @returns A set of providers to enable hydration.

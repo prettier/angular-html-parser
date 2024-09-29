@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -275,13 +275,14 @@ export type LoadChildren = LoadChildrenCallback;
  * One of:
  * - `"merge"` : Merge new parameters with current parameters.
  * - `"preserve"` : Preserve current parameters.
- * - `""` : Replace current parameters with new parameters. This is the default behavior.
+ * - `"replace"` : Replace current parameters with new parameters. This is the default behavior.
+ * - `""` : For legacy reasons, the same as `'replace'`.
  *
  * @see {@link UrlCreationOptions#queryParamsHandling}
  * @see {@link RouterLink}
  * @publicApi
  */
-export type QueryParamsHandling = 'merge' | 'preserve' | '';
+export type QueryParamsHandling = 'merge' | 'preserve' | 'replace' | '';
 
 /**
  * The type for the function that can be used to handle redirects when the path matches a `Route` config.
@@ -1213,7 +1214,10 @@ export type CanMatchFn = (route: Route, segments: UrlSegment[]) => MaybeAsync<Gu
  * @see {@link ResolveFn}
  */
 export interface Resolve<T> {
-  resolve(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): MaybeAsync<T>;
+  resolve(
+    route: ActivatedRouteSnapshot,
+    state: RouterStateSnapshot,
+  ): MaybeAsync<T | RedirectCommand>;
 }
 
 /**

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {Component, signal} from '@angular/core';
@@ -55,7 +55,7 @@ describe('DevtoolsComponent', () => {
     component.angularIsInDevMode = false;
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.devtools').textContent).toContain(
-      'We detected an application built with production configuration. Angular DevTools only supports development build.',
+      'We detected an application built with production configuration. Angular DevTools only supports development builds.',
     );
   });
 

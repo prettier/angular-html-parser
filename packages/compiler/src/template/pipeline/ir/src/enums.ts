@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 /**
@@ -575,6 +575,7 @@ export enum DeferTriggerKind {
   Hover,
   Interaction,
   Viewport,
+  Never,
 }
 
 /**
@@ -590,4 +591,13 @@ export enum TemplateKind {
   NgTemplate,
   Structural,
   Block,
+}
+
+/**
+ * Kinds of modifiers for a defer block.
+ */
+export const enum DeferOpModifierKind {
+  NONE = 'none',
+  PREFETCH = 'prefetch',
+  HYDRATE = 'hydrate',
 }

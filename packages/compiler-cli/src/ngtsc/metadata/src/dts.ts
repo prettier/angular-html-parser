@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -174,9 +174,14 @@ export class DtsMetadataReader implements MetadataReader {
       ngContentSelectors,
       isStandalone,
       isSignal,
+      // We do not transfer information about inputs from class metadata
+      // via `.d.ts` declarations. This is fine because this metadata is
+      // currently only used for classes defined in source files. E.g. in migrations.
+      inputFieldNamesFromMetadataArray: null,
       // Imports are tracked in metadata only for template type-checking purposes,
       // so standalone components from .d.ts files don't have any.
       imports: null,
+      rawImports: null,
       deferredImports: null,
       // The same goes for schemas.
       schemas: null,

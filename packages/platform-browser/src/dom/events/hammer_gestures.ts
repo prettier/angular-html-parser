@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {DOCUMENT} from '@angular/common';
@@ -78,7 +78,9 @@ export const HAMMER_GESTURE_CONFIG = new InjectionToken<HammerGestureConfig>('Ha
 export type HammerLoader = () => Promise<void>;
 
 /**
- * Injection token used to provide a {@link HammerLoader} to Angular.
+ * Injection token used to provide a HammerLoader to Angular.
+ *
+ * @see {@link HammerLoader}
  *
  * @publicApi
  */

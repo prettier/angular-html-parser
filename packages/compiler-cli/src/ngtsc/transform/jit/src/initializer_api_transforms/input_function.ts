@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {core} from '@angular/compiler';
@@ -30,6 +30,7 @@ import {
  */
 export const signalInputsTransform: PropertyTransform = (
   member,
+  sourceFile,
   host,
   factory,
   importTracker,
@@ -61,7 +62,6 @@ export const signalInputsTransform: PropertyTransform = (
     'transform': factory.createIdentifier('undefined'),
   };
 
-  const sourceFile = member.node.getSourceFile();
   const newDecorator = factory.createDecorator(
     factory.createCallExpression(
       createSyntheticAngularCoreDecoratorAccess(

@@ -12,7 +12,10 @@
     "name": "APP_INITIALIZER"
   },
   {
-    "name": "AfterRenderEventManager"
+    "name": "AfterRenderManager"
+  },
+  {
+    "name": "AfterRenderPhase"
   },
   {
     "name": "AnonymousSubject"
@@ -153,6 +156,9 @@
     "name": "EVENT_MANAGER_PLUGINS"
   },
   {
+    "name": "EffectScheduler"
+  },
+  {
     "name": "ElementRef"
   },
   {
@@ -165,9 +171,6 @@
     "name": "ErrorHandler"
   },
   {
-    "name": "EventDelegationPlugin"
-  },
-  {
     "name": "EventEmitter"
   },
   {
@@ -175,9 +178,6 @@
   },
   {
     "name": "EventManagerPlugin"
-  },
-  {
-    "name": "GLOBAL_EVENT_DELEGATION"
   },
   {
     "name": "GenericBrowserDomAdapter"
@@ -375,7 +375,7 @@
     "name": "PRESERVE_HOST_CONTENT"
   },
   {
-    "name": "PendingTasks"
+    "name": "PendingTasksInternal"
   },
   {
     "name": "PlatformRef"
@@ -406,6 +406,9 @@
   },
   {
     "name": "RuntimeError"
+  },
+  {
+    "name": "SCHEDULE_IN_ROOT_ZONE"
   },
   {
     "name": "SIGNAL"
@@ -531,7 +534,13 @@
     "name": "ZONELESS_SCHEDULER_DISABLED"
   },
   {
+    "name": "ZoneAwareEffectScheduler"
+  },
+  {
     "name": "ZoneStablePendingTask"
+  },
+  {
+    "name": "_AfterRenderImpl"
   },
   {
     "name": "_ComponentFactoryResolver"
@@ -621,13 +630,16 @@
     "name": "addToArray"
   },
   {
-    "name": "addToViewTree"
+    "name": "addToEndOfViewTree"
   },
   {
     "name": "allocExpando"
   },
   {
     "name": "allocLFrame"
+  },
+  {
+    "name": "angularZoneInstanceIdProperty"
   },
   {
     "name": "appendChild"
@@ -657,6 +669,9 @@
     "name": "assertConsumerNode"
   },
   {
+    "name": "assertNotDestroyed"
+  },
+  {
     "name": "assertTemplate"
   },
   {
@@ -676,6 +691,9 @@
   },
   {
     "name": "bloomHasToken"
+  },
+  {
+    "name": "bootstrap"
   },
   {
     "name": "callHook"
@@ -775,6 +793,9 @@
   },
   {
     "name": "createPlatformFactory"
+  },
+  {
+    "name": "createStyleElement"
   },
   {
     "name": "createTView"
@@ -922,6 +943,9 @@
   },
   {
     "name": "getFirstNativeNode"
+  },
+  {
+    "name": "getInitialLViewFlagsFromDef"
   },
   {
     "name": "getInjectImplementation"
@@ -1122,6 +1146,12 @@
     "name": "invokeHostBindingsInCreationMode"
   },
   {
+    "name": "isAngularZoneProperty"
+  },
+  {
+    "name": "isApplicationBootstrapConfig"
+  },
+  {
     "name": "isComponentDef"
   },
   {
@@ -1278,7 +1308,7 @@
     "name": "ngOnChangesSetInput"
   },
   {
-    "name": "ngZoneApplicationErrorHandlerFactory"
+    "name": "ngZoneInstanceId"
   },
   {
     "name": "noSideEffects"
@@ -1344,6 +1374,9 @@
     "name": "remove"
   },
   {
+    "name": "removeElements"
+  },
+  {
     "name": "removeFromArray"
   },
   {
@@ -1369,6 +1402,9 @@
   },
   {
     "name": "retrieveHydrationInfo"
+  },
+  {
+    "name": "runEffectsInView"
   },
   {
     "name": "saveNameToExportMap"
@@ -1483,6 +1519,9 @@
   },
   {
     "name": "uniqueIdCounter"
+  },
+  {
+    "name": "unregisterLView"
   },
   {
     "name": "unwrapRNode"

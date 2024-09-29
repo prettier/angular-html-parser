@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {
@@ -13,6 +13,8 @@ import {
   EventContract,
   EventDispatcher,
   registerDispatcher,
+  getAppScopedQueuedEventInfos,
+  clearAppScopedEarlyEventContract,
 } from '@angular/core/primitives/event-dispatch';
 
 import {APP_BOOTSTRAP_LISTENER, ApplicationRef, whenStable} from '../application/application_ref';
@@ -25,11 +27,7 @@ import {CLEANUP, LView, TView} from '../render3/interfaces/view';
 import {isPlatformBrowser} from '../render3/util/misc_utils';
 import {unwrapRNode} from '../render3/util/view_utils';
 
-import {
-  EVENT_REPLAY_ENABLED_DEFAULT,
-  IS_EVENT_REPLAY_ENABLED,
-  IS_GLOBAL_EVENT_DELEGATION_ENABLED,
-} from './tokens';
+import {EVENT_REPLAY_ENABLED_DEFAULT, IS_EVENT_REPLAY_ENABLED} from './tokens';
 import {
   sharedStashFunction,
   removeListeners,
@@ -45,18 +43,11 @@ import {performanceMarkFeature} from '../util/performance';
  */
 const jsactionSet = new Set<Element>();
 
-function isGlobalEventDelegationEnabled(injector: Injector) {
-  return injector.get(IS_GLOBAL_EVENT_DELEGATION_ENABLED, false);
-}
-
 /**
  * Determines whether Event Replay feature should be activated on the client.
  */
 function shouldEnableEventReplay(injector: Injector) {
-  return (
-    injector.get(IS_EVENT_REPLAY_ENABLED, EVENT_REPLAY_ENABLED_DEFAULT) &&
-    !isGlobalEventDelegationEnabled(injector)
-  );
+  return injector.get(IS_EVENT_REPLAY_ENABLED, EVENT_REPLAY_ENABLED_DEFAULT);
 }
 
 /**
@@ -132,7 +123,6 @@ const initEventReplay = (eventDelegation: EventContractDetails, injector: Inject
   const earlyJsactionData = window._ejsas![appId]!;
   const eventContract = (eventDelegation.instance = new EventContract(
     new EventContractContainer(earlyJsactionData.c),
-    /* useActionResolver= */ false,
   ));
   for (const et of earlyJsactionData.et) {
     eventContract.addEvent(et);
@@ -140,8 +130,9 @@ const initEventReplay = (eventDelegation: EventContractDetails, injector: Inject
   for (const et of earlyJsactionData.etc) {
     eventContract.addEvent(et);
   }
-  eventContract.replayEarlyEvents(earlyJsactionData);
-  window._ejsas![appId] = undefined;
+  const eventInfos = getAppScopedQueuedEventInfos(appId);
+  eventContract.replayEarlyEventInfos(eventInfos);
+  clearAppScopedEarlyEventContract(appId);
   const dispatcher = new EventDispatcher(invokeRegisteredListeners);
   registerDispatcher(eventContract, dispatcher);
 };

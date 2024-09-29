@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {Component, Renderer2, ViewEncapsulation} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
@@ -98,13 +98,12 @@ describe('DefaultDomRendererV2', () => {
   });
 
   describe('removeChild', () => {
-    it('should not error when removing a child with a different parent than given', () => {
-      const savedParent = document.createElement('div');
-      const realParent = document.createElement('div');
+    it('should not error when removing a child without passing a parent', () => {
+      const parent = document.createElement('div');
       const child = document.createElement('div');
 
-      realParent.appendChild(child);
-      renderer.removeChild(savedParent, child);
+      parent.appendChild(child);
+      renderer.removeChild(null, child);
     });
   });
 

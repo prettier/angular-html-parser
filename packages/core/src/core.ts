@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 /**
@@ -43,7 +43,7 @@ export {
   NgZoneOptions,
 } from './change_detection/scheduling/ng_zone_scheduling';
 export {provideExperimentalZonelessChangeDetection} from './change_detection/scheduling/zoneless_scheduling_impl';
-export {ExperimentalPendingTasks} from './pending_tasks';
+export {PendingTasks} from './pending_tasks';
 export {provideExperimentalCheckNoChangesForDebug} from './change_detection/scheduling/exhaustive_check_no_changes';
 export {enableProdMode, isDevMode} from './util/is_dev_mode';
 export {
@@ -98,14 +98,13 @@ export {
 } from './render3/ng_module_ref';
 export {createComponent, reflectComponentType, ComponentMirror} from './render3/component';
 export {isStandalone} from './render3/definition';
+export {AfterRenderPhase, AfterRenderRef} from './render3/after_render/api';
 export {
-  AfterRenderRef,
   AfterRenderOptions,
-  AfterRenderPhase,
   afterRender,
   afterNextRender,
   ɵFirstAvailable,
-} from './render3/after_render_hooks';
+} from './render3/after_render/hooks';
 export {ApplicationConfig, mergeApplicationConfig} from './application/application_config';
 export {makeStateKey, StateKey, TransferState} from './transfer_state';
 export {booleanAttribute, numberAttribute} from './util/coercion';

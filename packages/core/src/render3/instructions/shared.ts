@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {setActiveConsumer} from '@angular/core/primitives/signals';
@@ -210,7 +210,8 @@ export function createLView<T>(
     LViewFlags.CreationMode |
     LViewFlags.Attached |
     LViewFlags.FirstLViewPass |
-    LViewFlags.Dirty;
+    LViewFlags.Dirty |
+    LViewFlags.RefreshView;
   if (
     embeddedViewInjector !== null ||
     (parentLView && parentLView[FLAGS] & LViewFlags.HasEmbeddedViewInjector)
@@ -1640,6 +1641,20 @@ export function configureViewWithDirective<T>(
   );
 }
 
+/**
+ * Gets the initial set of LView flags based on the component definition that the LView represents.
+ * @param def Component definition from which to determine the flags.
+ */
+export function getInitialLViewFlagsFromDef(def: ComponentDef<unknown>): LViewFlags {
+  let flags = LViewFlags.CheckAlways;
+  if (def.signals) {
+    flags = LViewFlags.SignalView;
+  } else if (def.onPush) {
+    flags = LViewFlags.Dirty;
+  }
+  return flags;
+}
+
 function addComponentLogic<T>(lView: LView, hostTNode: TElementNode, def: ComponentDef<T>): void {
   const native = getNativeByTNode(hostTNode, lView) as RElement;
   const tView = getOrCreateComponentTView(def);
@@ -1647,19 +1662,13 @@ function addComponentLogic<T>(lView: LView, hostTNode: TElementNode, def: Compon
   // Only component views should be added to the view tree directly. Embedded views are
   // accessed through their containers because they may be removed / re-added later.
   const rendererFactory = lView[ENVIRONMENT].rendererFactory;
-  let lViewFlags = LViewFlags.CheckAlways;
-  if (def.signals) {
-    lViewFlags = LViewFlags.SignalView;
-  } else if (def.onPush) {
-    lViewFlags = LViewFlags.Dirty;
-  }
-  const componentView = addToViewTree(
+  const componentView = addToEndOfViewTree(
     lView,
     createLView(
       lView,
       tView,
       null,
-      lViewFlags,
+      getInitialLViewFlagsFromDef(def),
       native,
       hostTNode as TElementNode,
       null,
@@ -1893,7 +1902,10 @@ export function refreshContentQueries(tView: TView, lView: LView): void {
  * @param lViewOrLContainer The LView or LContainer to add to the view tree
  * @returns The state passed in
  */
-export function addToViewTree<T extends LView | LContainer>(lView: LView, lViewOrLContainer: T): T {
+export function addToEndOfViewTree<T extends LView | LContainer>(
+  lView: LView,
+  lViewOrLContainer: T,
+): T {
   // TODO(benlesh/misko): This implementation is incorrect, because it always adds the LContainer
   // to the end of the queue, which means if the developer retrieves the LContainers from RNodes out
   // of order, the change detection will run out of order, as the act of retrieving the the

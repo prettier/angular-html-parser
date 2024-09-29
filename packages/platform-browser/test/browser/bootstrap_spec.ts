@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {animate, style, transition, trigger} from '@angular/animations';
@@ -718,13 +718,13 @@ describe('bootstrap factory method', () => {
     })();
   });
 
-  it('should not allow provideZoneChangeDetection in bootstrapModule', async () => {
+  it('should allow provideZoneChangeDetection in bootstrapModule', async () => {
     @NgModule({imports: [BrowserModule], providers: [provideZoneChangeDetection()]})
-    class SomeModule {}
+    class SomeModule {
+      ngDoBootstrap() {}
+    }
 
-    await expectAsync(platformBrowserDynamic().bootstrapModule(SomeModule)).toBeRejectedWithError(
-      /provideZoneChangeDetection.*BootstrapOptions/,
-    );
+    await expectAsync(platformBrowserDynamic().bootstrapModule(SomeModule)).toBeResolved();
   });
 
   it('should register each application with the testability registry', async () => {

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {R3Identifiers} from '@angular/compiler';
@@ -125,6 +125,7 @@ import {DiagnosticCategoryLabel, NgCompilerAdapter, NgCompilerOptions} from '../
 import {coreHasSymbol} from './core_version';
 import {coreVersionSupportsFeature} from './feature_detection';
 import {angularJitApplicationTransform} from '../../transform/jit';
+import {untagAllTsFiles} from '../../shims';
 
 /**
  * State information about a compilation which is only generated once some data is requested from
@@ -454,8 +455,9 @@ export class NgCompiler {
     private livePerfRecorder: ActivePerfRecorder,
   ) {
     this.delegatingPerfRecorder = new DelegatingPerfRecorder(this.perfRecorder);
+    this.usePoisonedData = usePoisonedData || !!options._compilePoisonedComponents;
     this.enableTemplateTypeChecker =
-      enableTemplateTypeChecker || (options['_enableTemplateTypeChecker'] ?? false);
+      enableTemplateTypeChecker || !!options._enableTemplateTypeChecker;
     // TODO(crisbeto): remove this flag and base `enableBlockSyntax` on the `angularCoreVersion`.
     this.enableBlockSyntax = options['_enableBlockSyntax'] ?? true;
     this.enableLetSyntax = options['_enableLetSyntax'] ?? true;
@@ -792,6 +794,10 @@ export class NgCompiler {
   } {
     const compilation = this.ensureAnalyzed();
 
+    // Untag all the files, otherwise TS 5.4 may end up emitting
+    // references to typecheck files (see #56945 and #57135).
+    untagAllTsFiles(this.inputProgram);
+
     const coreImportsFrom = compilation.isCore ? getR3SymbolsFile(this.inputProgram) : null;
     let importRewriter: ImportRewriter;
     if (coreImportsFrom !== null) {
@@ -895,8 +901,13 @@ export class NgCompiler {
    *
    * @param entryPoint Path to the entry point for the package for which API
    *     docs should be extracted.
+   *
+   * @returns A map of symbols with their associated module, eg: ApplicationRef => @angular/core
    */
-  getApiDocumentation(entryPoint: string): DocEntry[] {
+  getApiDocumentation(
+    entryPoint: string,
+    privateModules: Set<string>,
+  ): {entries: DocEntry[]; symbols: Map<string, string>} {
     const compilation = this.ensureAnalyzed();
     const checker = this.inputProgram.getTypeChecker();
     const docsExtractor = new DocsExtractor(checker, compilation.metaReader);
@@ -912,9 +923,9 @@ export class NgCompiler {
     }
 
     // TODO: Technically the current directory is not the root dir.
-    //  Should probably be derived from the config.
+    // Should probably be derived from the config.
     const rootDir = this.inputProgram.getCurrentDirectory();
-    return docsExtractor.extractAll(entryPointSourceFile, rootDir);
+    return docsExtractor.extractAll(entryPointSourceFile, rootDir, privateModules);
   }
 
   /**
@@ -1029,6 +1040,8 @@ export class NgCompiler {
         suggestionsForSuboptimalTypeInference: this.enableTemplateTypeChecker && !strictTemplates,
         controlFlowPreventingContentProjection:
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
+        unusedStandaloneImports:
+          this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         allowSignalsInTwoWayBindings,
       };
     } else {
@@ -1060,6 +1073,8 @@ export class NgCompiler {
         // not checked anyways.
         suggestionsForSuboptimalTypeInference: false,
         controlFlowPreventingContentProjection:
+          this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
+        unusedStandaloneImports:
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         allowSignalsInTwoWayBindings,
       };
@@ -1105,6 +1120,10 @@ export class NgCompiler {
     ) {
       typeCheckingConfig.controlFlowPreventingContentProjection =
         this.options.extendedDiagnostics.checks.controlFlowPreventingContentProjection;
+    }
+    if (this.options.extendedDiagnostics?.checks?.unusedStandaloneImports !== undefined) {
+      typeCheckingConfig.unusedStandaloneImports =
+        this.options.extendedDiagnostics.checks.unusedStandaloneImports;
     }
 
     return typeCheckingConfig;
@@ -1440,6 +1459,8 @@ export class NgCompiler {
         this.enableLetSyntax,
         localCompilationExtraImportsTracker,
         jitDeclarationRegistry,
+        this.options.i18nPreserveWhitespaceForLegacyExtraction ?? true,
+        !!this.options.strictStandalone,
       ),
 
       // TODO(alxhub): understand why the cast here is necessary (something to do with `null`
@@ -1462,6 +1483,7 @@ export class NgCompiler {
         supportTestBed,
         compilationMode,
         jitDeclarationRegistry,
+        !!this.options.strictStandalone,
       ) as Readonly<DecoratorHandler<unknown, unknown, SemanticSymbol | null, unknown>>,
       // Pipe handler must be before injectable handler in list so pipe factories are printed
       // before injectable factories (so injectable factories can delegate to them)
@@ -1476,6 +1498,7 @@ export class NgCompiler {
         supportTestBed,
         compilationMode,
         !!this.options.generateExtraImportsInLocalMode,
+        !!this.options.strictStandalone,
       ),
       new InjectableDecoratorHandler(
         reflector,
@@ -1506,6 +1529,7 @@ export class NgCompiler {
         supportJitMode,
         compilationMode,
         localCompilationExtraImportsTracker,
+        jitDeclarationRegistry,
       ),
     ];
 
@@ -1531,11 +1555,12 @@ export class NgCompiler {
       },
     );
 
+    const typeCheckingConfig = this.getTypeCheckingConfig();
     const templateTypeChecker = new TemplateTypeCheckerImpl(
       this.inputProgram,
       notifyingDriver,
       traitCompiler,
-      this.getTypeCheckingConfig(),
+      typeCheckingConfig,
       refEmitter,
       reflector,
       this.adapter,
@@ -1566,7 +1591,7 @@ export class NgCompiler {
 
     const sourceFileValidator =
       this.constructionDiagnostics.length === 0
-        ? new SourceFileValidator(reflector, importTracker)
+        ? new SourceFileValidator(reflector, importTracker, templateTypeChecker, typeCheckingConfig)
         : null;
 
     return {

@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import {ExtendedTemplateDiagnosticName} from '../../../../ngtsc/diagnostics';
@@ -261,6 +261,11 @@ export interface DiagnosticOptions {
      */
     checks?: {[Name in ExtendedTemplateDiagnosticName]?: DiagnosticCategoryLabel};
   };
+
+  /**
+   * If enabled, non-standalone declarations are prohibited and result in build errors.
+   */
+  strictStandalone?: boolean;
 }
 
 /**
@@ -390,6 +395,14 @@ export interface I18nOptions {
    * The default is `false`, but this will be switched in a future major release.
    */
   i18nNormalizeLineEndingsInICUs?: boolean;
+
+  /**
+   * Whether or not to preserve whitespace when extracting messages with the legacy (View Engine)
+   * pipeline.
+   *
+   * Defaults to `true`.
+   */
+  i18nPreserveWhitespaceForLegacyExtraction?: boolean;
 }
 
 /**

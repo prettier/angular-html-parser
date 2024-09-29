@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 import {LifecycleHooksFeature} from './component_ref';
 import {ɵɵdefineComponent, ɵɵdefineDirective, ɵɵdefineNgModule, ɵɵdefinePipe} from './definition';
@@ -150,6 +150,14 @@ export {
   ɵɵdeferPrefetchOnHover,
   ɵɵdeferPrefetchOnInteraction,
   ɵɵdeferPrefetchOnViewport,
+  ɵɵdeferHydrateWhen,
+  ɵɵdeferHydrateNever,
+  ɵɵdeferHydrateOnIdle,
+  ɵɵdeferHydrateOnImmediate,
+  ɵɵdeferHydrateOnTimer,
+  ɵɵdeferHydrateOnHover,
+  ɵɵdeferHydrateOnInteraction,
+  ɵɵdeferHydrateOnViewport,
   ɵɵdeferEnableTimerScheduling,
   ɵɵtext,
   ɵɵtextInterpolate,
@@ -211,6 +219,7 @@ export {ɵɵresolveBody, ɵɵresolveDocument, ɵɵresolveWindow} from './util/mi
 export {ɵɵtemplateRefExtractor} from './view_engine_compatibility_prebound';
 export {ɵɵgetComponentDepsFactory} from './local_compilation';
 export {ɵsetClassDebugInfo} from './debug/set_debug_info';
+export {ɵɵreplaceMedata} from './hmr';
 
 export {
   ComponentDebugMetadata,

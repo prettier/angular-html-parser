@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 export {setAlternateWeakRefImpl as ɵsetAlternateWeakRefImpl} from '../primitives/signals';
@@ -11,6 +11,7 @@ export {
   detectChangesInViewIfRequired as ɵdetectChangesInViewIfRequired,
   whenStable as ɵwhenStable,
 } from './application/application_ref';
+export {INTERNAL_APPLICATION_ERROR_HANDLER as ɵINTERNAL_APPLICATION_ERROR_HANDLER} from './error_handler';
 export {
   IMAGE_CONFIG as ɵIMAGE_CONFIG,
   IMAGE_CONFIG_DEFAULTS as ɵIMAGE_CONFIG_DEFAULTS,
@@ -71,11 +72,7 @@ export {
   withI18nSupport as ɵwithI18nSupport,
 } from './hydration/api';
 export {withEventReplay as ɵwithEventReplay} from './hydration/event_replay';
-export {
-  GLOBAL_EVENT_DELEGATION as ɵGLOBAL_EVENT_DELEGATION,
-  JSACTION_EVENT_CONTRACT as ɵJSACTION_EVENT_CONTRACT,
-} from './event_delegation_utils';
-export {provideGlobalEventDelegation as ɵprovideGlobalEventDelegation} from './event_dispatch/event_delegation';
+export {JSACTION_EVENT_CONTRACT as ɵJSACTION_EVENT_CONTRACT} from './event_delegation_utils';
 export {IS_HYDRATION_DOM_REUSE_ENABLED as ɵIS_HYDRATION_DOM_REUSE_ENABLED} from './hydration/tokens';
 export {
   HydratedNode as ɵHydratedNode,
@@ -102,7 +99,10 @@ export {
   resolveComponentResources as ɵresolveComponentResources,
   restoreComponentResolutionQueue as ɵrestoreComponentResolutionQueue,
 } from './metadata/resource_loading';
-export {PendingTasks as ɵPendingTasks} from './pending_tasks';
+export {
+  PendingTasksInternal as ɵPendingTasks, // TODO(atscott): remove once there is a release with PendingTasksInternal so adev can be updated
+  PendingTasksInternal as ɵPendingTasksInternal,
+} from './pending_tasks';
 export {ALLOW_MULTIPLE_PLATFORMS as ɵALLOW_MULTIPLE_PLATFORMS} from './platform/platform';
 export {ReflectionCapabilities as ɵReflectionCapabilities} from './reflection/reflection_capabilities';
 export {AnimationRendererType as ɵAnimationRendererType} from './render/api';
@@ -111,7 +111,6 @@ export {
   ProviderRecord as ɵProviderRecord,
   setInjectorProfilerContext as ɵsetInjectorProfilerContext,
 } from './render3/debug/injector_profiler';
-export {queueStateUpdate as ɵqueueStateUpdate} from './render3/queue_state_update';
 export {
   allowSanitizationBypassAndThrow as ɵallowSanitizationBypassAndThrow,
   BypassType as ɵBypassType,
@@ -137,3 +136,5 @@ export {isPromise as ɵisPromise, isSubscribable as ɵisSubscribable} from './ut
 export {performanceMarkFeature as ɵperformanceMarkFeature} from './util/performance';
 export {stringify as ɵstringify, truncateMiddle as ɵtruncateMiddle} from './util/stringify';
 export {NOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR as ɵNOT_FOUND_CHECK_ONLY_ELEMENT_INJECTOR} from './view/provider_flags';
+
+export {type InputSignalNode as ɵInputSignalNode} from './authoring/input/input_signal_node';

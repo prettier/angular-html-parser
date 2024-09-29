@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -36,6 +36,12 @@ export interface TestOnlyOptions {
    * Enable the Language Service APIs for template type-checking for tests.
    */
   _enableTemplateTypeChecker?: boolean;
+
+  /**
+   * Whether components that are poisoned should still be processed.
+   * E.g. for generation of type check blocks and diagnostics.
+   */
+  _compilePoisonedComponents?: boolean;
 
   /**
    * An option to enable ngtsc's internal performance tracing.

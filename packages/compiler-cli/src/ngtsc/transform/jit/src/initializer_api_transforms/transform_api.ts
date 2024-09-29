@@ -3,7 +3,7 @@
  * Copyright Google LLC All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import ts from 'typescript';
@@ -15,6 +15,7 @@ import {ImportManager} from '../../../../translator';
 /** Function that can be used to transform class properties. */
 export type PropertyTransform = (
   member: Pick<ClassMember, 'name' | 'accessLevel' | 'value'> & {node: ts.PropertyDeclaration},
+  sourceFile: ts.SourceFile,
   host: ReflectionHost,
   factory: ts.NodeFactory,
   importTracker: ImportedSymbolsTracker,
