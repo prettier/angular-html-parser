@@ -21,17 +21,17 @@
     "release": "standard-version"
   },
   "dependencies": {
-    "tslib": "^2.6.2"
+    "tslib": "^2.7.0"
   },
   "devDependencies": {
-    "@types/jscodeshift": "0.11.9",
+    "@types/jscodeshift": "0.11.11",
     "del-cli": "5.1.0",
-    "jasmine": "5.1.0",
-    "jscodeshift": "0.15.1",
+    "jasmine": "5.3.0",
+    "jscodeshift": "17.0.0",
     "standard-version": "9.5.0",
-    "ts-node": "10.9.1",
+    "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
-    "typescript": "5.2.2"
+    "typescript": "5.6.2"
   },
   "engines": {
     "node": ">= 14"
