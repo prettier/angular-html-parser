@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.0.1](https://github.com/prettier/angular-html-parser/compare/v6.0.2...v7.0.1) (2024-10-08)
+
+Fix `.d.ts` files.
+
 ## [7.0.0](https://github.com/prettier/angular-html-parser/compare/v6.0.2...v7.0.0) (2024-09-29)
 
 Sync with upstream.
