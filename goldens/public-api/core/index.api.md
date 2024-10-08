@@ -1107,8 +1107,6 @@ export class KeyValueDiffers {
     // (undocumented)
     static create<S>(factories: KeyValueDifferFactory[], parent?: KeyValueDiffers): KeyValueDiffers;
     static extend<S>(factories: KeyValueDifferFactory[]): StaticProvider;
-    // @deprecated (undocumented)
-    factories: KeyValueDifferFactory[];
     // (undocumented)
     find(kv: any): KeyValueDifferFactory;
     // (undocumented)
@@ -1524,6 +1522,7 @@ export interface RendererType2 {
         [kind: string]: any;
     };
     encapsulation: ViewEncapsulation;
+    getExternalStyles?: ((encapsulationId?: string) => string[]) | null;
     id: string;
     styles: string[];
 }
