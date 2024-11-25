@@ -19,9 +19,10 @@
   "license": "MIT",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "yarn clean && yarn build-lib",
+    "build": "yarn clean && yarn build-lib && yarn codemod",
     "clean": "del-cli ./lib",
     "build-lib": "tsc -p tsconfig.build.json",
+    "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
     "test": "ts-node --project tsconfig.test.json -r tsconfig-paths/register node_modules/jasmine/bin/jasmine.js ../compiler/test/ml_parser/*_spec.ts ./test/*_spec.ts",
     "release": "standard-version"
   },
