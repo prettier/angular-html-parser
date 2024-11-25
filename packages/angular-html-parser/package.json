@@ -19,25 +19,24 @@
   "license": "MIT",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "yarn clean && yarn build-lib && yarn codemod",
+    "build": "yarn clean && yarn build-lib",
     "clean": "del-cli ./lib",
     "build-lib": "tsc -p tsconfig.build.json",
-    "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
     "test": "ts-node --project tsconfig.test.json -r tsconfig-paths/register node_modules/jasmine/bin/jasmine.js ../compiler/test/ml_parser/*_spec.ts ./test/*_spec.ts",
     "release": "standard-version"
   },
   "dependencies": {
-    "tslib": "^2.7.0"
+    "tslib": "^2.8.1"
   },
   "devDependencies": {
     "@types/jscodeshift": "0.12.0",
     "del-cli": "6.0.0",
-    "jasmine": "5.3.1",
-    "jscodeshift": "17.0.0",
+    "jasmine": "5.4.0",
+    "jscodeshift": "17.1.1",
     "standard-version": "9.5.0",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
-    "typescript": "5.6.2"
+    "typescript": "5.7.2"
   },
   "engines": {
     "node": ">= 14"
