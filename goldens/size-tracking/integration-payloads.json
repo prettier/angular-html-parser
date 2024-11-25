@@ -15,7 +15,7 @@
     "uncompressed": {
       "main": 108611,
       "polyfills": 34169,
-      "lazy.routes": 388
+      "lazy.routes": 361
     }
   },
   "forms": {
@@ -47,15 +47,15 @@
   },
   "defer": {
     "uncompressed": {
-      "main": 11497,
+      "main": 12094,
       "polyfills": 33807,
-      "defer.component": 371
+      "defer.component": 345
     }
   },
   "platform-server-hydration/browser": {
     "uncompressed": {
-      "main": 212989,
-      "polyfills": 33807,
+      "main": 221976,
+      "polyfills": 34544,
       "event-dispatch-contract.min": 476
     }
   }

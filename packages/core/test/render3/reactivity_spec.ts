@@ -36,9 +36,13 @@ import {
   ViewChild,
   ViewContainerRef,
 } from '@angular/core';
+import {SIGNAL} from '@angular/core/primitives/signals';
 import {takeUntilDestroyed, toObservable} from '@angular/core/rxjs-interop';
 import {createInjector} from '@angular/core/src/di/create_injector';
-import {setUseMicrotaskEffectsByDefault} from '@angular/core/src/render3/reactivity/effect';
+import {
+  EffectNode,
+  setUseMicrotaskEffectsByDefault,
+} from '@angular/core/src/render3/reactivity/effect';
 import {TestBed} from '@angular/core/testing';
 import {bootstrapApplication} from '@angular/platform-browser';
 import {withBody} from '@angular/private/testing';
@@ -101,6 +105,11 @@ describe('reactivity', () => {
     });
 
     it('should propagate errors to the ErrorHandler', () => {
+      TestBed.configureTestingModule({
+        providers: [{provide: ErrorHandler, useFactory: () => new FakeErrorHandler()}],
+        rethrowApplicationErrors: false,
+      });
+
       let run = false;
 
       let lastError: any = null;
@@ -109,24 +118,26 @@ describe('reactivity', () => {
           lastError = error;
         }
       }
-
-      const injector = createEnvironmentInjector(
-        [{provide: ErrorHandler, useFactory: () => new FakeErrorHandler()}],
-        TestBed.inject(EnvironmentInjector),
-      );
+      const appRef = TestBed.inject(ApplicationRef);
       effect(
         () => {
           run = true;
           throw new Error('fail!');
         },
-        {injector},
+        {injector: appRef.injector},
       );
-      expect(() => TestBed.flushEffects()).not.toThrow();
+      appRef.tick();
       expect(run).toBeTrue();
       expect(lastError.message).toBe('fail!');
     });
 
-    it('should be usable inside an ErrorHandler', async () => {
+    // Disabled while we consider whether this actually makes sense.
+    // This test _used_ to show that `effect()` was usable inside component error handlers, partly
+    // because effect errors used to report to component error handlers. Now, effect errors are
+    // always reported to the top-level error handler, which has never been able to use `effect()`
+    // as `effect()` depends transitively on `ApplicationRef` which depends circularly on
+    // `ErrorHandler`.
+    xit('should be usable inside an ErrorHandler', async () => {
       const shouldError = signal(false);
       let lastError: any = null;
 
@@ -145,24 +156,16 @@ describe('reactivity', () => {
         }
       }
 
-      @Component({
-        standalone: true,
-        template: '',
+      TestBed.configureTestingModule({
         providers: [{provide: ErrorHandler, useClass: FakeErrorHandler}],
-      })
-      class App {
-        errorHandler = inject(ErrorHandler);
-      }
+        rethrowApplicationErrors: false,
+      });
 
-      const fixture = TestBed.createComponent(App);
-      fixture.detectChanges();
-
-      expect(fixture.componentInstance.errorHandler).toBeInstanceOf(FakeErrorHandler);
-      expect(lastError).toBe(null);
+      const appRef = TestBed.inject(ApplicationRef);
+      expect(() => appRef.tick()).not.toThrow();
 
       shouldError.set(true);
-      fixture.detectChanges();
-
+      expect(() => appRef.tick()).not.toThrow();
       expect(lastError?.message).toBe('fail!');
     });
 
@@ -680,6 +683,23 @@ describe('reactivity', () => {
       expect(fixture.nativeElement.textContent).toBe('0');
     });
 
+    it('should assign a debugName to the underlying node for an effect', async () => {
+      @Component({
+        selector: 'test-cmp',
+        standalone: true,
+        template: '',
+      })
+      class Cmp {
+        effectRef = effect(() => {}, {debugName: 'TEST_DEBUG_NAME'});
+      }
+
+      const fixture = TestBed.createComponent(Cmp);
+      fixture.detectChanges();
+      const component = fixture.componentInstance;
+      const effectRef = component.effectRef as unknown as {[SIGNAL]: EffectNode};
+      expect(effectRef[SIGNAL].debugName).toBe('TEST_DEBUG_NAME');
+    });
+
     describe('effects created in components should first run after ngOnInit', () => {
       it('when created during bootstrapping', () => {
         let log: string[] = [];
@@ -851,6 +871,7 @@ describe('reactivity', () => {
     describe('should disallow creating an effect context', () => {
       it('inside template effect', () => {
         @Component({
+          standalone: false,
           template: '{{someFn()}}',
         })
         class Cmp {
@@ -875,6 +896,7 @@ describe('reactivity', () => {
 
       it('inside an effect', () => {
         @Component({
+          standalone: false,
           template: '',
         })
         class Cmp {

@@ -20,15 +20,15 @@ import {getClosestRouteInjector} from './utils/config';
 export class OutletContext {
   outlet: RouterOutletContract | null = null;
   route: ActivatedRoute | null = null;
-  children = new ChildrenOutletContexts(this.rootInjector);
+  children: ChildrenOutletContexts;
   attachRef: ComponentRef<any> | null = null;
   get injector(): EnvironmentInjector {
     return getClosestRouteInjector(this.route?.snapshot) ?? this.rootInjector;
   }
-  // TODO(atscott): Only here to avoid a "breaking" change in a patch/minor. Remove in v19.
-  set injector(_: EnvironmentInjector) {}
 
-  constructor(private readonly rootInjector: EnvironmentInjector) {}
+  constructor(private readonly rootInjector: EnvironmentInjector) {
+    this.children = new ChildrenOutletContexts(this.rootInjector);
+  }
 }
 
 /**

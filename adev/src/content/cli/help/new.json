@@ -50,6 +50,12 @@
       "description": "Run through and reports activity without writing out results."
     },
     {
+      "name": "experimental-zoneless",
+      "type": "boolean",
+      "default": false,
+      "description": "Create an application that does not utilize zone.js."
+    },
+    {
       "name": "force",
       "type": "boolean",
       "default": false,
@@ -125,6 +131,11 @@
       "name": "routing",
       "type": "boolean",
       "description": "Enable routing in the initial project."
+    },
+    {
+      "name": "server-routing",
+      "type": "boolean",
+      "description": "Creates a server application using the Server Routing and App Engine APIs (Developer Preview)."
     },
     {
       "name": "skip-git",

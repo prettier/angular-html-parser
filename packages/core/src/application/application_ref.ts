@@ -7,6 +7,7 @@
  */
 
 import '../util/ng_jit_mode';
+import '../util/ng_server_mode';
 
 import {
   setActiveConsumer,
@@ -33,17 +34,18 @@ import {PendingTasksInternal} from '../pending_tasks';
 import {RendererFactory2} from '../render/api';
 import {AfterRenderManager} from '../render3/after_render/manager';
 import {ComponentFactory as R3ComponentFactory} from '../render3/component_ref';
-import {isStandalone} from '../render3/definition';
+import {isStandalone} from '../render3/def_getters';
 import {ChangeDetectionMode, detectChangesInternal} from '../render3/instructions/change_detection';
-import {FLAGS, LView, LViewFlags} from '../render3/interfaces/view';
+import {LView} from '../render3/interfaces/view';
 import {publishDefaultGlobalUtils as _publishDefaultGlobalUtils} from '../render3/util/global_utils';
-import {removeLViewOnDestroy, requiresRefreshOrTraversal} from '../render3/util/view_utils';
+import {requiresRefreshOrTraversal} from '../render3/util/view_utils';
 import {ViewRef as InternalViewRef} from '../render3/view_ref';
 import {TESTABILITY} from '../testability/testability';
 import {isPromise} from '../util/lang';
 import {NgZone} from '../zone/ng_zone';
 
 import {ApplicationInitStatus} from './application_init';
+import {TracingAction, TracingService, TracingSnapshot} from './tracing';
 import {EffectScheduler} from '../render3/reactivity/root_effect_scheduler';
 
 /**
@@ -328,6 +330,16 @@ export class ApplicationRef {
    */
   deferredDirtyFlags = ApplicationRefDirtyFlags.None;
 
+  /**
+   * Most recent snapshot from the `TracingService`, if any.
+   *
+   * This snapshot attempts to capture the context when `tick()` was first
+   * scheduled. It then runs wrapped in this context.
+   *
+   * @internal
+   */
+  tracingSnapshot: TracingSnapshot | null = null;
+
   // Needed for ComponentFixture temporarily during migration of autoDetect behavior
   // Eventually the hostView of the fixture should just attach to ApplicationRef.
   private externalTestViews: Set<InternalViewRef<unknown>> = new Set();
@@ -362,6 +374,11 @@ export class ApplicationRef {
   public readonly isStable: Observable<boolean> = inject(PendingTasksInternal).hasPendingTasks.pipe(
     map((pending) => !pending),
   );
+
+  constructor() {
+    // Inject the tracing service to initialize it.
+    inject(TracingService, {optional: true});
+  }
 
   /**
    * @returns A promise that resolves when the application becomes stable
@@ -576,11 +593,15 @@ export class ApplicationRef {
     if (!this.zonelessEnabled) {
       this.dirtyFlags |= ApplicationRefDirtyFlags.ViewTreeGlobal;
     }
-    this._tick();
+
+    // Run `_tick()` in the context of the most recent snapshot, if one exists.
+    this.tracingSnapshot?.run(TracingAction.CHANGE_DETECTION, this._tick) ?? this._tick();
   }
 
   /** @internal */
-  _tick(): void {
+  _tick = (): void => {
+    this.tracingSnapshot = null;
+
     (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
     if (this._runningTick) {
       throw new RuntimeError(
@@ -607,7 +628,7 @@ export class ApplicationRef {
       setActiveConsumer(prevConsumer);
       this.afterTick.next();
     }
-  }
+  };
 
   /**
    * Performs the core work of synchronizing the application state with the UI, resolving any

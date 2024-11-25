@@ -120,7 +120,9 @@ function setup(
     metaRegistry,
     metaReader,
     scopeRegistry,
-    dtsResolver,
+    {
+      getCanonicalFileName: (fileName) => fileName,
+    },
     scopeRegistry,
     typeCheckScopeRegistry,
     resourceRegistry,
@@ -156,6 +158,8 @@ function setup(
     jitDeclarationRegistry,
     /* i18nPreserveSignificantWhitespace */ true,
     /* strictStandalone */ false,
+    /* enableHmr */ false,
+    /* implicitStandaloneValue */ true,
   );
   return {reflectionHost, handler, resourceLoader, metaRegistry};
 }
@@ -1053,6 +1057,7 @@ runInEachFileSystem(() => {
               selector: 'main',
               template: '<span>Hi!</span>',
               imports: [SomeModule],
+              standalone: false,
             }) class TestCmp {}
         `,
             },
@@ -1142,6 +1147,7 @@ runInEachFileSystem(() => {
 
             @Component({
               selector: 'main',
+              standalone: false,
               template: '<span>Hi!</span>',
               schemas: [CUSTOM_ELEMENTS_SCHEMA],
             }) class TestCmp {}

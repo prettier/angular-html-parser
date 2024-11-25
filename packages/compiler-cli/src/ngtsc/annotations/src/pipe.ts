@@ -96,6 +96,7 @@ export class PipeDecoratorHandler
     private readonly compilationMode: CompilationMode,
     private readonly generateExtraImportsInLocalMode: boolean,
     private readonly strictStandalone: boolean,
+    private readonly implicitStandaloneValue: boolean,
   ) {}
 
   readonly precedence = HandlerPrecedence.PRIMARY;
@@ -176,7 +177,7 @@ export class PipeDecoratorHandler
       pure = pureValue;
     }
 
-    let isStandalone = false;
+    let isStandalone = this.implicitStandaloneValue;
     if (pipe.has('standalone')) {
       const expr = pipe.get('standalone')!;
       const resolved = this.evaluator.evaluate(expr);

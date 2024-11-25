@@ -17,10 +17,13 @@ import {
   CompilationUnitData,
   SignalQueriesMigration,
 } from '../../migrations/signal-queries-migration/migration';
+import {synchronouslyCombineUnitData} from '../../utils/tsurge/helpers/combine_units';
 
 interface Options {
   path: string;
   analysisDir: string;
+  bestEffortMode?: boolean;
+  insertTodos?: boolean;
 }
 
 export function migrate(options: Options): Rule {
@@ -29,7 +32,7 @@ export function migrate(options: Options): Rule {
 
     if (!buildPaths.length && !testPaths.length) {
       throw new SchematicsException(
-        'Could not find any tsconfig file. Cannot run signal input migration.',
+        'Could not find any tsconfig file. Cannot run signal queries migration.',
       );
     }
 
@@ -37,6 +40,8 @@ export function migrate(options: Options): Rule {
     setFileSystem(fs);
 
     const migration = new SignalQueriesMigration({
+      bestEffortMode: options.bestEffortMode,
+      insertTodosForSkippedFields: options.insertTodos,
       shouldMigrateQuery: (_query, file) => {
         return (
           file.rootRelativePath.startsWith(fs.normalize(options.path)) &&
@@ -75,13 +80,19 @@ export function migrate(options: Options): Rule {
     context.logger.info(`Processing analysis data between targets..`);
     context.logger.info(``);
 
-    const merged = await migration.merge(unitResults);
+    const combined = await synchronouslyCombineUnitData(migration, unitResults);
+    if (combined === null) {
+      context.logger.error('Migration failed unexpectedly with no analysis data');
+      return;
+    }
+
+    const globalMeta = await migration.globalMeta(combined);
     const replacementsPerFile: Map<ProjectRootRelativePath, TextUpdate[]> = new Map();
 
     for (const {info, tsconfigPath} of programInfos) {
       context.logger.info(`Migrating: ${tsconfigPath}..`);
 
-      const replacements = await migration.migrate(merged, info);
+      const {replacements} = await migration.migrate(globalMeta, info);
       const changesPerFile = groupReplacementsByFile(replacements);
 
       for (const [file, changes] of changesPerFile) {
@@ -104,5 +115,26 @@ export function migrate(options: Options): Rule {
 
     context.logger.info('');
     context.logger.info(`Successfully migrated to signal queries 🎉`);
+
+    const {
+      counters: {queriesCount, incompatibleQueries, multiQueries},
+    } = await migration.stats(globalMeta);
+    const migratedQueries = queriesCount - incompatibleQueries;
+
+    context.logger.info('');
+    context.logger.info(`Successfully migrated to signal queries 🎉`);
+    context.logger.info(`  -> Migrated ${migratedQueries}/${queriesCount} queries.`);
+
+    if (incompatibleQueries > 0 && !options.insertTodos) {
+      context.logger.warn(`To see why ${incompatibleQueries} queries couldn't be migrated`);
+      context.logger.warn(`consider re-running with "--insert-todos" or "--best-effort-mode".`);
+    }
+
+    if (options.bestEffortMode) {
+      context.logger.warn(
+        `You ran with best effort mode. Manually verify all code ` +
+          `works as intended, and fix where necessary.`,
+      );
+    }
   };
 }

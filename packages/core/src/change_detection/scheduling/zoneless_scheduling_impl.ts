@@ -30,6 +30,7 @@ import {
   ZONELESS_SCHEDULER_DISABLED,
   SCHEDULE_IN_ROOT_ZONE,
 } from './zoneless_scheduling';
+import {TracingService} from '../../application/tracing';
 
 const CONSECUTIVE_MICROTASK_NOTIFICATION_LIMIT = 100;
 let consecutiveMicrotaskNotifications = 0;
@@ -60,6 +61,7 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler {
   private readonly taskService = inject(PendingTasksInternal);
   private readonly ngZone = inject(NgZone);
   private readonly zonelessEnabled = inject(ZONELESS_ENABLED);
+  private readonly tracing = inject(TracingService, {optional: true});
   private readonly disableScheduling =
     inject(ZONELESS_SCHEDULER_DISABLED, {optional: true}) ?? false;
   private readonly zoneIsDefined = typeof Zone !== 'undefined' && !!Zone.root.run;
@@ -155,6 +157,20 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler {
       }
       case NotificationSource.RootEffect: {
         this.appRef.dirtyFlags |= ApplicationRefDirtyFlags.RootEffects;
+        // Root effects still force a CD, even if the scheduler is disabled. This ensures that
+        // effects always run, even when triggered from outside the zone when the scheduler is
+        // otherwise disabled.
+        force = true;
+        break;
+      }
+      case NotificationSource.ViewEffect: {
+        // This is technically a no-op, since view effects will also send a
+        // `MarkAncestorsForTraversal` notification. Still, we set this for logical consistency.
+        this.appRef.dirtyFlags |= ApplicationRefDirtyFlags.ViewTreeTraversal;
+        // View effects still force a CD, even if the scheduler is disabled. This ensures that
+        // effects always run, even when triggered from outside the zone when the scheduler is
+        // otherwise disabled.
+        force = true;
         break;
       }
       case NotificationSource.PendingTaskRemoved: {
@@ -177,6 +193,11 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler {
         this.appRef.dirtyFlags |= ApplicationRefDirtyFlags.AfterRender;
       }
     }
+
+    // If not already defined, attempt to capture a tracing snapshot of this
+    // notification so that the resulting CD run can be attributed to the
+    // context which produced the notification.
+    this.appRef.tracingSnapshot = this.tracing?.snapshot(this.appRef.tracingSnapshot) ?? null;
 
     if (!this.shouldScheduleTick(force)) {
       return;
@@ -205,7 +226,7 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler {
   }
 
   private shouldScheduleTick(force: boolean): boolean {
-    if (this.disableScheduling && !force) {
+    if ((this.disableScheduling && !force) || this.appRef.destroyed) {
       return false;
     }
     // already scheduled or running

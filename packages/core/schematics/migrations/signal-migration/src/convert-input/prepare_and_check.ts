@@ -9,9 +9,9 @@
 import ts from 'typescript';
 import {ExtractedInput} from '../input_detection/input_decorator';
 import {
-  InputIncompatibilityReason,
-  InputMemberIncompatibility,
-} from '../input_detection/incompatibility';
+  FieldIncompatibility,
+  FieldIncompatibilityReason,
+} from '../passes/problematic_patterns/incompatibility';
 import {InputNode} from '../input_detection/input_node';
 import {Decorator} from '@angular/compiler-cli/src/ngtsc/reflection';
 import assert from 'assert';
@@ -45,12 +45,12 @@ export function prepareAndCheckForConversion(
   metadata: ExtractedInput,
   checker: ts.TypeChecker,
   options: NgCompilerOptions,
-): InputMemberIncompatibility | ConvertInputPreparation {
+): FieldIncompatibility | ConvertInputPreparation {
   // Accessor inputs cannot be migrated right now.
   if (ts.isAccessor(node)) {
     return {
       context: node,
-      reason: InputIncompatibilityReason.Accessor,
+      reason: FieldIncompatibilityReason.Accessor,
     };
   }
 
@@ -64,8 +64,14 @@ export function prepareAndCheckForConversion(
     node.initializer === undefined ||
     (ts.isIdentifier(node.initializer) && node.initializer.text === 'undefined');
 
-  const loosePropertyInitializationWithStrictNullChecks =
-    options.strict !== true && options.strictPropertyInitialization !== true;
+  const strictNullChecksEnabled = options.strict === true || options.strictNullChecks === true;
+  const strictPropertyInitialization =
+    options.strict === true || options.strictPropertyInitialization === true;
+
+  // Shorthand should never be used, as would expand the type of `T` to be `T|undefined`.
+  // This wouldn't matter with strict null checks disabled, but it can break if this is
+  // a library that is later consumed with strict null checks enabled.
+  const avoidTypeExpansion = !strictNullChecksEnabled;
 
   // If an input can be required, due to the non-null assertion on the property,
   // make it required if there is no initializer.
@@ -83,7 +89,7 @@ export function prepareAndCheckForConversion(
     !metadata.required &&
     node.type !== undefined &&
     isUndefinedInitialValue &&
-    !loosePropertyInitializationWithStrictNullChecks
+    !avoidTypeExpansion
   ) {
     preferShorthandIfPossible = {originalType: node.type};
   }
@@ -103,7 +109,8 @@ export function prepareAndCheckForConversion(
     if (typeToAdd === undefined) {
       return {
         context: node,
-        reason: InputIncompatibilityReason.InputWithQuestionMarkButNoGoodExplicitTypeExtractable,
+        reason:
+          FieldIncompatibilityReason.SignalInput__QuestionMarkButNoGoodExplicitTypeExtractable,
       };
     }
 
@@ -126,9 +133,9 @@ export function prepareAndCheckForConversion(
   // is disabled, while strict null checks are enabled; then we know that `undefined`
   // cannot be used as initial value, nor do we want to expand the input's type magically.
   // Instead, we detect this case and migrate to `undefined!` which leaves the behavior unchanged.
-  // TODO: This would be a good spot for a clean-up TODO.
   if (
-    loosePropertyInitializationWithStrictNullChecks &&
+    strictNullChecksEnabled &&
+    !strictPropertyInitialization &&
     node.initializer === undefined &&
     node.type !== undefined &&
     node.questionToken === undefined &&
@@ -154,7 +161,7 @@ export function prepareAndCheckForConversion(
       // the generated type might depend on imports that we cannot add here (nor want).
       return {
         context: node,
-        reason: InputIncompatibilityReason.RequiredInputButNoGoodExplicitTypeExtractable,
+        reason: FieldIncompatibilityReason.SignalInput__RequiredButNoGoodExplicitTypeExtractable,
       };
     }
   }

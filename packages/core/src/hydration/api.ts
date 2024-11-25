@@ -25,10 +25,10 @@ import {enableApplyRootElementTransformImpl} from '../render3/instructions/share
 import {enableLocateOrCreateContainerAnchorImpl} from '../render3/instructions/template';
 import {enableLocateOrCreateTextNodeImpl} from '../render3/instructions/text';
 import {getDocument} from '../render3/interfaces/document';
-import {isPlatformBrowser} from '../render3/util/misc_utils';
 import {TransferState} from '../transfer_state';
 import {performanceMarkFeature} from '../util/performance';
 import {NgZone} from '../zone';
+import {withEventReplay} from './event_replay';
 
 import {cleanupDehydratedViews} from './cleanup';
 import {
@@ -39,10 +39,21 @@ import {
 import {
   IS_HYDRATION_DOM_REUSE_ENABLED,
   IS_I18N_HYDRATION_ENABLED,
+  IS_INCREMENTAL_HYDRATION_ENABLED,
   PRESERVE_HOST_CONTENT,
 } from './tokens';
-import {enableRetrieveHydrationInfoImpl, NGH_DATA_KEY, SSR_CONTENT_INTEGRITY_MARKER} from './utils';
+import {
+  appendDeferBlocksToJSActionMap,
+  enableRetrieveDeferBlockDataImpl,
+  enableRetrieveHydrationInfoImpl,
+  NGH_DATA_KEY,
+  processBlockData,
+  SSR_CONTENT_INTEGRITY_MARKER,
+} from './utils';
 import {enableFindMatchingDehydratedViewImpl} from './views';
+import {DEHYDRATED_BLOCK_REGISTRY, DehydratedBlockRegistry} from '../defer/registry';
+import {gatherDeferBlocksCommentNodes} from './node_lookup_utils';
+import {processAndInitTriggers} from '../defer/triggering';
 
 /**
  * Indicates whether the hydration-related code was added,
@@ -59,6 +70,12 @@ let isHydrationSupportEnabled = false;
  * whether i18n blocks are serialized or hydrated.
  */
 let isI18nHydrationRuntimeSupportEnabled = false;
+
+/**
+ * Indicates whether the incremental hydration code was added,
+ * prevents adding it multiple times.
+ */
+let isIncrementalHydrationRuntimeSupportEnabled = false;
 
 /**
  * Defines a period of time that Angular waits for the `ApplicationRef.isStable` to emit `true`.
@@ -102,6 +119,18 @@ function enableI18nHydrationRuntimeSupport() {
     enableLocateOrCreateI18nNodeImpl();
     enablePrepareI18nBlockForHydrationImpl();
     enableClaimDehydratedIcuCaseImpl();
+  }
+}
+
+/**
+ * Brings the necessary incremental hydration code in tree-shakable manner.
+ * Similar to `enableHydrationRuntimeSupport`, the code is only
+ * present when `enableIncrementalHydrationRuntimeSupport` is invoked.
+ */
+function enableIncrementalHydrationRuntimeSupport() {
+  if (!isIncrementalHydrationRuntimeSupportEnabled) {
+    isIncrementalHydrationRuntimeSupportEnabled = true;
+    enableRetrieveDeferBlockDataImpl();
   }
 }
 
@@ -154,7 +183,10 @@ export const CLIENT_RENDER_MODE_FLAG = 'ngcm';
  */
 function isClientRenderModeEnabled(): boolean {
   const doc = getDocument();
-  return isPlatformBrowser() && doc.body.hasAttribute(CLIENT_RENDER_MODE_FLAG);
+  return (
+    (typeof ngServerMode === 'undefined' || !ngServerMode) &&
+    doc.body.hasAttribute(CLIENT_RENDER_MODE_FLAG)
+  );
 }
 
 /**
@@ -168,12 +200,12 @@ function isClientRenderModeEnabled(): boolean {
  * configure or change anything in NgUniversal to enable the feature.
  */
 export function withDomHydration(): EnvironmentProviders {
-  return makeEnvironmentProviders([
+  const providers: Provider[] = [
     {
       provide: IS_HYDRATION_DOM_REUSE_ENABLED,
       useFactory: () => {
         let isEnabled = true;
-        if (isPlatformBrowser()) {
+        if (typeof ngServerMode === 'undefined' || !ngServerMode) {
           // On the client, verify that the server response contains
           // hydration annotations. Otherwise, keep hydration disabled.
           const transferState = inject(TransferState, {optional: true});
@@ -192,7 +224,7 @@ export function withDomHydration(): EnvironmentProviders {
         // no way to turn it off (e.g. for tests), so we turn it off by default.
         setIsI18nHydrationSupportEnabled(false);
 
-        if (!isPlatformBrowser()) {
+        if (typeof ngServerMode !== 'undefined' && ngServerMode) {
           // Since this function is used across both server and client,
           // make sure that the runtime code is only added when invoked
           // on the client (see the `enableHydrationRuntimeSupport` function
@@ -219,43 +251,50 @@ export function withDomHydration(): EnvironmentProviders {
       },
       multi: true,
     },
-    {
-      provide: PRESERVE_HOST_CONTENT,
-      useFactory: () => {
-        // Preserve host element content only in a browser
-        // environment and when hydration is configured properly.
-        // On a server, an application is rendered from scratch,
-        // so the host content needs to be empty.
-        return isPlatformBrowser() && inject(IS_HYDRATION_DOM_REUSE_ENABLED);
+  ];
+
+  if (typeof ngServerMode === 'undefined' || !ngServerMode) {
+    providers.push(
+      {
+        provide: PRESERVE_HOST_CONTENT,
+        useFactory: () => {
+          // Preserve host element content only in a browser
+          // environment and when hydration is configured properly.
+          // On a server, an application is rendered from scratch,
+          // so the host content needs to be empty.
+          return inject(IS_HYDRATION_DOM_REUSE_ENABLED);
+        },
       },
-    },
-    {
-      provide: APP_BOOTSTRAP_LISTENER,
-      useFactory: () => {
-        if (isPlatformBrowser() && inject(IS_HYDRATION_DOM_REUSE_ENABLED)) {
-          const appRef = inject(ApplicationRef);
-          const injector = inject(Injector);
-          return () => {
-            // Wait until an app becomes stable and cleanup all views that
-            // were not claimed during the application bootstrap process.
-            // The timing is similar to when we start the serialization process
-            // on the server.
-            //
-            // Note: the cleanup task *MUST* be scheduled within the Angular zone in Zone apps
-            // to ensure that change detection is properly run afterward.
-            whenStableWithTimeout(appRef, injector).then(() => {
-              cleanupDehydratedViews(appRef);
-              if (typeof ngDevMode !== 'undefined' && ngDevMode) {
-                printHydrationStats(injector);
-              }
-            });
-          };
-        }
-        return () => {}; // noop
+      {
+        provide: APP_BOOTSTRAP_LISTENER,
+        useFactory: () => {
+          if (inject(IS_HYDRATION_DOM_REUSE_ENABLED)) {
+            const appRef = inject(ApplicationRef);
+            const injector = inject(Injector);
+            return () => {
+              // Wait until an app becomes stable and cleanup all views that
+              // were not claimed during the application bootstrap process.
+              // The timing is similar to when we start the serialization process
+              // on the server.
+              //
+              // Note: the cleanup task *MUST* be scheduled within the Angular zone in Zone apps
+              // to ensure that change detection is properly run afterward.
+              whenStableWithTimeout(appRef, injector).then(() => {
+                cleanupDehydratedViews(appRef);
+                if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+                  printHydrationStats(injector);
+                }
+              });
+            };
+          }
+          return () => {}; // noop
+        },
+        multi: true,
       },
-      multi: true,
-    },
-  ]);
+    );
+  }
+
+  return makeEnvironmentProviders(providers);
 }
 
 /**
@@ -280,6 +319,55 @@ export function withI18nSupport(): Provider[] {
       multi: true,
     },
   ];
+}
+
+/**
+ * Returns a set of providers required to setup support for incremental hydration.
+ * Requires hydration to be enabled separately.
+ * Enabling incremental hydration also enables event replay for the entire app.
+ *
+ * @developerPreview
+ */
+export function withIncrementalHydration(): Provider[] {
+  const providers: Provider[] = [
+    withEventReplay(),
+    {
+      provide: IS_INCREMENTAL_HYDRATION_ENABLED,
+      useValue: true,
+    },
+    {
+      provide: DEHYDRATED_BLOCK_REGISTRY,
+      useClass: DehydratedBlockRegistry,
+    },
+    {
+      provide: ENVIRONMENT_INITIALIZER,
+      useValue: () => {
+        enableIncrementalHydrationRuntimeSupport();
+        performanceMarkFeature('NgIncrementalHydration');
+      },
+      multi: true,
+    },
+  ];
+
+  if (typeof ngServerMode === 'undefined' || !ngServerMode) {
+    providers.push({
+      provide: APP_BOOTSTRAP_LISTENER,
+      useFactory: () => {
+        const injector = inject(Injector);
+        const doc = getDocument();
+
+        return () => {
+          const deferBlockData = processBlockData(injector);
+          const commentsByBlockId = gatherDeferBlocksCommentNodes(doc, doc.body);
+          processAndInitTriggers(injector, deferBlockData, commentsByBlockId);
+          appendDeferBlocksToJSActionMap(doc, injector);
+        };
+      },
+      multi: true,
+    });
+  }
+
+  return providers;
 }
 
 /**

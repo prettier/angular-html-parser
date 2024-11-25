@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {initMockFileSystem} from '../../../../compiler-cli/src/ngtsc/file_system/testing';
+import {initMockFileSystem} from '@angular/compiler-cli/src/ngtsc/file_system/testing';
 import {runTsurgeMigration} from '../../utils/tsurge/testing';
 import {diffText} from '../../utils/tsurge/testing/diff';
 import {absoluteFrom} from '@angular/compiler-cli';
@@ -42,34 +42,22 @@ describe('outputs', () => {
 
       it('should take alias into account', async () => {
         await verifyDeclaration({
-          before: `@Output({alias: 'otherChange'}) readonly someChange = new EventEmitter();`,
+          before: `@Output('otherChange') readonly someChange = new EventEmitter();`,
           after: `readonly someChange = output({ alias: 'otherChange' });`,
         });
       });
 
-      it('should support alias as statically analyzable reference', async () => {
-        await verify({
-          before: `
+      it('should not migrate aliases that do not evaluate to static string', async () => {
+        await verifyNoChange(`
             import {Directive, Output, EventEmitter} from '@angular/core';
 
-            const aliasParam = { alias: 'otherChange' } as const;
+            const someConst = 'otherChange' as const;
 
             @Directive()
             export class TestDir {
               @Output(aliasParam) someChange = new EventEmitter();
             }
-          `,
-          after: `
-            import {Directive, output} from '@angular/core';
-
-            const aliasParam = { alias: 'otherChange' } as const;
-
-            @Directive()
-            export class TestDir {
-              readonly someChange = output(aliasParam);
-            }
-          `,
-        });
+          `);
       });
 
       it('should add readonly modifier', async () => {
@@ -241,6 +229,199 @@ describe('outputs', () => {
           `,
         );
       });
+
+      it('should migrate .next usage inside inlined template expressions', async () => {
+        await verify({
+          before: `
+            import {Component, Output, EventEmitter} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              template: '<button (click)="someChange.next()">click me</button>'
+            })
+            export class TestCmpWithTemplate {
+              @Output() someChange = new EventEmitter();
+            }
+          `,
+          after: `
+            import {Component, output} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              template: '<button (click)="someChange.emit()">click me</button>'
+            })
+            export class TestCmpWithTemplate {
+              readonly someChange = output();
+            }
+          `,
+        });
+      });
+
+      it('should _not_ migrate .next usages when not an EventEmitter in external template', async () => {
+        const tsContents = `
+              import {Component} from '@angular/core';
+              import {Subject} from 'rxjs';
+
+              @Component({
+                selector: 'test-cmp',
+                templateUrl: '/app.component.html'
+              })
+              export class TestCmpWithTemplate {
+                someChange = new Subject<void>();
+              }
+            `;
+        const htmlContents = `<button (click)="someChange.next()">click me</button>`;
+        const {fs} = await runTsurgeMigration(new OutputMigration(), [
+          {
+            name: absoluteFrom('/app.component.ts'),
+            isProgramRootFile: true,
+            contents: tsContents,
+          },
+          {
+            name: absoluteFrom('/app.component.html'),
+            contents: htmlContents,
+          },
+        ]);
+
+        const cmpActual = fs.readFile(absoluteFrom('/app.component.ts'));
+        const htmlActual = fs.readFile(absoluteFrom('/app.component.html'));
+
+        // nothing should have changed
+        expect(cmpActual).withContext(diffText(tsContents, cmpActual)).toEqual(tsContents);
+        expect(htmlActual).withContext(diffText(htmlContents, htmlActual)).toEqual(htmlContents);
+      });
+
+      it('should migrate .next usage inside external template expressions', async () => {
+        const {fs} = await runTsurgeMigration(new OutputMigration(), [
+          {
+            name: absoluteFrom('/app.component.ts'),
+            isProgramRootFile: true,
+            contents: `
+              import {Component, Output, EventEmitter} from '@angular/core';
+
+              @Component({
+                selector: 'test-cmp',
+                templateUrl: '/app.component.html'
+              })
+              export class TestCmpWithTemplate {
+                @Output() someChange = new EventEmitter();
+              }
+            `,
+          },
+          {
+            name: absoluteFrom('/app.component.html'),
+            contents: `<button (click)="someChange.next()">click me</button>`,
+          },
+        ]);
+
+        const cmpActual = fs.readFile(absoluteFrom('/app.component.ts'));
+        const htmlActual = fs.readFile(absoluteFrom('/app.component.html'));
+
+        const cmpExpected = `
+              import {Component, output} from '@angular/core';
+
+              @Component({
+                selector: 'test-cmp',
+                templateUrl: '/app.component.html'
+              })
+              export class TestCmpWithTemplate {
+                readonly someChange = output();
+              }
+            `;
+        const htmlExpected = `<button (click)="someChange.emit()">click me</button>`;
+
+        expect(cmpActual).withContext(diffText(cmpExpected, cmpActual)).toEqual(cmpExpected);
+        expect(htmlActual).withContext(diffText(htmlExpected, htmlActual)).toEqual(htmlExpected);
+      });
+
+      it('should migrate .next usage inside host listeners', async () => {
+        await verify({
+          before: `
+            import {Component, Output, EventEmitter} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              host: {
+                '(click)': 'someChange.next()'
+              },
+              template: ''
+            })
+            export class TestCmpWithTemplate {
+              @Output() someChange = new EventEmitter();
+            }
+          `,
+          after: `
+            import {Component, output} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              host: {
+                '(click)': 'someChange.emit()'
+              },
+              template: ''
+            })
+            export class TestCmpWithTemplate {
+              readonly someChange = output();
+            }
+          `,
+        });
+      });
+
+      it('should _not_ migrate .next usage inside host listeners if not an EventEmitter', async () => {
+        await verifyNoChange(
+          `
+            import {Component, Output, EventEmitter} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              host: {
+                '(click)': 'someChange.next()'
+              },
+              template: ''
+            })
+            export class TestCmpWithTemplate {
+              someChange = new Subject();
+            }
+          `,
+        );
+      });
+
+      it('should migrate .next usage in @HostListener', async () => {
+        await verify({
+          before: `
+            import {Component, Output, EventEmitter, HostListener} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              template: '<button (click)="triggerSomeChange()">click me</button>'
+            })
+            export class TestCmpWithTemplate {
+              @Output() someChange = new EventEmitter();
+
+              @HostListener('click')
+              triggerSomeChange() {
+                this.someChange.next();
+              }
+            }
+            `,
+          after: `
+            import {Component, HostListener, output} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              template: '<button (click)="triggerSomeChange()">click me</button>'
+            })
+            export class TestCmpWithTemplate {
+              readonly someChange = output();
+
+              @HostListener('click')
+              triggerSomeChange() {
+                this.someChange.emit();
+              }
+            }
+            `,
+        });
+      });
     });
 
     describe('.complete migration', () => {
@@ -393,6 +574,87 @@ describe('outputs', () => {
         before: populateDeclarationTestCase('@Output() protected someChange = new Subject();'),
         after: populateDeclarationTestCase('@Output() protected someChange = new Subject();'),
       });
+    });
+  });
+
+  describe('statistics', () => {
+    it('should capture migration statistics with problematic usage detected', async () => {
+      const runResults = await runTsurgeMigration(new OutputMigration(), [
+        {
+          name: absoluteFrom('/app.component.ts'),
+          isProgramRootFile: true,
+          contents: populateDeclarationTestCase(`
+            @Output() protected ok1 = new EventEmitter();
+            @Output() protected ok2 = new EventEmitter();
+            @Output() protected ko1 = new EventEmitter();
+            @Output() protected ko2 = new Subject();
+
+            doSth() {
+              this.ko1.pipe();
+            }
+        `),
+        },
+      ]);
+
+      const stats = await runResults.getStatistics();
+      expect(stats.counters['detectedOutputs']).toBe(4);
+      expect(stats.counters['problematicOutputs']).toBe(2);
+      expect(stats.counters['successRate']).toBe(0.5);
+    });
+
+    it('should capture migration statistics without problematic usages', async () => {
+      const runResults = await runTsurgeMigration(new OutputMigration(), [
+        {
+          name: absoluteFrom('/app.component.ts'),
+          isProgramRootFile: true,
+          contents: populateDeclarationTestCase(`
+            @Output() protected ok = new EventEmitter();
+            @Output() protected ko = new EventEmitter();
+        `),
+        },
+      ]);
+
+      const stats = await runResults.getStatistics();
+      expect(stats.counters['detectedOutputs']).toBe(2);
+      expect(stats.counters['problematicOutputs']).toBe(0);
+      expect(stats.counters['successRate']).toBe(1);
+    });
+  });
+
+  describe('non-regression', () => {
+    it('should properly process import replacements across multiple files', async () => {
+      const {fs} = await runTsurgeMigration(new OutputMigration(), [
+        {
+          name: absoluteFrom('/app.component.ts'),
+          isProgramRootFile: true,
+          contents: `
+            import {Component, Output, EventEmitter} from '@angular/core';
+
+            @Component({selector: 'app-component'})
+            export class AppComponent {
+              @Output() appOut = new EventEmitter();
+            }
+          `,
+        },
+        {
+          name: absoluteFrom('/other.component.ts'),
+          isProgramRootFile: true,
+          contents: `
+            import {Component, Output, EventEmitter} from '@angular/core';
+
+            @Component({selector: 'other-component'})
+            export class OtherComponent {
+              @Output() otherOut = new EventEmitter();
+            }
+          `,
+        },
+      ]);
+
+      for (const file of ['/app.component.ts', '/other.component.ts']) {
+        const content = fs.readFile(absoluteFrom(file)).trim();
+        const firstLine = content.split('\n')[0];
+        expect(firstLine).toBe(`import {Component, output} from '@angular/core';`);
+      }
     });
   });
 });

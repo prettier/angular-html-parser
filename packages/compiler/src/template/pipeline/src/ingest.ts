@@ -1003,30 +1003,10 @@ function convertAst(
   if (ast instanceof e.ASTWithSource) {
     return convertAst(ast.ast, job, baseSourceSpan);
   } else if (ast instanceof e.PropertyRead) {
-    const isThisReceiver = ast.receiver instanceof e.ThisReceiver;
     // Whether this is an implicit receiver, *excluding* explicit reads of `this`.
     const isImplicitReceiver =
       ast.receiver instanceof e.ImplicitReceiver && !(ast.receiver instanceof e.ThisReceiver);
-    // Whether the  name of the read is a node that should be never retain its explicit this
-    // receiver.
-    const isSpecialNode = ast.name === '$any' || ast.name === '$event';
-    // TODO: The most sensible condition here would be simply `isImplicitReceiver`, to convert only
-    // actual implicit `this` reads, and not explicit ones. However, TemplateDefinitionBuilder (and
-    // the Typecheck block!) both have the same bug, in which they also consider explicit `this`
-    // reads to be implicit. This causes problems when the explicit `this` read is inside a
-    // template with a context that also provides the variable name being read:
-    // ```
-    // <ng-template let-a>{{this.a}}</ng-template>
-    // ```
-    // The whole point of the explicit `this` was to access the class property, but TDB and the
-    // current TCB treat the read as implicit, and give you the context property instead!
-    //
-    // For now, we emulate this old behavior by aggressively converting explicit reads to to
-    // implicit reads, except for the special cases that TDB and the current TCB protect. However,
-    // it would be an improvement to fix this.
-    //
-    // See also the corresponding comment for the TCB, in `type_check_block.ts`.
-    if (isImplicitReceiver || (isThisReceiver && !isSpecialNode)) {
+    if (isImplicitReceiver) {
       return new ir.LexicalReadExpr(ast.name);
     } else {
       return new o.ReadPropExpr(
@@ -1170,6 +1150,8 @@ function convertAst(
       convertAst(ast.expression, job, baseSourceSpan),
       convertSourceSpan(ast.span, baseSourceSpan),
     );
+  } else if (ast instanceof e.TypeofExpression) {
+    return o.typeofExpr(convertAst(ast.expression, job, baseSourceSpan));
   } else {
     throw new Error(
       `Unhandled expression type "${ast.constructor.name}" in file "${baseSourceSpan?.start.file.url}"`,
@@ -1752,7 +1734,7 @@ function convertSourceSpan(
  *    workaround, because it'll include an additional text node as the first child. We can work
  *    around it here, but in a discussion it was decided not to, because the user explicitly opted
  *    into preserving the whitespace and we would have to drop it from the generated code.
- *    The diagnostic mentioned point #1 will flag such cases to users.
+ *    The diagnostic mentioned point in #1 will flag such cases to users.
  *
  * @returns Tag name to be used for the control flow template.
  */
@@ -1764,8 +1746,9 @@ function ingestControlFlowInsertionPoint(
   let root: t.Element | t.Template | null = null;
 
   for (const child of node.children) {
-    // Skip over comment nodes.
-    if (child instanceof t.Comment) {
+    // Skip over comment nodes and @let declarations since
+    // it doesn't matter where they end up in the DOM.
+    if (child instanceof t.Comment || child instanceof t.LetDeclaration) {
       continue;
     }
 
@@ -1777,6 +1760,8 @@ function ingestControlFlowInsertionPoint(
     // Root nodes can only elements or templates with a tag name (e.g. `<div *foo></div>`).
     if (child instanceof t.Element || (child instanceof t.Template && child.tagName !== null)) {
       root = child;
+    } else {
+      return null;
     }
   }
 

@@ -18,7 +18,8 @@ import {isTypeScriptFile} from '../../utils';
 import {findTightestNode, getParentClassDeclaration} from '../../utils/ts_utils';
 import type {ActiveRefactoring} from '../refactoring';
 import {applySignalInputRefactoring} from './apply_input_refactoring';
-import {isDecoratorInputClassField, isDirectiveOrComponent} from './decorators';
+import {isDecoratorInputClassField} from './decorators';
+import {isDirectiveOrComponent} from '../../utils/decorators';
 
 /**
  * Base language service refactoring action that can convert a

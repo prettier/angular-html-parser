@@ -7,11 +7,12 @@
  */
 
 import ts from 'typescript';
-import {analyzeControlFlow} from '../../../flow_analysis';
+import {analyzeControlFlow, ControlFlowAnalysisNode} from '../../../flow_analysis';
 import {ProgramInfo, projectFile, Replacement, TextUpdate} from '../../../../../../utils/tsurge';
 import {traverseAccess} from '../../../utils/traverse_access';
 import {UniqueNamesGenerator} from '../../../utils/unique_names';
 import {createNewBlockToInsertVariable} from '../helpers/create_block_arrow_function';
+import assert from 'assert';
 
 export interface NarrowableTsReferences {
   accesses: ts.Identifier[];
@@ -29,6 +30,19 @@ export function migrateStandardTsReference(
   for (const reference of tsReferencesWithNarrowing.values()) {
     const controlFlowResult = analyzeControlFlow(reference.accesses, checker);
     const idToSharedField = new Map<number, string>();
+
+    const isSharePartnerRef = (val: ControlFlowAnalysisNode['recommendedNode']) => {
+      return val !== 'preserve' && typeof val !== 'number';
+    };
+
+    // Ensure we generate shared fields before reference entries.
+    // This allows us to safely make use of `idToSharedField` whenever we come
+    // across a referenced pointing to a share partner.
+    controlFlowResult.sort((a, b) => {
+      const aPriority = isSharePartnerRef(a.recommendedNode) ? 1 : 0;
+      const bPriority = isSharePartnerRef(b.recommendedNode) ? 1 : 0;
+      return bPriority - aPriority;
+    });
 
     for (const {id, originalNode, recommendedNode} of controlFlowResult) {
       const sf = originalNode.getSourceFile();
@@ -53,15 +67,18 @@ export function migrateStandardTsReference(
       // This reference is shared with a previous reference. Replace the access
       // with the temporary variable.
       if (typeof recommendedNode === 'number') {
+        // Extract the shared field name.
+        const toInsert = idToSharedField.get(recommendedNode);
         const replaceNode = traverseAccess(originalNode);
+
+        assert(toInsert, 'no shared variable yet available');
         replacements.push(
           new Replacement(
             projectFile(sf, info),
             new TextUpdate({
               position: replaceNode.getStart(),
               end: replaceNode.getEnd(),
-              // Extract the shared field name.
-              toInsert: idToSharedField.get(recommendedNode)!,
+              toInsert,
             }),
           ),
         );
@@ -83,11 +100,21 @@ export function migrateStandardTsReference(
       }
 
       const replaceNode = traverseAccess(originalNode);
-      const fieldName = nameGenerator.generate(originalNode.text, referenceNodeInBlock);
       const filePath = projectFile(sf, info);
-      const temporaryVariableStr = `const ${fieldName} = ${replaceNode.getText()}();`;
+      const initializer = `${replaceNode.getText()}()`;
+      const fieldName = nameGenerator.generate(originalNode.text, referenceNodeInBlock);
 
-      idToSharedField.set(id, fieldName);
+      let sharedValueAccessExpr: string;
+      let temporaryVariableStr: string;
+      if (ts.isClassLike(recommendedNode)) {
+        sharedValueAccessExpr = `this.${fieldName}`;
+        temporaryVariableStr = `private readonly ${fieldName} = ${initializer};`;
+      } else {
+        sharedValueAccessExpr = fieldName;
+        temporaryVariableStr = `const ${fieldName} = ${initializer};`;
+      }
+
+      idToSharedField.set(id, sharedValueAccessExpr);
 
       // If the common ancestor block of all shared references is an arrow function
       // without a block, convert the arrow function to a block and insert the temporary
@@ -117,7 +144,7 @@ export function migrateStandardTsReference(
           new TextUpdate({
             position: replaceNode.getStart(),
             end: replaceNode.getEnd(),
-            toInsert: fieldName,
+            toInsert: sharedValueAccessExpr,
           }),
         ),
       );

@@ -16,6 +16,7 @@ import {
   NotificationSource,
 } from '../../change_detection/scheduling/zoneless_scheduling';
 import {type DestroyRef} from '../../linker/destroy_ref';
+import {TracingAction, TracingService, TracingSnapshot} from '../../application/tracing';
 
 export class AfterRenderManager {
   impl: AfterRenderImpl | null = null;
@@ -25,21 +26,22 @@ export class AfterRenderManager {
   }
 
   /** @nocollapse */
-  static ɵprov = /** @pureOrBreakMyCode */ ɵɵdefineInjectable({
+  static ɵprov = /** @pureOrBreakMyCode */ /* @__PURE__ */ ɵɵdefineInjectable({
     token: AfterRenderManager,
     providedIn: 'root',
     factory: () => new AfterRenderManager(),
   });
 }
 
-export class AfterRenderImpl {
-  static readonly PHASES = [
+export const AFTER_RENDER_PHASES = /* @__PURE__ **/ (() =>
+  [
     AfterRenderPhase.EarlyRead,
     AfterRenderPhase.Write,
     AfterRenderPhase.MixedReadWrite,
     AfterRenderPhase.Read,
-  ] as const;
+  ] as const)();
 
+export class AfterRenderImpl {
   private readonly ngZone = inject(NgZone);
   private readonly scheduler = inject(ChangeDetectionScheduler);
   private readonly errorHandler = inject(ErrorHandler, {optional: true});
@@ -53,13 +55,18 @@ export class AfterRenderImpl {
   /** Whether the `AfterRenderManager` is currently executing hooks. */
   executing = false;
 
+  constructor() {
+    // Inject the tracing service to make sure it's initialized.
+    inject(TracingService, {optional: true});
+  }
+
   /**
    * Run the sequence of phases of hooks, once through. As a result of executing some hooks, more
    * might be scheduled.
    */
   execute(): void {
     this.executing = true;
-    for (const phase of AfterRenderImpl.PHASES) {
+    for (const phase of AFTER_RENDER_PHASES) {
       for (const sequence of this.sequences) {
         if (sequence.erroredOrDestroyed || !sequence.hooks[phase]) {
           continue;
@@ -67,7 +74,10 @@ export class AfterRenderImpl {
 
         try {
           sequence.pipelinedValue = this.ngZone.runOutsideAngular(() =>
-            sequence.hooks[phase]!(sequence.pipelinedValue),
+            this.maybeTrace(
+              () => sequence.hooks[phase]!(sequence.pipelinedValue),
+              sequence.snapshot,
+            ),
           );
         } catch (err) {
           sequence.erroredOrDestroyed = true;
@@ -82,6 +92,9 @@ export class AfterRenderImpl {
       sequence.afterRun();
       if (sequence.once) {
         this.sequences.delete(sequence);
+        // Destroy the sequence so its on destroy callbacks can be cleaned up
+        // immediately, instead of waiting until the injector is destroyed.
+        sequence.destroy();
       }
     }
 
@@ -120,8 +133,13 @@ export class AfterRenderImpl {
     }
   }
 
+  protected maybeTrace<T>(fn: () => T, snapshot: TracingSnapshot | null): T {
+    // Only trace the execution if the snapshot is defined.
+    return snapshot?.run(TracingAction.AFTER_NEXT_RENDER, fn) ?? fn();
+  }
+
   /** @nocollapse */
-  static ɵprov = /** @pureOrBreakMyCode */ ɵɵdefineInjectable({
+  static ɵprov = /** @pureOrBreakMyCode */ /* @__PURE__ */ ɵɵdefineInjectable({
     token: AfterRenderImpl,
     providedIn: 'root',
     factory: () => new AfterRenderImpl(),
@@ -156,6 +174,7 @@ export class AfterRenderSequence implements AfterRenderRef {
     readonly hooks: AfterRenderHooks,
     public once: boolean,
     destroyRef: DestroyRef | null,
+    public snapshot: TracingSnapshot | null = null,
   ) {
     this.unregisterOnDestroy = destroyRef?.onDestroy(() => this.destroy());
   }
@@ -163,6 +182,12 @@ export class AfterRenderSequence implements AfterRenderRef {
   afterRun(): void {
     this.erroredOrDestroyed = false;
     this.pipelinedValue = undefined;
+
+    // Clear the tracing snapshot after the initial run. This snapshot only
+    // associates the initial run of the hook with the context that created it.
+    // Follow-up runs are independent of that initial context and have different
+    // triggers.
+    this.snapshot = null;
   }
 
   destroy(): void {

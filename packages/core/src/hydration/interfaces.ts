@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import type {DeferBlockTrigger} from '../defer/interfaces';
 import type {I18nICUNode} from '../render3/interfaces/i18n';
 import {RNode} from '../render3/interfaces/renderer_dom';
 
@@ -37,6 +38,11 @@ export const TEMPLATE_ID = 'i'; // as it's also an "id"
 export const NODES = 'n';
 export const DISCONNECTED_NODES = 'd';
 export const I18N_DATA = 'l';
+export const DEFER_BLOCK_ID = 'di';
+export const DEFER_BLOCK_STATE = 's';
+export const DEFER_PARENT_BLOCK_ID = 'p';
+export const DEFER_HYDRATE_TRIGGERS = 't';
+export const DEFER_PREFETCH_TRIGGERS = 'pt';
 
 /**
  * Represents element containers within this view, stored as key-value pairs
@@ -101,6 +107,17 @@ export interface SerializedView {
    * active ICU cases.
    */
   [I18N_DATA]?: Record<number, number[]>;
+
+  /**
+   * If this view represents a `@defer` block, this field contains
+   * unique id of the block.
+   */
+  [DEFER_BLOCK_ID]?: string;
+
+  /**
+   * This field represents a status, based on the `DeferBlockState` enum.
+   */
+  [DEFER_BLOCK_STATE]?: number;
 }
 
 /**
@@ -131,6 +148,41 @@ export interface SerializedContainerView extends SerializedView {
    * information about similar views (for example, produced by *ngFor).
    */
   [MULTIPLIER]?: number;
+}
+
+/**
+ * Serialized data structure that contains relevant defer block
+ * information that describes a given incremental hydration boundary
+ */
+export interface SerializedDeferBlock {
+  /**
+   * This contains the unique id of this defer block's parent, if it exists.
+   */
+  [DEFER_PARENT_BLOCK_ID]: string | null;
+
+  /**
+   * This field represents a status, based on the `DeferBlockState` enum.
+   */
+  [DEFER_BLOCK_STATE]?: number;
+
+  /**
+   * Number of root nodes that belong to this defer block's template.
+   * This information is needed to effectively traverse the DOM tree
+   * and add jsaction attributes to root nodes appropriately for
+   * incremental hydration.
+   */
+  [NUM_ROOT_NODES]: number;
+
+  /**
+   * The list of triggers that exist for incremental hydration, based on the
+   * `Trigger` enum.
+   */
+  [DEFER_HYDRATE_TRIGGERS]: (DeferBlockTrigger | SerializedTriggerDetails)[] | null;
+}
+
+export interface SerializedTriggerDetails {
+  trigger: DeferBlockTrigger;
+  delay?: number;
 }
 
 /**
@@ -222,4 +274,21 @@ export interface DehydratedIcuData {
    * AST to be used to clean up dehydrated nodes.
    */
   node: I18nICUNode;
+}
+
+/**
+ * Summarizes the presence of specific types of triggers anywhere in the DOM
+ */
+export interface BlockSummary {
+  data: SerializedDeferBlock;
+  hydrate: {idle: boolean; immediate: boolean; viewport: boolean; timer: number | null};
+}
+
+/**
+ * The details of a specific element's trigger and how it is associated to a block
+ */
+export interface ElementTrigger {
+  el: HTMLElement;
+  blockName: string;
+  delay?: number;
 }

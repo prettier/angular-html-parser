@@ -15,9 +15,6 @@
     "name": "AfterRenderManager"
   },
   {
-    "name": "AfterRenderPhase"
-  },
-  {
     "name": "AnonymousSubject"
   },
   {
@@ -28,12 +25,6 @@
   },
   {
     "name": "ApplicationRef"
-  },
-  {
-    "name": "BLOOM_BUCKET_BITS"
-  },
-  {
-    "name": "BLOOM_MASK"
   },
   {
     "name": "BROWSER_MODULE_PROVIDERS"
@@ -61,9 +52,6 @@
   },
   {
     "name": "COMPONENT_REGEX"
-  },
-  {
-    "name": "CONTAINER_HEADER_OFFSET"
   },
   {
     "name": "CSP_NONCE"
@@ -165,6 +153,9 @@
     "name": "EnvironmentInjector"
   },
   {
+    "name": "EnvironmentNgModuleRefAdapter"
+  },
+  {
     "name": "ErrorHandler"
   },
   {
@@ -216,28 +207,16 @@
     "name": "LifecycleHooksFeature"
   },
   {
-    "name": "MAXIMUM_REFRESH_RERUNS"
-  },
-  {
     "name": "MODIFIER_KEYS"
   },
   {
     "name": "MODIFIER_KEY_GETTERS"
   },
   {
-    "name": "MONKEY_PATCH_KEY_NAME"
-  },
-  {
-    "name": "MOVED_VIEWS"
-  },
-  {
     "name": "Module"
   },
   {
     "name": "NAMESPACE_URIS"
-  },
-  {
-    "name": "NATIVE"
   },
   {
     "name": "NEW_LINE"
@@ -276,9 +255,6 @@
     "name": "NG_PROV_DEF"
   },
   {
-    "name": "NG_TEMPLATE_SELECTOR"
-  },
-  {
     "name": "NOT_FOUND"
   },
   {
@@ -289,9 +265,6 @@
   },
   {
     "name": "NO_CHANGE"
-  },
-  {
-    "name": "NO_PARENT_INJECTOR"
   },
   {
     "name": "NULL_INJECTOR"
@@ -405,6 +378,9 @@
     "name": "SimpleChange"
   },
   {
+    "name": "StandaloneService"
+  },
+  {
     "name": "Subject"
   },
   {
@@ -432,13 +408,16 @@
     "name": "TRACKED_LVIEWS"
   },
   {
-    "name": "TYPE"
-  },
-  {
     "name": "Testability"
   },
   {
     "name": "TestabilityRegistry"
+  },
+  {
+    "name": "TracingAction"
+  },
+  {
+    "name": "TracingService"
   },
   {
     "name": "TriggerComponent"
@@ -468,12 +447,6 @@
     "name": "ZoneStablePendingTask"
   },
   {
-    "name": "_AfterRenderImpl"
-  },
-  {
-    "name": "_ComponentFactoryResolver"
-  },
-  {
     "name": "_DOM"
   },
   {
@@ -483,7 +456,13 @@
     "name": "_NullComponentFactoryResolver"
   },
   {
+    "name": "__defProp"
+  },
+  {
     "name": "__forward_ref__"
+  },
+  {
+    "name": "__publicField"
   },
   {
     "name": "_applyRootElementTransformImpl"
@@ -495,13 +474,7 @@
     "name": "_currentInjector"
   },
   {
-    "name": "_getInsertInFrontOfRNodeWithI18n"
-  },
-  {
     "name": "_global"
-  },
-  {
-    "name": "_icuContainerIterate"
   },
   {
     "name": "_injectImplementation"
@@ -517,12 +490,6 @@
   },
   {
     "name": "_platformInjector"
-  },
-  {
-    "name": "_processI18nInsertBefore"
-  },
-  {
-    "name": "_retrieveHydrationInfoImpl"
   },
   {
     "name": "_testabilityGetter"
@@ -729,9 +696,6 @@
     "name": "enterView"
   },
   {
-    "name": "epoch"
-  },
-  {
     "name": "errorContext"
   },
   {
@@ -859,9 +823,6 @@
   },
   {
     "name": "getOrCreateTNode"
-  },
-  {
-    "name": "getOriginalError"
   },
   {
     "name": "getOwnDefinition"
@@ -1071,6 +1032,9 @@
     "name": "markViewForRefresh"
   },
   {
+    "name": "markedFeatures"
+  },
+  {
     "name": "maybeWrapInNotSelector"
   },
   {
@@ -1137,13 +1101,13 @@
     "name": "processInjectorTypesWithProviders"
   },
   {
+    "name": "producerMarkClean"
+  },
+  {
     "name": "producerRemoveLiveConsumerAtIndex"
   },
   {
     "name": "producerUpdateValueVersion"
-  },
-  {
-    "name": "profiler"
   },
   {
     "name": "refreshContentQueries"
@@ -1182,10 +1146,10 @@
     "name": "resolveForwardRef"
   },
   {
-    "name": "retrieveHydrationInfo"
+    "name": "runEffectsInView"
   },
   {
-    "name": "runEffectsInView"
+    "name": "runInInjectionContext"
   },
   {
     "name": "saveNameToExportMap"

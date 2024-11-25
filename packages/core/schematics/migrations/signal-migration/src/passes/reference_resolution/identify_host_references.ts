@@ -17,7 +17,7 @@ import {
   ParsedEvent,
   ParsedProperty,
   makeBindingParser,
-} from '../../../../../../../compiler/public_api';
+} from '@angular/compiler';
 import {ProgramInfo, projectFile} from '../../../../../utils/tsurge';
 import {
   TemplateExpressionReferenceVisitor,
@@ -38,6 +38,7 @@ export function identifyHostBindingReferences<D extends ClassFieldDescriptor>(
   reflector: ReflectionHost,
   result: ReferenceResult<D>,
   knownFields: KnownFields<D>,
+  fieldNamesToConsiderForReferenceLookup: Set<string> | null,
 ) {
   if (node.name === undefined) {
     return;
@@ -97,6 +98,7 @@ export function identifyHostBindingReferences<D extends ClassFieldDescriptor>(
     null,
     node,
     knownFields,
+    fieldNamesToConsiderForReferenceLookup,
   );
 
   for (const [rawName, expression] of hostMap.entries()) {

@@ -9,7 +9,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     <div>
       {{message}}
       @defer {Deferred content}
@@ -26,6 +26,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       <p>Content after defer block</p>
     </div>
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -51,7 +52,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     <div>
       {{message}}
       @defer {
@@ -82,6 +83,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       }
     </div>
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -104,7 +106,7 @@ import * as i0 from "@angular/core";
 export class MyApp {
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     @defer {
       <button></button>
     } @placeholder (minimum 2s) {
@@ -121,6 +123,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       <img src="placeholder.gif">
     }
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -141,7 +144,7 @@ import * as i0 from "@angular/core";
 export class MyApp {
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     @defer {
       <button></button>
     } @loading(minimum 2s; after 500ms) {
@@ -158,6 +161,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       <img src="loading.gif">
     }
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -181,7 +185,7 @@ EagerDep.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0
 EagerDep.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: EagerDep, isStandalone: true, selector: "eager-dep", ngImport: i0 });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: EagerDep, decorators: [{
             type: Directive,
-            args: [{ selector: 'eager-dep', standalone: true }]
+            args: [{ selector: 'eager-dep' }]
         }] });
 export class LazyDep {
 }
@@ -189,7 +193,7 @@ LazyDep.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-
 LazyDep.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: LazyDep, isStandalone: true, selector: "lazy-dep", ngImport: i0 });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: LazyDep, decorators: [{
             type: Directive,
-            args: [{ selector: 'lazy-dep', standalone: true }]
+            args: [{ selector: 'lazy-dep' }]
         }] });
 export class LoadingDep {
 }
@@ -197,7 +201,7 @@ LoadingDep.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0
 LoadingDep.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: LoadingDep, isStandalone: true, selector: "loading-dep", ngImport: i0 });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: LoadingDep, decorators: [{
             type: Directive,
-            args: [{ selector: 'loading-dep', standalone: true }]
+            args: [{ selector: 'loading-dep' }]
         }] });
 export class MyApp {
 }
@@ -225,7 +229,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       }
     </div>
   `,
-                    standalone: true,
                     imports: [EagerDep, LazyDep, LoadingDep],
                 }]
         }] });
@@ -264,7 +267,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
             type: Directive,
             args: [{
                     selector: 'lazy-dep',
-                    standalone: true,
                 }]
         }] });
 export class MyApp {
@@ -293,7 +295,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       }
     </div>
   `,
-                    standalone: true,
                     imports: [LazyDep],
                 }]
         }] });
@@ -322,7 +323,7 @@ EagerDep.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0
 EagerDep.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: EagerDep, isStandalone: true, selector: "eager-dep", ngImport: i0 });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: EagerDep, decorators: [{
             type: Directive,
-            args: [{ selector: 'eager-dep', standalone: true }]
+            args: [{ selector: 'eager-dep' }]
         }] });
 
 /****************************************************************************************************
@@ -345,7 +346,7 @@ LazyDep.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-
 LazyDep.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: LazyDep, isStandalone: true, selector: "lazy-dep", ngImport: i0 });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: LazyDep, decorators: [{
             type: Directive,
-            args: [{ selector: 'lazy-dep', standalone: true }]
+            args: [{ selector: 'lazy-dep', }]
         }] });
 
 /****************************************************************************************************
@@ -368,7 +369,7 @@ LoadingDep.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0
 LoadingDep.ɵdir = i0.ɵɵngDeclareDirective({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: LoadingDep, isStandalone: true, selector: "loading-dep", ngImport: i0 });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: LoadingDep, decorators: [{
             type: Directive,
-            args: [{ selector: 'loading-dep', standalone: true }]
+            args: [{ selector: 'loading-dep' }]
         }] });
 
 /****************************************************************************************************
@@ -413,7 +414,6 @@ i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACE
       }
     </div>
   `,
-                        standalone: true,
                         imports: [EagerDep, LazyDep, LoadingDep],
                     }]
             }], ctorParameters: null, propDecorators: null }) });
@@ -442,7 +442,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     {{message}}
     @defer (
       when isVisible() || isReady;
@@ -471,6 +471,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
         <button #button>Click me</button>
       }
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -501,7 +502,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     {{message}}
     @defer (
       prefetch when isVisible() || isReady;
@@ -530,6 +531,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
         <button #button>Click me</button>
       }
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -560,7 +562,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: true, selector: "ng-component", ngImport: i0, template: `
     {{message}}
     @defer (
       hydrate when isVisible() || isReady;
@@ -597,7 +599,7 @@ export declare class MyApp {
     isReady: boolean;
     isVisible(): boolean;
     static ɵfac: i0.ɵɵFactoryDeclaration<MyApp, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<MyApp, "ng-component", never, {}, {}, never, never, false, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<MyApp, "ng-component", never, {}, {}, never, never, true, never>;
 }
 
 /****************************************************************************************************
@@ -611,7 +613,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: true, selector: "ng-component", ngImport: i0, template: `
     @defer (when isReady; hydrate on timer(1337); prefetch on viewport) {
       Hello
     } @placeholder {
@@ -638,7 +640,7 @@ import * as i0 from "@angular/core";
 export declare class MyApp {
     isReady: boolean;
     static ɵfac: i0.ɵɵFactoryDeclaration<MyApp, never>;
-    static ɵcmp: i0.ɵɵComponentDeclaration<MyApp, "ng-component", never, {}, {}, never, never, false, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<MyApp, "ng-component", never, {}, {}, never, never, true, never>;
 }
 
 /****************************************************************************************************
@@ -655,7 +657,7 @@ TestPipe.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0
 TestPipe.ɵpipe = i0.ɵɵngDeclarePipe({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestPipe, isStandalone: true, name: "testPipe" });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestPipe, decorators: [{
             type: Pipe,
-            args: [{ standalone: true, name: 'testPipe' }]
+            args: [{ name: 'testPipe' }]
         }] });
 export class MyApp {
     constructor() {
@@ -682,7 +684,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       Hello
     }
   `,
-                    standalone: true,
                     imports: [TestPipe],
                 }]
         }] });
@@ -715,7 +716,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     {{message}}
     @defer (on interaction(button); prefetch on interaction(button)) {}
 
@@ -742,6 +743,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       </div>
     </div>
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -766,7 +768,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     <ng-template>
       {{message}}
       <button #button>Click me</button>
@@ -793,6 +795,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       </ng-template>
     </ng-template>
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -817,7 +820,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     {{message}}
     @defer (on interaction(button); prefetch on interaction(button)) {
       Main
@@ -844,6 +847,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       </div>
     }
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -868,7 +872,7 @@ export class MyApp {
     }
 }
 MyApp.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
-MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, selector: "ng-component", ngImport: i0, template: `
+MyApp.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: false, selector: "ng-component", ngImport: i0, template: `
     @defer (on hover, interaction, viewport; prefetch on hover, interaction, viewport) {
       {{message}}
     } @placeholder {
@@ -885,6 +889,7 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
       <button>Click me</button>
     }
   `,
+                    standalone: false
                 }]
         }] });
 
@@ -909,7 +914,7 @@ CmpA.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLA
 CmpA.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "14.0.0", version: "0.0.0-PLACEHOLDER", type: CmpA, isStandalone: true, selector: "cmp-a", ngImport: i0, template: 'CmpA!', isInline: true });
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: CmpA, decorators: [{
             type: Component,
-            args: [{ standalone: true, selector: 'cmp-a', template: 'CmpA!' }]
+            args: [{ selector: 'cmp-a', template: 'CmpA!' }]
         }] });
 
 /****************************************************************************************************
@@ -934,7 +939,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
             type: Component,
             args: [{
                     selector: 'local-dep',
-                    standalone: true,
                     template: 'Local dependency',
                 }]
         }] });
@@ -951,7 +955,6 @@ i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACE
                 type: Component,
                 args: [{
                         selector: 'test-cmp',
-                        standalone: true,
                         imports: [CmpA, LocalDep],
                         template: `
 	@defer {
@@ -987,7 +990,7 @@ CmpA.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "14.0.0", version: "0.0.0-P
 export default CmpA;
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: CmpA, decorators: [{
             type: Component,
-            args: [{ standalone: true, selector: 'cmp-a', template: 'CmpA!' }]
+            args: [{ selector: 'cmp-a', template: 'CmpA!' }]
         }] });
 
 /****************************************************************************************************
@@ -1012,7 +1015,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
             type: Component,
             args: [{
                     selector: 'local-dep',
-                    standalone: true,
                     template: 'Local dependency',
                 }]
         }] });
@@ -1029,7 +1031,6 @@ i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACE
                 type: Component,
                 args: [{
                         selector: 'test-cmp',
-                        standalone: true,
                         imports: [CmpA, LocalDep],
                         template: `
 	@defer {
@@ -1066,7 +1067,6 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
             type: Component,
             args: [{
                     selector: 'my-lazy-cmp',
-                    standalone: true,
                     template: 'Hi!',
                 }]
         }] });
@@ -1099,7 +1099,6 @@ SimpleComponent.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", versio
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: SimpleComponent, decorators: [{
             type: Component,
             args: [{
-                    standalone: true,
                     selector: 'app',
                     imports: [MyLazyCmp],
                     template: `

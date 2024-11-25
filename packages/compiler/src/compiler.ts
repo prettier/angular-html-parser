@@ -174,6 +174,11 @@ export {
 } from './render3/r3_class_metadata_compiler';
 export {compileClassDebugInfo, R3ClassDebugInfo} from './render3/r3_class_debug_info_compiler';
 export {
+  compileHmrInitializer,
+  compileHmrUpdateCallback,
+  R3HmrMetadata,
+} from './render3/r3_hmr_compiler';
+export {
   compileFactoryFunction,
   R3DependencyMetadata,
   R3FactoryMetadata,

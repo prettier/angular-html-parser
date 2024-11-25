@@ -18,7 +18,7 @@ import {MigrationHost} from './migration_host';
 import {executeAnalysisPhase} from './phase_analysis';
 import {pass4__checkInheritanceOfInputs} from './passes/4_check_inheritance';
 import {getCompilationUnitMetadata} from './batch/extract';
-import {mergeCompilationUnitData} from './batch/merge_unit_data';
+import {convertToGlobalMeta, combineCompilationUnitData} from './batch/merge_unit_data';
 import {Replacement} from '../../../utils/tsurge/replacement';
 import {populateKnownInputsFromGlobalData} from './batch/populate_global_data';
 import {executeMigrationPhase} from './phase_migrate';
@@ -26,13 +26,11 @@ import {filterIncompatibilitiesForBestEffortMode} from './best_effort_mode';
 import assert from 'assert';
 import {
   ClassIncompatibilityReason,
-  InputIncompatibilityReason,
-} from './input_detection/incompatibility';
-import {isInputDescriptor} from './utils/input_id';
+  FieldIncompatibilityReason,
+} from './passes/problematic_patterns/incompatibility';
 import {MigrationConfig} from './migration_config';
 import {ClassFieldUniqueKey} from './passes/reference_resolution/known_fields';
-import {MigrationStats} from '../../../utils/tsurge';
-import {createNgtscProgram} from '../../../utils/tsurge/helpers/ngtsc_program';
+import {createBaseProgramInfo} from '../../../utils/tsurge/helpers/create_program';
 
 /**
  * Tsurge migration for migrating Angular `@Input()` declarations to
@@ -52,9 +50,9 @@ export class SignalInputMigration extends TsurgeComplexMigration<
     super();
   }
 
-  // Override the default ngtsc program creation, to add extra flags.
+  // Override the default program creation, to add extra flags.
   override createProgram(tsconfigAbsPath: string, fs?: FileSystem): BaseProgramInfo {
-    return createNgtscProgram(tsconfigAbsPath, fs, {
+    return createBaseProgramInfo(tsconfigAbsPath, fs, {
       _compilePoisonedComponents: true,
       // We want to migrate non-exported classes too.
       compileNonExportedClasses: true,
@@ -87,7 +85,6 @@ export class SignalInputMigration extends TsurgeComplexMigration<
 
   // Extend the program info with the analysis information we need in every phase.
   prepareAnalysisDeps(info: ProgramInfo): AnalysisProgramInfo {
-    assert(info.ngCompiler !== null, 'Expected `NgCompiler` to be configured.');
     const analysisInfo = {
       ...info,
       ...prepareAnalysisInfo(info.program, info.ngCompiler, info.programAbsoluteRootFileNames),
@@ -124,8 +121,8 @@ export class SignalInputMigration extends TsurgeComplexMigration<
 
     // Non-batch mode!
     if (this.config.upgradeAnalysisPhaseToAvoidBatch) {
-      const merged = await this.merge([unitData]);
-      const replacements = await this.migrate(merged, info, {
+      const globalMeta = await this.globalMeta(unitData);
+      const {replacements} = await this.migrate(globalMeta, info, {
         knownInputs,
         result,
         host,
@@ -143,8 +140,17 @@ export class SignalInputMigration extends TsurgeComplexMigration<
     return confirmAsSerializable(unitData);
   }
 
-  override async merge(units: CompilationUnitData[]): Promise<Serializable<CompilationUnitData>> {
-    return confirmAsSerializable(mergeCompilationUnitData(units));
+  override async combine(
+    unitA: CompilationUnitData,
+    unitB: CompilationUnitData,
+  ): Promise<Serializable<CompilationUnitData>> {
+    return confirmAsSerializable(combineCompilationUnitData(unitA, unitB));
+  }
+
+  override async globalMeta(
+    combinedData: CompilationUnitData,
+  ): Promise<Serializable<CompilationUnitData>> {
+    return confirmAsSerializable(convertToGlobalMeta(combinedData));
   }
 
   override async migrate(
@@ -156,7 +162,7 @@ export class SignalInputMigration extends TsurgeComplexMigration<
       host: MigrationHost;
       analysisDeps: AnalysisProgramInfo;
     },
-  ): Promise<Replacement[]> {
+  ) {
     const knownInputs = nonBatchData?.knownInputs ?? new KnownInputs(info, this.config);
     const result = nonBatchData?.result ?? new MigrationResult();
     const host = nonBatchData?.host ?? createMigrationHost(info, this.config);
@@ -177,7 +183,7 @@ export class SignalInputMigration extends TsurgeComplexMigration<
     this.config.reportProgressFn?.(60, 'Collecting migration changes..');
     executeMigrationPhase(host, knownInputs, result, analysisDeps);
 
-    return result.replacements;
+    return {replacements: result.replacements};
   }
 
   override async stats(globalMetadata: CompilationUnitData) {
@@ -193,14 +199,26 @@ export class SignalInputMigration extends TsurgeComplexMigration<
 
     for (const [id, input] of Object.entries(globalMetadata.knownInputs)) {
       fullCompilationInputs++;
-      if (input.seenAsSourceInput) {
-        sourceInputs++;
+
+      const isConsideredSourceInput =
+        input.seenAsSourceInput &&
+        input.memberIncompatibility !== FieldIncompatibilityReason.OutsideOfMigrationScope &&
+        input.memberIncompatibility !== FieldIncompatibilityReason.SkippedViaConfigFilter;
+
+      // We won't track incompatibilities to inputs that aren't considered source inputs.
+      // Tracking their statistics wouldn't provide any value.
+      if (!isConsideredSourceInput) {
+        continue;
       }
+
+      sourceInputs++;
+
       if (input.memberIncompatibility !== null || input.owningClassIncompatibility !== null) {
         incompatibleInputs++;
       }
+
       if (input.memberIncompatibility !== null) {
-        const reasonName = InputIncompatibilityReason[input.memberIncompatibility];
+        const reasonName = FieldIncompatibilityReason[input.memberIncompatibility];
         const key = `input-field-incompatibility-${reasonName}` as const;
         fieldIncompatibleCounts[key] ??= 0;
         fieldIncompatibleCounts[key]++;
@@ -246,20 +264,10 @@ function filterInputsViaConfig(
       skippedInputs.add(input.descriptor.key);
       knownInputs.markFieldIncompatible(input.descriptor, {
         context: null,
-        reason: InputIncompatibilityReason.SkippedViaConfigFilter,
+        reason: FieldIncompatibilityReason.SkippedViaConfigFilter,
       });
     }
   }
-
-  result.references = result.references.filter((reference) => {
-    if (isInputDescriptor(reference.target)) {
-      // Only migrate the reference if the target is NOT skipped.
-      return !skippedInputs.has(reference.target.key);
-    }
-    // Class references may be migrated. This is up to the logic handling
-    // the class reference. E.g. it may not migrate if any member is incompatible.
-    return true;
-  });
 }
 
 function createMigrationHost(info: ProgramInfo, config: MigrationConfig): MigrationHost {

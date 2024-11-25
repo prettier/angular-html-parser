@@ -92,11 +92,13 @@ describe('bootstrap', () => {
     ) {
       @Component({
         selector: options.selector || 'my-app',
-        styles: [''],
+        // styles must be non-empty to trigger `ViewEncapsulation.Emulated`
+        styles: 'span {color:red}',
         template: '<span>a    b</span>',
         encapsulation: options.encapsulation,
         preserveWhitespaces: options.preserveWhitespaces,
         jit: true,
+        standalone: false,
       })
       class TestComponent {}
 
@@ -337,6 +339,7 @@ describe('bootstrap', () => {
           @Component({
             selector: 'my-app',
             template: '...',
+            standalone: false,
           })
           class App {}
 
@@ -359,6 +362,7 @@ describe('bootstrap', () => {
           @Component({
             selector: 'my-app',
             template: '...',
+            standalone: false,
           })
           class App {}
 
@@ -559,6 +563,7 @@ describe('bootstrap', () => {
 @Component({
   selector: '#my-app',
   template: 'works!',
+  standalone: false,
 })
 export class IdSelectorAppComponent {}
 
@@ -572,6 +577,7 @@ export class IdSelectorAppModule {}
 @Component({
   selector: '[foo],span,.bar',
   template: 'works!',
+  standalone: false,
 })
 export class MultipleSelectorsAppComponent {}
 

@@ -276,15 +276,15 @@ runInEachFileSystem(() => {
             eyeColor = 'brown';
 
             /** @internal */
-            uuid: string;     
-            
+            uuid: string;
+
             // @internal
             foreignId: string;
 
             /** @internal */
             _doSomething() {}
 
-            // @internal 
+            // @internal
             _doSomethingElse() {}
         }
       `,
@@ -362,6 +362,44 @@ runInEachFileSystem(() => {
 
       expect(latsNameEntry.name).toBe('lastName');
       expect(latsNameEntry.memberTags).toContain(MemberTags.Abstract);
+
+      expect(saveEntry.name).toBe('save');
+      expect(saveEntry.memberTags).not.toContain(MemberTags.Abstract);
+
+      expect(resetEntry.name).toBe('reset');
+      expect(resetEntry.memberTags).toContain(MemberTags.Abstract);
+    });
+
+    it('should extract only once, when discovering abstract methods with overloads ', () => {
+      env.write(
+        'index.ts',
+        `
+        export abstract class UserProfile {
+          firstName: string;
+
+          abstract get(key: string): string;
+          abstract get(key: string|undefined): string|undefined;
+          abstract get(key: undefined): undefined;
+
+          save(): void { }
+          abstract reset(): void;
+        }`,
+      );
+
+      const docs: DocEntry[] = env.driveDocsExtraction('index.ts');
+      expect(docs.length).toBe(1);
+
+      const classEntry = docs[0] as ClassEntry;
+      expect(classEntry.isAbstract).toBe(true);
+      expect(classEntry.members.length).toBe(4);
+
+      const [firstNameEntry, getEntry, saveEntry, resetEntry] = classEntry.members;
+
+      expect(firstNameEntry.name).toBe('firstName');
+      expect(firstNameEntry.memberTags).not.toContain(MemberTags.Abstract);
+
+      expect(getEntry.name).toBe('get');
+      expect(getEntry.memberTags).toContain(MemberTags.Abstract);
 
       expect(saveEntry.name).toBe('save');
       expect(saveEntry.memberTags).not.toContain(MemberTags.Abstract);
@@ -623,6 +661,28 @@ runInEachFileSystem(() => {
       expect(fooEntry.name).toBe('foo');
       expect(fooEntry.memberType).toBe(MemberType.Property);
       expect((fooEntry as PropertyEntry).type).toBe('string');
+    });
+
+    it('should extract members of a class from .d.ts', () => {
+      env.write(
+        'index.d.ts',
+        `
+        export declare class UserProfile {
+          firstName: string;
+          save(): void;
+        }`,
+      );
+
+      const docs: DocEntry[] = env.driveDocsExtraction('index.d.ts');
+      expect(docs.length).toBe(1);
+
+      const classEntry = docs[0] as ClassEntry;
+      expect(classEntry.members.length).toBe(2);
+
+      const [firstNameEntry, saveEntry] = classEntry.members;
+
+      expect(firstNameEntry.name).toBe('firstName');
+      expect(saveEntry.name).toBe('save');
     });
   });
 });

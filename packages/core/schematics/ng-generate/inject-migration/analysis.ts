@@ -10,6 +10,37 @@ import ts from 'typescript';
 import {getAngularDecorators} from '../../utils/ng_decorators';
 import {getNamedImports} from '../../utils/typescript/imports';
 
+/** Options that can be used to configure the migration. */
+export interface MigrationOptions {
+  /** Whether to generate code that keeps injectors backwards compatible. */
+  backwardsCompatibleConstructors?: boolean;
+
+  /** Whether to migrate abstract classes. */
+  migrateAbstractClasses?: boolean;
+
+  /** Whether to make the return type of `@Optinal()` parameters to be non-nullable. */
+  nonNullableOptional?: boolean;
+
+  /**
+   * Internal-only option that determines whether the migration should try to move the
+   * initializers of class members from the constructor back into the member itself. E.g.
+   *
+   * ```
+   * // Before
+   * private foo;
+   *
+   * constructor(@Inject(BAR) private bar: Bar) {
+   *   this.foo = this.bar.getValue();
+   * }
+   *
+   * // After
+   * private bar = inject(BAR);
+   * private foo = this.bar.getValue();
+   * ```
+   */
+  _internalCombineMemberInitializers?: boolean;
+}
+
 /** Names of decorators that enable DI on a class declaration. */
 const DECORATORS_SUPPORTING_DI = new Set([
   'Component',
@@ -35,7 +66,11 @@ export const DI_PARAM_SYMBOLS = new Set([
  * @param sourceFile File which to analyze.
  * @param localTypeChecker Type checker scoped to the specific file.
  */
-export function analyzeFile(sourceFile: ts.SourceFile, localTypeChecker: ts.TypeChecker) {
+export function analyzeFile(
+  sourceFile: ts.SourceFile,
+  localTypeChecker: ts.TypeChecker,
+  options: MigrationOptions,
+) {
   const coreSpecifiers = getNamedImports(sourceFile, '@angular/core');
 
   // Exit early if there are no Angular imports.
@@ -96,6 +131,7 @@ export function analyzeFile(sourceFile: ts.SourceFile, localTypeChecker: ts.Type
       }
     } else if (ts.isClassDeclaration(node)) {
       const decorators = getAngularDecorators(localTypeChecker, ts.getDecorators(node) || []);
+      const isAbstract = !!node.modifiers?.some((m) => m.kind === ts.SyntaxKind.AbstractKeyword);
       const supportsDI = decorators.some((dec) => DECORATORS_SUPPORTING_DI.has(dec.name));
       const constructorNode = node.members.find(
         (member) =>
@@ -104,7 +140,9 @@ export function analyzeFile(sourceFile: ts.SourceFile, localTypeChecker: ts.Type
           member.parameters.length > 0,
       ) as ts.ConstructorDeclaration | undefined;
 
-      if (supportsDI && constructorNode) {
+      // Don't migrate abstract classes by default, because
+      // their parameters aren't guaranteed to be injectable.
+      if (supportsDI && constructorNode && (!isAbstract || options.migrateAbstractClasses)) {
         classes.push({
           node,
           constructor: constructorNode,
@@ -128,7 +166,7 @@ export function analyzeFile(sourceFile: ts.SourceFile, localTypeChecker: ts.Type
 export function getConstructorUnusedParameters(
   declaration: ts.ConstructorDeclaration,
   localTypeChecker: ts.TypeChecker,
-  removedStatements: Set<ts.Statement> | null,
+  removedStatements: Set<ts.Statement>,
 ): Set<ts.Declaration> {
   const accessedTopLevelParameters = new Set<ts.Declaration>();
   const topLevelParameters = new Set<ts.Declaration>();
@@ -147,14 +185,14 @@ export function getConstructorUnusedParameters(
     return topLevelParameters;
   }
 
-  declaration.body.forEachChild(function walk(node) {
+  const analyze = (node: ts.Node) => {
     // Don't descend into statements that were removed already.
-    if (removedStatements && ts.isStatement(node) && removedStatements.has(node)) {
+    if (ts.isStatement(node) && removedStatements.has(node)) {
       return;
     }
 
     if (!ts.isIdentifier(node) || !topLevelParameterNames.has(node.text)) {
-      node.forEachChild(walk);
+      node.forEachChild(analyze);
       return;
     }
 
@@ -175,7 +213,15 @@ export function getConstructorUnusedParameters(
         }
       }
     });
+  };
+
+  declaration.parameters.forEach((param) => {
+    if (param.initializer) {
+      analyze(param.initializer);
+    }
   });
+
+  declaration.body.forEachChild(analyze);
 
   for (const param of topLevelParameters) {
     if (!accessedTopLevelParameters.has(param)) {
@@ -221,6 +267,51 @@ export function getSuperParameters(
   });
 
   return usedParams;
+}
+
+/**
+ * Determines if a specific parameter has references to other parameters.
+ * @param param Parameter to check.
+ * @param allParameters All parameters of the containing function.
+ * @param localTypeChecker Type checker scoped to the current file.
+ */
+export function parameterReferencesOtherParameters(
+  param: ts.ParameterDeclaration,
+  allParameters: ts.NodeArray<ts.ParameterDeclaration>,
+  localTypeChecker: ts.TypeChecker,
+): boolean {
+  // A parameter can only reference other parameters through its initializer.
+  if (!param.initializer || allParameters.length < 2) {
+    return false;
+  }
+
+  const paramNames = new Set<string>();
+  for (const current of allParameters) {
+    if (current !== param && ts.isIdentifier(current.name)) {
+      paramNames.add(current.name.text);
+    }
+  }
+
+  let result = false;
+  const analyze = (node: ts.Node) => {
+    if (ts.isIdentifier(node) && paramNames.has(node.text) && !isAccessedViaThis(node)) {
+      const symbol = localTypeChecker.getSymbolAtLocation(node);
+      const referencesOtherParam = symbol?.declarations?.some((decl) => {
+        return (allParameters as ts.NodeArray<ts.Declaration>).includes(decl);
+      });
+
+      if (referencesOtherParam) {
+        result = true;
+      }
+    }
+
+    if (!result) {
+      node.forEachChild(analyze);
+    }
+  };
+
+  analyze(param.initializer);
+  return result;
 }
 
 /** Checks whether a parameter node declares a property on its class. */

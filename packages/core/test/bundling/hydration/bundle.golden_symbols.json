@@ -15,9 +15,6 @@
     "name": "AfterRenderManager"
   },
   {
-    "name": "AfterRenderPhase"
-  },
-  {
     "name": "AnonymousSubject"
   },
   {
@@ -25,12 +22,6 @@
   },
   {
     "name": "ApplicationRef"
-  },
-  {
-    "name": "BLOOM_BUCKET_BITS"
-  },
-  {
-    "name": "BLOOM_MASK"
   },
   {
     "name": "BODY"
@@ -58,12 +49,6 @@
   },
   {
     "name": "COMPONENT_REGEX"
-  },
-  {
-    "name": "CONTAINERS"
-  },
-  {
-    "name": "CONTAINER_HEADER_OFFSET"
   },
   {
     "name": "CSP_NONCE"
@@ -103,12 +88,6 @@
   },
   {
     "name": "DEFAULT_APP_ID"
-  },
-  {
-    "name": "DEHYDRATED_VIEWS"
-  },
-  {
-    "name": "DISCONNECTED_NODES"
   },
   {
     "name": "DOCUMENT"
@@ -246,37 +225,16 @@
     "name": "LifecycleHooksFeature"
   },
   {
-    "name": "MAXIMUM_REFRESH_RERUNS"
-  },
-  {
     "name": "MODIFIER_KEYS"
   },
   {
     "name": "MODIFIER_KEY_GETTERS"
   },
   {
-    "name": "MONKEY_PATCH_KEY_NAME"
-  },
-  {
-    "name": "MOVED_VIEWS"
-  },
-  {
-    "name": "MULTIPLIER"
-  },
-  {
     "name": "NAMESPACE_URIS"
   },
   {
-    "name": "NATIVE"
-  },
-  {
     "name": "NEW_LINE"
-  },
-  {
-    "name": "NGH_ATTR_NAME"
-  },
-  {
-    "name": "NGH_DATA_KEY"
   },
   {
     "name": "NG_COMP_DEF"
@@ -309,12 +267,6 @@
     "name": "NG_PROV_DEF"
   },
   {
-    "name": "NG_TEMPLATE_SELECTOR"
-  },
-  {
-    "name": "NODES"
-  },
-  {
     "name": "NOT_FOUND"
   },
   {
@@ -327,13 +279,7 @@
     "name": "NO_CHANGE"
   },
   {
-    "name": "NO_PARENT_INJECTOR"
-  },
-  {
     "name": "NULL_INJECTOR"
-  },
-  {
-    "name": "NUM_ROOT_NODES"
   },
   {
     "name": "NgModuleRef"
@@ -384,9 +330,6 @@
     "name": "PLATFORM_INITIALIZER"
   },
   {
-    "name": "PLATFORM_SERVER_ID"
-  },
-  {
     "name": "PRESERVE_HOST_CONTENT"
   },
   {
@@ -400,12 +343,6 @@
   },
   {
     "name": "REACTIVE_NODE"
-  },
-  {
-    "name": "REFERENCE_NODE_BODY"
-  },
-  {
-    "name": "REFERENCE_NODE_HOST"
   },
   {
     "name": "REF_EXTRACTOR_REGEXP"
@@ -436,12 +373,6 @@
   },
   {
     "name": "SIMPLE_CHANGES_STORE"
-  },
-  {
-    "name": "SKIP_HYDRATION_ATTR_NAME"
-  },
-  {
-    "name": "SKIP_HYDRATION_ATTR_NAME_LOWER_CASE"
   },
   {
     "name": "STATUS"
@@ -489,7 +420,10 @@
     "name": "TRACKED_LVIEWS"
   },
   {
-    "name": "TYPE"
+    "name": "TracingAction"
+  },
+  {
+    "name": "TracingService"
   },
   {
     "name": "TransferState"
@@ -519,12 +453,6 @@
     "name": "ZoneStablePendingTask"
   },
   {
-    "name": "_AfterRenderImpl"
-  },
-  {
-    "name": "_ComponentFactoryResolver"
-  },
-  {
     "name": "_DOM"
   },
   {
@@ -540,7 +468,13 @@
     "name": "__await"
   },
   {
+    "name": "__defProp"
+  },
+  {
     "name": "__forward_ref__"
+  },
+  {
+    "name": "__publicField"
   },
   {
     "name": "_applyRootElementTransformImpl"
@@ -550,12 +484,6 @@
   },
   {
     "name": "_currentInjector"
-  },
-  {
-    "name": "_getInsertInFrontOfRNodeWithI18n"
-  },
-  {
-    "name": "_icuContainerIterate"
   },
   {
     "name": "_injectImplementation"
@@ -571,9 +499,6 @@
   },
   {
     "name": "_platformInjector"
-  },
-  {
-    "name": "_processI18nInsertBefore"
   },
   {
     "name": "_retrieveHydrationInfoImpl"
@@ -795,9 +720,6 @@
     "name": "enterView"
   },
   {
-    "name": "epoch"
-  },
-  {
     "name": "errorContext"
   },
   {
@@ -922,9 +844,6 @@
   },
   {
     "name": "getOrCreateTNode"
-  },
-  {
-    "name": "getOriginalError"
   },
   {
     "name": "getOwnDefinition"
@@ -1089,9 +1008,6 @@
     "name": "isLView"
   },
   {
-    "name": "isPlatformBrowser"
-  },
-  {
     "name": "isPlatformServer"
   },
   {
@@ -1242,13 +1158,13 @@
     "name": "processInjectorTypesWithProviders"
   },
   {
+    "name": "producerMarkClean"
+  },
+  {
     "name": "producerRemoveLiveConsumerAtIndex"
   },
   {
     "name": "producerUpdateValueVersion"
-  },
-  {
-    "name": "profiler"
   },
   {
     "name": "readableStreamLikeToAsyncGenerator"
@@ -1303,6 +1219,9 @@
   },
   {
     "name": "runEffectsInView"
+  },
+  {
+    "name": "runInInjectionContext"
   },
   {
     "name": "saveNameToExportMap"
@@ -1432,9 +1351,6 @@
   },
   {
     "name": "writeToDirectiveInput"
-  },
-  {
-    "name": "ɵɵStandaloneFeature"
   },
   {
     "name": "ɵɵdefineComponent"

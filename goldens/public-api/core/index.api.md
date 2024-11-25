@@ -100,7 +100,7 @@ export const APP_BOOTSTRAP_LISTENER: InjectionToken<readonly ((compRef: Componen
 // @public
 export const APP_ID: InjectionToken<string>;
 
-// @public
+// @public @deprecated
 export const APP_INITIALIZER: InjectionToken<readonly (() => Observable<unknown> | Promise<unknown> | void)[]>;
 
 // @public
@@ -134,6 +134,7 @@ export class ApplicationModule {
 
 // @public
 export class ApplicationRef {
+    constructor();
     attachView(viewRef: ViewRef): void;
     bootstrap<C>(component: Type<C>, rootSelectorOrNode?: string | any): ComponentRef<C>;
     // @deprecated
@@ -382,20 +383,24 @@ export interface ContentChildFunction {
     <LocatorT>(locator: ProviderToken<LocatorT> | string, opts?: {
         descendants?: boolean;
         read?: undefined;
+        debugName?: string;
     }): Signal<LocatorT | undefined>;
     // (undocumented)
     <LocatorT, ReadT>(locator: ProviderToken<LocatorT> | string, opts: {
         descendants?: boolean;
         read: ProviderToken<ReadT>;
+        debugName?: string;
     }): Signal<ReadT | undefined>;
     required: {
         <LocatorT>(locator: ProviderToken<LocatorT> | string, opts?: {
             descendants?: boolean;
             read?: undefined;
+            debugName?: string;
         }): Signal<LocatorT>;
         <LocatorT, ReadT>(locator: ProviderToken<LocatorT> | string, opts: {
             descendants?: boolean;
             read: ProviderToken<ReadT>;
+            debugName?: string;
         }): Signal<ReadT>;
     };
 }
@@ -410,12 +415,14 @@ export const ContentChildren: ContentChildrenDecorator;
 export function contentChildren<LocatorT>(locator: ProviderToken<LocatorT> | string, opts?: {
     descendants?: boolean;
     read?: undefined;
+    debugName?: string;
 }): Signal<ReadonlyArray<LocatorT>>;
 
 // @public (undocumented)
 export function contentChildren<LocatorT, ReadT>(locator: ProviderToken<LocatorT> | string, opts: {
     descendants?: boolean;
     read: ProviderToken<ReadT>;
+    debugName?: string;
 }): Signal<ReadonlyArray<ReadT>>;
 
 // @public
@@ -443,6 +450,7 @@ export function createComponent<C>(component: Type<C>, options: {
 
 // @public
 export interface CreateComputedOptions<T> {
+    debugName?: string;
     equal?: ValueEqualityFn<T>;
 }
 
@@ -450,6 +458,7 @@ export interface CreateComputedOptions<T> {
 export interface CreateEffectOptions {
     // @deprecated (undocumented)
     allowSignalWrites?: boolean;
+    debugName?: string;
     forceRoot?: true;
     injector?: Injector;
     manualCleanup?: boolean;
@@ -472,6 +481,7 @@ export function createPlatformFactory(parentPlatformFactory: ((extraProviders?: 
 
 // @public
 export interface CreateSignalOptions<T> {
+    debugName?: string;
     equal?: ValueEqualityFn<T>;
 }
 
@@ -654,7 +664,7 @@ export abstract class EmbeddedViewRef<C> extends ViewRef {
 // @public
 export function enableProdMode(): void;
 
-// @public
+// @public @deprecated
 export const ENVIRONMENT_INITIALIZER: InjectionToken<readonly (() => void)[]>;
 
 // @public
@@ -993,6 +1003,7 @@ export interface InputFunction {
 // @public
 export interface InputOptions<T, TransformT> {
     alias?: string;
+    debugName?: string;
     transform?: (v: TransformT) => T;
 }
 
@@ -1114,6 +1125,21 @@ export class KeyValueDiffers {
 }
 
 // @public
+export function linkedSignal<D>(computation: () => D, options?: {
+    equal?: ValueEqualityFn<NoInfer<D>>;
+}): WritableSignal<D>;
+
+// @public
+export function linkedSignal<S, D>(options: {
+    source: () => S;
+    computation: (source: NoInfer<S>, previous?: {
+        source: NoInfer<S>;
+        value: NoInfer<D>;
+    }) => D;
+    equal?: ValueEqualityFn<NoInfer<D>>;
+}): WritableSignal<D>;
+
+// @public
 export const LOCALE_ID: InjectionToken<string>;
 
 // @public
@@ -1151,6 +1177,7 @@ export interface ModelFunction {
 // @public
 export interface ModelOptions {
     alias?: string;
+    debugName?: string;
 }
 
 // @public
@@ -1375,7 +1402,7 @@ export interface PipeTransform {
 // @public
 export const PLATFORM_ID: InjectionToken<Object>;
 
-// @public
+// @public @deprecated
 export const PLATFORM_INITIALIZER: InjectionToken<readonly (() => void)[]>;
 
 // @public
@@ -1400,6 +1427,12 @@ export class PlatformRef {
 export type Predicate<T> = (value: T) => boolean;
 
 // @public
+export function provideAppInitializer(initializerFn: () => Observable<unknown> | Promise<unknown> | void): EnvironmentProviders;
+
+// @public
+export function provideEnvironmentInitializer(initializerFn: () => void): EnvironmentProviders;
+
+// @public
 export function provideExperimentalCheckNoChangesForDebug(options: {
     interval?: number;
     useNgZoneOnStable?: boolean;
@@ -1408,6 +1441,9 @@ export function provideExperimentalCheckNoChangesForDebug(options: {
 
 // @public
 export function provideExperimentalZonelessChangeDetection(): EnvironmentProviders;
+
+// @public
+export function providePlatformInitializer(initializerFn: () => void): EnvironmentProviders;
 
 // @public
 export type Provider = TypeProvider | ValueProvider | ClassProvider | ConstructorProvider | ExistingProvider | FactoryProvider | any[];
@@ -1528,7 +1564,69 @@ export interface RendererType2 {
 }
 
 // @public
+export const REQUEST: InjectionToken<Request | null>;
+
+// @public
+export const REQUEST_CONTEXT: InjectionToken<unknown>;
+
+// @public
 export function resolveForwardRef<T>(type: T): T;
+
+// @public
+export interface Resource<T> {
+    readonly error: Signal<unknown>;
+    hasValue(): this is Resource<T> & {
+        value: Signal<T>;
+    };
+    readonly isLoading: Signal<boolean>;
+    reload(): boolean;
+    readonly status: Signal<ResourceStatus>;
+    readonly value: Signal<T | undefined>;
+}
+
+// @public
+export function resource<T, R>(options: ResourceOptions<T, R>): ResourceRef<T>;
+
+// @public
+export type ResourceLoader<T, R> = (param: ResourceLoaderParams<R>) => PromiseLike<T>;
+
+// @public
+export interface ResourceLoaderParams<R> {
+    // (undocumented)
+    abortSignal: AbortSignal;
+    // (undocumented)
+    previous: {
+        status: ResourceStatus;
+    };
+    // (undocumented)
+    request: Exclude<NoInfer<R>, undefined>;
+}
+
+// @public
+export interface ResourceOptions<T, R> {
+    equal?: ValueEqualityFn<T>;
+    injector?: Injector;
+    loader: ResourceLoader<T, R>;
+    request?: () => R;
+}
+
+// @public
+export interface ResourceRef<T> extends WritableResource<T> {
+    destroy(): void;
+}
+
+// @public
+export enum ResourceStatus {
+    Error = 1,
+    Idle = 0,
+    Loading = 2,
+    Local = 5,
+    Reloading = 3,
+    Resolved = 4
+}
+
+// @public
+export const RESPONSE_INIT: InjectionToken<ResponseInit | null>;
 
 // @public
 export function runInInjectionContext<ReturnT>(injector: Injector, fn: () => ReturnT): ReturnT;
@@ -1778,15 +1876,21 @@ export interface ViewChildDecorator {
 
 // @public
 export interface ViewChildFunction {
-    <LocatorT>(locator: ProviderToken<LocatorT> | string): Signal<LocatorT | undefined>;
-    // (undocumented)
     <LocatorT, ReadT>(locator: ProviderToken<LocatorT> | string, opts: {
         read: ProviderToken<ReadT>;
+        debugName?: string;
     }): Signal<ReadT | undefined>;
+    // (undocumented)
+    <LocatorT>(locator: ProviderToken<LocatorT> | string, opts?: {
+        debugName?: string;
+    }): Signal<LocatorT | undefined>;
     required: {
-        <LocatorT>(locator: ProviderToken<LocatorT> | string): Signal<LocatorT>;
+        <LocatorT>(locator: ProviderToken<LocatorT> | string, opts?: {
+            debugName?: string;
+        }): Signal<LocatorT>;
         <LocatorT, ReadT>(locator: ProviderToken<LocatorT> | string, opts: {
             read: ProviderToken<ReadT>;
+            debugName?: string;
         }): Signal<ReadT>;
     };
 }
@@ -1798,11 +1902,14 @@ export type ViewChildren = Query;
 export const ViewChildren: ViewChildrenDecorator;
 
 // @public (undocumented)
-export function viewChildren<LocatorT>(locator: ProviderToken<LocatorT> | string): Signal<ReadonlyArray<LocatorT>>;
+export function viewChildren<LocatorT>(locator: ProviderToken<LocatorT> | string, opts?: {
+    debugName?: string;
+}): Signal<ReadonlyArray<LocatorT>>;
 
 // @public (undocumented)
 export function viewChildren<LocatorT, ReadT>(locator: ProviderToken<LocatorT> | string, opts: {
     read: ProviderToken<ReadT>;
+    debugName?: string;
 }): Signal<ReadonlyArray<ReadT>>;
 
 // @public
@@ -1860,6 +1967,20 @@ export abstract class ViewRef extends ChangeDetectorRef {
     abstract destroy(): void;
     abstract get destroyed(): boolean;
     abstract onDestroy(callback: Function): void;
+}
+
+// @public
+export interface WritableResource<T> extends Resource<T> {
+    // (undocumented)
+    asReadonly(): Resource<T>;
+    // (undocumented)
+    hasValue(): this is WritableResource<T> & {
+        value: WritableSignal<T>;
+    };
+    set(value: T | undefined): void;
+    update(updater: (value: T | undefined) => T | undefined): void;
+    // (undocumented)
+    readonly value: WritableSignal<T | undefined>;
 }
 
 // @public

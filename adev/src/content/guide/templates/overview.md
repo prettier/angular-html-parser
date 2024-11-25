@@ -3,7 +3,7 @@ In Angular, a template is a chunk of HTML.
 Use special syntax within a template to leverage many of Angular's features.
 </docs-decorative-header>
 
-Tip: Check out Angular's [Essentials](essentials/rendering-dynamic-templates) before diving into this comprehensive guide.
+Tip: Check out Angular's [Essentials](essentials/templates) before diving into this comprehensive guide.
 
 Every Angular component has a **template** that defines the [DOM](https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model) that the component renders onto the page. By using templates, Angular is able to automatically keep your page up-to-date as data changes.
 
@@ -44,5 +44,5 @@ You might also be interested in the following:
 | [Grouping elements with ng-container](guide/templates/ng-container)         | Group multiple elements together or mark a location for rendering.                      |
 | [Variables in templates](guide/templates/variables)                         | Learn about variable declarations.                                                      |
 | [Deferred loading with @defer](guide/templates/defer)                       | Create deferrable views with `@defer`.                                                  |
-| [Expression syntax](guide/templates/expression-syntax)                      | Learn similarities and differences betwene Angular expressions and standard JavaScript. |
+| [Expression syntax](guide/templates/expression-syntax)                      | Learn similarities and differences between Angular expressions and standard JavaScript. |
 | [Whitespace in templates](guide/templates/whitespace)                       | Learn how Angular handles whitespace.                                                   |

@@ -12,9 +12,6 @@
     "name": "AfterRenderManager"
   },
   {
-    "name": "AfterRenderPhase"
-  },
-  {
     "name": "AnonymousSubject"
   },
   {
@@ -117,7 +114,19 @@
     "name": "DEFER_BLOCK_CONFIG"
   },
   {
+    "name": "DEFER_BLOCK_ID"
+  },
+  {
     "name": "DEFER_BLOCK_STATE"
+  },
+  {
+    "name": "DEFER_BLOCK_STATE2"
+  },
+  {
+    "name": "DEHYDRATED_BLOCK_REGISTRY"
+  },
+  {
+    "name": "DEHYDRATED_VIEWS"
   },
   {
     "name": "DI_DECORATOR_FLAG"
@@ -177,9 +186,6 @@
     "name": "ENVIRONMENT_INITIALIZER"
   },
   {
-    "name": "ERROR_ORIGINAL_ERROR"
-  },
-  {
     "name": "EVENT_MANAGER_PLUGINS"
   },
   {
@@ -213,6 +219,9 @@
     "name": "GenericBrowserDomAdapter"
   },
   {
+    "name": "HYDRATE_TRIGGER_CLEANUP_FNS"
+  },
+  {
     "name": "INJECTOR"
   },
   {
@@ -226,6 +235,9 @@
   },
   {
     "name": "INTERNAL_BROWSER_PLATFORM_PROVIDERS"
+  },
+  {
+    "name": "IS_INCREMENTAL_HYDRATION_ENABLED"
   },
   {
     "name": "InjectFlags"
@@ -351,9 +363,6 @@
     "name": "NgModuleRef"
   },
   {
-    "name": "NgOnChangesFeatureImpl"
-  },
-  {
     "name": "NgZone"
   },
   {
@@ -376,6 +385,9 @@
   },
   {
     "name": "NullInjector"
+  },
+  {
+    "name": "ON_COMPLETE_FNS"
   },
   {
     "name": "ObjectUnsubscribedError"
@@ -441,6 +453,9 @@
     "name": "SOURCE"
   },
   {
+    "name": "SSR_BLOCK_STATE"
+  },
+  {
     "name": "SVG_NAMESPACE"
   },
   {
@@ -489,6 +504,12 @@
     "name": "TYPE"
   },
   {
+    "name": "TracingAction"
+  },
+  {
+    "name": "TracingService"
+  },
+  {
     "name": "USE_VALUE"
   },
   {
@@ -516,12 +537,6 @@
     "name": "ZoneStablePendingTask"
   },
   {
-    "name": "_AfterRenderImpl"
-  },
-  {
-    "name": "_ComponentFactoryResolver"
-  },
-  {
     "name": "_DOM"
   },
   {
@@ -543,6 +558,9 @@
     "name": "__getOwnPropNames"
   },
   {
+    "name": "__publicField"
+  },
+  {
     "name": "_applyRootElementTransformImpl"
   },
   {
@@ -550,9 +568,6 @@
   },
   {
     "name": "_currentInjector"
-  },
-  {
-    "name": "_findMatchingDehydratedViewImpl"
   },
   {
     "name": "_getInsertInFrontOfRNodeWithI18n"
@@ -702,9 +717,6 @@
     "name": "configureViewWithDirective"
   },
   {
-    "name": "consumerAfterComputation"
-  },
-  {
     "name": "consumerBeforeComputation"
   },
   {
@@ -772,9 +784,6 @@
   },
   {
     "name": "deepForEachProvider"
-  },
-  {
-    "name": "defaultEquals"
   },
   {
     "name": "defaultErrorHandler"
@@ -876,6 +885,9 @@
     "name": "getBindingsEnabled"
   },
   {
+    "name": "getCleanupFnKeyByType"
+  },
+  {
     "name": "getClosureSafeProperty"
   },
   {
@@ -973,9 +985,6 @@
   },
   {
     "name": "getOrCreateTNode"
-  },
-  {
-    "name": "getOriginalError"
   },
   {
     "name": "getOwnDefinition"
@@ -1102,6 +1111,9 @@
   },
   {
     "name": "init_api4"
+  },
+  {
+    "name": "init_api5"
   },
   {
     "name": "init_api_flags"
@@ -1320,6 +1332,9 @@
     "name": "init_decorators"
   },
   {
+    "name": "init_def_getters"
+  },
+  {
     "name": "init_default_iterable_differ"
   },
   {
@@ -1440,9 +1455,6 @@
     "name": "init_errors3"
   },
   {
-    "name": "init_errors4"
-  },
-  {
     "name": "init_errors_di"
   },
   {
@@ -1498,6 +1510,9 @@
   },
   {
     "name": "init_framework_injector_profiler"
+  },
+  {
+    "name": "init_get_closest_component_name"
   },
   {
     "name": "init_get_current_view"
@@ -1689,6 +1704,9 @@
     "name": "init_lift"
   },
   {
+    "name": "init_linked_signal"
+  },
+  {
     "name": "init_linker"
   },
   {
@@ -1794,6 +1812,9 @@
     "name": "init_ng_reflect"
   },
   {
+    "name": "init_ng_server_mode"
+  },
+  {
     "name": "init_ng_zone"
   },
   {
@@ -1872,6 +1893,9 @@
     "name": "init_platform_ref"
   },
   {
+    "name": "init_platform_tokens"
+  },
+  {
     "name": "init_profiler"
   },
   {
@@ -1941,6 +1965,9 @@
     "name": "init_reflection_capabilities"
   },
   {
+    "name": "init_registry"
+  },
+  {
     "name": "init_render"
   },
   {
@@ -1950,7 +1977,16 @@
     "name": "init_render3"
   },
   {
+    "name": "init_rendering"
+  },
+  {
     "name": "init_reportUnhandledError"
+  },
+  {
+    "name": "init_resource"
+  },
+  {
+    "name": "init_resource2"
   },
   {
     "name": "init_resource_loading"
@@ -2001,7 +2037,7 @@
     "name": "init_skip_hydration"
   },
   {
-    "name": "init_standalone_feature"
+    "name": "init_standalone_service"
   },
   {
     "name": "init_state"
@@ -2067,7 +2103,13 @@
     "name": "init_tokens3"
   },
   {
+    "name": "init_tracing"
+  },
+  {
     "name": "init_transfer_state"
+  },
+  {
+    "name": "init_triggering"
   },
   {
     "name": "init_trusted_types"
@@ -2259,9 +2301,6 @@
     "name": "isNodeMatchingSelectorList"
   },
   {
-    "name": "isPlatformBrowser"
-  },
-  {
     "name": "isPlatformServer"
   },
   {
@@ -2391,6 +2430,9 @@
     "name": "processInjectorTypesWithProviders"
   },
   {
+    "name": "producerMarkClean"
+  },
+  {
     "name": "producerRemoveLiveConsumerAtIndex"
   },
   {
@@ -2452,6 +2494,9 @@
   },
   {
     "name": "runEffectsInView"
+  },
+  {
+    "name": "runInInjectionContext"
   },
   {
     "name": "saveNameToExportMap"
@@ -2544,6 +2589,9 @@
     "name": "trackMovedView"
   },
   {
+    "name": "triggerDeferBlock"
+  },
+  {
     "name": "uniqueIdCounter"
   },
   {
@@ -2577,13 +2625,10 @@
     "name": "writeToDirectiveInput"
   },
   {
-    "name": "ɵɵNgOnChangesFeature"
-  },
-  {
-    "name": "ɵɵStandaloneFeature"
-  },
-  {
     "name": "ɵɵdefer"
+  },
+  {
+    "name": "ɵɵdeferWhen"
   },
   {
     "name": "ɵɵdefineComponent"

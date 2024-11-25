@@ -44,11 +44,13 @@ describe('NavigationList', () => {
       ],
     }).compileComponents();
     fixture = TestBed.createComponent(NavigationList);
+    fixture.componentRef.setInput('navigationItems', []);
+
     component = fixture.componentInstance;
   });
 
   it('should display provided navigation structure', () => {
-    component.navigationItems = [...navigationItems];
+    fixture.componentRef.setInput('navigationItems', [...navigationItems]);
     fixture.detectChanges();
 
     const links = fixture.debugElement.queryAll(By.css('a'));
@@ -59,7 +61,7 @@ describe('NavigationList', () => {
   });
 
   it('should append `docs-navigation-list-dropdown` when isDropdownView is true', () => {
-    component.isDropdownView = true;
+    fixture.componentRef.setInput('isDropdownView', true);
     fixture.detectChanges();
 
     const ulElement = fixture.debugElement.query(By.css('ul.docs-navigation-list-dropdown'));
@@ -68,7 +70,7 @@ describe('NavigationList', () => {
   });
 
   it('should not append `docs-navigation-list-dropdown` when isDropdownView is false', () => {
-    component.isDropdownView = false;
+    fixture.componentRef.setInput('isDropdownView', false);
     fixture.detectChanges();
 
     const ulElement = fixture.debugElement.query(By.css('ul.docs-navigation-list-dropdown'));
@@ -78,7 +80,7 @@ describe('NavigationList', () => {
 
   it('should emit linkClicked when user clicked on link', () => {
     const emitClickOnLinkSpy = spyOn(component, 'emitClickOnLink');
-    component.navigationItems = [...navigationItems];
+    fixture.componentRef.setInput('navigationItems', [...navigationItems]);
     fixture.detectChanges(true);
 
     const guideLink = fixture.debugElement.query(By.css('a[href="/guide"]'));
@@ -102,7 +104,7 @@ describe('NavigationList', () => {
     const toggleItemSpy = spyOn(navigationState, 'toggleItem');
     const itemToToggle = navigationItems[1];
 
-    component.expandableLevel = 1;
+    fixture.componentRef.setInput('expandableLevel', 1);
     component.toggle(itemToToggle);
 
     expect(toggleItemSpy).toHaveBeenCalledOnceWith(itemToToggle);
@@ -113,15 +115,15 @@ describe('NavigationList', () => {
     const toggleItemSpy = spyOn(navigationState, 'toggleItem');
     const itemToToggle = navigationItems[1].children![1];
 
-    component.collapsableLevel = 2;
+    fixture.componentRef.setInput('collapsableLevel', 2);
     component.toggle(itemToToggle);
 
     expect(toggleItemSpy).toHaveBeenCalledOnceWith(itemToToggle);
   });
 
   it('should display items to provided level', () => {
-    component.navigationItems = [...navigationItems];
-    component.displayItemsToLevel = 1;
+    fixture.componentRef.setInput('navigationItems', [...navigationItems]);
+    fixture.componentRef.setInput('displayItemsToLevel', 1);
     fixture.detectChanges(true);
 
     const visibleItems = fixture.debugElement.queryAll(

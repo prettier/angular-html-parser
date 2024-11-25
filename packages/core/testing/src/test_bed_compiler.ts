@@ -102,7 +102,7 @@ function assertNoStandaloneComponents(
   types.forEach((type) => {
     if (!getAsyncClassMetadataFn(type)) {
       const component = resolver.resolve(type);
-      if (component && component.standalone) {
+      if (component && (component.standalone == null || component.standalone)) {
         throw new Error(ɵgenerateStandaloneInDeclarationsError(type, location));
       }
     }

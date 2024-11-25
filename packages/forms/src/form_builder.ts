@@ -53,6 +53,15 @@ interface PermissiveAbstractControlOptions extends Omit<AbstractControlOptions, 
   updateOn?: string;
 }
 
+// Note: these two types have been extracted into type aliases to work around a .d.ts generation
+// issue in TypeScript 5.7. See: https://github.com/Microsoft/TypeScript/issues/60506. The types
+// have to be exported for the workaround to work.
+/** A map of nullable form controls. */
+export type ɵNullableFormControls<T> = {[K in keyof T]: ɵElement<T[K], null>};
+
+/** A map of non-nullable form controls. */
+export type ɵNonNullableFormControls<T> = {[K in keyof T]: ɵElement<T[K], never>};
+
 /**
  * ControlConfig<T> is a tuple containing a value of type T, plus optional validators and async
  * validators.
@@ -197,7 +206,7 @@ export class FormBuilder {
   group<T extends {}>(
     controls: T,
     options?: AbstractControlOptions | null,
-  ): FormGroup<{[K in keyof T]: ɵElement<T[K], null>}>;
+  ): FormGroup<ɵNullableFormControls<T>>;
 
   /**
    * @description
@@ -418,7 +427,7 @@ export abstract class NonNullableFormBuilder {
   abstract group<T extends {}>(
     controls: T,
     options?: AbstractControlOptions | null,
-  ): FormGroup<{[K in keyof T]: ɵElement<T[K], never>}>;
+  ): FormGroup<ɵNonNullableFormControls<T>>;
 
   /**
    * Similar to `FormBuilder#record`, except any implicitly constructed `FormControl`

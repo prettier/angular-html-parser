@@ -300,6 +300,7 @@ groups:
       - >
         contains_any_globs(files, [
           'packages/platform-server/**/{*,.*}',
+          'packages/ssr/**/{*,.*}',
           ])
     reviewers:
       users:
@@ -633,7 +634,6 @@ groups:
       - >
         contains_any_globs(files.exclude('.pullapprove.yml'), [
           '{*,.*}',
-          '.circleci/**/{*,.*}',
           '.devcontainer/**/{*,.*}',
           '.github/**/{*,.*}',
           '.husky/**/{*,.*}',
@@ -684,6 +684,8 @@ groups:
     conditions:
       - author in ["angular-robot"]
     reviewers:
+      users:
+        - ~alan-agius4
       teams:
         - framework-team
 
@@ -824,7 +826,6 @@ groups:
         - eduhmc # Eduardo Huerta-Mercado
         - ehlemur # Edward Lesmes
         - ellenyuan # Ellen Yuan
-        - jatraman # Jatin Ramanathan
         - jesse-good # Jesse Costello-Good
         - mturco # Matt Turco
         - neonstalwart # Ben Hockey
