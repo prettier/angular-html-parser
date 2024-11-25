@@ -28,6 +28,7 @@ export interface Config {
   dataGroups?: DataGroup[];
   navigationUrls?: string[];
   navigationRequestStrategy?: 'freshness' | 'performance';
+  applicationMaxAge?: Duration;
 }
 
 /**
@@ -56,6 +57,7 @@ export interface DataGroup {
     maxSize: number;
     maxAge: Duration;
     timeout?: Duration;
+    refreshAhead?: Duration;
     strategy?: 'freshness' | 'performance';
     cacheOpaqueResponses?: boolean;
   };

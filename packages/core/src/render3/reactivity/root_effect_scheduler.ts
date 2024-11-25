@@ -37,7 +37,7 @@ export abstract class EffectScheduler {
   abstract flush(): void;
 
   /** @nocollapse */
-  static ɵprov = /** @pureOrBreakMyCode */ ɵɵdefineInjectable({
+  static ɵprov = /** @pureOrBreakMyCode */ /* @__PURE__ */ ɵɵdefineInjectable({
     token: EffectScheduler,
     providedIn: 'root',
     factory: () => new ZoneAwareEffectScheduler(),
@@ -51,15 +51,9 @@ export abstract class EffectScheduler {
 export class ZoneAwareEffectScheduler implements EffectScheduler {
   private queuedEffectCount = 0;
   private queues = new Map<Zone | null, Set<SchedulableEffect>>();
-  private readonly pendingTasks = inject(PendingTasksInternal);
-  protected taskId: number | null = null;
 
   schedule(handle: SchedulableEffect): void {
     this.enqueue(handle);
-
-    if (this.taskId === null) {
-      this.taskId = this.pendingTasks.add();
-    }
   }
 
   private enqueue(handle: SchedulableEffect): void {
@@ -92,11 +86,6 @@ export class ZoneAwareEffectScheduler implements EffectScheduler {
           zone.run(() => this.flushQueue(queue));
         }
       }
-    }
-
-    if (this.taskId !== null) {
-      this.pendingTasks.remove(this.taskId);
-      this.taskId = null;
     }
   }
 

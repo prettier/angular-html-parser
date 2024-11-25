@@ -45,6 +45,7 @@ describe('CopyDefinitionFeature', () => {
       static override ɵcmp = defineComponent({
         type: ChildComponent,
         selectors: [['some-cmp']],
+        standalone: false,
         features: [InheritDefinitionFeature, CopyDefinitionFeature],
         decls: 0,
         vars: 0,
@@ -65,6 +66,7 @@ describe('CopyDefinitionFeature', () => {
     @Component({
       selector: 'test-cmp',
       template: '<some-cmp name="Success!"></some-cmp>',
+      standalone: false,
     })
     class TestCmp {}
 

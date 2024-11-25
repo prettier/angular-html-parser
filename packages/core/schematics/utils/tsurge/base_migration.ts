@@ -8,10 +8,10 @@
 
 import {absoluteFrom, FileSystem} from '@angular/compiler-cli/src/ngtsc/file_system';
 import {isShim} from '@angular/compiler-cli/src/ngtsc/shims';
-import {createNgtscProgram} from './helpers/ngtsc_program';
 import {BaseProgramInfo, ProgramInfo} from './program_info';
 import {getRootDirs} from '@angular/compiler-cli/src/ngtsc/util/src/typescript';
 import {Serializable} from './helpers/serializable';
+import {createBaseProgramInfo} from './helpers/create_program';
 
 /**
  * Type describing statistics that could be tracked
@@ -32,9 +32,16 @@ export interface MigrationStats {
  * TypeScript programs, while also allowing migration authors to override.
  */
 export abstract class TsurgeBaseMigration<UnitAnalysisMetadata, CombinedGlobalMetadata> {
-  // By default, ngtsc programs are being created.
+  /**
+   * Advanced Tsurge users can override this method, but most of the time,
+   * overriding {@link prepareProgram} is more desirable.
+   *
+   * By default:
+   *  - In 3P: Ngtsc programs are being created.
+   *  - In 1P: Ngtsc or TS programs are created based on the Blaze target.
+   */
   createProgram(tsconfigAbsPath: string, fs?: FileSystem): BaseProgramInfo {
-    return createNgtscProgram(tsconfigAbsPath, fs);
+    return createBaseProgramInfo(tsconfigAbsPath, fs);
   }
 
   // Optional function to prepare the base `ProgramInfo` even further,
@@ -73,8 +80,22 @@ export abstract class TsurgeBaseMigration<UnitAnalysisMetadata, CombinedGlobalMe
   /** Analyzes the given TypeScript project and returns serializable compilation unit data. */
   abstract analyze(info: ProgramInfo): Promise<Serializable<UnitAnalysisMetadata>>;
 
-  /** Merges all compilation unit data from previous analysis phases into a global result. */
-  abstract merge(units: UnitAnalysisMetadata[]): Promise<Serializable<CombinedGlobalMetadata>>;
+  /**
+   * Combines two unit analyses into a single analysis metadata.
+   * This is necessary to allow for parallel merging of metadata.
+   */
+  abstract combine(
+    unitA: UnitAnalysisMetadata,
+    unitB: UnitAnalysisMetadata,
+  ): Promise<Serializable<UnitAnalysisMetadata>>;
+
+  /**
+   * Converts combined compilation into global metadata result that
+   * is then available for migrate and stats stages.
+   */
+  abstract globalMeta(
+    combinedData: UnitAnalysisMetadata,
+  ): Promise<Serializable<CombinedGlobalMetadata>>;
 
   /** Extract statistics based on the global metadata. */
   abstract stats(globalMetadata: CombinedGlobalMetadata): Promise<MigrationStats>;

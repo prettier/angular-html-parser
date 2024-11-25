@@ -20,6 +20,7 @@ import {
   ɵwithEventReplay,
   ɵwithI18nSupport,
   ɵZONELESS_ENABLED as ZONELESS_ENABLED,
+  ɵwithIncrementalHydration,
 } from '@angular/core';
 
 import {RuntimeErrorCode} from './errors';
@@ -35,6 +36,7 @@ export enum HydrationFeatureKind {
   HttpTransferCacheOptions,
   I18nSupport,
   EventReplay,
+  IncrementalHydration,
 }
 
 /**
@@ -71,9 +73,9 @@ export function withNoHttpTransferCache(): HydrationFeature<HydrationFeatureKind
 }
 
 /**
- * The function accepts a an object, which allows to configure cache parameters,
+ * The function accepts an object, which allows to configure cache parameters,
  * such as which headers should be included (no headers are included by default),
- * wether POST requests should be cached or a callback function to determine if a
+ * whether POST requests should be cached or a callback function to determine if a
  * particular request should be cached.
  *
  * @publicApi
@@ -117,6 +119,26 @@ export function withI18nSupport(): HydrationFeature<HydrationFeatureKind.I18nSup
  */
 export function withEventReplay(): HydrationFeature<HydrationFeatureKind.EventReplay> {
   return hydrationFeature(HydrationFeatureKind.EventReplay, ɵwithEventReplay());
+}
+
+/**
+ * Enables support for incremental hydration using the `hydrate` trigger syntax.
+ *
+ * @usageNotes
+ *
+ * Basic example of how you can enable incremental hydration in your application when
+ * the `bootstrapApplication` function is used:
+ * ```
+ * bootstrapApplication(AppComponent, {
+ *   providers: [provideClientHydration(withIncrementalHydration())]
+ * });
+ * ```
+ * @experimental
+ * @publicApi
+ * @see {@link provideClientHydration}
+ */
+export function withIncrementalHydration(): HydrationFeature<HydrationFeatureKind.IncrementalHydration> {
+  return hydrationFeature(HydrationFeatureKind.IncrementalHydration, ɵwithIncrementalHydration());
 }
 
 /**

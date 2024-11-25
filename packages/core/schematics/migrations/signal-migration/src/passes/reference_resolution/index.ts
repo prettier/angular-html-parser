@@ -40,9 +40,9 @@ export function createFindAllSourceFileReferencesVisitor<D extends ClassFieldDes
   programInfo: ProgramInfo,
   checker: ts.TypeChecker,
   reflector: ReflectionHost,
-  resourceLoader: ResourceLoader,
+  resourceLoader: ResourceLoader | null,
   evaluator: PartialEvaluator,
-  templateTypeChecker: TemplateTypeChecker,
+  templateTypeChecker: TemplateTypeChecker | null,
   knownFields: KnownFields<D>,
   fieldNamesToConsiderForReferenceLookup: Set<string> | null,
   result: ReferenceResult<D>,
@@ -67,7 +67,9 @@ export function createFindAllSourceFileReferencesVisitor<D extends ClassFieldDes
   const visitor = (node: ts.Node) => {
     let lastTime = currentTimeInMs();
 
-    if (ts.isClassDeclaration(node)) {
+    // Note: If there is no template type checker and resource loader, we aren't processing
+    // an Angular program, and can skip template detection.
+    if (ts.isClassDeclaration(node) && templateTypeChecker !== null && resourceLoader !== null) {
       identifyTemplateReferences(
         programInfo,
         node,
@@ -79,11 +81,20 @@ export function createFindAllSourceFileReferencesVisitor<D extends ClassFieldDes
         programInfo.userOptions,
         result,
         knownFields,
+        fieldNamesToConsiderForReferenceLookup,
       );
       perfCounters.template += (currentTimeInMs() - lastTime) / 1000;
       lastTime = currentTimeInMs();
 
-      identifyHostBindingReferences(node, programInfo, checker, reflector, result, knownFields);
+      identifyHostBindingReferences(
+        node,
+        programInfo,
+        checker,
+        reflector,
+        result,
+        knownFields,
+        fieldNamesToConsiderForReferenceLookup,
+      );
 
       perfCounters.hostBindings += (currentTimeInMs() - lastTime) / 1000;
       lastTime = currentTimeInMs();

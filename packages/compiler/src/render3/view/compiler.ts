@@ -93,8 +93,8 @@ function baseDirectiveFields(
     definitionMap.set('exportAs', o.literalArr(meta.exportAs.map((e) => o.literal(e))));
   }
 
-  if (meta.isStandalone) {
-    definitionMap.set('standalone', o.literal(true));
+  if (meta.isStandalone === false) {
+    definitionMap.set('standalone', o.literal(false));
   }
   if (meta.isSignal) {
     definitionMap.set('signals', o.literal(true));
@@ -147,10 +147,6 @@ function addFeatures(
   }
   if (meta.lifecycle.usesOnChanges) {
     features.push(o.importExpr(R3.NgOnChangesFeature));
-  }
-  // TODO: better way of differentiating component vs directive metadata.
-  if (meta.hasOwnProperty('template') && meta.isStandalone) {
-    features.push(o.importExpr(R3.StandaloneFeature));
   }
   if ('externalStyles' in meta && meta.externalStyles?.length) {
     const externalStyleNodes = meta.externalStyles.map((externalStyle) => o.literal(externalStyle));
@@ -290,7 +286,6 @@ export function compileComponentFromMetadata(
   let hasStyles = !!meta.externalStyles?.length;
   // e.g. `styles: [str1, str2]`
   if (meta.styles && meta.styles.length) {
-    hasStyles = true;
     const styleValues =
       meta.encapsulation == core.ViewEncapsulation.Emulated
         ? compileStyles(meta.styles, CONTENT_ATTR, HOST_ATTR)
@@ -303,6 +298,7 @@ export function compileComponentFromMetadata(
     }, [] as o.Expression[]);
 
     if (styleNodes.length > 0) {
+      hasStyles = true;
       definitionMap.set('styles', o.literalArr(styleNodes));
     }
   }

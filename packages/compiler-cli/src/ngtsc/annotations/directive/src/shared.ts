@@ -116,6 +116,7 @@ export function extractDirectiveMetadata(
   compilationMode: CompilationMode,
   defaultSelector: string | null,
   strictStandalone: boolean,
+  implicitStandaloneValue: boolean,
 ):
   | {
       jitForced: false;
@@ -335,7 +336,7 @@ export function extractDirectiveMetadata(
         dep.token.value.name === 'TemplateRef',
     );
 
-  let isStandalone = false;
+  let isStandalone = implicitStandaloneValue;
   if (directive.has('standalone')) {
     const expr = directive.get('standalone')!;
     const resolved = evaluator.evaluate(expr);

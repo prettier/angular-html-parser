@@ -36,6 +36,10 @@ export class PendingTasksInternal implements OnDestroy {
     return taskId;
   }
 
+  has(taskId: number): boolean {
+    return this.pendingTasks.has(taskId);
+  }
+
   remove(taskId: number): void {
     this.pendingTasks.delete(taskId);
     if (this.pendingTasks.size === 0 && this._hasPendingTasks) {
@@ -51,7 +55,7 @@ export class PendingTasksInternal implements OnDestroy {
   }
 
   /** @nocollapse */
-  static ɵprov = /** @pureOrBreakMyCode */ ɵɵdefineInjectable({
+  static ɵprov = /** @pureOrBreakMyCode */ /* @__PURE__ */ ɵɵdefineInjectable({
     token: PendingTasksInternal,
     providedIn: 'root',
     factory: () => new PendingTasksInternal(),
@@ -90,6 +94,10 @@ export class PendingTasks {
   add(): () => void {
     const taskId = this.internalPendingTasks.add();
     return () => {
+      if (!this.internalPendingTasks.has(taskId)) {
+        // This pending task has already been cleared.
+        return;
+      }
       // Notifying the scheduler will hold application stability open until the next tick.
       this.scheduler.notify(NotificationSource.PendingTaskRemoved);
       this.internalPendingTasks.remove(taskId);
@@ -126,7 +134,7 @@ export class PendingTasks {
   }
 
   /** @nocollapse */
-  static ɵprov = /** @pureOrBreakMyCode */ ɵɵdefineInjectable({
+  static ɵprov = /** @pureOrBreakMyCode */ /* @__PURE__ */ ɵɵdefineInjectable({
     token: PendingTasks,
     providedIn: 'root',
     factory: () => new PendingTasks(),

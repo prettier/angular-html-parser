@@ -13,7 +13,6 @@ import {ɵɵInheritDefinitionFeature} from './features/inherit_definition_featur
 import {ɵɵInputTransformsFeature} from './features/input_transforms_feature';
 import {ɵɵNgOnChangesFeature} from './features/ng_onchanges_feature';
 import {ɵɵProvidersFeature} from './features/providers_feature';
-import {ɵɵStandaloneFeature} from './features/standalone_feature';
 import {ɵɵExternalStylesFeature} from './features/external_styles_feature';
 import {
   ComponentDef,
@@ -159,7 +158,6 @@ export {
   ɵɵdeferHydrateOnHover,
   ɵɵdeferHydrateOnInteraction,
   ɵɵdeferHydrateOnViewport,
-  ɵɵdeferEnableTimerScheduling,
   ɵɵtext,
   ɵɵtextInterpolate,
   ɵɵtextInterpolate1,
@@ -183,9 +181,10 @@ export {
   ɵɵreadContextLet,
 } from './instructions/all';
 export {
+  ɵɵdeferEnableTimerScheduling,
   DEFER_BLOCK_DEPENDENCY_INTERCEPTOR as ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
   DEFER_BLOCK_CONFIG as ɵDEFER_BLOCK_CONFIG,
-} from '../defer/instructions';
+} from '../defer/rendering';
 export {DeferBlockDependencyInterceptor as ɵDeferBlockDependencyInterceptor} from '../defer/interfaces';
 export {
   ɵɵi18n,
@@ -255,6 +254,5 @@ export {
   ɵɵProvidersFeature,
   ɵɵsetComponentScope,
   ɵɵsetNgModuleScope,
-  ɵɵStandaloneFeature,
   ɵɵExternalStylesFeature,
 };

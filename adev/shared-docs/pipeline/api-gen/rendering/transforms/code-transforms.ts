@@ -9,6 +9,7 @@
 import {
   DocEntry,
   FunctionSignatureMetadata,
+  GenericEntry,
   MemberEntry,
   MemberTags,
   ParameterEntry,
@@ -66,9 +67,7 @@ export function addRenderableCodeToc<T extends DocEntry & HasModuleName>(
   const metadata = mapDocEntryToCode(entry);
   appendPrefixAndSuffix(entry, metadata);
 
-  let codeWithSyntaxHighlighting = codeToHtml(metadata.contents, 'typescript', {
-    removeFunctionKeyword: true,
-  });
+  let codeWithSyntaxHighlighting = codeToHtml(metadata.contents, 'typescript');
 
   if (isDecoratorEntry(entry)) {
     // Shiki requires a keyword for correct formating of Decorators
@@ -242,7 +241,8 @@ export function mapDocEntryToCode(entry: DocEntry): CodeTableOfContentsData {
   }
 
   if (isTypeAliasEntry(entry)) {
-    const contents = `type ${entry.name} = ${entry.type}`;
+    const generics = makeGenericsText(entry.generics);
+    const contents = `type ${entry.name}${generics} = ${entry.type}`;
 
     if (isDeprecated) {
       const numberOfLinesOfCode = getNumberOfLinesOfCode(contents);
@@ -332,8 +332,10 @@ function getMethodCodeLine(
   displayParamsInNewLines: boolean = false,
   isFunction: boolean = false,
 ): string {
+  const generics = makeGenericsText(member.generics);
+
   displayParamsInNewLines &&= member.params.length > 0;
-  return `${isFunction ? 'function' : ''}${memberTags.join(' ')} ${member.name}(${displayParamsInNewLines ? '\n  ' : ''}${member.params
+  return `${isFunction ? 'function' : ''}${memberTags.join(' ')} ${member.name}${generics}(${displayParamsInNewLines ? '\n  ' : ''}${member.params
     .map((param) => mapParamEntry(param))
     .join(`,${displayParamsInNewLines ? '\n  ' : ' '}`)}${
     displayParamsInNewLines ? '\n' : ''
@@ -442,13 +444,7 @@ function appendPrefixAndSuffix(entry: DocEntry, codeTocData: CodeTableOfContents
   };
 
   if (isClassEntry(entry) || isInterfaceEntry(entry)) {
-    const generics =
-      entry.generics?.length > 0
-        ? `<${entry.generics
-            .map((g) => (g.constraint ? `${g.name} extends ${g.constraint}` : g.name))
-            .join(', ')}>`
-        : '';
-
+    const generics = makeGenericsText(entry.generics);
     const extendsStr = entry.extends ? ` extends ${entry.extends}` : '';
     // TODO: remove the ? when we distinguish Class & Decorator entries
     const implementsStr =
@@ -500,4 +496,46 @@ export function addApiLinksToHtml(htmlString: string): string {
   );
 
   return result;
+}
+
+/**
+ * Constructs a TypeScript generics string based on an array of generic type entries.
+ *
+ * This function takes an array of generic type entries and returns a formatted string
+ * representing TypeScript generics syntax, including any constraints and default values
+ * specified in each entry.
+ *
+ * @param generics - An array of `GenericEntry` objects representing the generics to be formatted,
+ *                   or `undefined` if there are no generics.
+ *
+ * @returns A formatted string representing TypeScript generics syntax, or an empty string if no generics are provided.
+ */
+export function makeGenericsText(generics: GenericEntry[] | undefined): string {
+  if (!generics?.length) {
+    return '';
+  }
+
+  const parts: string[] = ['<'];
+
+  for (let index = 0; index < generics.length; index++) {
+    const {constraint, default: defaultVal, name} = generics[index];
+
+    parts.push(name);
+
+    if (constraint) {
+      parts.push(' extends ', constraint);
+    }
+
+    if (defaultVal !== undefined) {
+      parts.push(' = ', defaultVal);
+    }
+
+    if (index < generics.length - 1) {
+      parts.push(', ');
+    }
+  }
+
+  parts.push('>');
+
+  return parts.join('');
 }

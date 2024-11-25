@@ -269,13 +269,23 @@ class ClassExtractor {
   }
 
   /** The result only contains properties, method implementations and abstracts */
-  private filterMethodOverloads(declarations: ts.Declaration[]) {
-    return declarations.filter((declaration) => {
+  private filterMethodOverloads(declarations: ts.Declaration[]): ts.Declaration[] {
+    return declarations.filter((declaration, index) => {
+      // Check if the declaration is a function or method
       if (ts.isFunctionDeclaration(declaration) || ts.isMethodDeclaration(declaration)) {
-        return (
-          !!declaration.body || ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Abstract
-        );
+        // TypeScript ensures that all declarations for a given abstract method appear consecutively.
+        const nextDeclaration = declarations[index + 1];
+        const isNextAbstractMethodWithSameName =
+          nextDeclaration &&
+          ts.isMethodDeclaration(nextDeclaration) &&
+          nextDeclaration.name.getText() === declaration.name?.getText();
+
+        // Return only the last occurrence of an abstract method to avoid overload duplication.
+        // Subsequent overloads or implementations are handled separately by the function extractor.
+        return !isNextAbstractMethodWithSameName;
       }
+
+      // Include non-method declarations, such as properties, without filtering.
       return true;
     });
   }

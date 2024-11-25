@@ -7,7 +7,15 @@
  */
 
 import ts from 'typescript';
-import {isAccessedViaThis} from './analysis';
+import {isAccessedViaThis, parameterDeclaresProperty} from './analysis';
+
+/** Property that is a candidate to be combined. */
+interface CombineCandidate {
+  /** Node that declares the property. */
+  declaration: ts.PropertyDeclaration;
+  /** Value to which the property was initialized in the constructor. */
+  initializer: ts.Expression;
+}
 
 /**
  * Finds class property declarations without initializers whose constructor-based initialization
@@ -32,8 +40,12 @@ export function findUninitializedPropertiesToCombine(
   node: ts.ClassDeclaration,
   constructor: ts.ConstructorDeclaration,
   localTypeChecker: ts.TypeChecker,
-): Map<ts.PropertyDeclaration, ts.Expression> | null {
-  let result: Map<ts.PropertyDeclaration, ts.Expression> | null = null;
+): {
+  toCombine: CombineCandidate[];
+  toHoist: ts.PropertyDeclaration[];
+} | null {
+  let toCombine: CombineCandidate[] | null = null;
+  let toHoist: ts.PropertyDeclaration[] = [];
 
   const membersToDeclarations = new Map<string, ts.PropertyDeclaration>();
   for (const member of node.members) {
@@ -47,25 +59,121 @@ export function findUninitializedPropertiesToCombine(
   }
 
   if (membersToDeclarations.size === 0) {
-    return result;
+    return null;
   }
 
   const memberInitializers = getMemberInitializers(constructor);
   if (memberInitializers === null) {
-    return result;
+    return null;
   }
 
-  for (const [name, initializer] of memberInitializers.entries()) {
-    if (
-      membersToDeclarations.has(name) &&
-      !hasLocalReferences(initializer, constructor, localTypeChecker)
-    ) {
-      result = result || new Map();
-      result.set(membersToDeclarations.get(name)!, initializer);
+  for (const [name, decl] of membersToDeclarations.entries()) {
+    if (memberInitializers.has(name)) {
+      const initializer = memberInitializers.get(name)!;
+
+      if (!hasLocalReferences(initializer, constructor, localTypeChecker)) {
+        toCombine ??= [];
+        toCombine.push({declaration: membersToDeclarations.get(name)!, initializer});
+      }
+    } else {
+      // Mark members that have no initializers and can't be combined to be hoisted above the
+      // injected members. This is either a no-op or it allows us to avoid some patterns internally
+      // like the following:
+      // ```
+      // class Foo {
+      //   publicFoo: Foo;
+      //   private privateFoo: Foo;
+      //
+      //   constructor() {
+      //     this.initializePrivateFooSomehow();
+      //     this.publicFoo = this.privateFoo;
+      //   }
+      // }
+      // ```
+      toHoist.push(decl);
     }
   }
 
-  return result;
+  // If no members need to be combined, none need to be hoisted either.
+  return toCombine === null ? null : {toCombine, toHoist};
+}
+
+/**
+ * In some cases properties may be declared out of order, but initialized in the correct order.
+ * The internal-specific migration will combine such properties which will result in a compilation
+ * error, for example:
+ *
+ * ```
+ * class MyClass {
+ *   foo: Foo;
+ *   bar: Bar;
+ *
+ *   constructor(bar: Bar) {
+ *     this.bar = bar;
+ *     this.foo = this.bar.getFoo();
+ *   }
+ * }
+ * ```
+ *
+ * Will become:
+ *
+ * ```
+ * class MyClass {
+ *   foo: Foo = this.bar.getFoo();
+ *   bar: Bar = inject(Bar);
+ * }
+ * ```
+ *
+ * This function determines if cases like this can be saved by reordering the properties so their
+ * declaration order matches the order in which they're initialized.
+ *
+ * @param toCombine Properties that are candidates to be combined.
+ * @param constructor
+ */
+export function shouldCombineInInitializationOrder(
+  toCombine: CombineCandidate[],
+  constructor: ts.ConstructorDeclaration,
+): boolean {
+  let combinedMemberReferenceCount = 0;
+  let otherMemberReferenceCount = 0;
+  const injectedMemberNames = new Set<string>();
+  const combinedMemberNames = new Set<string>();
+
+  // Collect the name of constructor parameters that declare new properties.
+  // These can be ignored since they'll be hoisted above other properties.
+  constructor.parameters.forEach((param) => {
+    if (parameterDeclaresProperty(param) && ts.isIdentifier(param.name)) {
+      injectedMemberNames.add(param.name.text);
+    }
+  });
+
+  // Collect the names of the properties being combined. We should only reorder
+  // the properties if at least one of them refers to another one.
+  toCombine.forEach(({declaration: {name}}) => {
+    if (ts.isStringLiteralLike(name) || ts.isIdentifier(name)) {
+      combinedMemberNames.add(name.text);
+    }
+  });
+
+  // Visit all the initializers and check all the property reads in the form of `this.<name>`.
+  // Skip over the ones referring to injected parameters since they're going to be hoisted.
+  const walkInitializer = (node: ts.Node) => {
+    if (ts.isPropertyAccessExpression(node) && node.expression.kind === ts.SyntaxKind.ThisKeyword) {
+      if (combinedMemberNames.has(node.name.text)) {
+        combinedMemberReferenceCount++;
+      } else if (!injectedMemberNames.has(node.name.text)) {
+        otherMemberReferenceCount++;
+      }
+    }
+
+    node.forEachChild(walkInitializer);
+  };
+  toCombine.forEach((candidate) => walkInitializer(candidate.initializer));
+
+  // If at the end there is at least one reference between a combined member and another,
+  // and there are no references to any other class members, we can safely reorder the
+  // properties based on how they were initialized.
+  return combinedMemberReferenceCount > 0 && otherMemberReferenceCount === 0;
 }
 
 /**
@@ -136,7 +244,7 @@ function hasLocalReferences(
   const sourceFile = root.getSourceFile();
   let hasLocalRefs = false;
 
-  root.forEachChild(function walk(node) {
+  const walk = (node: ts.Node) => {
     // Stop searching if we know that it has local references.
     if (hasLocalRefs) {
       return;
@@ -171,7 +279,9 @@ function hasLocalReferences(
     if (!hasLocalRefs) {
       node.forEachChild(walk);
     }
-  });
+  };
+
+  walk(root);
 
   return hasLocalRefs;
 }

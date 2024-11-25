@@ -53,10 +53,12 @@ function createServerPlatform(options: PlatformOptions): PlatformRef {
   const extraProviders = options.platformProviders ?? [];
   const measuringLabel = 'createServerPlatform';
   startMeasuring(measuringLabel);
+
   const platform = platformServer([
     {provide: INITIAL_CONFIG, useValue: {document: options.document, url: options.url}},
     extraProviders,
   ]);
+
   stopMeasuring(measuringLabel);
   return platform;
 }
@@ -210,18 +212,21 @@ async function _render(platformRef: PlatformRef, applicationRef: ApplicationRef)
   }
 
   appendServerContextInfo(applicationRef);
-  const output = platformState.renderToString();
 
-  // Destroy the application in a macrotask, this allows pending promises to be settled and errors
-  // to be surfaced to the users.
-  await new Promise<void>((resolve) => {
+  return platformState.renderToString();
+}
+
+/**
+ * Destroy the application in a macrotask, this allows pending promises to be settled and errors
+ * to be surfaced to the users.
+ */
+function asyncDestroyPlatform(platformRef: PlatformRef): Promise<void> {
+  return new Promise<void>((resolve) => {
     setTimeout(() => {
       platformRef.destroy();
       resolve();
     }, 0);
   });
-
-  return output;
 }
 
 /**
@@ -264,9 +269,13 @@ export async function renderModule<T>(
 ): Promise<string> {
   const {document, url, extraProviders: platformProviders} = options;
   const platformRef = createServerPlatform({document, url, platformProviders});
-  const moduleRef = await platformRef.bootstrapModule(moduleType);
-  const applicationRef = moduleRef.injector.get(ApplicationRef);
-  return _render(platformRef, applicationRef);
+  try {
+    const moduleRef = await platformRef.bootstrapModule(moduleType);
+    const applicationRef = moduleRef.injector.get(ApplicationRef);
+    return await _render(platformRef, applicationRef);
+  } finally {
+    await asyncDestroyPlatform(platformRef);
+  }
 }
 
 /**
@@ -299,15 +308,17 @@ export async function renderApplication<T>(
 
   startMeasuring(renderAppLabel);
   const platformRef = createServerPlatform(options);
+  try {
+    startMeasuring(bootstrapLabel);
+    const applicationRef = await bootstrap();
+    stopMeasuring(bootstrapLabel);
 
-  startMeasuring(bootstrapLabel);
-  const applicationRef = await bootstrap();
-  stopMeasuring(bootstrapLabel);
-
-  startMeasuring(_renderLabel);
-  const rendered = await _render(platformRef, applicationRef);
-  stopMeasuring(_renderLabel);
-
-  stopMeasuring(renderAppLabel);
-  return rendered;
+    startMeasuring(_renderLabel);
+    const rendered = await _render(platformRef, applicationRef);
+    stopMeasuring(_renderLabel);
+    return rendered;
+  } finally {
+    await asyncDestroyPlatform(platformRef);
+    stopMeasuring(renderAppLabel);
+  }
 }

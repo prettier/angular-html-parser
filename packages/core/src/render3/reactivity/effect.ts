@@ -104,6 +104,11 @@ export interface CreateEffectOptions {
    * @deprecated no longer required, signal writes are allowed by default.
    */
   allowSignalWrites?: boolean;
+
+  /**
+   * A debug name for the effect. Used in Angular DevTools to identify the effect.
+   */
+  debugName?: string;
 }
 
 /**
@@ -174,9 +179,10 @@ export function effect(
   let node: EffectNode;
 
   const viewContext = injector.get(ViewContext, null, {optional: true});
+  const notifier = injector.get(ChangeDetectionScheduler);
   if (viewContext !== null && !options?.forceRoot) {
     // This effect was created in the context of a view, and will be associated with the view.
-    node = createViewEffect(viewContext.view, effectFn);
+    node = createViewEffect(viewContext.view, notifier, effectFn);
     if (destroyRef instanceof NodeInjectorDestroyRef && destroyRef._lView === viewContext.view) {
       // The effect is being created in the same view as the `DestroyRef` references, so it will be
       // automatically destroyed without the need for an explicit `DestroyRef` registration.
@@ -184,17 +190,17 @@ export function effect(
     }
   } else {
     // This effect was created outside the context of a view, and will be scheduled independently.
-    node = createRootEffect(
-      effectFn,
-      injector.get(EffectScheduler),
-      injector.get(ChangeDetectionScheduler),
-    );
+    node = createRootEffect(effectFn, injector.get(EffectScheduler), notifier);
   }
   node.injector = injector;
 
   if (destroyRef !== null) {
     // If we need to register for cleanup, do that here.
     node.onDestroyFn = destroyRef.onDestroy(() => node.destroy());
+  }
+
+  if (ngDevMode) {
+    node.debugName = options?.debugName ?? '';
   }
 
   return new EffectRefImpl(node);
@@ -204,6 +210,7 @@ export interface EffectNode extends ReactiveNode, SchedulableEffect {
   hasRun: boolean;
   cleanupFns: EffectCleanupFn[] | undefined;
   injector: Injector;
+  notifier: ChangeDetectionScheduler;
 
   onDestroyFn: () => void;
   fn: (cleanupFn: EffectCleanupRegisterFn) => void;
@@ -218,19 +225,18 @@ export interface ViewEffectNode extends EffectNode {
 
 export interface RootEffectNode extends EffectNode {
   scheduler: EffectScheduler;
-  notifier: ChangeDetectionScheduler;
 }
 
 /**
  * Not public API, which guarantees `EffectScheduler` only ever comes from the application root
  * injector.
  */
-export const APP_EFFECT_SCHEDULER = new InjectionToken('', {
+export const APP_EFFECT_SCHEDULER = /* @__PURE__ */ new InjectionToken('', {
   providedIn: 'root',
   factory: () => inject(EffectScheduler),
 });
 
-export const BASE_EFFECT_NODE: Omit<EffectNode, 'fn' | 'destroy' | 'injector'> =
+export const BASE_EFFECT_NODE: Omit<EffectNode, 'fn' | 'destroy' | 'injector' | 'notifier'> =
   /* @__PURE__ */ (() => ({
     ...REACTIVE_NODE,
     consumerIsAlwaysLive: true,
@@ -263,10 +269,6 @@ export const BASE_EFFECT_NODE: Omit<EffectNode, 'fn' | 'destroy' | 'injector'> =
       try {
         this.maybeCleanup();
         this.fn(registerCleanupFn);
-      } catch (err: unknown) {
-        // We inject the error handler lazily, to prevent circular dependencies when an effect is
-        // created inside of an ErrorHandler.
-        this.injector.get(ErrorHandler, null, {optional: true})?.handleError(err);
       } finally {
         setIsRefreshingViews(prevRefreshingViews);
         consumerAfterComputation(this, prevNode);
@@ -274,8 +276,18 @@ export const BASE_EFFECT_NODE: Omit<EffectNode, 'fn' | 'destroy' | 'injector'> =
     },
 
     maybeCleanup(this: EffectNode): void {
-      while (this.cleanupFns?.length) {
-        this.cleanupFns.pop()!();
+      if (!this.cleanupFns?.length) {
+        return;
+      }
+      try {
+        // Attempt to run the cleanup functions. Regardless of failure or success, we consider
+        // cleanup "completed" and clear the list for the next run of the effect. Note that an error
+        // from the cleanup function will still crash the current run of the effect.
+        while (this.cleanupFns.length) {
+          this.cleanupFns.pop()!();
+        }
+      } finally {
+        this.cleanupFns = [];
       }
     },
   }))();
@@ -294,12 +306,13 @@ export const ROOT_EFFECT_NODE: Omit<RootEffectNode, 'fn' | 'scheduler' | 'notifi
     },
   }))();
 
-export const VIEW_EFFECT_NODE: Omit<ViewEffectNode, 'fn' | 'view' | 'injector'> =
+export const VIEW_EFFECT_NODE: Omit<ViewEffectNode, 'fn' | 'view' | 'injector' | 'notifier'> =
   /* @__PURE__ */ (() => ({
     ...BASE_EFFECT_NODE,
     consumerMarkedDirty(this: ViewEffectNode): void {
       this.view[FLAGS] |= LViewFlags.HasChildViewsToRefresh;
       markAncestorsForTraversal(this.view);
+      this.notifier.notify(NotificationSource.ViewEffect);
     },
     destroy(this: ViewEffectNode): void {
       consumerDestroy(this);
@@ -311,11 +324,13 @@ export const VIEW_EFFECT_NODE: Omit<ViewEffectNode, 'fn' | 'view' | 'injector'> 
 
 export function createViewEffect(
   view: LView,
+  notifier: ChangeDetectionScheduler,
   fn: (onCleanup: EffectCleanupRegisterFn) => void,
 ): ViewEffectNode {
   const node = Object.create(VIEW_EFFECT_NODE) as ViewEffectNode;
   node.view = view;
   node.zone = typeof Zone !== 'undefined' ? Zone.current : null;
+  node.notifier = notifier;
   node.fn = fn;
 
   view[EFFECTS] ??= new Set();

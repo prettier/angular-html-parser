@@ -48,13 +48,15 @@ export class NgtscTestEnvironment {
   private multiCompileHostExt: MultiCompileHostExt | null = null;
   private oldProgram: Program | null = null;
   private changedResources: Set<string> | null = null;
-  private commandLineArgs = ['-p', this.basePath];
+  private commandLineArgs: string[];
 
   private constructor(
     private fs: FileSystem,
     readonly outDir: AbsoluteFsPath,
     readonly basePath: AbsoluteFsPath,
-  ) {}
+  ) {
+    this.commandLineArgs = ['-p', this.basePath];
+  }
 
   /**
    * Set up a new testing environment.
@@ -340,6 +342,25 @@ export class NgtscTestEnvironment {
     const exitCode = mainXi18n(args, errorSpy);
     expect(errorSpy).not.toHaveBeenCalled();
     expect(exitCode).toEqual(0);
+  }
+
+  driveHmr(fileName: string, className: string): string | null {
+    const {rootNames, options} = readNgcCommandLineAndConfiguration(this.commandLineArgs);
+    const host = createCompilerHost({options});
+    const program = createProgram({rootNames, host, options});
+    const sourceFile = program.getTsProgram().getSourceFile(fileName);
+
+    if (sourceFile == null) {
+      throw new Error(`Cannot find file at "${fileName}"`);
+    }
+
+    for (const node of sourceFile.statements) {
+      if (ts.isClassDeclaration(node) && node.name != null && node.name.text === className) {
+        return (program as NgtscProgram).compiler.emitHmrUpdateModule(node);
+      }
+    }
+
+    throw new Error(`Cannot find class with name "${className}" in "${fileName}"`);
   }
 }
 

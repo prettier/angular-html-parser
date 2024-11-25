@@ -42,6 +42,9 @@ import {
   ViewEncapsulation,
   ɵPendingTasks as PendingTasks,
   ɵwhenStable as whenStable,
+  APP_INITIALIZER,
+  inject,
+  getPlatform,
 } from '@angular/core';
 import {SSR_CONTENT_INTEGRITY_MARKER} from '@angular/core/src/hydration/utils';
 import {TestBed} from '@angular/core/testing';
@@ -233,13 +236,21 @@ const AsyncMultiRenderHookProviders = [
 })
 class AsyncMultiRenderHookModule {}
 
-@Component({selector: 'app', template: `Works too!`})
+@Component({
+  selector: 'app',
+  template: `Works too!`,
+  standalone: false,
+})
 class MyServerApp2 {}
 
 @NgModule({declarations: [MyServerApp2], imports: [ServerModule], bootstrap: [MyServerApp2]})
 class ExampleModule2 {}
 
-@Component({selector: 'app', template: ``})
+@Component({
+  selector: 'app',
+  template: ``,
+  standalone: false,
+})
 class TitleApp {
   constructor(private title: Title) {}
   ngOnInit() {
@@ -418,7 +429,11 @@ export class MyHttpInterceptor implements HttpInterceptor {
 })
 export class HttpInterceptorExampleModule {}
 
-@Component({selector: 'app', template: `<img [src]="'link'">`})
+@Component({
+  selector: 'app',
+  template: `<img [src]="'link'">`,
+  standalone: false,
+})
 class ImageApp {}
 
 @NgModule({declarations: [ImageApp], imports: [ServerModule], bootstrap: [ImageApp]})
@@ -555,7 +570,7 @@ class HiddenModule {}
       destroyPlatform();
     });
 
-    afterAll(() => {
+    afterEach(() => {
       destroyPlatform();
     });
 
@@ -757,6 +772,11 @@ class HiddenModule {}
         doc = '<html><head></head><body><app></app></body></html>';
       });
 
+      afterEach(() => {
+        doc = '<html><head></head><body><app></app></body></html>';
+        TestBed.resetTestingModule();
+      });
+
       it('using long form should work', async () => {
         const platform = platformServer([{provide: INITIAL_CONFIG, useValue: {document: doc}}]);
 
@@ -931,12 +951,12 @@ class HiddenModule {}
           })
           class SimpleApp {}
 
-          const bootstrap = renderApplication(
+          const output = await renderApplication(
             getStandaloneBootstrapFn(SimpleApp, [provideClientHydration()]),
             {document: doc},
           );
+
           // HttpClient cache and DOM hydration are enabled by default.
-          const output = await bootstrap;
           expect(output).toContain(`<body><!--${SSR_CONTENT_INTEGRITY_MARKER}-->`);
         });
 
@@ -1074,6 +1094,153 @@ class HiddenModule {}
                 '<app ng-version="0.0.0-PLACEHOLDER" ng-server-context="other">Completed: Yes</app>' +
                 '</body></html>',
             );
+          },
+        );
+
+        it(
+          `should call onOnDestroy of a service after a successful render` +
+            `(standalone: ${isStandalone})`,
+          async () => {
+            let wasServiceNgOnDestroyCalled = false;
+
+            @Injectable({providedIn: 'root'})
+            class DestroyableService {
+              ngOnDestroy() {
+                wasServiceNgOnDestroyCalled = true;
+              }
+            }
+
+            const SuccessfulAppInitializerProviders = [
+              {
+                provide: APP_INITIALIZER,
+                useFactory: () => {
+                  inject(DestroyableService);
+                  return () => Promise.resolve(); // Success in APP_INITIALIZER
+                },
+                multi: true,
+              },
+            ];
+
+            @NgModule({
+              providers: SuccessfulAppInitializerProviders,
+              imports: [MyServerAppModule, ServerModule],
+              bootstrap: [MyServerApp],
+            })
+            class ServerSuccessfulAppInitializerModule {}
+
+            const ServerSuccessfulAppInitializerAppStandalone = getStandaloneBootstrapFn(
+              createMyServerApp(true),
+              SuccessfulAppInitializerProviders,
+            );
+
+            const options = {document: doc};
+            const bootstrap = isStandalone
+              ? renderApplication(ServerSuccessfulAppInitializerAppStandalone, options)
+              : renderModule(ServerSuccessfulAppInitializerModule, options);
+            await bootstrap;
+
+            expect(getPlatform()).withContext('PlatformRef should be destroyed').toBeNull();
+            expect(wasServiceNgOnDestroyCalled)
+              .withContext('DestroyableService.ngOnDestroy() should be called')
+              .toBeTrue();
+          },
+        );
+
+        it(
+          `should call onOnDestroy of a service after some APP_INITIALIZER fails ` +
+            `(standalone: ${isStandalone})`,
+          async () => {
+            let wasServiceNgOnDestroyCalled = false;
+
+            @Injectable({providedIn: 'root'})
+            class DestroyableService {
+              ngOnDestroy() {
+                wasServiceNgOnDestroyCalled = true;
+              }
+            }
+
+            const FailingAppInitializerProviders = [
+              {
+                provide: APP_INITIALIZER,
+                useFactory: () => {
+                  inject(DestroyableService);
+                  return () => Promise.reject('Error in APP_INITIALIZER');
+                },
+                multi: true,
+              },
+            ];
+
+            @NgModule({
+              providers: FailingAppInitializerProviders,
+              imports: [MyServerAppModule, ServerModule],
+              bootstrap: [MyServerApp],
+            })
+            class ServerFailingAppInitializerModule {}
+
+            const ServerFailingAppInitializerAppStandalone = getStandaloneBootstrapFn(
+              createMyServerApp(true),
+              FailingAppInitializerProviders,
+            );
+
+            const options = {document: doc};
+            const bootstrap = isStandalone
+              ? renderApplication(ServerFailingAppInitializerAppStandalone, options)
+              : renderModule(ServerFailingAppInitializerModule, options);
+            await expectAsync(bootstrap).toBeRejectedWith('Error in APP_INITIALIZER');
+
+            expect(getPlatform()).withContext('PlatformRef should be destroyed').toBeNull();
+            expect(wasServiceNgOnDestroyCalled)
+              .withContext('DestroyableService.ngOnDestroy() should be called')
+              .toBeTrue();
+          },
+        );
+
+        it(
+          `should call onOnDestroy of a service after an error happens in a root component's constructor ` +
+            `(standalone: ${isStandalone})`,
+          async () => {
+            let wasServiceNgOnDestroyCalled = false;
+
+            @Injectable({providedIn: 'root'})
+            class DestroyableService {
+              ngOnDestroy() {
+                wasServiceNgOnDestroyCalled = true;
+              }
+            }
+
+            @Component({
+              standalone: isStandalone,
+              selector: 'app',
+              template: `Works!`,
+            })
+            class MyServerFailingConstructorApp {
+              constructor() {
+                inject(DestroyableService);
+                throw 'Error in constructor of the root component';
+              }
+            }
+
+            @NgModule({
+              declarations: [MyServerFailingConstructorApp],
+              imports: [MyServerAppModule, ServerModule],
+              bootstrap: [MyServerFailingConstructorApp],
+            })
+            class MyServerFailingConstructorAppModule {}
+
+            const MyServerFailingConstructorAppStandalone = getStandaloneBootstrapFn(
+              MyServerFailingConstructorApp,
+            );
+            const options = {document: doc};
+            const bootstrap = isStandalone
+              ? renderApplication(MyServerFailingConstructorAppStandalone, options)
+              : renderModule(MyServerFailingConstructorAppModule, options);
+            await expectAsync(bootstrap).toBeRejectedWith(
+              'Error in constructor of the root component',
+            );
+            expect(getPlatform()).withContext('PlatformRef should be destroyed').toBeNull();
+            expect(wasServiceNgOnDestroyCalled)
+              .withContext('DestroyableService.ngOnDestroy() should be called')
+              .toBeTrue();
           },
         );
       });
