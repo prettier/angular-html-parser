@@ -135,7 +135,7 @@ export class AfterRenderImpl {
 
   protected maybeTrace<T>(fn: () => T, snapshot: TracingSnapshot | null): T {
     // Only trace the execution if the snapshot is defined.
-    return snapshot?.run(TracingAction.AFTER_NEXT_RENDER, fn) ?? fn();
+    return snapshot ? snapshot.run(TracingAction.AFTER_NEXT_RENDER, fn) : fn();
   }
 
   /** @nocollapse */
@@ -187,6 +187,7 @@ export class AfterRenderSequence implements AfterRenderRef {
     // associates the initial run of the hook with the context that created it.
     // Follow-up runs are independent of that initial context and have different
     // triggers.
+    this.snapshot?.dispose();
     this.snapshot = null;
   }
 

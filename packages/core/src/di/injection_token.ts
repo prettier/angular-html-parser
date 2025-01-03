@@ -21,7 +21,7 @@ import {ɵɵdefineInjectable} from './interface/defs';
  * `InjectionToken` is parameterized on `T` which is the type of object which will be returned by
  * the `Injector`. This provides an additional level of type safety.
  *
- * <div class="alert is-helpful">
+ * <div class="docs-alert docs-alert-helpful">
  *
  * **Important Note**: Ensure that you use the same instance of the `InjectionToken` in both the
  * provider and the injection call. Creating a new instance of `InjectionToken` in different places,
@@ -30,8 +30,7 @@ import {ɵɵdefineInjectable} from './interface/defs';
  *
  * </div>
  *
- * <code-example format="typescript" language="typescript" path="injection-token/src/main.ts"
- * region="InjectionToken"></code-example>
+ * {@example injection-token/src/main.ts region='InjectionToken'}
  *
  * When creating an `InjectionToken`, you can optionally specify a factory function which returns
  * (possibly by creating) a default value of the parameterized type `T`. This sets up the

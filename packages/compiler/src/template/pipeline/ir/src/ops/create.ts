@@ -18,6 +18,7 @@ import {
   I18nParamValueFlags,
   Namespace,
   OpKind,
+  TDeferDetailsFlags,
   TemplateKind,
 } from '../enums';
 import {SlotHandle} from '../handle';
@@ -69,7 +70,8 @@ export type CreateOp =
   | IcuPlaceholderOp
   | I18nContextOp
   | I18nAttributesOp
-  | DeclareLetOp;
+  | DeclareLetOp
+  | SourceLocationOp;
 
 /**
  * An operation representing the creation of an element or container.
@@ -941,6 +943,13 @@ export interface DeferOp extends Op<CreateOp>, ConsumesSlotOpTrait {
    */
   resolverFn: o.Expression | null;
 
+  /**
+   * Specifies defer block flags, which should be used for all
+   * instances of a given defer block (the flags that should be
+   * placed into the `TDeferDetails` at runtime).
+   */
+  flags: TDeferDetailsFlags | null;
+
   sourceSpan: ParseSourceSpan;
 }
 
@@ -971,6 +980,7 @@ export function createDeferOp(
     errorSlot: null,
     ownResolverFn,
     resolverFn,
+    flags: null,
     sourceSpan,
     ...NEW_OP,
     ...TRAIT_CONSUMES_SLOT,
@@ -1541,6 +1551,36 @@ export function createI18nAttributesOp(
     i18nAttributesConfig: null,
     ...NEW_OP,
     ...TRAIT_CONSUMES_SLOT,
+  };
+}
+
+/** Describes a location at which an element is defined within a template. */
+export interface ElementSourceLocation {
+  targetSlot: SlotHandle;
+  offset: number;
+  line: number;
+  column: number;
+}
+
+/**
+ * Op that attaches the location at which each element is defined within the source template.
+ */
+export interface SourceLocationOp extends Op<CreateOp> {
+  kind: OpKind.SourceLocation;
+  templatePath: string;
+  locations: ElementSourceLocation[];
+}
+
+/** Create a `SourceLocationOp`. */
+export function createSourceLocationOp(
+  templatePath: string,
+  locations: ElementSourceLocation[],
+): SourceLocationOp {
+  return {
+    kind: OpKind.SourceLocation,
+    templatePath,
+    locations,
+    ...NEW_OP,
   };
 }
 

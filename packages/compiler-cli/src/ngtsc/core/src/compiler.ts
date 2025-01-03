@@ -469,7 +469,7 @@ export class NgCompiler {
     // version of the compiler against an older version of Angular.
     this.implicitStandaloneValue =
       this.angularCoreVersion === null ||
-      coreVersionSupportsFeature(this.angularCoreVersion, '>= 19.0.0-0');
+      coreVersionSupportsFeature(this.angularCoreVersion, '>= 19.0.0');
     this.enableHmr = !!options['_enableHmr'];
     this.constructionDiagnostics.push(
       ...this.adapter.constructionDiagnostics,
@@ -1027,6 +1027,7 @@ export class NgCompiler {
     const strictTemplates = !!this.options.strictTemplates;
 
     const useInlineTypeConstructors = this.programDriver.supportsInlineOperations;
+    const checkTwoWayBoundEvents = this.options['_checkTwoWayBoundEvents'] ?? false;
 
     // Check whether the loaded version of `@angular/core` in the `ts.Program` supports unwrapping
     // writable signals for type-checking. If this check fails to find a suitable .d.ts file, fall
@@ -1036,7 +1037,7 @@ export class NgCompiler {
     let allowSignalsInTwoWayBindings =
       coreHasSymbol(this.inputProgram, R3Identifiers.unwrapWritableSignal) ??
       (this.angularCoreVersion === null ||
-        coreVersionSupportsFeature(this.angularCoreVersion, '>= 17.2.0-0'));
+        coreVersionSupportsFeature(this.angularCoreVersion, '>= 17.2.0'));
 
     // First select a type-checking configuration, based on whether full template type-checking is
     // requested.
@@ -1080,6 +1081,7 @@ export class NgCompiler {
         unusedStandaloneImports:
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         allowSignalsInTwoWayBindings,
+        checkTwoWayBoundEvents,
       };
     } else {
       typeCheckingConfig = {
@@ -1114,6 +1116,7 @@ export class NgCompiler {
         unusedStandaloneImports:
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         allowSignalsInTwoWayBindings,
+        checkTwoWayBoundEvents,
       };
     }
 

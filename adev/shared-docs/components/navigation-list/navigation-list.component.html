@@ -4,10 +4,7 @@
     [class.docs-navigation-list-dropdown]="isDropdownView()"
   >
     @for (item of navigationItems; track $index) {
-      <li
-        class="docs-faceted-list-item"
-        [class.docs-navigation-link-hidden]="displayItemsToLevel() && item.level > displayItemsToLevel()"
-      >
+      <li class="docs-faceted-list-item">
         @if (item.path) {
           @if (item.isExternal) {
             <a [href]="item.path" target="_blank">
@@ -29,7 +26,7 @@
               routerLinkActive="docs-faceted-list-item-active"
               (click)="emitClickOnLink()"
             >
-              <span>{{ item.label }}</span>
+              <span>{{item.label}}</span>
               @if (item.children && !item.isExpanded) {
                 <docs-icon>chevron_right</docs-icon>
               }
@@ -39,7 +36,7 @@
           <!-- Nav Section Header -->
           @if (item.level !== collapsableLevel() && item.level !== expandableLevel()) {
             <div class="docs-secondary-nav-header">
-              <span>{{ item.label }}</span>
+              <span>{{item.label}}</span>
             </div>
           }
 
@@ -50,7 +47,7 @@
             <button
               type="button"
               (click)="toggle(item)"
-              attr.aria-label="{{ item.isExpanded ? 'Collapse' : 'Expand' }} {{ item.label }}"
+              [attr.aria-label]="(item.isExpanded ? 'Collapse' : 'Expand') + ' ' + item.label"
               [attr.aria-expanded]="item.isExpanded"
               class="docs-secondary-nav-button"
               [class.docs-faceted-list-item-active]="item | isActiveNavigationItem: activeItem()"
@@ -67,7 +64,7 @@
             </button>
           }
         }
-        @if (item.children?.length > 0) {
+        @if (displayItemsToLevel() > item.level && item.children?.length > 0) {
           <ng-container *ngTemplateOutlet="navigationList; context: {$implicit: item.children}" />
         }
       </li>

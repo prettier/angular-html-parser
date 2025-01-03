@@ -31,7 +31,6 @@ import {
   ɵunwrapSafeValue as unwrapSafeValue,
   ChangeDetectorRef,
   ApplicationRef,
-  ɵwhenStable as whenStable,
 } from '@angular/core';
 
 import {RuntimeErrorCode} from '../../errors';
@@ -203,7 +202,7 @@ export interface ImagePlaceholderConfig {
  *
  * Step 1: import the `NgOptimizedImage` directive.
  *
- * ```typescript
+ * ```ts
  * import { NgOptimizedImage } from '@angular/common';
  *
  * // Include it into the necessary NgModule
@@ -214,7 +213,6 @@ export interface ImagePlaceholderConfig {
  *
  * // ... or a standalone Component
  * @Component({
- *   standalone: true
  *   imports: [NgOptimizedImage],
  * })
  * class MyStandaloneComponent {}
@@ -229,7 +227,7 @@ export interface ImagePlaceholderConfig {
  * To use an existing loader for a **third-party image service**: add the provider factory for your
  * chosen service to the `providers` array. In the example below, the Imgix loader is used:
  *
- * ```typescript
+ * ```ts
  * import {provideImgixLoader} from '@angular/common';
  *
  * // Call the function and add the result to the `providers` array:
@@ -250,7 +248,7 @@ export interface ImagePlaceholderConfig {
  * To use a **custom loader**: provide your loader function as a value for the `IMAGE_LOADER` DI
  * token.
  *
- * ```typescript
+ * ```ts
  * import {IMAGE_LOADER, ImageLoaderConfig} from '@angular/common';
  *
  * // Configure the loader using the `IMAGE_LOADER` token.
@@ -266,14 +264,13 @@ export interface ImagePlaceholderConfig {
  *
  * Step 3: update `<img>` tags in templates to use `ngSrc` instead of `src`.
  *
- * ```
+ * ```html
  * <img ngSrc="logo.png" width="200" height="100">
  * ```
  *
  * @publicApi
  */
 @Directive({
-  standalone: true,
   selector: 'img[ngSrc]',
   host: {
     '[style.position]': 'fill ? "absolute" : null',
@@ -974,7 +971,7 @@ function postInitInputChangeError(dir: NgOptimizedImage, inputName: string): {} 
     `${imgDirectiveDetails(dir.ngSrc)} \`${inputName}\` was updated after initialization. ` +
       `The NgOptimizedImage directive will not react to this input change. ${reason} ` +
       `To fix this, either switch \`${inputName}\` to a static value ` +
-      `or wrap the image element in an *ngIf that is gated on the necessary value.`,
+      `or wrap the image element in an @if that is gated on the necessary value.`,
   );
 }
 
@@ -1310,7 +1307,7 @@ function assertNoLoaderParamsWithoutLoader(dir: NgOptimizedImage, imageLoader: I
 async function assetPriorityCountBelowThreshold(appRef: ApplicationRef) {
   if (IMGS_WITH_PRIORITY_ATTR_COUNT === 0) {
     IMGS_WITH_PRIORITY_ATTR_COUNT++;
-    await whenStable(appRef);
+    await appRef.whenStable();
     if (IMGS_WITH_PRIORITY_ATTR_COUNT > PRIORITY_COUNT_THRESHOLD) {
       console.warn(
         formatRuntimeError(

@@ -18,7 +18,6 @@ import {By} from '@angular/platform-browser';
 describe('ApiItemsSection', () => {
   let component: ApiItemsSection;
   let fixture: ComponentFixture<ApiItemsSection>;
-  let apiReferenceManagerSpy: jasmine.SpyObj<ApiReferenceManager>;
 
   const fakeGroup: ApiItemsGroup = {
     title: 'Group',
@@ -41,10 +40,7 @@ describe('ApiItemsSection', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [ApiItemsSection],
-      providers: [
-        provideRouter([]),
-        {provide: ApiReferenceManager, useValue: apiReferenceManagerSpy},
-      ],
+      providers: [provideRouter([])],
     });
     fixture = TestBed.createComponent(ApiItemsSection);
     component = fixture.componentInstance;
@@ -67,9 +63,6 @@ describe('ApiItemsSection', () => {
       By.css('.adev-api-items-section-grid li .docs-deprecated'),
     );
     const deprecatedApiTitle = deprecatedApiIcons[0].parent?.query(By.css('.adev-item-title'));
-
-    console.log('DEPRECATED API ICONS', deprecatedApiIcons);
-    console.log('DEPRECATED API TITLE', deprecatedApiTitle);
 
     expect(deprecatedApiIcons.length).toBe(1);
     expect(deprecatedApiIcons[0]).toBeTruthy();

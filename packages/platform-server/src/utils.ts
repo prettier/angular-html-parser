@@ -19,7 +19,6 @@ import {
   ɵannotateForHydration as annotateForHydration,
   ɵIS_HYDRATION_DOM_REUSE_ENABLED as IS_HYDRATION_DOM_REUSE_ENABLED,
   ɵSSR_CONTENT_INTEGRITY_MARKER as SSR_CONTENT_INTEGRITY_MARKER,
-  ɵwhenStable as whenStable,
   ɵstartMeasuring as startMeasuring,
   ɵstopMeasuring as stopMeasuring,
 } from '@angular/core';
@@ -32,7 +31,7 @@ import {createScript} from './transfer_state';
 /**
  * Event dispatch (JSAction) script is inlined into the HTML by the build
  * process to avoid extra blocking request on a page. The script looks like this:
- * ```
+ * ```html
  * <script type="text/javascript" id="ng-event-dispatch-contract">...</script>
  * ```
  * This const represents the "id" attribute value.
@@ -178,8 +177,10 @@ function insertEventRecordScript(
 async function _render(platformRef: PlatformRef, applicationRef: ApplicationRef): Promise<string> {
   const measuringLabel = 'whenStable';
   startMeasuring(measuringLabel);
+
   // Block until application is stable.
-  await whenStable(applicationRef);
+  await applicationRef.whenStable();
+
   stopMeasuring(measuringLabel);
 
   const platformState = platformRef.injector.get(PlatformState);
@@ -281,7 +282,7 @@ export async function renderModule<T>(
 /**
  * Bootstraps an instance of an Angular application and renders it to a string.
 
- * ```typescript
+ * ```ts
  * const bootstrap = () => bootstrapApplication(RootComponent, appConfig);
  * const output: string = await renderApplication(bootstrap);
  * ```

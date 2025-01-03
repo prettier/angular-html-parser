@@ -13,11 +13,10 @@ import {ProviderToken} from '../../di/provider_token';
 import {DehydratedView} from '../../hydration/interfaces';
 import {SchemaMetadata} from '../../metadata/schema';
 import {Sanitizer} from '../../sanitization/sanitizer';
-import type {AfterRenderManager} from '../after_render/manager';
 import type {ReactiveLViewConsumer} from '../reactive_lview_consumer';
 import type {ViewEffectNode} from '../reactivity/effect';
 
-import {LContainer} from './container';
+import type {LContainer} from './container';
 import {
   ComponentDef,
   ComponentTemplate,
@@ -190,8 +189,8 @@ export interface LView<T = unknown> extends Array<any> {
    */
   [CONTEXT]: T;
 
-  /** An optional Module Injector to be used as fall back after Element Injectors are consulted. */
-  readonly [INJECTOR]: Injector | null;
+  /** A Module Injector to be used as fall back after Element Injectors are consulted. */
+  readonly [INJECTOR]: Injector;
 
   /**
    * Contextual data that is shared across multiple instances of `LView` in the same application.
@@ -423,7 +422,7 @@ export const enum LViewFlags {
   IsRoot = 1 << 9,
 
   /**
-   * Whether this moved LView was needs to be refreshed. Similar to the Dirty flag, but used for
+   * Whether this moved LView needs to be refreshed. Similar to the Dirty flag, but used for
    * transplanted and signal views where the parent/ancestor views are not marked dirty as well.
    * i.e. "Refresh just this view". Used in conjunction with the HAS_CHILD_VIEWS_TO_REFRESH
    * flag.
@@ -516,7 +515,7 @@ export const enum PreOrderHookFlags {
  *
  * ## Example
  *
- * ```
+ * ```ts
  * const hostBindingOpCodes = [
  *   ~30,                               // Select element 30
  *   40, 45, MyDir.ɵdir.hostBindings    // Invoke host bindings on MyDir on element 30;
@@ -527,7 +526,7 @@ export const enum PreOrderHookFlags {
  * ```
  *
  * ## Pseudocode
- * ```
+ * ```ts
  * const hostBindingOpCodes = tView.hostBindingOpCodes;
  * if (hostBindingOpCodes === null) return;
  * for (let i = 0; i < hostBindingOpCodes.length; i++) {

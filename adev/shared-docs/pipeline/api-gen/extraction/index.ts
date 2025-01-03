@@ -1,3 +1,11 @@
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.dev/license
+ */
+
 import {readFileSync, writeFileSync} from 'fs';
 import path from 'path';
 // @ts-ignore This compiles fine, but Webstorm doesn't like the ESM import in a CJS context.
@@ -11,6 +19,7 @@ import {
   ClassEntry,
 } from '@angular/compiler-cli';
 import ts from 'typescript';
+import {EXAMPLES_PATH, interpolateCodeExamples} from './interpolate_code_examples';
 
 function main() {
   const [paramFilePath] = process.argv.slice(2);
@@ -58,8 +67,14 @@ function main() {
     experimentalDecorators: true,
   };
 
+  // Code examples should not be fed to the compiler.
+  const filesWithoutExamples = srcs.split(',').filter((src) => !src.startsWith(EXAMPLES_PATH));
   const compilerHost = createCompilerHost({options: compilerOptions});
-  const program: NgtscProgram = new NgtscProgram(srcs.split(','), compilerOptions, compilerHost);
+  const program: NgtscProgram = new NgtscProgram(
+    filesWithoutExamples,
+    compilerOptions,
+    compilerHost,
+  );
 
   const extraEntries: DocEntry[] = (extraEntriesSrcs ?? '')
     .split(',')
@@ -71,6 +86,8 @@ function main() {
   const apiDoc = program.getApiDocumentation(entryPointExecRootRelativePath, privateModules);
   const extractedEntries = apiDoc.entries;
   const combinedEntries = extractedEntries.concat(extraEntries);
+
+  interpolateCodeExamples(combinedEntries);
 
   const normalized = moduleName.replace('@', '').replace(/[\/]/g, '_');
 

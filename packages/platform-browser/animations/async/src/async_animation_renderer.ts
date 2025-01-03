@@ -24,8 +24,9 @@ import {
   ɵChangeDetectionScheduler as ChangeDetectionScheduler,
   ɵNotificationSource as NotificationSource,
   ɵRuntimeError as RuntimeError,
-  Injector,
   InjectionToken,
+  type ListenerOptions,
+  Injector,
 } from '@angular/core';
 import {ɵRuntimeErrorCode as RuntimeErrorCode} from '@angular/platform-browser';
 
@@ -34,7 +35,8 @@ const ANIMATION_PREFIX = '@';
 @Injectable()
 export class AsyncAnimationRendererFactory implements OnDestroy, RendererFactory2 {
   private _rendererFactoryPromise: Promise<AnimationRendererFactory> | null = null;
-  private readonly scheduler = inject(ChangeDetectionScheduler, {optional: true});
+  private scheduler: ChangeDetectionScheduler | null = null;
+  private readonly injector = inject(Injector);
   private readonly loadingSchedulerFn = inject(ɵASYNC_ANIMATION_LOADING_SCHEDULER_FN, {
     optional: true,
   });
@@ -143,6 +145,7 @@ export class AsyncAnimationRendererFactory implements OnDestroy, RendererFactory
           rendererType,
         );
         dynamicRenderer.use(animationRenderer);
+        this.scheduler ??= this.injector.get(ChangeDetectionScheduler, null, {optional: true});
         this.scheduler?.notify(NotificationSource.AsyncAnimationsLoaded);
       })
       .catch((e) => {
@@ -278,13 +281,20 @@ export class DynamicDelegationRenderer implements Renderer2 {
     this.delegate.setValue(node, value);
   }
 
-  listen(target: any, eventName: string, callback: (event: any) => boolean | void): () => void {
+  listen(
+    target: any,
+    eventName: string,
+    callback: (event: any) => boolean | void,
+    options?: ListenerOptions,
+  ): () => void {
     // We need to keep track of animation events registred by the default renderer
     // So we can also register them against the animation renderer
     if (this.shouldReplay(eventName)) {
-      this.replay!.push((renderer: Renderer2) => renderer.listen(target, eventName, callback));
+      this.replay!.push((renderer: Renderer2) =>
+        renderer.listen(target, eventName, callback, options),
+      );
     }
-    return this.delegate.listen(target, eventName, callback);
+    return this.delegate.listen(target, eventName, callback, options);
   }
 
   private shouldReplay(propOrEventName: string): boolean {

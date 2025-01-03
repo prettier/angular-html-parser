@@ -1282,6 +1282,83 @@ describe('inject migration', () => {
     ]);
   });
 
+  it('should preserve type literals in @Inject parameter', async () => {
+    writeFile(
+      '/dir.ts',
+      [
+        `import { Directive, Inject } from '@angular/core';`,
+        `import { FOO_TOKEN } from 'foo';`,
+        ``,
+        `@Directive()`,
+        `class MyDir {`,
+        `  constructor(@Inject(FOO_TOKEN) private foo: {id: number}) {}`,
+        `}`,
+      ].join('\n'),
+    );
+
+    await runMigration();
+
+    expect(tree.readContent('/dir.ts').split('\n')).toEqual([
+      `import { Directive, inject } from '@angular/core';`,
+      `import { FOO_TOKEN } from 'foo';`,
+      ``,
+      `@Directive()`,
+      `class MyDir {`,
+      `  private foo = inject<{`,
+      `    id: number;`,
+      `}>(FOO_TOKEN);`,
+      `}`,
+    ]);
+  });
+
+  it('should preserve tuple types in @Inject parameter', async () => {
+    writeFile(
+      '/dir.ts',
+      [
+        `import { Directive, Inject } from '@angular/core';`,
+        `import { FOO_TOKEN } from 'foo';`,
+        ``,
+        `@Directive()`,
+        `class MyDir {`,
+        `  constructor(@Inject(FOO_TOKEN) private foo: [a: number, b: number]) {}`,
+        `}`,
+      ].join('\n'),
+    );
+
+    await runMigration();
+
+    expect(tree.readContent('/dir.ts').split('\n')).toEqual([
+      `import { Directive, inject } from '@angular/core';`,
+      `import { FOO_TOKEN } from 'foo';`,
+      ``,
+      `@Directive()`,
+      `class MyDir {`,
+      `  private foo = inject<[`,
+      `    a: number,`,
+      `    b: number`,
+      `]>(FOO_TOKEN);`,
+      `}`,
+    ]);
+  });
+
+  it('should not migrate class that has un-injectable parameters', async () => {
+    const initialText = [
+      `import { Directive, Inject } from '@angular/core';`,
+      `import { FOO_TOKEN, Foo } from 'foo';`,
+      ``,
+      `@Directive()`,
+      `class MyDir {`,
+      `  constructor(readonly injectable: Foo, private notInjectable: string) {}`,
+      `}`,
+    ].join('\n');
+
+    writeFile('/dir.ts', initialText);
+
+    await runMigration();
+
+    expect(tree.readContent('/dir.ts')).toBe(initialText);
+  });
+
   it('should unwrap forwardRef with an implicit return', async () => {
     writeFile(
       '/dir.ts',
@@ -1637,9 +1714,88 @@ describe('inject migration', () => {
       `    const foo = inject(Foo, { optional: true }) ?? createFoo(bar);`,
       ``,
       `    super(foo);`,
+      `  `,
       `    this.foo = foo;`,
-      ``,
       `  }`,
+      `}`,
+    ]);
+  });
+
+  it('should handle removing parameters surrounded by comments', async () => {
+    writeFile(
+      '/dir.ts',
+      [
+        `import { Directive } from '@angular/core';`,
+        `import { Foo } from 'foo';`,
+        `import { Bar } from 'bar';`,
+        ``,
+        `@Directive()`,
+        `class MyClass {`,
+        `  constructor(`,
+        `     // start`,
+        `     private foo: Foo,`,
+        `     readonly bar: Bar, // end`,
+        `  ) {`,
+        `    console.log(this.bar);`,
+        `  }`,
+        `}`,
+      ].join('\n'),
+    );
+
+    await runMigration();
+
+    expect(tree.readContent('/dir.ts').split('\n')).toEqual([
+      `import { Directive, inject } from '@angular/core';`,
+      `import { Foo } from 'foo';`,
+      `import { Bar } from 'bar';`,
+      ``,
+      `@Directive()`,
+      `class MyClass {`,
+      `  private foo = inject(Foo);`,
+      `  readonly bar = inject(Bar);`,
+      ``,
+      `  constructor() {`,
+      `    console.log(this.bar);`,
+      `  }`,
+      `}`,
+    ]);
+  });
+
+  it('should not remove decorator imports if unmigrated classes are still using them', async () => {
+    writeFile(
+      '/dir.ts',
+      [
+        `import { Directive, Optional } from '@angular/core';`,
+        `import { Foo } from 'foo';`,
+        `import { Bar } from 'bar';`,
+        ``,
+        `@Directive()`,
+        `class WillMigrate {`,
+        `  constructor(@Optional() private foo: Foo) {}`,
+        `}`,
+        ``,
+        `@Directive()`,
+        `abstract class WillNotMigrate {`,
+        `  constructor(@Optional() private bar: Bar) {}`,
+        `}`,
+      ].join('\n'),
+    );
+
+    await runMigration();
+
+    expect(tree.readContent('/dir.ts').split('\n')).toEqual([
+      `import { Directive, Optional, inject } from '@angular/core';`,
+      `import { Foo } from 'foo';`,
+      `import { Bar } from 'bar';`,
+      ``,
+      `@Directive()`,
+      `class WillMigrate {`,
+      `  private foo = inject(Foo, { optional: true });`,
+      `}`,
+      ``,
+      `@Directive()`,
+      `abstract class WillNotMigrate {`,
+      `  constructor(@Optional() private bar: Bar) {}`,
       `}`,
     ]);
   });
@@ -2384,6 +2540,86 @@ describe('inject migration', () => {
         `  private appRef: ApplicationRef = this.injector.get(ApplicationRef);`,
         `  private service: Service = this.injector.get(Injector);`,
         `  readonly greeting = 'hello';`,
+        `}`,
+      ]);
+    });
+
+    it('should handle properties being migrated both before and after the constructor', async () => {
+      writeFile(
+        '/dir.ts',
+        [
+          `import { Directive } from '@angular/core';`,
+          `import { Foo } from 'foo';`,
+          ``,
+          `@Directive()`,
+          `class MyDir {`,
+          `  private beforeConstructor: number;`,
+          ``,
+          `  constructor(private foo: Foo) {`,
+          `    this.beforeConstructor = this.foo.getValue();`,
+          `    this.afterConstructor = this.beforeConstructor + 1;`,
+          `  }`,
+          ``,
+          `  private afterConstructor: number;`,
+          `}`,
+        ].join('\n'),
+      );
+
+      await runInternalMigration();
+
+      expect(tree.readContent('/dir.ts').split('\n')).toEqual([
+        `import { Directive, inject } from '@angular/core';`,
+        `import { Foo } from 'foo';`,
+        ``,
+        `@Directive()`,
+        `class MyDir {`,
+        `  private foo = inject(Foo);`,
+        `  private beforeConstructor: number = this.foo.getValue();`,
+        `  private afterConstructor: number = this.beforeConstructor + 1;`,
+        `}`,
+      ]);
+    });
+
+    it('should be able to insert statements after the `super` call when all subsequent statements have been deleted', async () => {
+      writeFile(
+        '/dir.ts',
+        [
+          `import { Directive } from '@angular/core';`,
+          `import { Foo } from 'deps';`,
+          `import { Parent } from './parent';`,
+          ``,
+          `@Directive()`,
+          `class MyDir extends Parent {`,
+          `  private value: number;`,
+          ``,
+          `  constructor(private foo: Foo) {`,
+          `    super(foo, bar);`,
+          `    this.value = this.foo.getValue();`,
+          `  }`,
+          `}`,
+        ].join('\n'),
+      );
+
+      await runInternalMigration();
+
+      expect(tree.readContent('/dir.ts').split('\n')).toEqual([
+        `import { Directive, inject } from '@angular/core';`,
+        `import { Foo } from 'deps';`,
+        `import { Parent } from './parent';`,
+        ``,
+        `@Directive()`,
+        `class MyDir extends Parent {`,
+        `  private foo: Foo;`,
+        ``,
+        `  private value: number = this.foo.getValue();`,
+        ``,
+        `  constructor() {`,
+        `    const foo = inject(Foo);`,
+        ``,
+        `    super(foo, bar);`,
+        `  `,
+        `    this.foo = foo;`,
+        `  }`,
         `}`,
       ]);
     });

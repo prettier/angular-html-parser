@@ -12,6 +12,7 @@ import {setProfiler} from '../profiler';
 import {isSignal} from '../reactivity/api';
 
 import {applyChanges} from './change_detection_utils';
+import {getDeferBlocks} from './defer';
 import {
   getComponent,
   getContext,
@@ -29,6 +30,7 @@ import {
   getInjectorProviders,
   getInjectorResolutionPath,
 } from './injector_discovery_utils';
+import {getSignalGraph} from './signal_debug';
 
 /**
  * This file introduces series of globally accessible debug tools
@@ -65,6 +67,8 @@ const globalUtilsFunctions = {
   'ɵgetInjectorResolutionPath': getInjectorResolutionPath,
   'ɵgetInjectorMetadata': getInjectorMetadata,
   'ɵsetProfiler': setProfiler,
+  'ɵgetSignalGraph': getSignalGraph,
+  'ɵgetDeferBlocks': getDeferBlocks,
 
   'getDirectiveMetadata': getDirectiveMetadata,
   'getComponent': getComponent,

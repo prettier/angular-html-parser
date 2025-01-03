@@ -17,9 +17,8 @@ import {
   Type,
   inject,
 } from '@angular/core';
-import {IconComponent} from '@angular/docs';
+import {IconComponent, PlaygroundTemplate} from '@angular/docs';
 
-import {PlaygroundTemplate} from '@angular/docs';
 import {injectAsync} from '../../core/services/inject-async';
 import {EmbeddedTutorialManager} from '../../editor/index';
 
@@ -28,7 +27,6 @@ import {CdkMenu, CdkMenuItem, CdkMenuTrigger} from '@angular/cdk/menu';
 
 @Component({
   selector: 'adev-playground',
-  standalone: true,
   imports: [NgComponentOutlet, IconComponent, CdkMenu, CdkMenuItem, CdkMenuTrigger],
   templateUrl: './playground.component.html',
   styleUrls: [

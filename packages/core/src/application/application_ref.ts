@@ -14,7 +14,7 @@ import {
   setThrowInvalidWriteToSignalError,
 } from '@angular/core/primitives/signals';
 import {Observable, Subject, Subscription} from 'rxjs';
-import {first, map} from 'rxjs/operators';
+import {map} from 'rxjs/operators';
 
 import {ZONELESS_ENABLED} from '../change_detection/scheduling/zoneless_scheduling';
 import {Console} from '../console';
@@ -224,7 +224,7 @@ export function optionsReducer<T extends Object>(dst: T, objs: T | T[]): T {
  * (here incrementing a counter, using RxJS `interval`),
  * and at the same time subscribe to `isStable`.
  *
- * ```
+ * ```ts
  * constructor(appRef: ApplicationRef) {
  *   appRef.isStable.pipe(
  *      filter(stable => stable)
@@ -239,7 +239,7 @@ export function optionsReducer<T extends Object>(dst: T, objs: T | T[]): T {
  * you have to wait for the application to be stable
  * before starting your polling process.
  *
- * ```
+ * ```ts
  * constructor(appRef: ApplicationRef) {
  *   appRef.isStable.pipe(
  *     first(stable => stable),
@@ -259,7 +259,7 @@ export function optionsReducer<T extends Object>(dst: T, objs: T | T[]): T {
  * you update a field of your component
  * and display it in its template.
  *
- * ```
+ * ```ts
  * constructor(appRef: ApplicationRef) {
  *   appRef.isStable.pipe(
  *     first(stable => stable),
@@ -273,7 +273,7 @@ export function optionsReducer<T extends Object>(dst: T, objs: T | T[]): T {
  *
  * You'll have to manually trigger the change detection to update the template.
  *
- * ```
+ * ```ts
  * constructor(appRef: ApplicationRef, cd: ChangeDetectorRef) {
  *   appRef.isStable.pipe(
  *     first(stable => stable),
@@ -287,7 +287,7 @@ export function optionsReducer<T extends Object>(dst: T, objs: T | T[]): T {
  *
  * Or make the subscription callback run inside the zone.
  *
- * ```
+ * ```ts
  * constructor(appRef: ApplicationRef, zone: NgZone) {
  *   appRef.isStable.pipe(
  *     first(stable => stable),
@@ -300,8 +300,6 @@ export function optionsReducer<T extends Object>(dst: T, objs: T | T[]): T {
  */
 @Injectable({providedIn: 'root'})
 export class ApplicationRef {
-  /** @internal */
-  private _bootstrapListeners: ((compRef: ComponentRef<any>) => void)[] = [];
   /** @internal */
   _runningTick: boolean = false;
   private _destroyed = false;
@@ -399,6 +397,8 @@ export class ApplicationRef {
   }
 
   private readonly _injector = inject(EnvironmentInjector);
+  private _rendererFactory: RendererFactory2 | null = null;
+
   /**
    * The `EnvironmentInjector` used to create this application.
    */
@@ -593,14 +593,22 @@ export class ApplicationRef {
     if (!this.zonelessEnabled) {
       this.dirtyFlags |= ApplicationRefDirtyFlags.ViewTreeGlobal;
     }
-
-    // Run `_tick()` in the context of the most recent snapshot, if one exists.
-    this.tracingSnapshot?.run(TracingAction.CHANGE_DETECTION, this._tick) ?? this._tick();
+    this._tick();
   }
 
   /** @internal */
   _tick = (): void => {
-    this.tracingSnapshot = null;
+    if (this.tracingSnapshot !== null) {
+      const snapshot = this.tracingSnapshot;
+      this.tracingSnapshot = null;
+
+      // Ensure we always run `_tick()` in the context of the most recent snapshot,
+      // if one exists. Snapshots may be reference counted by the implementation so
+      // we want to ensure that if we request a snapshot that we use it.
+      snapshot.run(TracingAction.CHANGE_DETECTION, this._tick);
+      snapshot.dispose();
+      return;
+    }
 
     (typeof ngDevMode === 'undefined' || ngDevMode) && this.warnIfDestroyed();
     if (this._runningTick) {
@@ -635,9 +643,8 @@ export class ApplicationRef {
    * pending dirtiness (potentially in a loop).
    */
   private synchronize(): void {
-    let rendererFactory: RendererFactory2 | null = null;
-    if (!(this._injector as R3Injector).destroyed) {
-      rendererFactory = this._injector.get(RendererFactory2, null, {optional: true});
+    if (this._rendererFactory === null && !(this._injector as R3Injector).destroyed) {
+      this._rendererFactory = this._injector.get(RendererFactory2, null, {optional: true});
     }
 
     // When beginning synchronization, all deferred dirtiness becomes active dirtiness.
@@ -646,7 +653,7 @@ export class ApplicationRef {
 
     let runs = 0;
     while (this.dirtyFlags !== ApplicationRefDirtyFlags.None && runs++ < MAXIMUM_REFRESH_RERUNS) {
-      this.synchronizeOnce(rendererFactory);
+      this.synchronizeOnce();
     }
 
     if ((typeof ngDevMode === 'undefined' || ngDevMode) && runs >= MAXIMUM_REFRESH_RERUNS) {
@@ -663,7 +670,7 @@ export class ApplicationRef {
   /**
    * Perform a single synchronization pass.
    */
-  private synchronizeOnce(rendererFactory: RendererFactory2 | null): void {
+  private synchronizeOnce(): void {
     // If we happened to loop, deferred dirtiness can be processed as active dirtiness again.
     this.dirtyFlags |= this.deferredDirtyFlags;
     this.deferredDirtyFlags = ApplicationRefDirtyFlags.None;
@@ -715,8 +722,8 @@ export class ApplicationRef {
     } else {
       // If we skipped refreshing views above, there might still be unflushed animations
       // because we never called `detectChangesInternal` on the views.
-      rendererFactory?.begin?.();
-      rendererFactory?.end?.();
+      this._rendererFactory?.begin?.();
+      this._rendererFactory?.end?.();
     }
 
     // Even if there were no dirty views, afterRender hooks might still be dirty.
@@ -792,7 +799,7 @@ export class ApplicationRef {
           '`multi: true` provider.',
       );
     }
-    [...this._bootstrapListeners, ...listeners].forEach((listener) => listener(componentRef));
+    listeners.forEach((listener) => listener(componentRef));
   }
 
   /** @internal */
@@ -811,7 +818,6 @@ export class ApplicationRef {
 
       // Release all references.
       this._views = [];
-      this._bootstrapListeners = [];
       this._destroyListeners = [];
     }
   }
@@ -909,30 +915,6 @@ export const enum ApplicationRefDirtyFlags {
    * Effects at the `ApplicationRef` level.
    */
   RootEffects = 0b00010000,
-}
-
-let whenStableStore: WeakMap<ApplicationRef, Promise<void>> | undefined;
-/**
- * Returns a Promise that resolves when the application becomes stable after this method is called
- * the first time.
- */
-export function whenStable(applicationRef: ApplicationRef): Promise<void> {
-  whenStableStore ??= new WeakMap();
-  const cachedWhenStable = whenStableStore.get(applicationRef);
-  if (cachedWhenStable) {
-    return cachedWhenStable;
-  }
-
-  const whenStablePromise = applicationRef.isStable
-    .pipe(first((isStable) => isStable))
-    .toPromise()
-    .then(() => void 0);
-  whenStableStore.set(applicationRef, whenStablePromise);
-
-  // Be a good citizen and clean the store `onDestroy` even though we are using `WeakMap`.
-  applicationRef.onDestroy(() => whenStableStore?.delete(applicationRef));
-
-  return whenStablePromise;
 }
 
 export function detectChangesInViewIfRequired(

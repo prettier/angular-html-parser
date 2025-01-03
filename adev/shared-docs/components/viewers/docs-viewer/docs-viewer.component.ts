@@ -25,7 +25,7 @@ import {
   Type,
   ViewContainerRef,
   ViewEncapsulation,
-  ɵPendingTasks as PendingTasks,
+  ɵPendingTasksInternal as PendingTasks,
   output,
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
@@ -54,7 +54,6 @@ export const GITHUB_CONTENT_URL =
 
 @Component({
   selector: DOCS_VIEWER_SELECTOR,
-  standalone: true,
   imports: [CommonModule],
   template: '',
   styleUrls: ['docs-viewer.component.scss'],

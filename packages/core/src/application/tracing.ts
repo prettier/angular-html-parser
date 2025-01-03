@@ -17,6 +17,9 @@ export enum TracingAction {
 /** A single tracing snapshot. */
 export interface TracingSnapshot {
   run<T>(action: TracingAction, fn: () => T): T;
+
+  /** Disposes of the tracing snapshot. Must be run exactly once per TracingSnapshot. */
+  dispose(): void;
 }
 
 /**
@@ -39,6 +42,19 @@ export interface TracingService<T extends TracingSnapshot> {
    * used when additional work is performed that was scheduled in this context.
    *
    * @param linkedSnapshot Optional snapshot to use link to the current context.
+   * The caller is no longer responsible for calling dispose on the linkedSnapshot.
+   *
+   * @return The tracing snapshot. The caller is responsible for diposing of the
+   * snapshot.
    */
   snapshot(linkedSnapshot: T | null): T;
+
+  /**
+   * Wrap an event listener bound by the framework for tracing.
+   * @param element Element on which the event is bound.
+   * @param eventName Name of the event.
+   * @param handler Event handler.
+   * @return A new event handler to be bound instead of the original one.
+   */
+  wrapEventListener?<T extends Function>(element: HTMLElement, eventName: string, handler: T): T;
 }

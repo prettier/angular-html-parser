@@ -264,6 +264,11 @@ export enum OpKind {
    * A creation op that corresponds to i18n attributes on an element.
    */
   I18nAttributes,
+
+  /**
+   * Creation op that attaches the location at which an element was defined in a template to it.
+   */
+  SourceLocation,
 }
 
 /**
@@ -600,4 +605,18 @@ export const enum DeferOpModifierKind {
   NONE = 'none',
   PREFETCH = 'prefetch',
   HYDRATE = 'hydrate',
+}
+
+/**
+ * Specifies defer block flags, which should be used for all
+ * instances of a given defer block (the flags that should be
+ * placed into the `TDeferDetails` at runtime).
+ */
+export const enum TDeferDetailsFlags {
+  Default = 0,
+
+  /**
+   * Whether or not the defer block has hydrate triggers.
+   */
+  HasHydrateTriggers = 1 << 0,
 }

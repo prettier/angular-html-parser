@@ -5,7 +5,9 @@ on:
     branches:
       - main
 
-permissions: {}
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 defaults:
   run:
@@ -19,7 +21,7 @@ jobs:
       workflows: ${{ steps.workflows.outputs.workflows }}
     steps:
       - name: Initialize environment
-        uses: angular/dev-infra/github-actions/npm/checkout-and-setup-node@01c8c16f830d02110c28640aea16f145a7937080
+        uses: angular/dev-infra/github-actions/npm/checkout-and-setup-node@289aa644e65a557bcb21adcf75ad60605a9c9859
       - name: Install node modules
         run: yarn -s install --frozen-lockfile
       - id: workflows
@@ -34,9 +36,18 @@ jobs:
         workflow: ${{ fromJSON(needs.list.outputs.workflows) }}
     steps:
       - name: Initialize environment
-        uses: angular/dev-infra/github-actions/npm/checkout-and-setup-node@01c8c16f830d02110c28640aea16f145a7937080
+        uses: angular/dev-infra/github-actions/npm/checkout-and-setup-node@289aa644e65a557bcb21adcf75ad60605a9c9859
       - name: Setup Bazel
-        uses: angular/dev-infra/github-actions/bazel/setup@01c8c16f830d02110c28640aea16f145a7937080
+        uses: angular/dev-infra/github-actions/bazel/setup@289aa644e65a557bcb21adcf75ad60605a9c9859
       - name: Install node modules
         run: yarn -s install --frozen-lockfile
-      - run: yarn -s ng-dev perf workflows --name ${{ matrix.workflow }}
+      # We utilize the google-github-actions/auth action to allow us to get an active credential using workflow
+      # identity federation. This allows us to request short lived credentials on demand, rather than storing
+      # credentials in secrets long term. More information can be found at:
+      # https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-google-cloud-platform
+      - uses: 'google-github-actions/auth@6fc4af4b145ae7821d527454aa9bd537d1f2dc5f' # v2
+        with:
+          project_id: 'internal-200822'
+          workload_identity_provider: 'projects/823469418460/locations/global/workloadIdentityPools/measurables-tracking/providers/angular'
+          service_account: 'measures-uploader@internal-200822.iam.gserviceaccount.com'
+      - run: yarn ng-dev perf workflows --name ${{ matrix.workflow }} --commit-sha ${{github.sha}}

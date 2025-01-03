@@ -7,10 +7,7 @@
  */
 
 export {setAlternateWeakRefImpl as ɵsetAlternateWeakRefImpl} from '../primitives/signals';
-export {
-  detectChangesInViewIfRequired as ɵdetectChangesInViewIfRequired,
-  whenStable as ɵwhenStable,
-} from './application/application_ref';
+export {detectChangesInViewIfRequired as ɵdetectChangesInViewIfRequired} from './application/application_ref';
 export {INTERNAL_APPLICATION_ERROR_HANDLER as ɵINTERNAL_APPLICATION_ERROR_HANDLER} from './error_handler';
 export {
   IMAGE_CONFIG as ɵIMAGE_CONFIG,
@@ -106,11 +103,9 @@ export {
   resolveComponentResources as ɵresolveComponentResources,
   restoreComponentResolutionQueue as ɵrestoreComponentResolutionQueue,
 } from './metadata/resource_loading';
-export {
-  PendingTasksInternal as ɵPendingTasks, // TODO(atscott): remove once there is a release with PendingTasksInternal so adev can be updated
-  PendingTasksInternal as ɵPendingTasksInternal,
-} from './pending_tasks';
+export {PendingTasksInternal as ɵPendingTasksInternal} from './pending_tasks';
 export {ALLOW_MULTIPLE_PLATFORMS as ɵALLOW_MULTIPLE_PLATFORMS} from './platform/platform';
+export {ENABLE_ROOT_COMPONENT_BOOTSTRAP as ɵENABLE_ROOT_COMPONENT_BOOTSTRAP} from './platform/bootstrap';
 export {ReflectionCapabilities as ɵReflectionCapabilities} from './reflection/reflection_capabilities';
 export {AnimationRendererType as ɵAnimationRendererType} from './render/api';
 export {

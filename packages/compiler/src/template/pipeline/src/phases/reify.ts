@@ -263,6 +263,7 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             op.placeholderConfig,
             timerScheduling,
             op.sourceSpan,
+            op.flags,
           ),
         );
         break;
@@ -400,6 +401,23 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             op.wholeSourceSpan,
           ),
         );
+        break;
+      case ir.OpKind.SourceLocation:
+        const locationsLiteral = o.literalArr(
+          op.locations.map(({targetSlot, offset, line, column}) => {
+            if (targetSlot.slot === null) {
+              throw new Error('No slot was assigned for source location');
+            }
+            return o.literalArr([
+              o.literal(targetSlot.slot),
+              o.literal(offset),
+              o.literal(line),
+              o.literal(column),
+            ]);
+          }),
+        );
+
+        ir.OpList.replace(op, ng.attachSourceLocation(op.templatePath, locationsLiteral));
         break;
       case ir.OpKind.Statement:
         // Pass statement operations directly through.

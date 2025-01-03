@@ -16,7 +16,7 @@ import {
   signal,
   WritableSignal,
 } from '@angular/core';
-import {NavigationEnd, NavigationSkipped, Router, RouterLink, RouterOutlet} from '@angular/router';
+import {NavigationEnd, NavigationSkipped, Router, RouterOutlet} from '@angular/router';
 import {filter, map, skip} from 'rxjs/operators';
 import {
   CookiePopup,
@@ -35,7 +35,6 @@ import {HeaderService} from './core/services/header.service';
 @Component({
   selector: 'adev-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  standalone: true,
   imports: [
     CookiePopup,
     Navigation,
@@ -85,7 +84,7 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    const h1 = this.document.querySelector<HTMLHeadingElement>('h1');
+    const h1 = this.document.querySelector<HTMLHeadingElement>('h1:not(docs-top-level-banner h1)');
     h1?.focus();
   }
 

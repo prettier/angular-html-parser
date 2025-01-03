@@ -6,12 +6,12 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {DOCS_VIEWER_SELECTOR, DocViewer, WINDOW} from '@angular/docs';
+import {DOCS_VIEWER_SELECTOR, DocViewer, WINDOW, TutorialConfig, TutorialType} from '@angular/docs';
 
 import {Component, Input, signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {NoopAnimationsModule} from '@angular/platform-browser/animations';
-import {RouterTestingModule} from '@angular/router/testing';
+import {provideNoopAnimations} from '@angular/platform-browser/animations';
+import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
 
 import {
@@ -23,19 +23,16 @@ import {
 
 import {mockAsyncProvider} from '../../core/services/inject-async';
 import Tutorial from './tutorial.component';
-import {TutorialConfig, TutorialType} from '@angular/docs';
 
 @Component({
   selector: EMBEDDED_EDITOR_SELECTOR,
   template: '<div>FakeEmbeddedEditor</div>',
-  standalone: true,
 })
 class FakeEmbeddedEditor {}
 
 @Component({
   selector: DOCS_VIEWER_SELECTOR,
   template: '<div>FakeDocsViewer</div>',
-  standalone: true,
 })
 class FakeDocViewer {
   @Input('documentFilePath') documentFilePath: string | undefined;
@@ -96,8 +93,10 @@ describe('Tutorial', () => {
 
   beforeEach(async () => {
     TestBed.configureTestingModule({
-      imports: [Tutorial, RouterTestingModule, EmbeddedEditor, DocViewer, NoopAnimationsModule],
+      imports: [Tutorial, EmbeddedEditor, DocViewer],
       providers: [
+        provideNoopAnimations(),
+        provideRouter([]),
         {
           provide: WINDOW,
           useValue: fakeWindow,

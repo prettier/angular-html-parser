@@ -1,10 +1,24 @@
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.dev/license
+ */
+
 // @ts-ignore This compiles fine, but Webstorm doesn't like the ESM import in a CJS context.
-import {DocEntry, EntryType, JsDocTagEntry} from '@angular/compiler-cli';
+import {DocEntry, EntryType, FunctionEntry, JsDocTagEntry} from '@angular/compiler-cli';
 import {generateManifest, Manifest} from '../generate_manifest';
 
 describe('api manifest generation', () => {
   it('should generate a manifest from multiple collections', () => {
     const manifest: Manifest = generateManifest([
+      {
+        moduleName: '@angular/router',
+        entries: [entry({name: 'Router', entryType: EntryType.UndecoratedClass})],
+        normalizedModuleName: 'angular_router',
+        moduleLabel: 'router',
+      },
       {
         moduleName: '@angular/core',
         entries: [entry({name: 'PI', entryType: EntryType.Constant})],
@@ -12,19 +26,27 @@ describe('api manifest generation', () => {
         moduleLabel: 'core',
       },
       {
-        moduleName: '@angular/router',
-        entries: [entry({name: 'Router', entryType: EntryType.UndecoratedClass})],
-        normalizedModuleName: 'angular_router',
-        moduleLabel: 'router',
+        moduleName: '@angular/core',
+        entries: [entry({name: 'foo', entryType: EntryType.Constant})],
+        normalizedModuleName: 'angular_core',
+        moduleLabel: 'core',
       },
     ]);
 
+    // The test also makes sure that we sort modules & entries by name.
     expect(manifest).toEqual([
       {
         moduleName: '@angular/core',
         moduleLabel: 'core',
         normalizedModuleName: 'angular_core',
         entries: [
+          {
+            name: 'foo',
+            type: EntryType.Constant,
+            isDeprecated: false,
+            isDeveloperPreview: false,
+            isExperimental: false,
+          },
           {
             name: 'PI',
             type: EntryType.Constant,
@@ -178,44 +200,40 @@ describe('api manifest generation', () => {
     ]);
   });
 
-  it('should deduplicate function overloads', () => {
-    const manifest = generateManifest([
-      {
-        moduleName: '@angular/core',
-        entries: [
-          entry({name: 'save', entryType: EntryType.Function}),
-          entry({name: 'save', entryType: EntryType.Function}),
-        ],
-        normalizedModuleName: 'angular_core',
-        moduleLabel: 'core',
-      },
-    ]);
-
-    expect(manifest).toEqual([
-      {
-        moduleName: '@angular/core',
-        moduleLabel: 'core',
-        normalizedModuleName: 'angular_core',
-        entries: [
-          {
-            name: 'save',
-            type: EntryType.Function,
-            isDeprecated: false,
-            isDeveloperPreview: false,
-            isExperimental: false,
-          },
-        ],
-      },
-    ]);
-  });
-
   it('should not mark a function as deprecated if only one overload is deprecated', () => {
     const manifest = generateManifest([
       {
         moduleName: '@angular/core',
         entries: [
-          entry({name: 'save', entryType: EntryType.Function}),
-          entry({name: 'save', entryType: EntryType.Function, jsdocTags: jsdocTags('deprecated')}),
+          functionEntry({
+            name: 'save',
+            entryType: EntryType.Function,
+            jsdocTags: [],
+            signatures: [
+              {
+                name: 'save',
+                returnType: 'void',
+                jsdocTags: [],
+                description: '',
+                entryType: EntryType.Function,
+                params: [],
+                generics: [],
+                isNewType: false,
+                rawComment: '',
+              },
+              {
+                name: 'save',
+                returnType: 'void',
+                jsdocTags: jsdocTags('deprecated'),
+                description: '',
+                entryType: EntryType.Function,
+                params: [],
+                generics: [],
+                isNewType: false,
+                rawComment: '',
+              },
+            ],
+          }),
         ],
         normalizedModuleName: 'angular_core',
         moduleLabel: 'core',
@@ -245,8 +263,35 @@ describe('api manifest generation', () => {
       {
         moduleName: '@angular/core',
         entries: [
-          entry({name: 'save', entryType: EntryType.Function, jsdocTags: jsdocTags('deprecated')}),
-          entry({name: 'save', entryType: EntryType.Function, jsdocTags: jsdocTags('deprecated')}),
+          functionEntry({
+            name: 'save',
+            entryType: EntryType.Function,
+            jsdocTags: [],
+            signatures: [
+              {
+                name: 'save',
+                returnType: 'void',
+                jsdocTags: jsdocTags('deprecated'),
+                description: '',
+                entryType: EntryType.Function,
+                params: [],
+                generics: [],
+                isNewType: false,
+                rawComment: '',
+              },
+              {
+                name: 'save',
+                returnType: 'void',
+                jsdocTags: jsdocTags('deprecated'),
+                description: '',
+                entryType: EntryType.Function,
+                params: [],
+                generics: [],
+                isNewType: false,
+                rawComment: '',
+              },
+            ],
+          }),
         ],
         normalizedModuleName: 'angular_core',
         moduleLabel: 'core',
@@ -374,6 +419,15 @@ function entry(patch: Partial<DocEntry>): DocEntry {
     rawComment: '',
     ...patch,
   };
+}
+
+function functionEntry(patch: Partial<FunctionEntry>): FunctionEntry {
+  return entry({
+    entryType: EntryType.Function,
+    implementation: [],
+    signatures: [],
+    ...patch,
+  } as FunctionEntry) as FunctionEntry;
 }
 
 /** Creates a fake jsdoc tag entry list that contains a tag with the given name */

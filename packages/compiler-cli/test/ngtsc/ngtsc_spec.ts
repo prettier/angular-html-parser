@@ -5114,9 +5114,7 @@ runInEachFileSystem((os: string) => {
       );
 
       const errors = env.driveDiagnostics();
-      expect(getDiagnosticSourceCode(errors[0])).toBe(`{
-            '(click)': 'act() | pipe',
-          }`);
+      expect(getDiagnosticSourceCode(errors[0])).toBe(`'act() | pipe'`);
       expect(errors[0].messageText).toContain('/test.ts@7:17');
     });
 
@@ -5158,10 +5156,12 @@ runInEachFileSystem((os: string) => {
             class FooCmp {}
          `,
       );
-      const errors = env.driveDiagnostics();
-      expect(trim(errors[0].messageText as string)).toContain(
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(1);
+      expect(trim(diags[0].messageText as string)).toContain(
         'Host binding expression cannot contain pipes',
       );
+      expect(getDiagnosticSourceCode(diags[0])).toBe(`'id | myPipe'`);
     });
 
     it('should generate host bindings for directives', () => {
@@ -10968,6 +10968,45 @@ runInEachFileSystem((os: string) => {
 
     describe('standalone by default opt-out', () => {
       it('should consider declarations as standalone by default', () => {
+        env.write(
+          '/test.ts',
+          `
+            import {Directive, Component, Pipe, NgModule} from '@angular/core';
+
+            @Directive()
+            export class TestDir {}
+
+            @Component({template: ''})
+            export class TestComp {}
+
+            @Pipe({name: 'test'})
+            export class TestPipe {}
+
+            @NgModule({
+              declarations: [TestDir, TestComp, TestPipe]
+            })
+            export class TestModule {}
+          `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(3);
+        expect(diags[0].messageText).toContain(
+          'Directive TestDir is standalone, and cannot be declared in an NgModule.',
+        );
+        expect(diags[1].messageText).toContain(
+          'Component TestComp is standalone, and cannot be declared in an NgModule.',
+        );
+        expect(diags[2].messageText).toContain(
+          'Pipe TestPipe is standalone, and cannot be declared in an NgModule.',
+        );
+      });
+
+      it('should consider declarations as standalone by default in v19 pre-release versions', () => {
+        env.tsconfig({
+          _angularCoreVersion: '19.1.0-next.0',
+        });
+
         env.write(
           '/test.ts',
           `

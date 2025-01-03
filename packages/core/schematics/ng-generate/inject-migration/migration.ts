@@ -230,8 +230,8 @@ function migrateClass(
     const nextStatement = getNextPreservedStatement(superCall, removedStatements);
     tracker.insertText(
       sourceFile,
-      nextStatement ? nextStatement.getFullStart() : superCall.getEnd() + 1,
-      `\n${afterSuper.join('\n')}\n`,
+      nextStatement ? nextStatement.getFullStart() : constructor.getEnd() - 1,
+      `\n${afterSuper.join('\n')}\n` + (nextStatement ? '' : memberIndentation),
     );
   }
 
@@ -259,7 +259,15 @@ function migrateClass(
 
   if (prependToClass.length > 0) {
     if (removedMembers.size === node.members.length) {
-      tracker.insertText(sourceFile, constructor.getEnd() + 1, `${prependToClass.join('\n')}\n`);
+      tracker.insertText(
+        sourceFile,
+        // If all members were deleted, insert after the last one.
+        // This allows us to preserve the indentation.
+        node.members.length > 0
+          ? node.members[node.members.length - 1].getEnd() + 1
+          : node.getEnd() - 1,
+        `${prependToClass.join('\n')}\n`,
+      );
     } else {
       // Insert the new properties after the first member that hasn't been deleted.
       tracker.insertText(
@@ -545,14 +553,10 @@ function migrateInjectDecorator(
       }
     }
   } else if (
-    // Pass the type for cases like `@Inject(FOO_TOKEN) foo: Foo`, because:
-    // 1. It guarantees that the type stays the same as before.
-    // 2. Avoids leaving unused imports behind.
-    // We only do this for type references since the `@Inject` pattern above is fairly common and
-    // apps don't necessarily type their injection tokens correctly, whereas doing it for literal
-    // types will add a lot of noise to the generated code.
     type &&
     (ts.isTypeReferenceNode(type) ||
+      ts.isTypeLiteralNode(type) ||
+      ts.isTupleTypeNode(type) ||
       (ts.isUnionTypeNode(type) && type.types.some(ts.isTypeReferenceNode)))
   ) {
     typeArguments = [type];
@@ -578,37 +582,25 @@ function stripConstructorParameters(node: ts.ConstructorDeclaration, tracker: Ch
   const constructorText = node.getText();
   const lastParamText = node.parameters[node.parameters.length - 1].getText();
   const lastParamStart = constructorText.indexOf(lastParamText);
-  const whitespacePattern = /\s/;
-  let trailingCharacters = 0;
 
-  if (lastParamStart > -1) {
-    let lastParamEnd = lastParamStart + lastParamText.length;
-    let closeParenIndex = -1;
-
-    for (let i = lastParamEnd; i < constructorText.length; i++) {
-      const char = constructorText[i];
-
-      if (char === ')') {
-        closeParenIndex = i;
-        break;
-      } else if (!whitespacePattern.test(char)) {
-        // The end of the last parameter won't include
-        // any trailing commas which we need to account for.
-        lastParamEnd = i + 1;
-      }
-    }
-
-    if (closeParenIndex > -1) {
-      trailingCharacters = closeParenIndex - lastParamEnd;
-    }
+  // This shouldn't happen, but bail out just in case so we don't mangle the code.
+  if (lastParamStart === -1) {
+    return;
   }
 
-  tracker.replaceText(
-    node.getSourceFile(),
-    node.parameters.pos,
-    node.parameters.end - node.parameters.pos + trailingCharacters,
-    '',
-  );
+  for (let i = lastParamStart + lastParamText.length; i < constructorText.length; i++) {
+    const char = constructorText[i];
+
+    if (char === ')') {
+      tracker.replaceText(
+        node.getSourceFile(),
+        node.parameters.pos,
+        node.getStart() + i - node.parameters.pos,
+        '',
+      );
+      break;
+    }
+  }
 }
 
 /**

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {APP_BOOTSTRAP_LISTENER, ApplicationRef, whenStable} from '../application/application_ref';
+import {APP_BOOTSTRAP_LISTENER, ApplicationRef} from '../application/application_ref';
 import {Console} from '../console';
 import {
   ENVIRONMENT_INITIALIZER,
@@ -44,8 +44,10 @@ import {
 } from './tokens';
 import {
   appendDeferBlocksToJSActionMap,
+  countBlocksSkippedByHydration,
   enableRetrieveDeferBlockDataImpl,
   enableRetrieveHydrationInfoImpl,
+  isIncrementalHydrationEnabled,
   NGH_DATA_KEY,
   processBlockData,
   SSR_CONTENT_INTEGRITY_MARKER,
@@ -143,6 +145,9 @@ function printHydrationStats(injector: Injector) {
     `Angular hydrated ${ngDevMode!.hydratedComponents} component(s) ` +
     `and ${ngDevMode!.hydratedNodes} node(s), ` +
     `${ngDevMode!.componentsSkippedHydration} component(s) were skipped. ` +
+    (isIncrementalHydrationEnabled(injector)
+      ? `${ngDevMode!.deferBlocksWithIncrementalHydration} defer block(s) were configured to use incremental hydration. `
+      : '') +
     `Learn more at https://angular.dev/guide/hydration.`;
   // tslint:disable-next-line:no-console
   console.log(message);
@@ -152,7 +157,7 @@ function printHydrationStats(injector: Injector) {
  * Returns a Promise that is resolved when an application becomes stable.
  */
 function whenStableWithTimeout(appRef: ApplicationRef, injector: Injector): Promise<void> {
-  const whenStablePromise = whenStable(appRef);
+  const whenStablePromise = appRef.whenStable();
   if (typeof ngDevMode !== 'undefined' && ngDevMode) {
     const timeoutTime = APPLICATION_IS_STABLE_TIMEOUT;
     const console = injector.get(Console);
@@ -282,6 +287,7 @@ export function withDomHydration(): EnvironmentProviders {
               whenStableWithTimeout(appRef, injector).then(() => {
                 cleanupDehydratedViews(appRef);
                 if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+                  countBlocksSkippedByHydration(injector);
                   printHydrationStats(injector);
                 }
               });

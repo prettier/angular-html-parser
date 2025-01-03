@@ -1,3 +1,11 @@
+/**
+ * @license
+ * Copyright Google LLC All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.dev/license
+ */
+
 import {ChangeDetectionStrategy, Component, inject, input, OnInit, signal} from '@angular/core';
 import {ExternalLink} from '../../directives';
 import {LOCAL_STORAGE} from '../../providers';
@@ -7,7 +15,6 @@ export const STORAGE_KEY_PREFIX = 'docs-was-closed-top-banner-';
 
 @Component({
   selector: 'docs-top-level-banner',
-  standalone: true,
   imports: [ExternalLink, IconComponent],
   templateUrl: './top-level-banner.component.html',
   styleUrl: './top-level-banner.component.scss',

@@ -673,7 +673,7 @@ class TcbGenericDirectiveTypeWithAnyParamsOp extends TcbDirectiveTypeOpBase {
  * The initializer for the variable is the variable expression for the directive, template, or
  * element the ref refers to. When the reference is used in the template, those TCB statements will
  * access this variable as well. For example:
- * ```
+ * ```ts
  * var _t1 = document.createElement('div');
  * var _t2 = _t1;
  * _t2.value
@@ -1407,7 +1407,7 @@ export class TcbDirectiveOutputsOp extends TcbOp {
 
       if (this.tcb.env.config.checkTypeOfOutputEvents && output.name.endsWith('Change')) {
         const inputName = output.name.slice(0, -6);
-        isSplitTwoWayBinding(inputName, output, this.node.inputs, this.tcb);
+        checkSplitTwoWayBinding(inputName, output, this.node.inputs, this.tcb);
       }
       // TODO(alxhub): consider supporting multiple fields with the same property name for outputs.
       const field = outputs.getByBindingPropertyName(output.name)![0].classPropertyName;
@@ -1481,7 +1481,7 @@ class TcbUnclaimedOutputsOp extends TcbOp {
 
       if (this.tcb.env.config.checkTypeOfOutputEvents && output.name.endsWith('Change')) {
         const inputName = output.name.slice(0, -6);
-        if (isSplitTwoWayBinding(inputName, output, this.element.inputs, this.tcb)) {
+        if (checkSplitTwoWayBinding(inputName, output, this.element.inputs, this.tcb)) {
           // Skip this event handler as the error was already handled.
           continue;
         }
@@ -3092,6 +3092,31 @@ function tcbCreateEventHandler(
   eventType: EventParamType | ts.TypeNode,
 ): ts.Expression {
   const handler = tcbEventHandlerExpression(event.handler, tcb, scope);
+  const statements: ts.Statement[] = [];
+
+  // TODO(crisbeto): remove the `checkTwoWayBoundEvents` check in v20.
+  if (event.type === ParsedEventType.TwoWay && tcb.env.config.checkTwoWayBoundEvents) {
+    // If we're dealing with a two-way event, we create a variable initialized to the unwrapped
+    // signal value of the expression and then we assign `$event` to it. Note that in most cases
+    // this will already be covered by the corresponding input binding, however it allows us to
+    // handle the case where the input has a wider type than the output (see #58971).
+    const target = tcb.allocateId();
+    const assignment = ts.factory.createBinaryExpression(
+      target,
+      ts.SyntaxKind.EqualsToken,
+      ts.factory.createIdentifier(EVENT_PARAMETER),
+    );
+
+    statements.push(
+      tsCreateVariable(
+        target,
+        tcb.env.config.allowSignalsInTwoWayBindings ? unwrapWritableSignal(handler, tcb) : handler,
+      ),
+      ts.factory.createExpressionStatement(assignment),
+    );
+  } else {
+    statements.push(ts.factory.createExpressionStatement(handler));
+  }
 
   let eventParamType: ts.TypeNode | undefined;
   if (eventType === EventParamType.Infer) {
@@ -3106,10 +3131,10 @@ function tcbCreateEventHandler(
   // repeated within the handler function for their narrowing to be in effect within the handler.
   const guards = scope.guards();
 
-  let body: ts.Statement = ts.factory.createExpressionStatement(handler);
+  let body = ts.factory.createBlock(statements);
   if (guards !== null) {
     // Wrap the body in an `if` statement containing all guards that have to be applied.
-    body = ts.factory.createIfStatement(guards, body);
+    body = ts.factory.createBlock([ts.factory.createIfStatement(guards, body)]);
   }
 
   const eventParam = ts.factory.createParameterDeclaration(
@@ -3128,7 +3153,7 @@ function tcbCreateEventHandler(
     /* parameters */ [eventParam],
     /* type */ ts.factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
     /* equalsGreaterThanToken */ undefined,
-    /* body */ ts.factory.createBlock([body]),
+    /* body */ body,
   );
 }
 
@@ -3142,7 +3167,7 @@ function tcbEventHandlerExpression(ast: AST, tcb: Context, scope: Scope): ts.Exp
   return translator.translate(ast);
 }
 
-function isSplitTwoWayBinding(
+function checkSplitTwoWayBinding(
   inputName: string,
   output: TmplAstBoundEvent,
   inputs: TmplAstBoundAttribute[],

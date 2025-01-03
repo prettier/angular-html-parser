@@ -12,7 +12,7 @@ import {
   Injectable,
   Type,
   ɵConsole as Console,
-  ɵPendingTasks as PendingTasks,
+  ɵPendingTasksInternal as PendingTasks,
   ɵRuntimeError as RuntimeError,
 } from '@angular/core';
 import {Observable, Subject, Subscription, SubscriptionLike} from 'rxjs';
@@ -57,10 +57,6 @@ import {
 import {validateConfig} from './utils/config';
 import {afterNextNavigation} from './utils/navigations';
 import {standardizeConfig} from './components/empty_outlet';
-
-function defaultErrorHandler(error: any): never {
-  throw error;
-}
 
 /**
  * The equivalent `IsActiveMatchOptions` options for `Router.isActive` is called with `true`

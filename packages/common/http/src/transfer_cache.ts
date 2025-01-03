@@ -19,7 +19,6 @@ import {
   ɵformatRuntimeError as formatRuntimeError,
   ɵperformanceMarkFeature as performanceMarkFeature,
   ɵtruncateMiddle as truncateMiddle,
-  ɵwhenStable as whenStable,
   ɵRuntimeError as RuntimeError,
 } from '@angular/core';
 import {isPlatformServer} from '@angular/common';
@@ -69,7 +68,7 @@ export type HttpTransferCacheOptions = {
  *
  * When the same API endpoint is accessed via `http://internal-domain.com:8080` on the server and
  * via `https://external-domain.com` on the client, you can use the following configuration:
- * ```typescript
+ * ```ts
  * // in app.server.config.ts
  * {
  *     provide: HTTP_TRANSFER_CACHE_ORIGIN_MAP,
@@ -338,7 +337,7 @@ export function withHttpTransferCache(cacheOptions: HttpTransferCacheOptions): P
         const cacheState = inject(CACHE_OPTIONS);
 
         return () => {
-          whenStable(appRef).then(() => {
+          appRef.whenStable().then(() => {
             cacheState.isCacheActive = false;
           });
         };

@@ -42,7 +42,7 @@ interface CssClassState {
  * @ngModule CommonModule
  *
  * @usageNotes
- * ```
+ * ```html
  *     <some-element [ngClass]="'first second'">...</some-element>
  *
  *     <some-element [ngClass]="['first', 'second']">...</some-element>
@@ -68,7 +68,6 @@ interface CssClassState {
  */
 @Directive({
   selector: '[ngClass]',
-  standalone: true,
 })
 export class NgClass implements DoCheck {
   private initialClasses = EMPTY_ARRAY;
