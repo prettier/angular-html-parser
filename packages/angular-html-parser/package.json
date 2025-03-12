@@ -25,7 +25,8 @@
     "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
     "test": "vitest",
     "release": "standard-version",
-    "fix": "prettier . --write"
+    "fix": "prettier . --write",
+    "lint": "prettier . --check"
   },
   "devDependencies": {
     "@types/node": "22.13.10",
