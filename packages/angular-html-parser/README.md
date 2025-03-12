@@ -6,6 +6,13 @@ An HTML parser extracted from Angular with some [modifications](#modifications)
 
 [Changelog](https://github.com/prettier/angular-html-parser/blob/master/packages/angular-html-parser/CHANGELOG.md)
 
+## Diff from upstream
+
+[Link](https://github.com/prettier/angular-html-parser/compare/main...prettier:angular-html-parser:dev)
+
+> [!TIP]
+> Try sync `main` and `dev` branch with upstream first
+
 ## Install
 
 ```sh
