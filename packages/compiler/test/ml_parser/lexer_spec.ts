@@ -113,7 +113,9 @@ describe('HtmlLexer', () => {
 
     it('should report <!- without -', () => {
       expect(tokenizeAndHumanizeErrors('<!-a')).toEqual([
-        [TokenType.COMMENT_START, 'Unexpected character "a"', '0:3'],
+        // angular-html-parser: different comment parse logic
+        [TokenType.RAW_TEXT, 'Unexpected character "EOF"', '0:4'],
+        // [TokenType.COMMENT_START, 'Unexpected character "a"', '0:3'],
       ]);
     });
 
@@ -145,21 +147,31 @@ describe('HtmlLexer', () => {
   describe('doctype', () => {
     it('should parse doctypes', () => {
       expect(tokenizeAndHumanizeParts('<!DOCTYPE html>')).toEqual([
-        [TokenType.DOC_TYPE, 'DOCTYPE html'],
+        // angular-html-parser: different docType parse
+        [TokenType.DOC_TYPE_START],
+        [TokenType.RAW_TEXT, " html"],
+        [TokenType.DOC_TYPE_END],
+        // [TokenType.DOC_TYPE, 'DOCTYPE html'],
         [TokenType.EOF],
       ]);
     });
 
     it('should store the locations', () => {
       expect(tokenizeAndHumanizeSourceSpans('<!DOCTYPE html>')).toEqual([
-        [TokenType.DOC_TYPE, '<!DOCTYPE html>'],
+        // angular-html-parser: different docType parse
+        [TokenType.DOC_TYPE_START, '<!DOCTYPE'],
+        [TokenType.RAW_TEXT, " html"],
+        [TokenType.DOC_TYPE_END, '>'],
+        // [TokenType.DOC_TYPE, '<!DOCTYPE html>'],
         [TokenType.EOF, ''],
       ]);
     });
 
     it('should report missing end doctype', () => {
       expect(tokenizeAndHumanizeErrors('<!')).toEqual([
-        [TokenType.DOC_TYPE, 'Unexpected character "EOF"', '0:2'],
+        // angular-html-parser: division
+        [TokenType.RAW_TEXT, 'Unexpected character "EOF"', '0:2'],
+        // [TokenType.DOC_TYPE, 'Unexpected character "EOF"', '0:2'],
       ]);
     });
   });
@@ -185,7 +197,9 @@ describe('HtmlLexer', () => {
 
     it('should report <![ without CDATA[', () => {
       expect(tokenizeAndHumanizeErrors('<![a')).toEqual([
-        [TokenType.CDATA_START, 'Unexpected character "a"', '0:3'],
+        // angular-html-parser: different docType parse
+        [TokenType.RAW_TEXT, 'Unexpected character "EOF"', '0:4'],
+        // [TokenType.CDATA_START, 'Unexpected character "a"', '0:3'],
       ]);
     });
 
@@ -288,7 +302,9 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>t\ne\rs\r\nt</title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 't\ne\ns\nt'],
+          // [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
           [TokenType.TAG_CLOSE, '', 'title'],
           [TokenType.EOF],
         ]);
@@ -298,9 +314,13 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>&amp;</title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.ESCAPABLE_RAW_TEXT, ''],
+          // angular-html-parser: division
+          [TokenType.TEXT, ''],
           [TokenType.ENCODED_ENTITY, '&', '&amp;'],
-          [TokenType.ESCAPABLE_RAW_TEXT, ''],
+          [TokenType.TEXT, ''],
+          // [TokenType.ESCAPABLE_RAW_TEXT, ''],
+          // [TokenType.ENCODED_ENTITY, '&', '&amp;'],
+          // [TokenType.ESCAPABLE_RAW_TEXT, ''],
           [TokenType.TAG_CLOSE, '', 'title'],
           [TokenType.EOF],
         ]);
@@ -310,7 +330,11 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>a<div></title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.ESCAPABLE_RAW_TEXT, 'a<div>'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 'a'],
+          [TokenType.TAG_OPEN_START, '', 'div'],
+          [TokenType.TAG_OPEN_END],
+          // [TokenType.ESCAPABLE_RAW_TEXT, 'a<div>'],
           [TokenType.TAG_CLOSE, '', 'title'],
           [TokenType.EOF],
         ]);
@@ -320,7 +344,10 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>a</test></title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.ESCAPABLE_RAW_TEXT, 'a</test>'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 'a'],
+          [TokenType.TAG_CLOSE, '', 'test'],
+          // [TokenType.ESCAPABLE_RAW_TEXT, 'a</test>'],
           [TokenType.TAG_CLOSE, '', 'title'],
           [TokenType.EOF],
         ]);
@@ -330,7 +357,9 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeSourceSpans(`<title>a</title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '<title'],
           [TokenType.TAG_OPEN_END, '>'],
-          [TokenType.ESCAPABLE_RAW_TEXT, 'a'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 'a'],
+          // [TokenType.ESCAPABLE_RAW_TEXT, 'a'],
           [TokenType.TAG_CLOSE, '</title>'],
           [TokenType.EOF, ''],
         ]);
@@ -965,7 +994,9 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.TAG_OPEN_START, '', 'script'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+          // [TokenType.RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
           [TokenType.TAG_CLOSE, '', 'script'],
           [TokenType.EOF],
         ]);
@@ -979,7 +1010,9 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          [TokenType.ESCAPABLE_RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+          // [TokenType.ESCAPABLE_RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
           [TokenType.TAG_CLOSE, '', 'title'],
           [TokenType.EOF],
         ]);
@@ -2484,7 +2517,9 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>t\ne\rs\r\nt</script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.RAW_TEXT, 't\ne\ns\nt'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 't\ne\ns\nt'],
+        // [TokenType.RAW_TEXT, 't\ne\ns\nt'],
         [TokenType.TAG_CLOSE, '', 'script'],
         [TokenType.EOF],
       ]);
@@ -2494,8 +2529,13 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>&amp;</SCRIPT>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.RAW_TEXT, '&amp;'],
-        [TokenType.TAG_CLOSE, '', 'script'],
+        // angular-html-parser: division
+        [TokenType.TEXT, ''],
+        [TokenType.ENCODED_ENTITY, '&', '&amp;'],
+        [TokenType.TEXT, ''],
+        [TokenType.TAG_CLOSE, '', 'SCRIPT'],
+        // [TokenType.RAW_TEXT, '&amp;'],
+        // [TokenType.TAG_CLOSE, '', 'script'],
         [TokenType.EOF],
       ]);
     });
@@ -2504,7 +2544,11 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>a<div></script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.RAW_TEXT, 'a<div>'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'a'],
+        [TokenType.TAG_OPEN_START, '', 'div'],
+        [TokenType.TAG_OPEN_END],
+        // [TokenType.RAW_TEXT, 'a<div>'],
         [TokenType.TAG_CLOSE, '', 'script'],
         [TokenType.EOF],
       ]);
@@ -2514,7 +2558,10 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>a</test></script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.RAW_TEXT, 'a</test>'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'a'],
+        [TokenType.TAG_CLOSE, '', 'test'],
+        // [TokenType.RAW_TEXT, 'a</test>'],
         [TokenType.TAG_CLOSE, '', 'script'],
         [TokenType.EOF],
       ]);
@@ -2524,7 +2571,9 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeSourceSpans(`<script>a</script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '<script'],
         [TokenType.TAG_OPEN_END, '>'],
-        [TokenType.RAW_TEXT, 'a'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'a'],
+        // [TokenType.RAW_TEXT, 'a'],
         [TokenType.TAG_CLOSE, '</script>'],
         [TokenType.EOF, ''],
       ]);
@@ -2536,7 +2585,9 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>t\ne\rs\r\nt</title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 't\ne\ns\nt'],
+        // [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
         [TokenType.TAG_CLOSE, '', 'title'],
         [TokenType.EOF],
       ]);
@@ -2546,9 +2597,13 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>&amp;</title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.ESCAPABLE_RAW_TEXT, ''],
+        // angular-html-parser: division
+        [TokenType.TEXT, ''],
+        // [TokenType.ESCAPABLE_RAW_TEXT, ''],
         [TokenType.ENCODED_ENTITY, '&', '&amp;'],
-        [TokenType.ESCAPABLE_RAW_TEXT, ''],
+        // angular-html-parser: division
+        [TokenType.TEXT, ''],
+        // [TokenType.ESCAPABLE_RAW_TEXT, ''],
         [TokenType.TAG_CLOSE, '', 'title'],
         [TokenType.EOF],
       ]);
@@ -2558,7 +2613,11 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>a<div></title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.ESCAPABLE_RAW_TEXT, 'a<div>'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'a'],
+        [TokenType.TAG_OPEN_START, '', 'div'],
+        [TokenType.TAG_OPEN_END],
+        // [TokenType.ESCAPABLE_RAW_TEXT, 'a<div>'],
         [TokenType.TAG_CLOSE, '', 'title'],
         [TokenType.EOF],
       ]);
@@ -2568,7 +2627,10 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>a</test></title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.ESCAPABLE_RAW_TEXT, 'a</test>'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'a'],
+        [TokenType.TAG_CLOSE, '', 'test'],
+        // [TokenType.ESCAPABLE_RAW_TEXT, 'a</test>'],
         [TokenType.TAG_CLOSE, '', 'title'],
         [TokenType.EOF],
       ]);
@@ -2578,7 +2640,9 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeSourceSpans(`<title>a</title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '<title'],
         [TokenType.TAG_OPEN_END, '>'],
-        [TokenType.ESCAPABLE_RAW_TEXT, 'a'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'a'],
+        // [TokenType.ESCAPABLE_RAW_TEXT, 'a'],
         [TokenType.TAG_CLOSE, '</title>'],
         [TokenType.EOF, ''],
       ]);
@@ -3213,7 +3277,9 @@ describe('HtmlLexer', () => {
       ).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+        // [TokenType.RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
         [TokenType.TAG_CLOSE, '', 'script'],
         [TokenType.EOF],
       ]);
@@ -3227,7 +3293,9 @@ describe('HtmlLexer', () => {
       ).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        [TokenType.ESCAPABLE_RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+        // angular-html-parser: division
+        [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
+        // [TokenType.ESCAPABLE_RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
         [TokenType.TAG_CLOSE, '', 'title'],
         [TokenType.EOF],
       ]);

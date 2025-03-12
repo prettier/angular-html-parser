@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     include: [
-      // "../compiler/test/ml_parser/*_spec.ts",
+      "../compiler/test/ml_parser/*_spec.ts",
       "./test/*_spec.ts",
     ],
     coverage: {

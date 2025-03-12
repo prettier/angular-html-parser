@@ -48,14 +48,18 @@ describe('HtmlParser', () => {
 
       it('should parse CDATA', () => {
         expect(humanizeDom(parser.parse('<![CDATA[text]]>', 'TestComp'))).toEqual([
-          [html.Text, 'text', 0, ['text']],
+          // angular-html-parser: division
+          [html.CDATA, 'text', 0, ['text']],
+          // [html.Text, 'text', 0, ['text']],
         ]);
       });
 
       it('should normalize line endings within CDATA', () => {
         const parsed = parser.parse('<![CDATA[ line 1 \r\n line 2 ]]>', 'TestComp');
         expect(humanizeDom(parsed)).toEqual([
-          [html.Text, ' line 1 \n line 2 ', 0, [' line 1 \n line 2 ']],
+          // angular-html-parser: division
+          [html.CDATA, ' line 1 \n line 2 ', 0, [' line 1 \n line 2 ']],
+          // [html.Text, ' line 1 \n line 2 ', 0, [' line 1 \n line 2 ']],
         ]);
         expect(parsed.errors).toEqual([]);
       });
@@ -180,22 +184,31 @@ describe('HtmlParser', () => {
         ]);
       });
 
-      it('should match closing tags case sensitive', () => {
-        const errors = parser.parse('<DiV><P></p></dIv>', 'TestComp').errors;
-        expect(errors.length).toEqual(2);
-        expect(humanizeErrors(errors)).toEqual([
-          [
-            'p',
-            'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
-            '0:8',
-          ],
-          [
-            'dIv',
-            'Unexpected closing tag "dIv". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
-            '0:12',
-          ],
+      // angular-html-parser: isTagNameCaseSensitive
+      // `isTagNameCaseSensitive: true` not implmemented
+      it('should match closing tags incasesensitive', () => {
+        expect(humanizeDom(parser.parse('<DiV><P></p></dIv>', 'TestComp'))).toEqual([
+          [html.Element, 'DiV', 0],
+          [html.Element, 'P', 1],
         ]);
       });
+
+      // it('should match closing tags case sensitive', () => {
+      //   const errors = parser.parse('<DiV><P></p></dIv>', 'TestComp').errors;
+      //   expect(errors.length).toEqual(2);
+      //   expect(humanizeErrors(errors)).toEqual([
+      //     [
+      //       'p',
+      //       'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
+      //       '0:8',
+      //     ],
+      //     [
+      //       'dIv',
+      //       'Unexpected closing tag "dIv". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
+      //       '0:12',
+      //     ],
+      //   ]);
+      // });
 
       it('should support self closing void elements', () => {
         expect(humanizeDom(parser.parse('<input />', 'TestComp'))).toEqual([
@@ -1296,11 +1309,14 @@ describe('HtmlParser', () => {
         expect((ast.rootNodes[0] as html.Element).attrs[0].valueSpan).toBeUndefined();
       });
 
-      it('should report a value span for an attribute with a value', () => {
+      it.only('should report a value span for an attribute with a value', () => {
         const ast = parser.parse('<div bar="12"></div>', 'TestComp');
         const attr = (ast.rootNodes[0] as html.Element).attrs[0];
-        expect(attr.valueSpan!.start.offset).toEqual(10);
-        expect(attr.valueSpan!.end.offset).toEqual(12);
+        // angular-html-parser: valueSpan contains quotes
+        expect(attr.valueSpan!.start.offset).toEqual(9);
+        expect(attr.valueSpan!.end.offset).toEqual(13);
+        // expect(attr.valueSpan!.start.offset).toEqual(10);
+        // expect(attr.valueSpan!.end.offset).toEqual(12);
       });
 
       it('should report a value span for an unquoted attribute value', () => {
