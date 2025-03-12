@@ -3,7 +3,8 @@ name: CI
 on:
   push:
     branches:
-      - main
+      # @fisker don't run on main branch, since workflows there are from upstream
+      - dev
   pull_request:
 
 permissions:

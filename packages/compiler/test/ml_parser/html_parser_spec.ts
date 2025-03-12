@@ -1309,7 +1309,7 @@ describe('HtmlParser', () => {
         expect((ast.rootNodes[0] as html.Element).attrs[0].valueSpan).toBeUndefined();
       });
 
-      it.only('should report a value span for an attribute with a value', () => {
+      it('should report a value span for an attribute with a value', () => {
         const ast = parser.parse('<div bar="12"></div>', 'TestComp');
         const attr = (ast.rootNodes[0] as html.Element).attrs[0];
         // angular-html-parser: valueSpan contains quotes
@@ -1340,7 +1340,9 @@ describe('HtmlParser', () => {
 
       it('should visit attribute nodes', () => {
         const result = humanizeDom(parser.parse('<div id="foo"></div>', 'TestComp'));
-        expect(result).toContain([html.Attribute, 'id', 'foo', ['foo']]);
+        // angular-html-parser: different assertion between test libs
+        expect(result).toContainEqual([html.Attribute, 'id', 'foo', ['foo']]);
+        // expect(result).toContain([html.Attribute, 'id', 'foo', ['foo']]);
       });
 
       it('should visit all nodes', () => {
@@ -1533,11 +1535,11 @@ describe('HtmlParser', () => {
         expect(parser.parse('<my-cmp />', 'TestComp').errors).toEqual([]);
       });
 
+      // angular-html-parser: parse differently
       it('should also report lexer errors', () => {
         const errors = parser.parse('<!-err--><div></p></div>', 'TestComp').errors;
-        expect(errors.length).toEqual(2);
+        expect(errors.length).toEqual(1);
         expect(humanizeErrors(errors)).toEqual([
-          [TokenType.COMMENT_START, 'Unexpected character "e"', '0:3'],
           [
             'p',
             'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
@@ -1545,6 +1547,19 @@ describe('HtmlParser', () => {
           ],
         ]);
       });
+
+      // it('should also report lexer errors', () => {
+      //   const errors = parser.parse('<!-err--><div></p></div>', 'TestComp').errors;
+      //   expect(errors.length).toEqual(2);
+      //   expect(humanizeErrors(errors)).toEqual([
+      //     [TokenType.COMMENT_START, 'Unexpected character "e"', '0:3'],
+      //     [
+      //       'p',
+      //       'Unexpected closing tag "p". It may happen when the tag has already been closed by another tag. For more info see https://www.w3.org/TR/html5/syntax.html#closing-elements-that-have-implied-end-tags',
+      //       '0:14',
+      //     ],
+      //   ]);
+      // });
     });
   });
 });
