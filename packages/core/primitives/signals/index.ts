@@ -7,6 +7,14 @@
  */
 
 export {ComputedNode, createComputed} from './src/computed';
+export {
+  ComputationFn,
+  LinkedSignalNode,
+  LinkedSignalGetter,
+  createLinkedSignal,
+  linkedSignalSetFn,
+  linkedSignalUpdateFn,
+} from './src/linked_signal';
 export {ValueEqualityFn, defaultEquals} from './src/equality';
 export {setThrowInvalidWriteToSignalError} from './src/errors';
 export {
@@ -42,3 +50,4 @@ export {
 } from './src/signal';
 export {Watch, WatchCleanupFn, WatchCleanupRegisterFn, createWatch} from './src/watch';
 export {setAlternateWeakRefImpl} from './src/weak_ref';
+export {untracked} from './src/untracked';

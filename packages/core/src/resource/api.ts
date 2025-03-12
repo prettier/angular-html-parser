@@ -68,7 +68,7 @@ export interface Resource<T> {
   /**
    * The current value of the `Resource`, or `undefined` if there is no current value.
    */
-  readonly value: Signal<T | undefined>;
+  readonly value: Signal<T>;
 
   /**
    * The current status of the `Resource`, which describes what the resource is currently doing and
@@ -91,7 +91,7 @@ export interface Resource<T> {
    *
    * This function is reactive.
    */
-  hasValue(): this is Resource<T> & {value: Signal<T>};
+  hasValue(): this is Resource<Exclude<T, undefined>>;
 
   /**
    * Instructs the resource to re-load any asynchronous dependency it may have.
@@ -112,18 +112,18 @@ export interface Resource<T> {
  * @experimental
  */
 export interface WritableResource<T> extends Resource<T> {
-  readonly value: WritableSignal<T | undefined>;
-  hasValue(): this is WritableResource<T> & {value: WritableSignal<T>};
+  readonly value: WritableSignal<T>;
+  hasValue(): this is WritableResource<Exclude<T, undefined>>;
 
   /**
    * Convenience wrapper for `value.set`.
    */
-  set(value: T | undefined): void;
+  set(value: T): void;
 
   /**
    * Convenience wrapper for `value.update`.
    */
-  update(updater: (value: T | undefined) => T | undefined): void;
+  update(updater: (value: T) => T): void;
   asReadonly(): Resource<T>;
 }
 
@@ -133,6 +133,8 @@ export interface WritableResource<T> extends Resource<T> {
  * @experimental
  */
 export interface ResourceRef<T> extends WritableResource<T> {
+  hasValue(): this is ResourceRef<Exclude<T, undefined>>;
+
   /**
    * Manually destroy the resource, which cancels pending requests and returns it to `idle` state.
    */
@@ -161,11 +163,20 @@ export interface ResourceLoaderParams<R> {
 export type ResourceLoader<T, R> = (param: ResourceLoaderParams<R>) => PromiseLike<T>;
 
 /**
+ * Streaming loader for a `Resource`.
+ *
+ * @experimental
+ */
+export type ResourceStreamingLoader<T, R> = (
+  param: ResourceLoaderParams<R>,
+) => PromiseLike<Signal<ResourceStreamItem<T>>>;
+
+/**
  * Options to the `resource` function, for creating a resource.
  *
  * @experimental
  */
-export interface ResourceOptions<T, R> {
+export interface BaseResourceOptions<T, R> {
   /**
    * A reactive function which determines the request to be made. Whenever the request changes, the
    * loader will be triggered to fetch a new value for the resource.
@@ -175,9 +186,10 @@ export interface ResourceOptions<T, R> {
   request?: () => R;
 
   /**
-   * Loading function which returns a `Promise` of the resource's value for a given request.
+   * The value which will be returned from the resource when a server value is unavailable, such as
+   * when the resource is still loading, or in an error state.
    */
-  loader: ResourceLoader<T, R>;
+  defaultValue?: NoInfer<T>;
 
   /**
    * Equality function used to compare the return value of the loader.
@@ -189,3 +201,48 @@ export interface ResourceOptions<T, R> {
    */
   injector?: Injector;
 }
+
+/**
+ * Options to the `resource` function, for creating a resource.
+ *
+ * @experimental
+ */
+export interface PromiseResourceOptions<T, R> extends BaseResourceOptions<T, R> {
+  /**
+   * Loading function which returns a `Promise` of the resource's value for a given request.
+   */
+  loader: ResourceLoader<T, R>;
+
+  /**
+   * Cannot specify `stream` and `loader` at the same time.
+   */
+  stream?: never;
+}
+
+/**
+ * Options to the `resource` function, for creating a resource.
+ *
+ * @experimental
+ */
+export interface StreamingResourceOptions<T, R> extends BaseResourceOptions<T, R> {
+  /**
+   * Loading function which returns a `Promise` of a signal of the resource's value for a given
+   * request, which can change over time as new values are received from a stream.
+   */
+  stream: ResourceStreamingLoader<T, R>;
+
+  /**
+   * Cannot specify `stream` and `loader` at the same time.
+   */
+  loader?: never;
+}
+
+/**
+ * @experimental
+ */
+export type ResourceOptions<T, R> = PromiseResourceOptions<T, R> | StreamingResourceOptions<T, R>;
+
+/**
+ * @experimental
+ */
+export type ResourceStreamItem<T> = {value: T} | {error: unknown};

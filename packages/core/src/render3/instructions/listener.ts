@@ -10,24 +10,26 @@ import {setActiveConsumer} from '@angular/core/primitives/signals';
 
 import {NotificationSource} from '../../change_detection/scheduling/zoneless_scheduling';
 import {assertIndexInRange} from '../../util/assert';
-import {NodeOutputBindings, TNode, TNodeType} from '../interfaces/node';
+import {TNode, TNodeType} from '../interfaces/node';
 import {GlobalTargetResolver, Renderer} from '../interfaces/renderer';
-import {RElement} from '../interfaces/renderer_dom';
-import {isDirectiveHost} from '../interfaces/type_checks';
+import {RElement, RNode} from '../interfaces/renderer_dom';
+import {isComponentHost, isDirectiveHost} from '../interfaces/type_checks';
 import {CLEANUP, CONTEXT, LView, RENDERER, TView} from '../interfaces/view';
 import {assertTNodeType} from '../node_assert';
 import {profiler} from '../profiler';
 import {ProfilerEvent} from '../profiler_types';
 import {getCurrentDirectiveDef, getCurrentTNode, getLView, getTView} from '../state';
-import {getComponentLViewByIndex, getNativeByTNode, unwrapRNode} from '../util/view_utils';
-
-import {markViewDirty} from './mark_view_dirty';
 import {
+  getComponentLViewByIndex,
+  getNativeByTNode,
   getOrCreateLViewCleanup,
   getOrCreateTViewCleanup,
-  handleError,
-  loadComponentRenderer,
-} from './shared';
+  unwrapRNode,
+} from '../util/view_utils';
+
+import {markViewDirty} from './mark_view_dirty';
+import {handleError, loadComponentRenderer} from './shared';
+import {DirectiveDef} from '../interfaces/definition';
 
 /**
  * Contains a reference to a function that disables event replay feature
@@ -35,7 +37,7 @@ import {
  * an actual implementation when the event replay feature is enabled via
  * `withEventReplay()` call.
  */
-let stashEventListener = (el: RElement, eventName: string, listenerFn: (e?: any) => any) => {};
+let stashEventListener = (el: RNode, eventName: string, listenerFn: (e?: any) => any) => {};
 
 export function setStashFn(fn: typeof stashEventListener) {
   stashEventListener = fn;
@@ -158,7 +160,7 @@ export function listenerInternal(
 ): void {
   const isTNodeDirectiveHost = isDirectiveHost(tNode);
   const firstCreatePass = tView.firstCreatePass;
-  const tCleanup: false | any[] = firstCreatePass && getOrCreateTViewCleanup(tView);
+  const tCleanup = firstCreatePass ? getOrCreateTViewCleanup(tView) : null;
   const context = lView[CONTEXT];
 
   // When the ɵɵlistener instruction was generated and is executed we know that there is either a
@@ -216,9 +218,8 @@ export function listenerInternal(
       processOutputs = false;
     } else {
       listenerFn = wrapListener(tNode, lView, context, listenerFn);
-      stashEventListener(native, eventName, listenerFn);
+      stashEventListener(target as RElement, eventName, listenerFn);
       const cleanupFn = renderer.listen(target as RElement, eventName, listenerFn);
-      ngDevMode && ngDevMode.rendererAddEventListener++;
 
       lCleanup.push(listenerFn, cleanupFn);
       tCleanup && tCleanup.push(eventName, idxOrTargetGetter, lCleanupIndex, lCleanupIndex + 1);
@@ -229,32 +230,71 @@ export function listenerInternal(
     listenerFn = wrapListener(tNode, lView, context, listenerFn);
   }
 
-  // subscribe to directive outputs
-  const outputs = tNode.outputs;
-  let props: NodeOutputBindings[keyof NodeOutputBindings] | undefined;
-  if (processOutputs && outputs !== null && (props = outputs[eventName])) {
-    const propsLength = props.length;
-    if (propsLength) {
-      for (let i = 0; i < propsLength; i += 2) {
-        const index = props[i] as number;
-        ngDevMode && assertIndexInRange(lView, index);
-        const minifiedName = props[i + 1];
-        const directiveInstance = lView[index];
-        const output = directiveInstance[minifiedName];
+  if (processOutputs) {
+    const outputConfig = tNode.outputs?.[eventName];
+    const hostDirectiveOutputConfig = tNode.hostDirectiveOutputs?.[eventName];
 
-        if (ngDevMode && !isOutputSubscribable(output)) {
-          throw new Error(
-            `@Output ${minifiedName} not initialized in '${directiveInstance.constructor.name}'.`,
-          );
-        }
+    if (hostDirectiveOutputConfig && hostDirectiveOutputConfig.length) {
+      for (let i = 0; i < hostDirectiveOutputConfig.length; i += 2) {
+        const index = hostDirectiveOutputConfig[i] as number;
+        const lookupName = hostDirectiveOutputConfig[i + 1] as string;
+        listenToOutput(
+          tNode,
+          tView,
+          lView,
+          index,
+          lookupName,
+          eventName,
+          listenerFn,
+          lCleanup,
+          tCleanup,
+        );
+      }
+    }
 
-        const subscription = (output as SubscribableOutput<unknown>).subscribe(listenerFn);
-        const idx = lCleanup.length;
-        lCleanup.push(listenerFn, subscription);
-        tCleanup && tCleanup.push(eventName, tNode.index, idx, -(idx + 1));
+    if (outputConfig && outputConfig.length) {
+      for (const index of outputConfig) {
+        listenToOutput(
+          tNode,
+          tView,
+          lView,
+          index,
+          eventName,
+          eventName,
+          listenerFn,
+          lCleanup,
+          tCleanup,
+        );
       }
     }
   }
+}
+
+function listenToOutput(
+  tNode: TNode,
+  tView: TView,
+  lView: LView,
+  index: number,
+  lookupName: string,
+  eventName: string,
+  listenerFn: (e?: any) => any,
+  lCleanup: any[],
+  tCleanup: any[] | null,
+) {
+  ngDevMode && assertIndexInRange(lView, index);
+  const instance = lView[index];
+  const def = tView.data[index] as DirectiveDef<unknown>;
+  const propertyName = def.outputs[lookupName];
+  const output = instance[propertyName];
+
+  if (ngDevMode && !isOutputSubscribable(output)) {
+    throw new Error(`@Output ${propertyName} not initialized in '${instance.constructor.name}'.`);
+  }
+
+  const subscription = (output as SubscribableOutput<unknown>).subscribe(listenerFn);
+  const idx = lCleanup.length;
+  lCleanup.push(listenerFn, subscription);
+  tCleanup && tCleanup.push(eventName, tNode.index, idx, -(idx + 1));
 }
 
 function executeListenerWithErrorHandling(
@@ -269,6 +309,7 @@ function executeListenerWithErrorHandling(
     // Only explicitly returning false from a listener should preventDefault
     return listenerFn(e) !== false;
   } catch (error) {
+    // TODO(atscott): This should report to the application error handler, not the ErrorHandler on LView injector
     handleError(lView, error);
     return false;
   } finally {
@@ -287,7 +328,7 @@ function executeListenerWithErrorHandling(
  * @param wrapWithPreventDefault Whether or not to prevent default behavior
  * (the procedural renderer does this already, so in those cases, we should skip)
  */
-function wrapListener(
+export function wrapListener(
   tNode: TNode,
   lView: LView<{} | null>,
   context: {} | null,
@@ -304,8 +345,7 @@ function wrapListener(
 
     // In order to be backwards compatible with View Engine, events on component host nodes
     // must also mark the component view itself dirty (i.e. the view that it owns).
-    const startView =
-      tNode.componentOffset > -1 ? getComponentLViewByIndex(tNode.index, lView) : lView;
+    const startView = isComponentHost(tNode) ? getComponentLViewByIndex(tNode.index, lView) : lView;
     markViewDirty(startView, NotificationSource.Listener);
 
     let result = executeListenerWithErrorHandling(lView, context, listenerFn, e);
@@ -337,4 +377,81 @@ function isOutputSubscribable(value: unknown): value is SubscribableOutput<unkno
   return (
     value != null && typeof (value as Partial<SubscribableOutput<unknown>>).subscribe === 'function'
   );
+}
+
+/** Listens to an output on a specific directive. */
+export function listenToDirectiveOutput(
+  tNode: TNode,
+  tView: TView,
+  lView: LView,
+  target: DirectiveDef<unknown>,
+  eventName: string,
+  listenerFn: (e?: any) => any,
+): boolean {
+  const tCleanup = tView.firstCreatePass ? getOrCreateTViewCleanup(tView) : null;
+  const lCleanup = getOrCreateLViewCleanup(lView);
+  let hostIndex: number | null = null;
+  let hostDirectivesStart: number | null = null;
+  let hostDirectivesEnd: number | null = null;
+  let hasOutput = false;
+
+  if (ngDevMode && !tNode.directiveToIndex?.has(target.type)) {
+    throw new Error(`Node does not have a directive with type ${target.type.name}`);
+  }
+
+  const data = tNode.directiveToIndex!.get(target.type)!;
+
+  if (typeof data === 'number') {
+    hostIndex = data;
+  } else {
+    [hostIndex, hostDirectivesStart, hostDirectivesEnd] = data;
+  }
+
+  if (
+    hostDirectivesStart !== null &&
+    hostDirectivesEnd !== null &&
+    tNode.hostDirectiveOutputs?.hasOwnProperty(eventName)
+  ) {
+    const hostDirectiveOutputs = tNode.hostDirectiveOutputs[eventName];
+
+    for (let i = 0; i < hostDirectiveOutputs.length; i += 2) {
+      const index = hostDirectiveOutputs[i] as number;
+
+      if (index >= hostDirectivesStart && index <= hostDirectivesEnd) {
+        ngDevMode && assertIndexInRange(lView, index);
+        hasOutput = true;
+        listenToOutput(
+          tNode,
+          tView,
+          lView,
+          index,
+          hostDirectiveOutputs[i + 1] as string,
+          eventName,
+          listenerFn,
+          lCleanup,
+          tCleanup,
+        );
+      } else if (index > hostDirectivesEnd) {
+        break;
+      }
+    }
+  }
+
+  if (hostIndex !== null && target.outputs.hasOwnProperty(eventName)) {
+    ngDevMode && assertIndexInRange(lView, hostIndex);
+    hasOutput = true;
+    listenToOutput(
+      tNode,
+      tView,
+      lView,
+      hostIndex,
+      eventName,
+      eventName,
+      listenerFn,
+      lCleanup,
+      tCleanup,
+    );
+  }
+
+  return hasOutput;
 }

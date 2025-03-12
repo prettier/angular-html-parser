@@ -38,6 +38,7 @@ import {getLView} from '@angular/core/src/render3/state';
 import {ngDevModeResetPerfCounters} from '@angular/core/src/util/ng_dev_mode';
 import {fakeAsync, flushMicrotasks, TestBed} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
+import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 import {expectPerfCounters} from '@angular/private/testing';
 
 describe('acceptance integration tests', () => {
@@ -2715,6 +2716,135 @@ describe('acceptance integration tests', () => {
     expect(() => TestBed.createComponent(Comp).detectChanges()).not.toThrow();
   });
 
+  it('should support template literals in expressions', () => {
+    @Component({
+      template: 'Message: {{`Hello, ${name} - ${value}`}}',
+    })
+    class TestComponent {
+      name = 'Frodo';
+      value = 0;
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Message: Hello, Frodo - 0');
+
+    fixture.componentInstance.value++;
+    fixture.componentInstance.name = 'Bilbo';
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Message: Hello, Bilbo - 1');
+  });
+
+  it('should support void expressions', () => {
+    @Component({
+      host: {
+        '(click)': 'void doStuff($event)',
+      },
+    })
+    class TestComponent {
+      e: Event | null = null;
+
+      doStuff(e: Event) {
+        this.e = e;
+        return false;
+      }
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    fixture.nativeElement.click();
+    expect(fixture.componentInstance.e).not.toBeNull();
+    expect(fixture.componentInstance.e!.defaultPrevented).toBe(false);
+  });
+
+  it('should have correct operator precedence', () => {
+    @Component({
+      template: '{{1 + 10 ** -2 * 3}}',
+    })
+    class TestComponent {}
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toEqual('1.03');
+  });
+
+  it('should throw on ambiguous unary operator in exponentiation expression', () => {
+    @Component({
+      template: '{{1 + -10 ** -2 * 3}}',
+    })
+    class TestComponent {}
+    expect(() => TestBed.createComponent(TestComponent)).toThrowError(
+      /Unary operator used immediately before exponentiation expression. Parenthesis must be used to disambiguate operator precedence/,
+    );
+  });
+
+  it('should not throw on unambiguous unary operator in exponentiation expression', () => {
+    @Component({
+      template: '{{1 + (-10) ** -2 * 3}} | {{1 + -(10 ** -2) * 3}}',
+    })
+    class TestComponent {}
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toEqual('1.03 | 0.97');
+  });
+
+  it('should have right-to-left associativity for exponentiation', () => {
+    @Component({
+      template: '{{2 ** 2 ** 3}}',
+    })
+    class TestComponent {}
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toEqual('256');
+  });
+
+  it('should support tagged template literals with no interpolations in expressions', () => {
+    @Component({
+      standalone: true,
+      template: `
+        <p>:{{ caps\`Hello, World!\` }}:{{ excited?.caps(3)\`Uncomfortably excited\` }}:</p> 
+        <p>{{ greet\`Hi, I'm \${name}, and I'm \${age}\` }}</p>
+      `,
+    })
+    class TestComponent {
+      name = 'Frodo';
+      age = 50;
+      greet(strings: TemplateStringsArray, person: string, age: number) {
+        return `${strings[0]}${person}${strings[1]}${age} years old${strings[2]}`;
+      }
+      caps(strings: TemplateStringsArray) {
+        return strings.join('').toUpperCase();
+      }
+      excited = {
+        caps: (excitementLevel: number) => {
+          return (strings: TemplateStringsArray) => {
+            return strings.join('').toUpperCase() + '!'.repeat(excitementLevel);
+          };
+        },
+      };
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain(':HELLO, WORLD!:');
+    expect(text).toContain(':UNCOMFORTABLY EXCITED!!!:');
+    expect(text).toContain(`Hi, I'm Frodo, and I'm 50 years old`);
+  });
+
+  it('should not confuse operators for template literal tags', () => {
+    @Component({
+      standalone: true,
+      template: '{{ typeof`test` }}',
+    })
+    class TestComponent {
+      typeof = (...args: unknown[]) => 'fail';
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toBe(`string`);
+  });
+
   describe('tView.firstUpdatePass', () => {
     function isFirstUpdatePass() {
       const lView = getLView();
@@ -2869,6 +2999,7 @@ describe('acceptance integration tests', () => {
 
       TestBed.configureTestingModule({
         declarations: [Cmp, AnimationComp],
+        imports: [NoopAnimationsModule],
         providers: [{provide: AnimationDriver, useClass: MockAnimationDriver}],
       });
       const fixture = TestBed.createComponent(Cmp);
@@ -2959,6 +3090,7 @@ describe('acceptance integration tests', () => {
 
       TestBed.configureTestingModule({
         declarations: [Cmp, InnerComp],
+        imports: [NoopAnimationsModule],
         providers: [{provide: AnimationDriver, useClass: MockAnimationDriver}],
       });
       const fixture = TestBed.createComponent(Cmp);

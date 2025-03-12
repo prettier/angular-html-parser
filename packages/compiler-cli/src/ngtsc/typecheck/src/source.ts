@@ -14,11 +14,11 @@ import {
 } from '@angular/compiler';
 import ts from 'typescript';
 
-import {TemplateId, TemplateSourceMapping} from '../api';
-import {getTemplateId} from '../diagnostics';
+import {TypeCheckId, SourceMapping} from '../api';
+import {getTypeCheckId} from '../diagnostics';
 
 import {computeLineStartsMap, getLineAndCharacterFromPosition} from './line_mappings';
-import {TemplateSourceResolver} from './tcb_util';
+import {TypeCheckSourceResolver} from './tcb_util';
 
 /**
  * Represents the source of a template that was processed during type-checking. This information is
@@ -28,7 +28,7 @@ export class TemplateSource {
   private lineStarts: number[] | null = null;
 
   constructor(
-    readonly mapping: TemplateSourceMapping,
+    readonly mapping: SourceMapping,
     private file: ParseSourceFile,
   ) {}
 
@@ -53,40 +53,34 @@ export class TemplateSource {
 }
 
 /**
- * Assigns IDs to templates and keeps track of their origins.
+ * Assigns IDs for type checking and keeps track of their origins.
  *
- * Implements `TemplateSourceResolver` to resolve the source of a template based on these IDs.
+ * Implements `TypeCheckSourceResolver` to resolve the source of a template based on these IDs.
  */
-export class TemplateSourceManager implements TemplateSourceResolver {
+export class DirectiveSourceManager implements TypeCheckSourceResolver {
   /**
    * This map keeps track of all template sources that have been type-checked by the id that is
    * attached to a TCB's function declaration as leading trivia. This enables translation of
    * diagnostics produced for TCB code to their source location in the template.
    */
-  private templateSources = new Map<TemplateId, TemplateSource>();
+  private templateSources = new Map<TypeCheckId, TemplateSource>();
 
-  getTemplateId(node: ts.ClassDeclaration): TemplateId {
-    return getTemplateId(node);
+  getTypeCheckId(node: ts.ClassDeclaration): TypeCheckId {
+    return getTypeCheckId(node);
   }
 
-  captureSource(
-    node: ts.ClassDeclaration,
-    mapping: TemplateSourceMapping,
-    file: ParseSourceFile,
-  ): TemplateId {
-    const id = getTemplateId(node);
+  captureTemplateSource(id: TypeCheckId, mapping: SourceMapping, file: ParseSourceFile): void {
     this.templateSources.set(id, new TemplateSource(mapping, file));
-    return id;
   }
 
-  getSourceMapping(id: TemplateId): TemplateSourceMapping {
+  getTemplateSourceMapping(id: TypeCheckId): SourceMapping {
     if (!this.templateSources.has(id)) {
-      throw new Error(`Unexpected unknown template ID: ${id}`);
+      throw new Error(`Unexpected unknown type check ID: ${id}`);
     }
     return this.templateSources.get(id)!.mapping;
   }
 
-  toParseSourceSpan(id: TemplateId, span: AbsoluteSourceSpan): ParseSourceSpan | null {
+  toTemplateParseSourceSpan(id: TypeCheckId, span: AbsoluteSourceSpan): ParseSourceSpan | null {
     if (!this.templateSources.has(id)) {
       return null;
     }

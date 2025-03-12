@@ -116,7 +116,12 @@ import {
   HandlerPrecedence,
   ResolveResult,
 } from '../../../transform';
-import {TemplateId, TypeCheckableDirectiveMeta, TypeCheckContext} from '../../../typecheck/api';
+import {
+  TypeCheckId,
+  TypeCheckableDirectiveMeta,
+  TypeCheckContext,
+  TemplateContext,
+} from '../../../typecheck/api';
 import {ExtendedTemplateChecker} from '../../../typecheck/extended/api';
 import {TemplateSemanticsChecker} from '../../../typecheck/template_semantics/api/api';
 import {getSourceFile} from '../../../util/src/typescript';
@@ -127,11 +132,11 @@ import {
   compileInputTransformFields,
   compileNgFactoryDefField,
   compileResults,
+  createForwardRefResolver,
   extractClassDebugInfo,
   extractClassMetadata,
   extractSchemas,
   findAngularDecorator,
-  forwardRefResolver,
   getDirectiveDiagnostics,
   getProviderDiagnostics,
   InjectableClassRegistry,
@@ -161,6 +166,7 @@ import {
 } from './metadata';
 import {
   _extractTemplateStyleUrls,
+  createEmptyTemplate,
   extractComponentStyleUrls,
   extractInlineStyleResources,
   extractTemplate,
@@ -272,7 +278,7 @@ export class ComponentDecoratorHandler
 
     // Dependencies can't be deferred during HMR, because the HMR update module can't have
     // dynamic imports and its dependencies need to be passed in directly. If dependencies
-    // are deferred, their imports will be deleted so we won't may lose the reference to them.
+    // are deferred, their imports will be deleted so we may lose the reference to them.
     this.canDeferDeps = !enableHmr;
   }
 
@@ -487,7 +493,13 @@ export class ComponentDecoratorHandler
     } = directiveResult;
     const encapsulation: number =
       (this.compilationMode !== CompilationMode.LOCAL
-        ? resolveEnumValue(this.evaluator, component, 'encapsulation', 'ViewEncapsulation')
+        ? resolveEnumValue(
+            this.evaluator,
+            component,
+            'encapsulation',
+            'ViewEncapsulation',
+            this.isCore,
+          )
         : resolveEncapsulationEnumValueLocally(component.get('encapsulation'))) ??
       ViewEncapsulation.Emulated;
 
@@ -498,6 +510,7 @@ export class ComponentDecoratorHandler
         component,
         'changeDetection',
         'ChangeDetectionStrategy',
+        this.isCore,
       );
     } else if (component.has('changeDetection')) {
       changeDetection = new o.WrappedNodeExpr(component.get('changeDetection')!);
@@ -592,7 +605,7 @@ export class ComponentDecoratorHandler
     ) {
       const importResolvers = combineResolvers([
         createModuleWithProvidersResolver(this.reflector, this.isCore),
-        forwardRefResolver,
+        createForwardRefResolver(this.isCore),
       ]);
 
       const importDiagnostics: ts.Diagnostic[] = [];
@@ -663,50 +676,70 @@ export class ComponentDecoratorHandler
 
       template = preanalyzed;
     } else {
-      const templateDecl = parseTemplateDeclaration(
-        node,
-        decorator,
-        component,
-        containingFile,
-        this.evaluator,
-        this.depTracker,
-        this.resourceLoader,
-        this.defaultPreserveWhitespaces,
-      );
-      template = extractTemplate(
-        node,
-        templateDecl,
-        this.evaluator,
-        this.depTracker,
-        this.resourceLoader,
-        {
-          enableI18nLegacyMessageIdFormat: this.enableI18nLegacyMessageIdFormat,
-          i18nNormalizeLineEndingsInICUs: this.i18nNormalizeLineEndingsInICUs,
-          usePoisonedData: this.usePoisonedData,
-          enableBlockSyntax: this.enableBlockSyntax,
-          enableLetSyntax: this.enableLetSyntax,
-          preserveSignificantWhitespace: this.i18nPreserveSignificantWhitespace,
-        },
-        this.compilationMode,
-      );
-
-      if (
-        this.compilationMode === CompilationMode.LOCAL &&
-        template.errors &&
-        template.errors.length > 0
-      ) {
-        // Template errors are handled at the type check phase. But we skip this phase in local compilation mode. As a result we need to handle the errors now and add them to the diagnostics.
-        if (diagnostics === undefined) {
-          diagnostics = [];
-        }
-
-        diagnostics.push(
-          ...getTemplateDiagnostics(
-            template.errors,
-            '' as TemplateId, // Template ID is required as part of the template type check, mainly for mapping the template to its component class. But here we are generating the diagnostic outside of the type check context, and so we skip the template ID.
-            template.sourceMapping,
-          ),
+      try {
+        const templateDecl = parseTemplateDeclaration(
+          node,
+          decorator,
+          component,
+          containingFile,
+          this.evaluator,
+          this.depTracker,
+          this.resourceLoader,
+          this.defaultPreserveWhitespaces,
         );
+        template = extractTemplate(
+          node,
+          templateDecl,
+          this.evaluator,
+          this.depTracker,
+          this.resourceLoader,
+          {
+            enableI18nLegacyMessageIdFormat: this.enableI18nLegacyMessageIdFormat,
+            i18nNormalizeLineEndingsInICUs: this.i18nNormalizeLineEndingsInICUs,
+            usePoisonedData: this.usePoisonedData,
+            enableBlockSyntax: this.enableBlockSyntax,
+            enableLetSyntax: this.enableLetSyntax,
+            preserveSignificantWhitespace: this.i18nPreserveSignificantWhitespace,
+          },
+          this.compilationMode,
+        );
+
+        if (
+          this.compilationMode === CompilationMode.LOCAL &&
+          template.errors &&
+          template.errors.length > 0
+        ) {
+          // Template errors are handled at the type check phase. But we skip this phase in local
+          // compilation mode. As a result we need to handle the errors now and add them to the diagnostics.
+          if (diagnostics === undefined) {
+            diagnostics = [];
+          }
+
+          diagnostics.push(
+            ...getTemplateDiagnostics(
+              template.errors,
+              // Type check ID is required as part of the ype check, mainly for mapping the
+              // diagnostic back to its source. But here we are generating the diagnostic outside
+              // of the type check context, and so we skip the template ID.
+              '' as TypeCheckId,
+              template.sourceMapping,
+            ),
+          );
+        }
+      } catch (e) {
+        if (e instanceof FatalDiagnosticError) {
+          diagnostics ??= [];
+          diagnostics.push(e.toDiagnostic());
+          isPoisoned = true;
+          // Create an empty template for the missing/invalid template.
+          // A build will still fail in this case. However, for the language service,
+          // this allows the component to exist in the compiler registry and prevents
+          // cascading diagnostics within an IDE due to "missing" components. The
+          // originating template related errors will still be reported in the IDE.
+          template = createEmptyTemplate(node, component, containingFile);
+        } else {
+          throw e;
+        }
       }
     }
     const templateResource = template.declaration.isInline
@@ -1039,17 +1072,21 @@ export class ComponentDecoratorHandler
     }
 
     const binder = new R3TargetBinder<TypeCheckableDirectiveMeta>(scope.matcher);
-    ctx.addTemplate(
+    const templateContext: TemplateContext = {
+      nodes: meta.template.diagNodes,
+      pipes: scope.pipes,
+      sourceMapping: meta.template.sourceMapping,
+      file: meta.template.file,
+      parseErrors: meta.template.errors,
+      preserveWhitespaces: meta.meta.template.preserveWhitespaces ?? false,
+    };
+
+    ctx.addDirective(
       new Reference(node),
       binder,
-      meta.template.diagNodes,
-      scope.pipes,
       scope.schemas,
-      meta.template.sourceMapping,
-      meta.template.file,
-      meta.template.errors,
+      templateContext,
       meta.meta.isStandalone,
-      meta.meta.template.preserveWhitespaces ?? false,
     );
   }
 
@@ -1222,14 +1259,30 @@ export class ComponentDecoratorHandler
       // Register all Directives and Pipes used at the top level (outside
       // of any defer blocks), which would be eagerly referenced.
       const eagerlyUsed = new Set<ClassDeclaration>();
-      for (const dir of bound.getEagerlyUsedDirectives()) {
-        eagerlyUsed.add(dir.ref.node);
-      }
-      for (const name of bound.getEagerlyUsedPipes()) {
-        if (!pipes.has(name)) {
-          continue;
+
+      if (this.enableHmr) {
+        // In HMR we need to preserve all the dependencies, because they have to remain consistent
+        // with the initially-generated code no matter what the template looks like.
+        for (const dep of dependencies) {
+          if (dep.ref.node !== node) {
+            eagerlyUsed.add(dep.ref.node);
+          } else {
+            const used = bound.getEagerlyUsedDirectives();
+            if (used.some((current) => current.ref.node === node)) {
+              eagerlyUsed.add(node);
+            }
+          }
         }
-        eagerlyUsed.add(pipes.get(name)!.ref.node);
+      } else {
+        for (const dir of bound.getEagerlyUsedDirectives()) {
+          eagerlyUsed.add(dir.ref.node);
+        }
+        for (const name of bound.getEagerlyUsedPipes()) {
+          if (!pipes.has(name)) {
+            continue;
+          }
+          eagerlyUsed.add(pipes.get(name)!.ref.node);
+        }
       }
 
       // Set of Directives and Pipes used across the entire template,
@@ -1617,10 +1670,11 @@ export class ComponentDecoratorHandler
     const perComponentDeferredDeps = this.canDeferDeps
       ? this.resolveAllDeferredDependencies(resolution)
       : null;
+    const defer = this.compileDeferBlocks(resolution);
     const meta: R3ComponentMetadata<R3TemplateDependency> = {
       ...analysis.meta,
       ...resolution,
-      defer: this.compileDeferBlocks(resolution),
+      defer,
     };
     const fac = compileNgFactoryDefField(toFactoryMetadata(meta, FactoryTarget.Component));
 
@@ -1642,10 +1696,12 @@ export class ComponentDecoratorHandler
       ? extractHmrMetatadata(
           node,
           this.reflector,
+          this.evaluator,
           this.compilerHost,
           this.rootDirs,
           def,
           fac,
+          defer,
           classMetadata,
           debugInfo,
         )
@@ -1687,10 +1743,11 @@ export class ComponentDecoratorHandler
     const perComponentDeferredDeps = this.canDeferDeps
       ? this.resolveAllDeferredDependencies(resolution)
       : null;
+    const defer = this.compileDeferBlocks(resolution);
     const meta: R3ComponentMetadata<R3TemplateDependencyMetadata> = {
       ...analysis.meta,
       ...resolution,
-      defer: this.compileDeferBlocks(resolution),
+      defer,
     };
     const fac = compileDeclareFactory(toFactoryMetadata(meta, FactoryTarget.Component));
     const inputTransformFields = compileInputTransformFields(analysis.inputs);
@@ -1706,10 +1763,12 @@ export class ComponentDecoratorHandler
       ? extractHmrMetatadata(
           node,
           this.reflector,
+          this.evaluator,
           this.compilerHost,
           this.rootDirs,
           def,
           fac,
+          defer,
           classMetadata,
           null,
         )
@@ -1741,10 +1800,11 @@ export class ComponentDecoratorHandler
     // doesn't have information on which dependencies belong to which defer blocks.
     const deferrableTypes = this.canDeferDeps ? analysis.explicitlyDeferredTypes : null;
 
+    const defer = this.compileDeferBlocks(resolution);
     const meta = {
       ...analysis.meta,
       ...resolution,
-      defer: this.compileDeferBlocks(resolution),
+      defer,
     } as R3ComponentMetadata<R3TemplateDependency>;
 
     if (deferrableTypes !== null) {
@@ -1766,10 +1826,12 @@ export class ComponentDecoratorHandler
       ? extractHmrMetatadata(
           node,
           this.reflector,
+          this.evaluator,
           this.compilerHost,
           this.rootDirs,
           def,
           fac,
+          defer,
           classMetadata,
           debugInfo,
         )
@@ -1801,10 +1863,11 @@ export class ComponentDecoratorHandler
 
     // Create a brand-new constant pool since there shouldn't be any constant sharing.
     const pool = new ConstantPool();
+    const defer = this.compileDeferBlocks(resolution);
     const meta: R3ComponentMetadata<R3TemplateDependency> = {
       ...analysis.meta,
       ...resolution,
-      defer: this.compileDeferBlocks(resolution),
+      defer,
     };
     const fac = compileNgFactoryDefField(toFactoryMetadata(meta, FactoryTarget.Component));
     const def = compileComponentFromMetadata(meta, pool, makeBindingParser());
@@ -1820,10 +1883,12 @@ export class ComponentDecoratorHandler
       ? extractHmrMetatadata(
           node,
           this.reflector,
+          this.evaluator,
           this.compilerHost,
           this.rootDirs,
           def,
           fac,
+          defer,
           classMetadata,
           debugInfo,
         )
@@ -1831,7 +1896,7 @@ export class ComponentDecoratorHandler
     const res = compileResults(fac, def, classMetadata, 'ɵcmp', null, null, debugInfo, null);
     return hmrMeta === null || res.length === 0
       ? null
-      : getHmrUpdateDeclaration(res, pool.statements, hmrMeta, node.getSourceFile());
+      : getHmrUpdateDeclaration(res, pool.statements, hmrMeta, node);
   }
 
   /**
@@ -1860,22 +1925,32 @@ export class ComponentDecoratorHandler
   private resolveAllDeferredDependencies(
     resolution: Readonly<ComponentResolutionData>,
   ): R3DeferPerComponentDependency[] {
+    const seenDeps = new Set<ClassDeclaration>();
     const deferrableTypes: R3DeferPerComponentDependency[] = [];
     // Go over all dependencies of all defer blocks and update the value of
     // the `isDeferrable` flag and the `importPath` to reflect the current
     // state after visiting all components during the `resolve` phase.
     for (const [_, deps] of resolution.deferPerBlockDependencies) {
       for (const deferBlockDep of deps) {
-        const importDecl =
-          resolution.deferrableDeclToImportDecl.get(deferBlockDep.declaration.node) ?? null;
+        const node = deferBlockDep.declaration.node;
+        const importDecl = resolution.deferrableDeclToImportDecl.get(node) ?? null;
         if (importDecl !== null && this.deferredSymbolTracker.canDefer(importDecl)) {
           deferBlockDep.isDeferrable = true;
           deferBlockDep.importPath = (importDecl.moduleSpecifier as ts.StringLiteral).text;
           deferBlockDep.isDefaultImport = isDefaultImport(importDecl);
-          deferrableTypes.push(deferBlockDep as R3DeferPerComponentDependency);
+
+          // The same dependency may be used across multiple deferred blocks. De-duplicate it
+          // because it can throw off other logic further down the compilation pipeline.
+          // Note that the logic above needs to run even if the dependency is seen before,
+          // because the object literals are different between each block.
+          if (!seenDeps.has(node)) {
+            seenDeps.add(node);
+            deferrableTypes.push(deferBlockDep as R3DeferPerComponentDependency);
+          }
         }
       }
     }
+
     return deferrableTypes;
   }
 

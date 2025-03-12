@@ -5,13 +5,10 @@
 ```ts
 
 import * as i0 from '@angular/core';
-import * as i1 from '@angular/platform-browser/animations';
-import * as i2 from '@angular/platform-browser-dynamic/testing';
-import { PlatformRef } from '@angular/core';
-import { StaticProvider } from '@angular/core';
+import * as i1 from '@angular/platform-browser-dynamic/testing';
 
 // @public
-export const platformServerTesting: (extraProviders?: StaticProvider[]) => PlatformRef;
+export const platformServerTesting: (extraProviders?: i0.StaticProvider[]) => i0.PlatformRef;
 
 // @public
 export class ServerTestingModule {
@@ -20,7 +17,7 @@ export class ServerTestingModule {
     // (undocumented)
     static ɵinj: i0.ɵɵInjectorDeclaration<ServerTestingModule>;
     // (undocumented)
-    static ɵmod: i0.ɵɵNgModuleDeclaration<ServerTestingModule, never, [typeof i1.NoopAnimationsModule], [typeof i2.BrowserDynamicTestingModule]>;
+    static ɵmod: i0.ɵɵNgModuleDeclaration<ServerTestingModule, never, never, [typeof i1.BrowserDynamicTestingModule]>;
 }
 
 // (No @packageDocumentation comment for this package)

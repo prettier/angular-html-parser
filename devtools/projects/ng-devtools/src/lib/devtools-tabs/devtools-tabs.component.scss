@@ -1,3 +1,5 @@
+@use '../../styles/theme' as theme;
+
 :host {
   position: relative;
   width: 100%;
@@ -32,14 +34,6 @@ ng-injector-tree.hidden {
 
     &:active {
       opacity: 1;
-    }
-  }
-}
-
-:host-context(.dark-theme) {
-  #nav-buttons {
-    button {
-      color: #fff;
     }
   }
 }
@@ -90,20 +84,6 @@ mat-icon {
   font-weight: 400;
 }
 
-:host-context(.dark-theme) {
-  #version-number {
-    color: #5caace;
-
-    &.unsupported-version {
-      color: red;
-    }
-  }
-
-  .inspector-active {
-    color: #4688f1 !important;
-  }
-}
-
 @media only screen and (max-width: 700px) {
   #app-angular-version {
     max-width: 135px;
@@ -140,9 +120,31 @@ mat-icon {
   font-size: 12px;
 }
 
-:host-context(.dark-theme) {
+@include theme.dark-theme {
   .frame-selector {
     background-color: #464646;
     color: #fff;
+  }
+
+  #app-angular-version {
+    color: #fff;
+  }
+
+  #nav-buttons {
+    button {
+      color: #fff;
+    }
+  }
+
+  #version-number {
+    color: #5caace;
+
+    &.unsupported-version {
+      color: red;
+    }
+  }
+
+  .inspector-active {
+    color: #4688f1 !important;
   }
 }

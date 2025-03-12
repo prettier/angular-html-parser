@@ -1,3 +1,5 @@
+@use '../../../../../styles/theme' as theme;
+
 table {
   border-collapse: collapse;
   width: 100%;
@@ -9,4 +11,12 @@ table {
 th,
 td {
   border-bottom: 1px solid #ddd;
+}
+
+@include theme.dark-theme {
+  .name,
+  .method,
+  .value {
+    color: #ffffff;
+  }
 }

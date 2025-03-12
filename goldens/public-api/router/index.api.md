@@ -5,6 +5,7 @@
 ```ts
 
 import { AfterContentInit } from '@angular/core';
+import * as _angular_router from '@angular/router';
 import { ChangeDetectorRef } from '@angular/core';
 import { Compiler } from '@angular/core';
 import { ComponentRef } from '@angular/core';
@@ -15,7 +16,6 @@ import { EventEmitter } from '@angular/core';
 import * as i0 from '@angular/core';
 import { InjectionToken } from '@angular/core';
 import { Injector } from '@angular/core';
-import { InputSignal } from '@angular/core';
 import { LocationStrategy } from '@angular/common';
 import { ModuleWithProviders } from '@angular/core';
 import { NgModuleFactory } from '@angular/core';
@@ -27,7 +27,6 @@ import { Provider } from '@angular/core';
 import { ProviderToken } from '@angular/core';
 import { QueryList } from '@angular/core';
 import { Renderer2 } from '@angular/core';
-import { RouterState as RouterState_2 } from '@angular/router';
 import { Signal } from '@angular/core';
 import { SimpleChanges } from '@angular/core';
 import { Title } from '@angular/platform-browser';
@@ -726,7 +725,7 @@ export class Router {
     resetConfig(config: Routes): void;
     // @deprecated
     routeReuseStrategy: RouteReuseStrategy;
-    get routerState(): RouterState_2;
+    get routerState(): _angular_router.RouterState;
     serializeUrl(url: UrlTree): string;
     setUpLocationChangeListener(): void;
     get url(): string;
@@ -861,15 +860,15 @@ export class RouterLinkActive implements OnChanges, OnDestroy, AfterContentInit 
 
 // @public
 export class RouterModule {
-    constructor(guard: any);
+    constructor();
     static forChild(routes: Routes): ModuleWithProviders<RouterModule>;
     static forRoot(routes: Routes, config?: ExtraOptions): ModuleWithProviders<RouterModule>;
     // (undocumented)
-    static ɵfac: i0.ɵɵFactoryDeclaration<RouterModule, [{ optional: true; }]>;
+    static ɵfac: i0.ɵɵFactoryDeclaration<RouterModule, never>;
     // (undocumented)
     static ɵinj: i0.ɵɵInjectorDeclaration<RouterModule>;
     // (undocumented)
-    static ɵmod: i0.ɵɵNgModuleDeclaration<RouterModule, never, [typeof i1.RouterOutlet, typeof i2.RouterLink, typeof i3.RouterLinkActive, typeof i4.ɵEmptyOutletComponent], [typeof i1.RouterOutlet, typeof i2.RouterLink, typeof i3.RouterLinkActive, typeof i4.ɵEmptyOutletComponent]>;
+    static ɵmod: i0.ɵɵNgModuleDeclaration<RouterModule, never, [typeof RouterOutlet, typeof RouterLink, typeof RouterLinkActive, typeof ɵEmptyOutletComponent], [typeof RouterOutlet, typeof RouterLink, typeof RouterLinkActive, typeof ɵEmptyOutletComponent]>;
 }
 
 // @public
@@ -901,7 +900,7 @@ export class RouterOutlet implements OnDestroy, OnInit, RouterOutletContract {
     ngOnDestroy(): void;
     // (undocumented)
     ngOnInit(): void;
-    readonly routerOutletData: InputSignal<unknown>;
+    readonly routerOutletData: i0.InputSignal<unknown>;
     // (undocumented)
     readonly supportsBindingToComponentInputs = true;
     // (undocumented)

@@ -11,10 +11,14 @@
   [disabled]="true"
 >
   <as-split-area size="50">
-    <mat-checkbox (change)="toggleHideInjectorsWithNoProviders()">
-      Hide injectors with no providers
-    </mat-checkbox>
-    <mat-checkbox (change)="toggleHideAngularInjectors()"> Hide framework injectors </mat-checkbox>
+    <div class="options">
+      <mat-checkbox (change)="toggleHideInjectorsWithNoProviders()">
+        Hide injectors with no providers
+      </mat-checkbox>
+      <mat-checkbox (change)="toggleHideAngularInjectors()">
+        Hide framework injectors
+      </mat-checkbox>
+    </div>
   </as-split-area>
   <as-split-area>
     <as-split unit="percent" direction="horizontal" [gutterSize]="9">
@@ -23,7 +27,7 @@
           <as-split-area size="35">
             <div class="injector-hierarchy">
               <h2>
-                Environment Hierarchy
+                <span>Environment Hierarchy</span>
                 <a
                   class="hierarchy-ref"
                   href="https://angular.dev/guide/di/hierarchical-dependency-injection#types-of-injector-hierarchies"
@@ -32,17 +36,15 @@
                   <mat-icon matTooltip="Open docs reference"> open_in_new </mat-icon>
                 </a>
               </h2>
-              <section #injectorTree class="environment-injectors injector-graph">
-                <svg #svgContainer>
-                  <g #mainGroup></g>
-                </svg>
+              <section class="injector-graph">
+                <ng-tree-visualizer-host #environmentTree />
               </section>
             </div>
           </as-split-area>
           <as-split-area size="65">
             <div class="injector-hierarchy">
               <h2>
-                Element Hierarchy
+                <span>Element Hierarchy</span>
                 <a
                   class="hierarchy-ref"
                   href="https://angular.dev/guide/di/hierarchical-dependency-injection#types-of-injector-hierarchies"
@@ -51,10 +53,8 @@
                   <mat-icon matTooltip="Open docs reference"> open_in_new </mat-icon>
                 </a>
               </h2>
-              <section #elementInjectorTree class="element-injectors injector-graph">
-                <svg #elementSvgContainer>
-                  <g #elementMainGroup></g>
-                </svg>
+              <section class="injector-graph">
+                <ng-tree-visualizer-host #elementTree />
               </section>
             </div>
           </as-split-area>

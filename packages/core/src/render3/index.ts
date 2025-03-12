@@ -5,12 +5,10 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import {LifecycleHooksFeature} from './component_ref';
 import {ɵɵdefineComponent, ɵɵdefineDirective, ɵɵdefineNgModule, ɵɵdefinePipe} from './definition';
 import {ɵɵCopyDefinitionFeature} from './features/copy_definition_feature';
 import {ɵɵHostDirectivesFeature} from './features/host_directives_feature';
 import {ɵɵInheritDefinitionFeature} from './features/inherit_definition_feature';
-import {ɵɵInputTransformsFeature} from './features/input_transforms_feature';
 import {ɵɵNgOnChangesFeature} from './features/ng_onchanges_feature';
 import {ɵɵProvidersFeature} from './features/providers_feature';
 import {ɵɵExternalStylesFeature} from './features/external_styles_feature';
@@ -235,7 +233,6 @@ export {
   getDirectives,
   getHostElement,
   getRenderedText,
-  LifecycleHooksFeature,
   PipeDef,
   ɵɵComponentDeclaration,
   ɵɵCopyDefinitionFeature,
@@ -248,7 +245,6 @@ export {
   ɵɵHostDirectivesFeature,
   ɵɵInheritDefinitionFeature,
   ɵɵInjectorDeclaration,
-  ɵɵInputTransformsFeature,
   ɵɵNgModuleDeclaration,
   ɵɵNgOnChangesFeature,
   ɵɵPipeDeclaration,

@@ -132,4 +132,14 @@ export class AnimationRendererFactory implements RendererFactory2 {
   whenRenderingDone(): Promise<any> {
     return this.engine.whenRenderingDone();
   }
+
+  /**
+   * Used during HMR to clear any cached data about a component.
+   * @param componentId ID of the component that is being replaced.
+   */
+  protected componentReplaced(componentId: string) {
+    // Flush the engine since the renderer destruction waits for animations to be done.
+    this.engine.flush();
+    (this.delegate as {componentReplaced?: (id: string) => void}).componentReplaced?.(componentId);
+  }
 }

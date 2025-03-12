@@ -132,7 +132,7 @@ TypeScript property name as a key, rather than the alias.
 ### ngOnDestroy
 
 The `ngOnDestroy` method runs once just before a component is destroyed. Angular destroys a
-component when it is no longer shown on the page, such as being hidden by `NgIf` or upon navigating
+component when it is no longer shown on the page, such as being hidden by `@if` or upon navigating
 to another page.
 
 #### DestroyRef
@@ -261,7 +261,7 @@ export class UserProfile {
       // Use the `Write` phase to write to a geometric property.
       write: () => {
         const padding = computePadding();
-        const changed = padding !== prevPadding;
+        const changed = padding !== this.prevPadding;
         if (changed) {
           nativeElement.style.padding = padding;
         }

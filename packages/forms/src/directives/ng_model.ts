@@ -333,23 +333,10 @@ export class NgModel extends NgControl implements OnChanges, OnDestroy {
   }
 
   private _checkForErrors(): void {
-    if (!this._isStandalone()) {
-      this._checkParentType();
+    if ((typeof ngDevMode === 'undefined' || ngDevMode) && !this._isStandalone()) {
+      checkParentType(this._parent);
     }
     this._checkName();
-  }
-
-  private _checkParentType(): void {
-    if (typeof ngDevMode === 'undefined' || ngDevMode) {
-      if (
-        !(this._parent instanceof NgModelGroup) &&
-        this._parent instanceof AbstractFormGroupDirective
-      ) {
-        throw formGroupNameException();
-      } else if (!(this._parent instanceof NgModelGroup) && !(this._parent instanceof NgForm)) {
-        throw modelParentException();
-      }
-    }
   }
 
   private _checkName(): void {
@@ -385,5 +372,13 @@ export class NgModel extends NgControl implements OnChanges, OnDestroy {
 
   private _getPath(controlName: string): string[] {
     return this._parent ? controlPath(controlName, this._parent) : [controlName];
+  }
+}
+
+function checkParentType(parent: ControlContainer | null) {
+  if (!(parent instanceof NgModelGroup) && parent instanceof AbstractFormGroupDirective) {
+    throw formGroupNameException();
+  } else if (!(parent instanceof NgModelGroup) && !(parent instanceof NgForm)) {
+    throw modelParentException();
   }
 }

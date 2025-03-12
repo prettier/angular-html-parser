@@ -75,6 +75,7 @@ function quickInfoSkeleton(): {[fileName: string]: string} {
               }
             }
           };
+          someTag = (...args: any[]) => '';
         }
 
         @Directive({
@@ -104,6 +105,17 @@ function quickInfoSkeleton(): {[fileName: string]: string} {
           @Input() config?: {color?: string};
         }
 
+        /**
+         * Don't use me
+         * 
+         * @deprecated use the new thing
+         */
+        @Directive({
+          selector: '[deprecated]',
+          standalone: false,
+        })
+        export class DeprecatedDirective {}
+
         @NgModule({
           declarations: [
             AppCmp,
@@ -111,6 +123,7 @@ function quickInfoSkeleton(): {[fileName: string]: string} {
             StringModel,
             TestComponent,
             SignalModel,
+            DeprecatedDirective
           ],
           imports: [
             CommonModule,
@@ -214,6 +227,20 @@ describe('quick info', () => {
           expectedSpanText: 'hero',
           expectedDisplayString: '(variable) hero: Hero',
         });
+      });
+
+      it('should get tags', () => {
+        const templateOverride = '<div depr¦ecated></div>';
+        const text = templateOverride.replace('¦', '');
+        const template = project.openFile('app.html');
+        template.contents = text;
+        env.expectNoSourceDiagnostics();
+
+        template.moveCursorToText(templateOverride);
+        const quickInfo = template.getQuickInfoAtPosition();
+        const tags = quickInfo!.tags!;
+        expect(tags[0].name).toBe('deprecated');
+        expect(toText(tags[0].text)).toBe('use the new thing');
       });
     });
 
@@ -400,6 +427,22 @@ describe('quick info', () => {
           templateOverride: `<div>{{constNamesOptional?.[0]?.na¦me}}</div>`,
           expectedSpanText: 'constNamesOptional?.[0]?.name',
           expectedDisplayString: '(property) name: "name"',
+        });
+      });
+
+      it('should work for template literal interpolations', () => {
+        expectQuickInfo({
+          templateOverride: `<div *ngFor="let name of constNames">{{\`Hello \${na¦me}\`}}</div>`,
+          expectedSpanText: 'name',
+          expectedDisplayString: '(variable) name: { readonly name: "name"; }',
+        });
+      });
+
+      it('should work for tagged template literals', () => {
+        expectQuickInfo({
+          templateOverride: `<div *ngFor="let name of constNames">{{someTag\`Hello \${na¦me}\`}}</div>`,
+          expectedSpanText: 'name',
+          expectedDisplayString: '(variable) name: { readonly name: "name"; }',
         });
       });
     });
@@ -596,6 +639,27 @@ describe('quick info', () => {
         });
       });
 
+      it('should work with void operator', () => {
+        expectQuickInfo({
+          templateOverride: `<div (click)="void myC¦lick($event)"></div>`,
+          expectedSpanText: 'myClick',
+          expectedDisplayString: '(method) AppCmp.myClick(event: any): void',
+        });
+        expectQuickInfo({
+          templateOverride: `<div (click)="void myClick($e¦vent)"></div>`,
+          expectedSpanText: '$event',
+          expectedDisplayString: '(parameter) $event: MouseEvent',
+        });
+      });
+
+      it('should work for tagged template literal tag', () => {
+        expectQuickInfo({
+          templateOverride: `<div>{{ some¦Tag\`text\` }}</div>`,
+          expectedSpanText: 'someTag',
+          expectedDisplayString: '(property) AppCmp.someTag: (...args: any[]) => string',
+        });
+      });
+
       it('should provide documentation', () => {
         const template = project.openFile('app.html');
         template.contents = `<div>{{title}}</div>`;
@@ -603,6 +667,14 @@ describe('quick info', () => {
         const quickInfo = template.getQuickInfoAtPosition();
         const documentation = toText(quickInfo!.documentation);
         expect(documentation).toBe('This is the title of the `AppCmp` Component.');
+      });
+
+      it('should work with parenthesized exponentiation expression', () => {
+        expectQuickInfo({
+          templateOverride: `{{ (-¦anyValue) ** 2 }}`,
+          expectedSpanText: 'anyValue',
+          expectedDisplayString: '(property) AppCmp.anyValue: any',
+        });
       });
     });
 

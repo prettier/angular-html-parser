@@ -66,6 +66,7 @@ import {provideRouter, RouterOutlet, Routes} from '@angular/router';
 import {Observable} from 'rxjs';
 
 import {renderApplication, SERVER_CONTEXT} from '../src/utils';
+import {BrowserAnimationsModule, provideAnimations} from '@angular/platform-browser/animations';
 
 const APP_CONFIG: ApplicationConfig = {
   providers: [provideServerRendering()],
@@ -390,11 +391,13 @@ function createMyAnimationApp(standalone: boolean) {
 }
 
 const MyAnimationApp = createMyAnimationApp(false);
-const MyAnimationAppStandalone = getStandaloneBootstrapFn(createMyAnimationApp(true));
+const MyAnimationAppStandalone = getStandaloneBootstrapFn(createMyAnimationApp(true), [
+  provideAnimations(),
+]);
 
 @NgModule({
   declarations: [MyAnimationApp],
-  imports: [BrowserModule, ServerModule],
+  imports: [BrowserModule, BrowserAnimationsModule, ServerModule],
   bootstrap: [MyAnimationApp],
 })
 class AnimationServerModule {}
@@ -973,7 +976,7 @@ class HiddenModule {}
               });
           const output = await bootstrap;
           expect(output).toMatch(
-            /<app _nghost-ng-c\d+="" ng-version="0.0.0-PLACEHOLDER" ng-server-context="ssg">/,
+            /<app ng-version="0.0.0-PLACEHOLDER" _nghost-ng-c\d+="" ng-server-context="ssg">/,
           );
         });
 

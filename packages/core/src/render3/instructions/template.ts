@@ -27,6 +27,7 @@ import {isDirectiveHost} from '../interfaces/type_checks';
 import {HEADER_OFFSET, HYDRATION, LView, RENDERER, TView, TViewType} from '../interfaces/view';
 import {appendChild} from '../node_manipulation';
 import {
+  getBindingsEnabled,
   getLView,
   getTView,
   isInSkipHydrationBlock,
@@ -34,15 +35,16 @@ import {
   setCurrentTNode,
   wasLastNodeCreated,
 } from '../state';
+import {getOrCreateTNode} from '../tnode_manipulation';
+import {mergeHostAttrs} from '../util/attrs_utils';
 import {getConstant} from '../util/view_utils';
+import {addToEndOfViewTree, createTView} from '../view/construction';
+import {createLContainer} from '../view/container';
+import {resolveDirectives} from '../view/directives';
 
 import {
-  addToEndOfViewTree,
   createDirectivesInstances,
-  createLContainer,
-  createTView,
-  getOrCreateTNode,
-  resolveDirectives,
+  findDirectiveDefMatches,
   saveResolvedLocalsInData,
 } from './shared';
 
@@ -64,7 +66,19 @@ function templateFirstCreatePass(
   // TODO(pk): refactor getOrCreateTNode to have the "create" only version
   const tNode = getOrCreateTNode(tView, index, TNodeType.Container, tagName || null, attrs || null);
 
-  resolveDirectives(tView, lView, tNode, getConstant<string[]>(tViewConsts, localRefsIndex));
+  if (getBindingsEnabled()) {
+    resolveDirectives(
+      tView,
+      lView,
+      tNode,
+      getConstant<string[]>(tViewConsts, localRefsIndex),
+      findDirectiveDefMatches,
+    );
+  }
+
+  // Merge the template attrs last so that they have the highest priority.
+  tNode.mergedAttrs = mergeHostAttrs(tNode.mergedAttrs, tNode.attrs);
+
   registerPostOrderHooks(tView, tNode);
 
   const embeddedTView = (tNode.tView = createTView(

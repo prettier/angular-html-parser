@@ -25,13 +25,11 @@ ng_module(
         ],
     ),
     deps = [
-        "//adev/shared-docs/constants",
         "//adev/shared-docs/interfaces",
         "//adev/shared-docs/providers",
         "//adev/shared-docs/utils",
         "//packages/common",
         "//packages/core",
-        "//packages/core/rxjs-interop",
         "//packages/router",
         "@npm//algoliasearch",
         "@npm//rxjs",

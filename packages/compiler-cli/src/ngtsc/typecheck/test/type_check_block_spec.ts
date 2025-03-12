@@ -57,16 +57,29 @@ describe('type check blocks', () => {
     expect(tcb('{{ a ?? b }}')).toContain('((((this).a)) ?? (((this).b)))');
     expect(tcb('{{ a ?? b ?? c }}')).toContain('(((((this).a)) ?? (((this).b))) ?? (((this).c)))');
     expect(tcb('{{ (a ?? b) + (c ?? e) }}')).toContain(
-      '(((((this).a)) ?? (((this).b))) + ((((this).c)) ?? (((this).e))))',
+      '((((((this).a)) ?? (((this).b)))) + (((((this).c)) ?? (((this).e)))))',
     );
   });
 
   it('should handle typeof expressions', () => {
     expect(tcb('{{typeof a}}')).toContain('typeof (((this).a))');
-    expect(tcb('{{!(typeof a)}}')).toContain('!(typeof (((this).a)))');
+    expect(tcb('{{!(typeof a)}}')).toContain('!((typeof (((this).a))))');
     expect(tcb('{{!(typeof a === "object")}}')).toContain(
-      '!((typeof (((this).a))) === ("object"))',
+      '!(((typeof (((this).a))) === ("object")))',
     );
+  });
+
+  it('should handle void expressions', () => {
+    expect(tcb('{{void a}}')).toContain('void (((this).a))');
+    expect(tcb('{{!(void a)}}')).toContain('!((void (((this).a))))');
+    expect(tcb('{{!(void a === "object")}}')).toContain('!(((void (((this).a))) === ("object")))');
+  });
+
+  it('should handle exponentiation expressions', () => {
+    expect(tcb('{{a * b ** c + d}}')).toContain(
+      '(((((this).a)) * ((((this).b)) ** (((this).c)))) + (((this).d)))',
+    );
+    expect(tcb('{{a ** b ** c}}')).toContain('((((this).a)) ** ((((this).b)) ** (((this).c))))');
   });
 
   it('should handle attribute values for directive inputs', () => {
@@ -143,6 +156,24 @@ describe('type check blocks', () => {
     const TEMPLATE = `<div *ngFor="let a of letters">{{a(1)}}</div>`;
     expect(tcb(TEMPLATE)).toContain('var _t2 = _t1.$implicit;');
     expect(tcb(TEMPLATE)).toContain('_t2(1)');
+  });
+
+  it('should handle template literals', () => {
+    expect(tcb('{{ `hello world` }}')).toContain('"" + (`hello world`);');
+    expect(tcb('{{ `hello \\${name}!!!` }}')).toContain('"" + (`hello \\${name}!!!`);');
+    expect(tcb('{{ `${a} - ${b} - ${c}` }}')).toContain(
+      '"" + (`${((this).a)} - ${((this).b)} - ${((this).c)}`);',
+    );
+  });
+
+  it('should handle tagged template literals', () => {
+    expect(tcb('{{ tag`hello world` }}')).toContain('"" + (((this).tag) `hello world`);');
+    expect(tcb('{{ tag`hello \\${name}!!!` }}')).toContain(
+      '"" + (((this).tag) `hello \\${name}!!!`);',
+    );
+    expect(tcb('{{ tag`${a} - ${b} - ${c}` }}')).toContain(
+      '"" + (((this).tag) `${((this).a)} - ${((this).b)} - ${((this).c)}`);',
+    );
   });
 
   describe('type constructors', () => {
@@ -925,6 +956,24 @@ describe('type check blocks', () => {
       expect(block).toContain(
         '_t1.addEventListener("event", ($event): any => { (this).foo(($event as any)); });',
       );
+    });
+
+    it('should handle $any cast in a two-way binding', () => {
+      const TEMPLATE = `<div twoWay [(input)]="$any(value)"></div>`;
+      const DIRECTIVES: TestDeclaration[] = [
+        {
+          type: 'directive',
+          name: 'TwoWay',
+          selector: '[twoWay]',
+          inputs: {input: 'input'},
+          outputs: {inputChange: 'inputChange'},
+        },
+      ];
+      const block = tcb(TEMPLATE, DIRECTIVES);
+      expect(block).toContain('var _t1 = null! as i0.TwoWay;');
+      expect(block).toContain('_t1.input = i1.ɵunwrapWritableSignal(((((this).value) as any)));');
+      expect(block).toContain('var _t2 = i1.ɵunwrapWritableSignal((((this).value) as any));');
+      expect(block).toContain('_t2 = $event;');
     });
 
     it('should detect writes to template variables', () => {

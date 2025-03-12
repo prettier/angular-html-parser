@@ -1,8 +1,9 @@
+@use '../../../../../styles/theme' as theme;
+
 :host {
   width: 100%;
   display: block;
   overflow: auto;
-  height: calc(100% - 24px);
 
   mat-tree {
     display: table;
@@ -43,7 +44,7 @@
   }
 }
 
-:host-context(.dark-theme) {
+@include theme.dark-theme {
   .property-list {
     .name {
       color: #54c9bd !important;

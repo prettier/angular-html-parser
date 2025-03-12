@@ -10,16 +10,11 @@ import {DOCS_VIEWER_SELECTOR, DocViewer, WINDOW, TutorialConfig, TutorialType} f
 
 import {Component, Input, signal} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
-import {provideNoopAnimations} from '@angular/platform-browser/animations';
 import {provideRouter} from '@angular/router';
 import {of} from 'rxjs';
 
-import {
-  EMBEDDED_EDITOR_SELECTOR,
-  EmbeddedEditor,
-  EmbeddedTutorialManager,
-  NodeRuntimeSandbox,
-} from '../../editor';
+import {EMBEDDED_EDITOR_SELECTOR, EmbeddedEditor, EmbeddedTutorialManager} from '../../editor';
+import {NodeRuntimeSandbox} from '../../editor/node-runtime-sandbox.service';
 
 import {mockAsyncProvider} from '../../core/services/inject-async';
 import Tutorial from './tutorial.component';
@@ -95,7 +90,6 @@ describe('Tutorial', () => {
     TestBed.configureTestingModule({
       imports: [Tutorial, EmbeddedEditor, DocViewer],
       providers: [
-        provideNoopAnimations(),
         provideRouter([]),
         {
           provide: WINDOW,

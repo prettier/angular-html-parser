@@ -11,10 +11,10 @@ import {
   Component,
   DestroyRef,
   input,
-  computed,
   inject,
+  afterNextRender,
 } from '@angular/core';
-import {RouterLink} from '@angular/router';
+import {Location} from '@angular/common';
 import {TableOfContentsLevel} from '../../interfaces/index';
 import {TableOfContentsLoader} from '../../services/table-of-contents-loader.service';
 import {TableOfContentsScrollSpy} from '../../services/table-of-contents-scroll-spy.service';
@@ -25,11 +25,12 @@ import {IconComponent} from '../icon/icon.component';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './table-of-contents.component.html',
   styleUrls: ['./table-of-contents.component.scss'],
-  imports: [RouterLink, IconComponent],
+  imports: [IconComponent],
 })
 export class TableOfContents {
   // Element that contains the content from which the Table of Contents is built
   readonly contentSourceElement = input.required<HTMLElement>();
+  readonly location = inject(Location);
 
   private readonly scrollSpy = inject(TableOfContentsScrollSpy);
   private readonly tableOfContentsLoader = inject(TableOfContentsLoader);
@@ -38,12 +39,15 @@ export class TableOfContents {
   tableOfContentItems = this.tableOfContentsLoader.tableOfContentItems;
 
   activeItemId = this.scrollSpy.activeItemId;
-  shouldDisplayScrollToTop = computed(() => !this.scrollSpy.scrollbarThumbOnTop());
   TableOfContentsLevel = TableOfContentsLevel;
 
-  ngAfterViewInit() {
-    this.tableOfContentsLoader.buildTableOfContent(this.contentSourceElement());
-    this.scrollSpy.startListeningToScroll(this.contentSourceElement(), this.destroyRef);
+  constructor() {
+    afterNextRender({
+      read: () => {
+        this.tableOfContentsLoader.buildTableOfContent(this.contentSourceElement());
+        this.scrollSpy.setupActiveItemListener(this.contentSourceElement(), this.destroyRef);
+      },
+    });
   }
 
   scrollToTop(): void {

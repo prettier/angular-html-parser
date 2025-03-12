@@ -31,12 +31,14 @@ import {
   SCHEDULE_IN_ROOT_ZONE,
 } from './zoneless_scheduling';
 import {SCHEDULE_IN_ROOT_ZONE_DEFAULT} from './flags';
+import {INTERNAL_APPLICATION_ERROR_HANDLER, ErrorHandler} from '../../error_handler';
 
 @Injectable({providedIn: 'root'})
 export class NgZoneChangeDetectionScheduler {
   private readonly zone = inject(NgZone);
   private readonly changeDetectionScheduler = inject(ChangeDetectionScheduler);
   private readonly applicationRef = inject(ApplicationRef);
+  private readonly applicationErrorHandler = inject(INTERNAL_APPLICATION_ERROR_HANDLER);
 
   private _onMicrotaskEmptySubscription?: Subscription;
 
@@ -54,7 +56,11 @@ export class NgZoneChangeDetectionScheduler {
           return;
         }
         this.zone.run(() => {
-          this.applicationRef.tick();
+          try {
+            this.applicationRef.tick();
+          } catch (e) {
+            this.applicationErrorHandler(e);
+          }
         });
       },
     });
@@ -124,6 +130,14 @@ export function internalProvideZoneChangeDetection({
       provide: SCHEDULE_IN_ROOT_ZONE,
       useValue: scheduleInRootZone ?? SCHEDULE_IN_ROOT_ZONE_DEFAULT,
     },
+    {
+      provide: INTERNAL_APPLICATION_ERROR_HANDLER,
+      useFactory: () => {
+        const zone = inject(NgZone);
+        const userErrorHandler = inject(ErrorHandler);
+        return (e: unknown) => zone.runOutsideAngular(() => userErrorHandler.handleError(e));
+      },
+    },
   ];
 }
 
@@ -144,7 +158,7 @@ export function internalProvideZoneChangeDetection({
  * ```
  *
  * @publicApi
- * @see {@link bootstrapApplication}
+ * @see {@link /api/core/bootstrapApplication bootstrapApplication}
  * @see {@link NgZoneOptions}
  */
 export function provideZoneChangeDetection(options?: NgZoneOptions): EnvironmentProviders {
@@ -181,7 +195,7 @@ export interface NgZoneOptions {
    * Optionally specify coalescing event change detections or not.
    * Consider the following case.
    *
-   * ```
+   * ```html
    * <div (click)="doSomething()">
    *   <button (click)="doSomethingElse()"></button>
    * </div>
@@ -204,7 +218,7 @@ export interface NgZoneOptions {
    * into a single change detection.
    *
    * Consider the following case.
-   * ```
+   * ```ts
    * for (let i = 0; i < 10; i ++) {
    *   ngZone.run(() => {
    *     // do something

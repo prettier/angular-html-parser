@@ -44,10 +44,9 @@ import {
   createElementNode,
   createTextNode,
   nativeInsertBefore,
-  nativeParentNode,
   nativeRemoveNode,
   updateTextNode,
-} from '../node_manipulation';
+} from '../dom_node_manipulation';
 import {
   getBindingIndex,
   isInSkipHydrationBlock,
@@ -259,7 +258,6 @@ export function applyMutableOpCodes(
     if (typeof opCode == 'string') {
       const textNodeIndex = mutableOpCodes[++i] as number;
       if (lView[textNodeIndex] === null) {
-        ngDevMode && ngDevMode.rendererCreateTextNode++;
         ngDevMode && assertIndexInRange(lView, textNodeIndex);
         lView[textNodeIndex] = _locateOrCreateNode(lView, textNodeIndex, opCode, Node.TEXT_NODE);
       }
@@ -272,7 +270,7 @@ export function applyMutableOpCodes(
             // must insert into the root. (Only subsequent operations can insert into a dynamic
             // parent)
             rootIdx = parentIdx;
-            rootRNode = nativeParentNode(renderer, anchorRNode);
+            rootRNode = renderer.parentNode(anchorRNode);
           }
           let insertInFrontOf: RNode | null;
           let parentRNode: RElement | null;
@@ -345,7 +343,6 @@ export function applyMutableOpCodes(
                 'string',
                 `Expected "${commentValue}" to be a comment node value`,
               );
-            ngDevMode && ngDevMode.rendererCreateComment++;
             ngDevMode && assertIndexInExpandoRange(lView, commentNodeIndex);
             const commentRNode = (lView[commentNodeIndex] = _locateOrCreateNode(
               lView,
@@ -368,7 +365,6 @@ export function applyMutableOpCodes(
                 `Expected "${tagName}" to be an element node tag name`,
               );
 
-            ngDevMode && ngDevMode.rendererCreateElement++;
             ngDevMode && assertIndexInExpandoRange(lView, elementNodeIndex);
             const elementRNode = (lView[elementNodeIndex] = _locateOrCreateNode(
               lView,

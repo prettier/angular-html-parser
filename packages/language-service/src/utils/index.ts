@@ -114,16 +114,16 @@ export function isExpressionNode(node: TmplAstNode | AST): node is AST {
   return node instanceof AST;
 }
 
-export interface TemplateInfo {
-  template: TmplAstNode[];
-  component: ts.ClassDeclaration;
+export interface TypeCheckInfo {
+  nodes: TmplAstNode[];
+  declaration: ts.ClassDeclaration;
 }
 
-function getInlineTemplateInfoAtPosition(
+function getInlineTypeCheckInfoAtPosition(
   sf: ts.SourceFile,
   position: number,
   compiler: NgCompiler,
-): TemplateInfo | undefined {
+): TypeCheckInfo | undefined {
   const expression = findTightestNode(sf, position);
   if (expression === undefined) {
     return undefined;
@@ -135,9 +135,10 @@ function getInlineTemplateInfoAtPosition(
 
   // Return `undefined` if the position is not on the template expression or the template resource
   // is not inline.
-  const resources = compiler.getComponentResources(classDecl);
+  const resources = compiler.getDirectiveResources(classDecl);
   if (
     resources === null ||
+    resources.template === null ||
     isExternalResource(resources.template) ||
     expression !== resources.template.expression
   ) {
@@ -149,24 +150,24 @@ function getInlineTemplateInfoAtPosition(
     return undefined;
   }
 
-  return {template, component: classDecl};
+  return {nodes: template, declaration: classDecl};
 }
 
 /**
- * Retrieves the `ts.ClassDeclaration` at a location along with its template nodes.
+ * Retrieves the `ts.ClassDeclaration` at a location along with its template AST nodes.
  */
-export function getTemplateInfoAtPosition(
+export function getTypeCheckInfoAtPosition(
   fileName: string,
   position: number,
   compiler: NgCompiler,
-): TemplateInfo | undefined {
+): TypeCheckInfo | undefined {
   if (isTypeScriptFile(fileName)) {
     const sf = compiler.getCurrentProgram().getSourceFile(fileName);
     if (sf === undefined) {
       return undefined;
     }
 
-    return getInlineTemplateInfoAtPosition(sf, position, compiler);
+    return getInlineTypeCheckInfoAtPosition(sf, position, compiler);
   } else {
     return getFirstComponentForTemplateFile(fileName, compiler);
   }
@@ -191,7 +192,7 @@ function tsDeclarationSortComparator(a: DeclarationNode, b: DeclarationNode): nu
 export function getFirstComponentForTemplateFile(
   fileName: string,
   compiler: NgCompiler,
-): TemplateInfo | undefined {
+): TypeCheckInfo | undefined {
   const templateTypeChecker = compiler.getTemplateTypeChecker();
   const components = compiler.getComponentsWithTemplateFile(fileName);
   const sortedComponents = Array.from(components).sort(tsDeclarationSortComparator);
@@ -203,7 +204,7 @@ export function getFirstComponentForTemplateFile(
     if (template === null) {
       continue;
     }
-    return {template, component};
+    return {nodes: template, declaration: component};
   }
 
   return undefined;
@@ -422,7 +423,7 @@ export function getTemplateLocationFromTcbLocation(
   tcbIsShim: boolean,
   positionInFile: number,
 ): {templateUrl: AbsoluteFsPath; span: ParseSourceSpan} | null {
-  const mapping = templateTypeChecker.getTemplateMappingAtTcbLocation({
+  const mapping = templateTypeChecker.getSourceMappingAtTcbLocation({
     tcbPath,
     isShimFile: tcbIsShim,
     positionInFile,
@@ -430,13 +431,13 @@ export function getTemplateLocationFromTcbLocation(
   if (mapping === null) {
     return null;
   }
-  const {templateSourceMapping, span} = mapping;
+  const {sourceMapping, span} = mapping;
 
   let templateUrl: AbsoluteFsPath;
-  if (templateSourceMapping.type === 'direct') {
-    templateUrl = absoluteFromSourceFile(templateSourceMapping.node.getSourceFile());
-  } else if (templateSourceMapping.type === 'external') {
-    templateUrl = absoluteFrom(templateSourceMapping.templateUrl);
+  if (sourceMapping.type === 'direct') {
+    templateUrl = absoluteFromSourceFile(sourceMapping.node.getSourceFile());
+  } else if (sourceMapping.type === 'external') {
+    templateUrl = absoluteFrom(sourceMapping.templateUrl);
   } else {
     // This includes indirect mappings, which are difficult to map directly to the code
     // location. Diagnostics similarly return a synthetic template string for this case rather

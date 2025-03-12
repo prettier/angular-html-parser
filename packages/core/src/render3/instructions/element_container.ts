@@ -17,15 +17,18 @@ import {isDetachedByI18n} from '../../i18n/utils';
 import {assertEqual, assertIndexInRange, assertNumber} from '../../util/assert';
 import {assertHasParent} from '../assert';
 import {attachPatchData} from '../context_discovery';
+import {createCommentNode} from '../dom_node_manipulation';
 import {registerPostOrderHooks} from '../hooks';
 import {TAttributes, TElementContainerNode, TNode, TNodeType} from '../interfaces/node';
 import {RComment} from '../interfaces/renderer_dom';
 import {isContentQueryHost, isDirectiveHost} from '../interfaces/type_checks';
 import {HEADER_OFFSET, HYDRATION, LView, RENDERER, TView} from '../interfaces/view';
 import {assertTNodeType} from '../node_assert';
-import {appendChild, createCommentNode} from '../node_manipulation';
+import {appendChild} from '../node_manipulation';
+import {executeContentQueries} from '../queries/query_execution';
 import {
   getBindingIndex,
+  getBindingsEnabled,
   getCurrentTNode,
   getLView,
   getTView,
@@ -37,13 +40,14 @@ import {
   wasLastNodeCreated,
 } from '../state';
 import {computeStaticStyling} from '../styling/static_styling';
+import {mergeHostAttrs} from '../util/attrs_utils';
 import {getConstant} from '../util/view_utils';
 
+import {getOrCreateTNode} from '../tnode_manipulation';
+import {resolveDirectives} from '../view/directives';
 import {
   createDirectivesInstances,
-  executeContentQueries,
-  getOrCreateTNode,
-  resolveDirectives,
+  findDirectiveDefMatches,
   saveResolvedLocalsInData,
 } from './shared';
 
@@ -67,7 +71,12 @@ function elementContainerStartFirstCreatePass(
   }
 
   const localRefs = getConstant<string[]>(tViewConsts, localRefsIndex);
-  resolveDirectives(tView, lView, tNode, localRefs);
+  if (getBindingsEnabled()) {
+    resolveDirectives(tView, lView, tNode, localRefs, findDirectiveDefMatches);
+  }
+
+  // Merge the template attrs last so that they have the highest priority.
+  tNode.mergedAttrs = mergeHostAttrs(tNode.mergedAttrs, tNode.attrs);
 
   if (tView.queries !== null) {
     tView.queries.elementStart(tView, tNode);

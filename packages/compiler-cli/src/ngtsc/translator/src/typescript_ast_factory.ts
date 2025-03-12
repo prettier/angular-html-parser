@@ -54,6 +54,7 @@ const BINARY_OPERATORS: Record<BinaryOperator, ts.BinaryOperator> = {
   '-': ts.SyntaxKind.MinusToken,
   '%': ts.SyntaxKind.PercentToken,
   '*': ts.SyntaxKind.AsteriskToken,
+  '**': ts.SyntaxKind.AsteriskAsteriskToken,
   '!=': ts.SyntaxKind.ExclamationEqualsToken,
   '!==': ts.SyntaxKind.ExclamationEqualsEqualsToken,
   '||': ts.SyntaxKind.BarBarToken,
@@ -243,6 +244,14 @@ export class TypeScriptAstFactory implements AstFactory<ts.Statement, ts.Express
     tag: ts.Expression,
     template: TemplateLiteral<ts.Expression>,
   ): ts.Expression {
+    return ts.factory.createTaggedTemplateExpression(
+      tag,
+      undefined,
+      this.createTemplateLiteral(template),
+    );
+  }
+
+  createTemplateLiteral(template: TemplateLiteral<ts.Expression>): ts.TemplateLiteral {
     let templateLiteral: ts.TemplateLiteral;
     const length = template.elements.length;
     const head = template.elements[0];
@@ -276,12 +285,14 @@ export class TypeScriptAstFactory implements AstFactory<ts.Statement, ts.Express
     if (head.range !== null) {
       this.setSourceMapRange(templateLiteral, head.range);
     }
-    return ts.factory.createTaggedTemplateExpression(tag, undefined, templateLiteral);
+    return templateLiteral;
   }
 
   createThrowStatement = ts.factory.createThrowStatement;
 
   createTypeOfExpression = ts.factory.createTypeOfExpression;
+
+  createVoidExpression = ts.factory.createVoidExpression;
 
   createUnaryExpression(operator: UnaryOperator, operand: ts.Expression): ts.Expression {
     return ts.factory.createPrefixUnaryExpression(UNARY_OPERATORS[operator], operand);

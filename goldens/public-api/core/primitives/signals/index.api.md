@@ -4,6 +4,12 @@
 
 ```ts
 
+// @public (undocumented)
+export type ComputationFn<S, D> = (source: S, previous?: {
+    source: S;
+    value: D;
+}) => D;
+
 // @public
 export interface ComputedNode<T> extends ReactiveNode {
     computation: () => T;
@@ -31,6 +37,9 @@ export function consumerPollProducersForChange(node: ReactiveNode): boolean;
 // @public
 export function createComputed<T>(computation: () => T): ComputedGetter<T>;
 
+// @public (undocumented)
+export function createLinkedSignal<S, D>(sourceFn: () => S, computationFn: ComputationFn<S, D>, equalityFn?: ValueEqualityFn<D>): LinkedSignalGetter<S, D>;
+
 // @public
 export function createSignal<T>(initialValue: T): SignalGetter<T>;
 
@@ -48,6 +57,28 @@ export function isInNotificationPhase(): boolean;
 
 // @public (undocumented)
 export function isReactive(value: unknown): value is Reactive;
+
+// @public (undocumented)
+export type LinkedSignalGetter<S, D> = (() => D) & {
+    [SIGNAL]: LinkedSignalNode<S, D>;
+};
+
+// @public (undocumented)
+export interface LinkedSignalNode<S, D> extends ReactiveNode {
+    computation: ComputationFn<S, D>;
+    // (undocumented)
+    equal: ValueEqualityFn<D>;
+    error: unknown;
+    source: () => S;
+    sourceValue: S;
+    value: D;
+}
+
+// @public (undocumented)
+export function linkedSignalSetFn<S, D>(node: LinkedSignalNode<S, D>, newValue: D): void;
+
+// @public (undocumented)
+export function linkedSignalUpdateFn<S, D>(node: LinkedSignalNode<S, D>, updater: (value: D) => D): void;
 
 // @public
 export function producerAccessed(node: ReactiveNode): void;
@@ -106,14 +137,14 @@ export function runPostSignalSetFn(): void;
 // @public (undocumented)
 export function setActiveConsumer(consumer: ReactiveNode | null): ReactiveNode | null;
 
-// @public (undocumented)
+// @public
 export function setAlternateWeakRefImpl(impl: unknown): void;
 
 // @public (undocumented)
 export function setPostSignalSetFn(fn: (() => void) | null): (() => void) | null;
 
 // @public (undocumented)
-export function setThrowInvalidWriteToSignalError(fn: () => never): void;
+export function setThrowInvalidWriteToSignalError(fn: <T>(node: SignalNode<T>) => never): void;
 
 // @public
 export const SIGNAL: unique symbol;
@@ -140,6 +171,9 @@ export function signalSetFn<T>(node: SignalNode<T>, newValue: T): void;
 
 // @public (undocumented)
 export function signalUpdateFn<T>(node: SignalNode<T>, updater: (value: T) => T): void;
+
+// @public
+export function untracked<T>(nonReactiveReadsFn: () => T): T;
 
 // @public
 export type ValueEqualityFn<T> = (a: T, b: T) => boolean;

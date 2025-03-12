@@ -15,6 +15,7 @@ import {
   ChangeDetectionScheduler,
   NotificationSource,
 } from './change_detection/scheduling/zoneless_scheduling';
+import {INTERNAL_APPLICATION_ERROR_HANDLER} from './error_handler';
 
 /**
  * Internal implementation of the pending tasks service.
@@ -85,8 +86,9 @@ export class PendingTasksInternal implements OnDestroy {
  * @developerPreview
  */
 export class PendingTasks {
-  private internalPendingTasks = inject(PendingTasksInternal);
-  private scheduler = inject(ChangeDetectionScheduler);
+  private readonly internalPendingTasks = inject(PendingTasksInternal);
+  private readonly scheduler = inject(ChangeDetectionScheduler);
+  private readonly errorHandler = inject(INTERNAL_APPLICATION_ERROR_HANDLER);
   /**
    * Adds a new task that should block application's stability.
    * @returns A cleanup function that removes a task when called.
@@ -107,30 +109,18 @@ export class PendingTasks {
   /**
    * Runs an asynchronous function and blocks the application's stability until the function completes.
    *
-   * ```
+   * ```ts
    * pendingTasks.run(async () => {
    *   const userData = await fetch('/api/user');
    *   this.userData.set(userData);
    * });
    * ```
    *
-   * Application stability is at least delayed until the next tick after the `run` method resolves
-   * so it is safe to make additional updates to application state that would require UI synchronization:
-   *
-   * ```
-   * const userData = await pendingTasks.run(() => fetch('/api/user'));
-   * this.userData.set(userData);
-   * ```
-   *
    * @param fn The asynchronous function to execute
    */
-  async run<T>(fn: () => Promise<T>): Promise<T> {
+  run<T>(fn: () => Promise<T>): void {
     const removeTask = this.add();
-    try {
-      return await fn();
-    } finally {
-      removeTask();
-    }
+    fn().catch(this.errorHandler).finally(removeTask);
   }
 
   /** @nocollapse */

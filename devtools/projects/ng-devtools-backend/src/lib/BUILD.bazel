@@ -41,6 +41,7 @@ ts_library(
     name = "highlighter",
     srcs = ["highlighter.ts"],
     deps = [
+        "//devtools/projects/ng-devtools-backend/src/lib/ng-debug-api",
         "//devtools/projects/protocol",
         "//packages/core",
     ],
@@ -98,6 +99,10 @@ ts_library(
 ts_library(
     name = "utils",
     srcs = ["utils.ts"],
+    deps = [
+        "//devtools/projects/ng-devtools-backend/src/lib/ng-debug-api",
+        "//packages/core",
+    ],
 )
 
 ts_library(
@@ -158,4 +163,19 @@ ts_library(
         "//devtools/projects/protocol",
         "//packages/core",
     ],
+)
+
+ts_test_library(
+    name = "component_tree_test_lib",
+    srcs = ["component-tree.spec.ts"],
+    deps = [
+        ":component_tree",
+        "//packages/core",
+        "@npm//jasmine",
+    ],
+)
+
+karma_web_test_suite(
+    name = "component_tree_test",
+    deps = [":component_tree_test_lib"],
 )

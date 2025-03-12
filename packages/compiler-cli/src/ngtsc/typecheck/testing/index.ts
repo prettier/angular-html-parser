@@ -74,13 +74,13 @@ import {getRootDirs} from '../../util/src/typescript';
 import {
   OptimizeFor,
   ProgramTypeCheckAdapter,
+  TemplateContext,
   TemplateDiagnostic,
   TemplateTypeChecker,
   TypeCheckContext,
 } from '../api';
 import {
-  TemplateId,
-  TemplateSourceMapping,
+  TypeCheckId,
   TypeCheckableDirectiveMeta,
   TypeCheckBlockMetadata,
   TypeCheckingConfig,
@@ -388,7 +388,7 @@ export function tcb(
   const binder = new R3TargetBinder<DirectiveMeta>(matcher);
   const boundTarget = binder.bind({template: nodes});
 
-  const id = 'tcb' as TemplateId;
+  const id = 'tcb' as TypeCheckId;
   const meta: TypeCheckBlockMetadata = {
     id,
     boundTarget,
@@ -633,28 +633,22 @@ export function setup(
         );
         const binder = new R3TargetBinder<DirectiveMeta>(matcher);
         const classRef = new Reference(classDecl);
-
-        const sourceMapping: TemplateSourceMapping = {
-          type: 'external',
-          template,
-          templateUrl,
-          componentClass: classRef.node,
-          // Use the class's name for error mappings.
-          node: classRef.node.name,
-        };
-
-        ctx.addTemplate(
-          classRef,
-          binder,
+        const templateContext: TemplateContext = {
           nodes,
           pipes,
-          [],
-          sourceMapping,
-          templateFile,
-          errors,
-          false,
-          false,
-        );
+          sourceMapping: {
+            type: 'external',
+            template,
+            templateUrl,
+            componentClass: classRef.node,
+            node: classRef.node.name, // Use the class's name for error mappings.
+          },
+          file: templateFile,
+          parseErrors: errors,
+          preserveWhitespaces: false,
+        };
+
+        ctx.addDirective(classRef, binder, [], templateContext, false);
       }
     }
   });
@@ -1039,8 +1033,8 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
   }
   missingReferenceTarget(): void {}
   missingPipe(): void {}
-  deferredPipeUsedEagerly(templateId: TemplateId, ast: BindingPipe): void {}
-  deferredComponentUsedEagerly(templateId: TemplateId, element: TmplAstElement): void {}
+  deferredPipeUsedEagerly(id: TypeCheckId, ast: BindingPipe): void {}
+  deferredComponentUsedEagerly(id: TypeCheckId, element: TmplAstElement): void {}
   duplicateTemplateVar(): void {}
   requiresInlineTcb(): void {}
   requiresInlineTypeConstructors(): void {}
@@ -1051,14 +1045,14 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
   inaccessibleDeferredTriggerElement(): void {}
   controlFlowPreventingContentProjection(): void {}
   illegalWriteToLetDeclaration(
-    templateId: TemplateId,
+    id: TypeCheckId,
     node: PropertyWrite,
     target: TmplAstLetDeclaration,
   ): void {}
   letUsedBeforeDefinition(
-    templateId: TemplateId,
+    id: TypeCheckId,
     node: PropertyRead,
     target: TmplAstLetDeclaration,
   ): void {}
-  conflictingDeclaration(templateId: TemplateId, current: TmplAstLetDeclaration): void {}
+  conflictingDeclaration(id: TypeCheckId, current: TmplAstLetDeclaration): void {}
 }

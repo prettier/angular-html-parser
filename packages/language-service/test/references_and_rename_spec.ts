@@ -1708,7 +1708,7 @@ describe('find references and rename locations', () => {
 
       it('should be able to request references', () => {
         const refs = getReferencesAtPosition(file)!;
-        expect(refs.length).toBe(6);
+        expect(refs.length).toBe(7);
         assertTextSpans(refs, ['<div *ngFor="let item of items"></div>', 'NgForOf']);
         assertFileNames(refs, ['index.d.ts', 'app.ts']);
       });
@@ -1814,6 +1814,14 @@ describe('find references and rename locations', () => {
       });
 
       it('finds rename locations', () => {
+        env.expectNoSourceDiagnostics();
+        const result = file.getRenameInfo() as ts.RenameInfoSuccess;
+        // Note that although we do not provide rename locations, we must _not_ respond with
+        // a result that indicates the item cannot be renamed when info is requested or we will prevent
+        // other rename providers from performing the rename.
+        expect(result.canRename).toBeTrue();
+        expect(result.displayName).toEqual('my-comp');
+        expect(result.kind).toEqual('component');
         const renameLocations = getRenameLocationsAtPosition(file)!;
         expect(renameLocations).toBeUndefined();
         // TODO(atscott): We may consider supporting rename of component selector in the future

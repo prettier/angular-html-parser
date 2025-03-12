@@ -28,7 +28,6 @@ import {
   ɵPendingTasksInternal as PendingTasks,
   output,
 } from '@angular/core';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TOC_SKIP_CONTENT_MARKER, NavigationState} from '../../../services/index';
 import {TableOfContents} from '../../table-of-contents/table-of-contents.component';
 import {IconComponent} from '../../icon/icon.component';
@@ -40,6 +39,7 @@ import {fromEvent} from 'rxjs';
 import {Breadcrumb} from '../../breadcrumb/breadcrumb.component';
 import {CopySourceCodeButton} from '../../copy-source-code-button/copy-source-code-button.component';
 import {ExampleViewer} from '../example-viewer/example-viewer.component';
+import {takeUntilDestroyed} from '../../../services/rxjs-interop';
 
 /// <reference types="@types/dom-view-transitions" />
 
@@ -79,7 +79,6 @@ export class DocViewer implements OnChanges {
   private readonly injector = inject(Injector);
   private readonly appRef = inject(ApplicationRef);
 
-  // tslint:disable-next-line:no-unused-variable
   private animateContent = false;
   private readonly pendingTasks = inject(PendingTasks);
 
@@ -197,13 +196,13 @@ export class DocViewer implements OnChanges {
     const exampleRef = this.viewContainer.createComponent(ExampleViewer);
 
     this.countOfExamples++;
-    exampleRef.instance.metadata = {
+    exampleRef.setInput('metadata', {
       title: title ?? firstCodeSnippetTitle,
       path,
       files: snippets,
       preview,
       id: this.countOfExamples,
-    };
+    });
 
     exampleRef.instance.githubUrl = `${GITHUB_CONTENT_URL}/${snippets[0].name}`;
     exampleRef.instance.stackblitzUrl = `${ASSETS_EXAMPLES_PATH}/${snippets[0].name}.html`;
@@ -266,9 +265,12 @@ export class DocViewer implements OnChanges {
   }
 
   private loadIcons(element: HTMLElement): void {
-    element.querySelectorAll('docs-icon').forEach((iconsPlaceholder) => {
-      this.renderComponent(IconComponent, iconsPlaceholder as HTMLElement);
-    });
+    // We need to make sure that we don't reload the icons in loadCopySourceCodeButtons
+    element
+      .querySelectorAll('docs-icon:not([docs-copy-source-code] docs-icon)')
+      .forEach((iconsPlaceholder) => {
+        this.renderComponent(IconComponent, iconsPlaceholder as HTMLElement);
+      });
   }
 
   /**
@@ -290,9 +292,6 @@ export class DocViewer implements OnChanges {
         componentRef.setInput(name, value);
       }
     }
-
-    // Trigger change detection after setting inputs.
-    componentRef.changeDetectorRef.detectChanges();
 
     // Attach a view to the ApplicationRef for change detection
     // purposes and for hydration serialization to pick it up
@@ -341,7 +340,12 @@ export class DocViewer implements OnChanges {
             relativeUrl = hrefAttr;
           }
 
-          handleHrefClickEventWithRouter(e, this.router, relativeUrl);
+          // Unless this is a link to an element within the same page, use the Angular router.
+          // https://github.com/angular/angular/issues/30139
+          const scrollToElementExists = relativeUrl.startsWith(this.location.path() + '#');
+          if (!scrollToElementExists) {
+            handleHrefClickEventWithRouter(e, this.router, relativeUrl);
+          }
         });
     });
   }
