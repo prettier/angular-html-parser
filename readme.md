@@ -1,1 +1,1 @@
-[`angular-html-parser`](./packages/angular-html-parser/readme.md)
+# [`angular-html-parser`](./packages/angular-html-parser/)
