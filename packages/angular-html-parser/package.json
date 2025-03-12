@@ -23,11 +23,13 @@
     "clean": "del-cli ./lib",
     "build-lib": "tsc -p tsconfig.build.json",
     "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
-    "test": "ts-node --project tsconfig.test.json -r tsconfig-paths/register node_modules/jasmine/bin/jasmine.js ../compiler/test/ml_parser/*_spec.ts ./test/*_spec.ts",
+    "test": "vitest",
     "release": "standard-version",
     "fix": "prettier . --write"
   },
   "devDependencies": {
+    "@types/node": "22.13.10",
+    "@vitest/coverage-v8": "3.0.8",
     "del-cli": "6.0.0",
     "jasmine": "5.6.0",
     "jscodeshift": "17.1.2",
@@ -35,7 +37,8 @@
     "standard-version": "9.5.0",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
-    "typescript": "5.8.2"
+    "typescript": "5.8.2",
+    "vitest": "3.0.8"
   },
   "engines": {
     "node": ">= 14"

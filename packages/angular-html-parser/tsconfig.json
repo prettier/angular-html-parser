@@ -7,13 +7,7 @@
     "rewriteRelativeImportExtensions": true,
     "paths": {
       "@angular/*": ["../*"]
-    }
-  },
-  "ts-node": {
-    "transpileOnly": true,
-    "experimentalResolver": true,
-    "moduleTypes": {
-      "**/*.ts": "cjs"
-    }
+    },
+    "types": ["vitest/globals"]
   }
 }

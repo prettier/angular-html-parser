@@ -4,4 +4,6 @@
 # JS and TS files must always use LF for tools to work
 *.js eol=lf
 *.ts eol=lf
-angular-html-parser/**/* eol.lf
+
+# angular-html-parser
+packages/angular-html-parser/**/* eol.lf

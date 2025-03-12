@@ -56,15 +56,15 @@ describe("AST format", () => {
     const input = `<!DOCTYPE html> <el attr></el>txt<!--  --><![CDATA[foo]]>`;
     const ast = parse(input);
     expect(ast.rootNodes).toEqual([
-      jasmine.objectContaining({ type: "docType" }),
-      jasmine.objectContaining({ type: "text" }),
-      jasmine.objectContaining({
+      expect.objectContaining({ type: "docType" }),
+      expect.objectContaining({ type: "text" }),
+      expect.objectContaining({
         type: "element",
-        attrs: [jasmine.objectContaining({ type: "attribute" })],
+        attrs: [expect.objectContaining({ type: "attribute" })],
       }),
-      jasmine.objectContaining({ type: "text" }),
-      jasmine.objectContaining({ type: "comment" }),
-      jasmine.objectContaining({ type: "cdata" }),
+      expect.objectContaining({ type: "text" }),
+      expect.objectContaining({ type: "comment" }),
+      expect.objectContaining({ type: "cdata" }),
     ]);
   });
 
@@ -72,25 +72,25 @@ describe("AST format", () => {
     const input = `@if (user.isHuman) { <p>Hello human</p> }`;
     const ast = parse(input, { tokenizeAngularBlocks: true });
     expect(ast.rootNodes).toEqual([
-      jasmine.objectContaining({
+      expect.objectContaining({
         name: "if",
         type: "block",
         parameters: [
-          jasmine.objectContaining({
+          expect.objectContaining({
             type: "blockParameter",
             expression: "user.isHuman",
           }),
         ],
         children: [
-          jasmine.objectContaining({ type: "text", value: " " }),
-          jasmine.objectContaining({
+          expect.objectContaining({ type: "text", value: " " }),
+          expect.objectContaining({
             type: "element",
             name: "p",
             children: [
-              jasmine.objectContaining({ type: "text", value: "Hello human" }),
+              expect.objectContaining({ type: "text", value: "Hello human" }),
             ],
           }),
-          jasmine.objectContaining({ type: "text", value: " " }),
+          expect.objectContaining({ type: "text", value: " " }),
         ],
       }),
     ]);
