@@ -188,9 +188,13 @@ export function getHtmlTagDefinition(tagName: string): HtmlTagDefinition {
   }
   // We have to make both a case-sensitive and a case-insensitive lookup, because
   // HTML tag names are case insensitive, whereas some SVG tags are case sensitive.
+
+  // angular-html-parser: modification
   return (
-      TAG_DEFINITIONS[tagName] ??
-      // TAG_DEFINITIONS[tagName.toLowerCase()] ?? -- angular-html-parser modification
-      DEFAULT_TAG_DEFINITION
+    TAG_DEFINITIONS[tagName] ?? DEFAULT_TAG_DEFINITION
   );
+
+  // return (
+  //   TAG_DEFINITIONS[tagName] ?? TAG_DEFINITIONS[tagName.toLowerCase()] ?? DEFAULT_TAG_DEFINITION
+  // );
 }

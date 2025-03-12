@@ -1,3 +1,4 @@
+<!-- angular-html-parser: DO NOT CHANGE @fisker -->
 ## Security contact information
 
 To report a security vulnerability, please use the

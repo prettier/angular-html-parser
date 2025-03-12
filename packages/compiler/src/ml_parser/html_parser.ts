@@ -16,7 +16,24 @@ export class HtmlParser extends Parser {
     super(getHtmlTagDefinition);
   }
 
-  override parse(source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false, getTagContentType?: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => void | TagContentType): ParseTreeResult {
-    return super.parse(source, url, options, isTagNameCaseSensitive, getTagContentType);
+  // angular-html-parser: More options
+  override parse(
+    source: string,
+    url: string,
+    options?: TokenizeOptions,
+    isTagNameCaseSensitive = false,
+    getTagContentType?: (tagName: string, prefix: string, hasParent: boolean, attrs: Array<{prefix: string, name: string, value?: string}>) => void | TagContentType
+  ): ParseTreeResult {
+    return super.parse(
+      source,
+      url,
+      options,
+      isTagNameCaseSensitive,
+      getTagContentType,
+    );
   }
+
+  // override parse(source: string, url: string, options?: TokenizeOptions): ParseTreeResult {
+  //   return super.parse(source, url, options);
+  // }
 }
