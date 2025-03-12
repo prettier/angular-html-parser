@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [8.1.0](https://github.com/prettier/angular-html-parser/compare/v8.1.0...v8.0.1) (2025-03-12)
+
+Sync with upstream.
+
 ### [8.0.1](https://github.com/prettier/angular-html-parser/compare/v8.0.0...v8.0.1) (2024-11-25)
 
 ## [8.0.0](https://github.com/prettier/angular-html-parser/compare/v7.0.1...v8.0.0) (2024-11-25)
