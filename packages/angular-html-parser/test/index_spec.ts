@@ -24,12 +24,12 @@ describe("options", () => {
         tagName: string,
         prefix: string,
         hasParent: boolean,
-        attrs: Array<{ prefix: string; name: string; value?: string }>
+        attrs: Array<{ prefix: string; name: string; value?: string }>,
       ) => {
         if (
           !hasParent &&
           (tagName !== "template" ||
-            attrs.find(attr => attr.name === "lang" && attr.value !== "html"))
+            attrs.find((attr) => attr.name === "lang" && attr.value !== "html"))
         ) {
           return TagContentType.RAW_TEXT;
         }
@@ -45,7 +45,7 @@ describe("options", () => {
         [html.Text, "<div>", 1, ["<div>"]],
         [html.Element, "custom", 0],
         [html.Attribute, "lang", "babel", ["babel"]],
-        [html.Text, 'const foo = "</";', 1, ['const foo = "</";']]
+        [html.Text, 'const foo = "</";', 1, ['const foo = "</";']],
       ]);
     });
   });
@@ -76,19 +76,22 @@ describe("AST format", () => {
         name: "if",
         type: "block",
         parameters: [
-          jasmine.objectContaining({ type: 'blockParameter', expression: 'user.isHuman' })
+          jasmine.objectContaining({
+            type: "blockParameter",
+            expression: "user.isHuman",
+          }),
         ],
         children: [
-          jasmine.objectContaining({ type: 'text', value: ' ' }),
+          jasmine.objectContaining({ type: "text", value: " " }),
           jasmine.objectContaining({
-            type: 'element',
-            name: 'p',
+            type: "element",
+            name: "p",
             children: [
-              jasmine.objectContaining({ type: 'text', value: 'Hello human' })
-            ]
+              jasmine.objectContaining({ type: "text", value: "Hello human" }),
+            ],
           }),
-          jasmine.objectContaining({ type: 'text', value: ' ' }),
-        ]
+          jasmine.objectContaining({ type: "text", value: " " }),
+        ],
       }),
     ]);
   });

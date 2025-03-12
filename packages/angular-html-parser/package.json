@@ -24,16 +24,14 @@
     "build-lib": "tsc -p tsconfig.build.json",
     "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
     "test": "ts-node --project tsconfig.test.json -r tsconfig-paths/register node_modules/jasmine/bin/jasmine.js ../compiler/test/ml_parser/*_spec.ts ./test/*_spec.ts",
-    "release": "standard-version"
-  },
-  "dependencies": {
-    "tslib": "^2.8.1"
+    "release": "standard-version",
+    "fix": "prettier . --write"
   },
   "devDependencies": {
-    "@types/jscodeshift": "0.12.0",
     "del-cli": "6.0.0",
     "jasmine": "5.6.0",
     "jscodeshift": "17.1.2",
+    "prettier": "3.5.3",
     "standard-version": "9.5.0",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",

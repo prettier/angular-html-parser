@@ -1,5 +1,5 @@
 import { HtmlParser } from "../../compiler/src/ml_parser/html_parser.js";
-import { TagContentType } from '../../compiler/src/ml_parser/tags.js';
+import { TagContentType } from "../../compiler/src/ml_parser/tags.js";
 import { ParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
 
 let parser: HtmlParser | null = null;
@@ -17,19 +17,19 @@ export interface ParseOptions {
    *
    * defaults to false
    */
-  canSelfClose?: boolean,
+  canSelfClose?: boolean;
   /**
    * support [`htm`](https://github.com/developit/htm) component closing tags (`<//>`)
    *
    * defaults to false
    */
-  allowHtmComponentClosingTags?: boolean,
+  allowHtmComponentClosingTags?: boolean;
   /**
    * do not lowercase tag names before querying their tag definitions
    *
    * defaults to false
    */
-  isTagNameCaseSensitive?: boolean,
+  isTagNameCaseSensitive?: boolean;
   /**
    * customize tag content type
    *
@@ -39,21 +39,21 @@ export interface ParseOptions {
     tagName: string,
     prefix: string,
     hasParent: boolean,
-    attrs: Array<{prefix: string, name: string, value?: string}>
-  ) => void | TagContentType,
+    attrs: Array<{ prefix: string; name: string; value?: string }>,
+  ) => void | TagContentType;
   /**
    * tokenize angular control flow block syntax
    */
-  tokenizeAngularBlocks?: boolean,
+  tokenizeAngularBlocks?: boolean;
   /**
    * tokenize angular let declaration syntax
    */
-  tokenizeAngularLetDeclaration?: boolean,
+  tokenizeAngularLetDeclaration?: boolean;
 }
 
 export function parse(
   input: string,
-  options: ParseOptions = {}
+  options: ParseOptions = {},
 ): ParseTreeResult {
   const {
     canSelfClose = false,

@@ -19,9 +19,9 @@ yarn add angular-html-parser
 ## Usage
 
 ```js
-import {parse} from 'angular-html-parser';
+import { parse } from "angular-html-parser";
 
-const {rootNodes, errors} = parse(`
+const { rootNodes, errors } = parse(`
 <!DOCTYPE html>
 <html>
   <head>
@@ -67,16 +67,16 @@ interface Options {
     tagName: string,
     prefix: string,
     hasParent: boolean,
-    attrs: Array<{prefix: string; name: string; value?: string | undefined}>
+    attrs: Array<{ prefix: string; name: string; value?: string | undefined }>,
   ) => void | ng.TagContentType;
   /**
    * tokenize angular control flow block syntax
    */
-  tokenizeAngularBlocks?: boolean,
+  tokenizeAngularBlocks?: boolean;
   /**
    * tokenize angular let declaration syntax
    */
-  tokenizeAngularLetDeclaration?: boolean,
+  tokenizeAngularLetDeclaration?: boolean;
 }
 ```
 
