@@ -1,0 +1,12 @@
+{
+  "[javascript][typescript][json][jsonc][markdown][yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+  },
+  // "[javascript][typescript]": {
+  //   "editor.codeActionsOnSave": {
+  //     "source.fixAll.eslint": "explicit",
+  //   },
+  // },
+  "prettier.requireConfig": true,
+}

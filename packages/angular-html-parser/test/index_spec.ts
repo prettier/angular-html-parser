@@ -68,7 +68,7 @@ describe("AST format", () => {
     ]);
   });
 
-  it("should have `type` property when tokenizeBlocks is enabled", () => {
+  it("should support 'tokenizeAngularBlocks'", () => {
     const input = `@if (user.isHuman) { <p>Hello human</p> }`;
     const ast = parse(input, { tokenizeAngularBlocks: true });
     expect(ast.rootNodes).toEqual([
@@ -94,5 +94,89 @@ describe("AST format", () => {
         ],
       }),
     ]);
+  });
+
+  it("should support 'tokenizeAngularLetDeclaration'", () => {
+    const input = `@let foo = 'bar';`;
+    const ast = parse(input, { tokenizeAngularLetDeclaration: true });
+    expect(ast.rootNodes).toEqual([
+      expect.objectContaining({
+        name: "foo",
+        type: "letDeclaration",
+        value: "'bar'",
+      }),
+    ]);
+  });
+
+  // https://github.com/angular/angular/pull/60724
+  it("should support 'enableAngularSelectorlessSyntax'", () => {
+    {
+      const ast = parse("<div @Dir></div>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(ast.rootNodes).toEqual([
+        expect.objectContaining({
+          name: "div",
+          type: "element",
+          directives: [
+            expect.objectContaining({
+              name: "Dir",
+              type: "directive",
+            }),
+          ],
+        }),
+      ]);
+    }
+
+    {
+      const ast = parse("<MyComp>Hello</MyComp>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+
+      expect(ast.rootNodes).toEqual([
+        expect.objectContaining({
+          fullName: "MyComp",
+          componentName: "MyComp",
+          type: "component",
+        }),
+      ]);
+    }
+
+    {
+      const ast = parse("<MyComp/>", { enableAngularSelectorlessSyntax: true });
+      expect(ast.rootNodes).toEqual([
+        expect.objectContaining({
+          fullName: "MyComp",
+          componentName: "MyComp",
+          type: "component",
+        }),
+      ]);
+    }
+
+    {
+      const ast = parse("<MyComp:button>Hello</MyComp:button>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(ast.rootNodes).toEqual([
+        expect.objectContaining({
+          fullName: "MyComp:button",
+          componentName: "MyComp",
+          type: "component",
+        }),
+      ]);
+    }
+
+    {
+      const ast = parse("<MyComp:svg:title>Hello</MyComp:svg:title>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(ast.rootNodes).toEqual([
+        expect.objectContaining({
+          fullName: "MyComp:svg:title",
+          componentName: "MyComp",
+          type: "component",
+        }),
+      ]);
+    }
   });
 });

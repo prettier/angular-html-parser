@@ -49,6 +49,11 @@ export interface ParseOptions {
    * tokenize angular let declaration syntax
    */
   tokenizeAngularLetDeclaration?: boolean;
+
+  /**
+   * enable angular selectorless syntax
+   */
+  enableAngularSelectorlessSyntax?: boolean;
 }
 
 export function parse(
@@ -62,6 +67,7 @@ export function parse(
     getTagContentType,
     tokenizeAngularBlocks = false,
     tokenizeAngularLetDeclaration = false,
+    enableAngularSelectorlessSyntax = false,
   } = options;
   return getParser().parse(
     input,
@@ -73,6 +79,7 @@ export function parse(
       allowHtmComponentClosingTags,
       tokenizeBlocks: tokenizeAngularBlocks,
       tokenizeLet: tokenizeAngularLetDeclaration,
+      selectorlessEnabled: enableAngularSelectorlessSyntax,
     },
     isTagNameCaseSensitive,
     getTagContentType,
