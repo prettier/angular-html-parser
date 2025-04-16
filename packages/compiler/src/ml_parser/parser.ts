@@ -97,11 +97,18 @@ export class Parser {
     const getTagContentTypeWithProcessedTagName =
         isTagNameCaseSensitive ? getTagContentType! : lowercasify(getTagContentType!);
     const _getTagContentType = getTagContentType ?
-        (tagName: string, prefix: string, hasParent: boolean,
-         attrs: Array<{prefix: string, name: string, value?: string}>) => {
+        (
+          tagName: string,
+          prefix: string,
+          hasParent: boolean,
+          attrs: Array<{prefix: string, name: string, value?: string}>
+        ) => {
           const contentType = getTagContentTypeWithProcessedTagName(
-                                  tagName, prefix, hasParent, attrs) as undefined |
-              TagContentType;
+              tagName,
+              prefix,
+              hasParent,
+              attrs
+          ) as undefined | TagContentType;
           return contentType !== undefined ? contentType : getDefaultTagContentType(tagName);
         } :
         getDefaultTagContentType;
@@ -326,7 +333,8 @@ class _TreeBuilder {
         exp,
         this.tagDefinitionResolver,
         this.canSelfClose,
-        this.allowHtmComponentClosingTags
+        this.allowHtmComponentClosingTags,
+        this.isTagNameCaseSensitive,
     );
     expansionCaseParser.build();
     if (expansionCaseParser.errors.length > 0) {
