@@ -23,6 +23,8 @@ export enum ErrorCode {
   VALUE_HAS_WRONG_TYPE = 1010,
   VALUE_NOT_LITERAL = 1011,
 
+  DUPLICATE_DECORATED_PROPERTIES = 1012,
+
   /**
    * Raised when an initializer API is annotated with an unexpected decorator.
    *
@@ -517,6 +519,28 @@ export enum ErrorCode {
    * A symbol referenced in `@Component.imports` isn't being used within the template.
    */
   UNUSED_STANDALONE_IMPORTS = 8113,
+
+  /**
+   * An expression mixes nullish coalescing and logical and/or without parentheses.
+   */
+  UNPARENTHESIZED_NULLISH_COALESCING = 8114,
+
+  /**
+   * The function passed to `@for` track is not invoked.
+   *
+   * For example:
+   * ```angular-html
+   * @for (item of items; track trackByName) {}
+   * ```
+   *
+   * For the track function to work properly, it must be invoked.
+   *
+   * For example:
+   * ```angular-html
+   * @for (item of items; track trackByName(item)) {}
+   * ```
+   */
+  UNINVOKED_TRACK_FUNCTION = 8115,
 
   /**
    * The template type-checking engine would need to generate an inline type check block for a

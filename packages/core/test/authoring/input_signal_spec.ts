@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {Component, computed, effect, input} from '@angular/core';
-import {SIGNAL} from '@angular/core/primitives/signals';
-import {TestBed} from '@angular/core/testing';
+import {Component, computed, effect, input} from '../../src/core';
+import {SIGNAL} from '../../primitives/signals';
+import {TestBed} from '../../testing';
 
 describe('input signal', () => {
   it('should properly notify live consumers (effect)', () => {
@@ -72,6 +72,34 @@ describe('input signal', () => {
       const node = signal[SIGNAL];
 
       expect(() => signal()).toThrowError(/Input is required but no value is available yet\./);
+
+      node.applyValueToInputSignal(node, 1);
+      expect(signal()).toBe(1);
+    });
+  });
+
+  it('should include debugName in required inputs error message, if available', () => {
+    TestBed.runInInjectionContext(() => {
+      const signal = input.required({debugName: 'mySignal'});
+      const node = signal[SIGNAL];
+
+      expect(() => signal()).toThrowError(
+        /Input "mySignal" is required but no value is available yet\./,
+      );
+
+      node.applyValueToInputSignal(node, 1);
+      expect(signal()).toBe(1);
+    });
+  });
+
+  it('should include alias in required inputs error message, if available', () => {
+    TestBed.runInInjectionContext(() => {
+      const signal = input.required({alias: 'alias'});
+      const node = signal[SIGNAL];
+
+      expect(() => signal()).toThrowError(
+        /Input "alias" is required but no value is available yet\./,
+      );
 
       node.applyValueToInputSignal(node, 1);
       expect(signal()).toBe(1);

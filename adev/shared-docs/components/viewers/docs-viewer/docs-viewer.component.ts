@@ -28,6 +28,7 @@ import {
   ɵPendingTasksInternal as PendingTasks,
   output,
 } from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {TOC_SKIP_CONTENT_MARKER, NavigationState} from '../../../services/index';
 import {TableOfContents} from '../../table-of-contents/table-of-contents.component';
 import {IconComponent} from '../../icon/icon.component';
@@ -39,9 +40,6 @@ import {fromEvent} from 'rxjs';
 import {Breadcrumb} from '../../breadcrumb/breadcrumb.component';
 import {CopySourceCodeButton} from '../../copy-source-code-button/copy-source-code-button.component';
 import {ExampleViewer} from '../example-viewer/example-viewer.component';
-import {takeUntilDestroyed} from '../../../services/rxjs-interop';
-
-/// <reference types="@types/dom-view-transitions" />
 
 const TOC_HOST_ELEMENT_NAME = 'docs-table-of-contents';
 export const ASSETS_EXAMPLES_PATH = 'assets/content/examples';
@@ -79,7 +77,7 @@ export class DocViewer implements OnChanges {
   private readonly injector = inject(Injector);
   private readonly appRef = inject(ApplicationRef);
 
-  private animateContent = false;
+  protected animateContent = false;
   private readonly pendingTasks = inject(PendingTasks);
 
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));

@@ -12,7 +12,14 @@ import {ParseError, ParseLocation, ParseSourceFile, ParseSourceSpan} from '../pa
 import {DEFAULT_INTERPOLATION_CONFIG, InterpolationConfig} from './defaults';
 import {NAMED_ENTITIES} from './entities';
 import {mergeNsAndName, TagContentType, TagDefinition} from './tags';
-import {IncompleteTagOpenToken, TagOpenStartToken, Token, TokenType} from './tokens';
+import {
+  ComponentOpenStartToken,
+  IncompleteComponentOpenToken,
+  IncompleteTagOpenToken,
+  TagOpenStartToken,
+  Token,
+  TokenType,
+} from './tokens';
 
 export class TokenError extends ParseError {
   constructor(
@@ -106,6 +113,9 @@ export interface TokenizeOptions {
    */
   tokenizeLet?: boolean;
 
+  /** Whether the selectorless syntax is enabled. */
+  selectorlessEnabled?: boolean;
+
   canSelfClose?: boolean;
   allowHtmComponentClosingTags?: boolean;
 }
@@ -162,12 +172,14 @@ class _Tokenizer {
   private _currentTokenStart: CharacterCursor | null = null;
   private _currentTokenType: TokenType | null = null;
   private _expansionCaseStack: TokenType[] = [];
+  private _openDirectiveCount = 0;
   private _inInterpolation: boolean = false;
   private readonly _preserveLineEndings: boolean;
   private readonly _i18nNormalizeLineEndingsInICUs: boolean;
   private _fullNameStack: string[] = [];
   private readonly _tokenizeBlocks: boolean;
   private readonly _tokenizeLet: boolean;
+  private readonly _selectorlessEnabled: boolean;
   tokens: Token[] = [];
   errors: TokenError[] = [];
   nonNormalizedIcuExpressions: Token[] = [];
@@ -204,6 +216,7 @@ class _Tokenizer {
     this._i18nNormalizeLineEndingsInICUs = options.i18nNormalizeLineEndingsInICUs || false;
     this._tokenizeBlocks = options.tokenizeBlocks ?? true;
     this._tokenizeLet = options.tokenizeLet ?? true;
+    this._selectorlessEnabled = options.selectorlessEnabled ?? false;
     try {
       this._cursor.init();
     } catch (e) {
@@ -699,7 +712,7 @@ class _Tokenizer {
       } else {
         const name = this._cursor.getChars(nameStart);
         this._cursor.advance();
-        const char = NAMED_ENTITIES[name];
+        const char = NAMED_ENTITIES.hasOwnProperty(name) && NAMED_ENTITIES[name];
         if (!char) {
           throw this._createError(_unknownEntityErrorMsg(name), this._cursor.getSpan(start));
         }
@@ -767,7 +780,7 @@ class _Tokenizer {
     this._endToken([]);
   }
 
-  private _consumePrefixAndName(): string[] {
+  private _consumePrefixAndName(endPredicate: (code: number) => boolean): string[] {
     const nameOrPrefixStart = this._cursor.clone();
     let prefix: string = '';
     while (this._cursor.peek() !== chars.$COLON && !isPrefixEnd(this._cursor.peek())) {
@@ -781,7 +794,7 @@ class _Tokenizer {
     } else {
       nameStart = nameOrPrefixStart;
     }
-    this._requireCharCodeUntilFn(isNameEnd, prefix === '' ? 0 : 1);
+    this._requireCharCodeUntilFn(endPredicate, prefix === '' ? 0 : 1);
     const name = this._cursor.getChars(nameStart);
     return [prefix, name];
   }
@@ -789,43 +802,68 @@ class _Tokenizer {
   private _consumeTagOpen(start: CharacterCursor) {
     let tagName: string;
     let prefix: string;
-    let openTagToken: TagOpenStartToken | IncompleteTagOpenToken | undefined;
+    let closingTagName: string;
+    let openToken:
+      | TagOpenStartToken
+      | IncompleteTagOpenToken
+      | ComponentOpenStartToken
+      | IncompleteComponentOpenToken
+      | undefined;
     const attrs: Array<{prefix: string, name: string, value?: string}> = [];
-    try {
-      if (!chars.isAsciiLetter(this._cursor.peek())) {
-        throw this._createError(
-          _unexpectedCharacterErrorMsg(this._cursor.peek()),
-          this._cursor.getSpan(start),
-        );
-      }
 
-      openTagToken = this._consumeTagOpenStart(start);
-      prefix = openTagToken.parts[0];
-      tagName = openTagToken.parts[1];
-      this._attemptCharCodeUntilFn(isNotWhitespace);
-      while (
-        this._cursor.peek() !== chars.$SLASH &&
-        this._cursor.peek() !== chars.$GT &&
-        this._cursor.peek() !== chars.$LT &&
-        this._cursor.peek() !== chars.$EOF
-      ) {
-        const [prefix, name] = this._consumeAttributeName();
-        this._attemptCharCodeUntilFn(isNotWhitespace);
-        if (this._attemptCharCode(chars.$EQ)) {
-          this._attemptCharCodeUntilFn(isNotWhitespace);
-          const value = this._consumeAttributeValue();
-          attrs.push({prefix, name, value});
-        } else {
-          attrs.push({prefix, name});
+    try {
+      if (this._selectorlessEnabled && isSelectorlessNameStart(this._cursor.peek())) {
+        openToken = this._consumeComponentOpenStart(start);
+        [closingTagName, prefix, tagName] = openToken.parts;
+        if (prefix) {
+          closingTagName += `:${prefix}`;
+        }
+        if (tagName) {
+          closingTagName += `:${tagName}`;
         }
         this._attemptCharCodeUntilFn(isNotWhitespace);
+      } else {
+        if (!chars.isAsciiLetter(this._cursor.peek())) {
+          throw this._createError(
+            _unexpectedCharacterErrorMsg(this._cursor.peek()),
+            this._cursor.getSpan(start),
+          );
+        }
+
+        openToken = this._consumeTagOpenStart(start);
+        prefix = openToken.parts[0];
+        tagName = closingTagName = openToken.parts[1];
+        this._attemptCharCodeUntilFn(isNotWhitespace);
       }
-      this._consumeTagOpenEnd();
+
+      while (!isAttributeTerminator(this._cursor.peek())) {
+        if (this._selectorlessEnabled && this._cursor.peek() === chars.$AT) {
+          const start = this._cursor.clone();
+          const nameStart = start.clone();
+          nameStart.advance();
+
+          if (isSelectorlessNameStart(nameStart.peek())) {
+            this._consumeDirective(start, nameStart);
+          }
+        } else {
+          const attr = this._consumeAttribute();
+          attrs.push(attr);
+        }
+      }
+
+      if (openToken.type === TokenType.COMPONENT_OPEN_START) {
+        this._consumeComponentOpenEnd();
+      } else {
+        this._consumeTagOpenEnd();
+      }
     } catch (e) {
       if (e instanceof _ControlFlowError) {
-        if (openTagToken) {
+        if (openToken) {
           // We errored before we could close the opening tag, so it is incomplete.
-          openTagToken.type = TokenType.INCOMPLETE_TAG_OPEN;
+          openToken.type =
+            openToken.type === TokenType.COMPONENT_OPEN_START
+              ? TokenType.INCOMPLETE_COMPONENT_OPEN
+              : TokenType.INCOMPLETE_TAG_OPEN;
         } else {
           // When the start tag is invalid, assume we want a "<" as text.
           // Back to back text tokens are merged at the end.
@@ -848,13 +886,18 @@ class _Tokenizer {
     this._handleFullNameStackForTagOpen(prefix, tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
-      this._consumeRawTextWithTagClose(prefix, tagName, false);
+      this._consumeRawTextWithTagClose(prefix, openToken, closingTagName, false);
     } else if (contentTokenType === TagContentType.ESCAPABLE_RAW_TEXT) {
-      this._consumeRawTextWithTagClose(prefix, tagName, true);
+      this._consumeRawTextWithTagClose(prefix, openToken, closingTagName, true);
     }
   }
 
-  private _consumeRawTextWithTagClose(prefix: string, tagName: string, consumeEntities: boolean) {
+  private _consumeRawTextWithTagClose(
+    prefix: string,
+    openToken: TagOpenStartToken | ComponentOpenStartToken,
+    tagName: string,
+    consumeEntities: boolean,
+  ) {
     this._consumeRawText(consumeEntities, () => {
       if (!this._attemptCharCode(chars.$LT)) return false;
       if (!this._attemptCharCode(chars.$SLASH)) return false;
@@ -863,17 +906,54 @@ class _Tokenizer {
       this._attemptCharCodeUntilFn(isNotWhitespace);
       return this._attemptCharCode(chars.$GT);
     });
-    this._beginToken(TokenType.TAG_CLOSE);
+    this._beginToken(
+      openToken.type === TokenType.COMPONENT_OPEN_START
+        ? TokenType.COMPONENT_CLOSE
+        : TokenType.TAG_CLOSE,
+    );
     this._requireCharCodeUntilFn((code) => code === chars.$GT, 3);
     this._cursor.advance(); // Consume the `>`
-    this._endToken([prefix, tagName]);
+    this._endToken(openToken.parts);
     this._handleFullNameStackForTagClose(prefix, tagName);
   }
 
   private _consumeTagOpenStart(start: CharacterCursor): TagOpenStartToken {
     this._beginToken(TokenType.TAG_OPEN_START, start);
-    const parts = this._consumePrefixAndName();
+    const parts = this._consumePrefixAndName(isNameEnd);
     return this._endToken(parts) as TagOpenStartToken;
+  }
+
+  private _consumeComponentOpenStart(start: CharacterCursor): ComponentOpenStartToken {
+    this._beginToken(TokenType.COMPONENT_OPEN_START, start);
+    const parts = this._consumeComponentName();
+    return this._endToken(parts) as ComponentOpenStartToken;
+  }
+
+  private _consumeComponentName(): string[] {
+    const nameStart = this._cursor.clone();
+    while (isSelectorlessNameChar(this._cursor.peek())) {
+      this._cursor.advance();
+    }
+    const name = this._cursor.getChars(nameStart);
+    let prefix = '';
+    let tagName = '';
+    if (this._cursor.peek() === chars.$COLON) {
+      this._cursor.advance();
+      [prefix, tagName] = this._consumePrefixAndName(isNameEnd);
+    }
+    return [name, prefix, tagName];
+  }
+
+  private _consumeAttribute() {
+    const [prefix, name] = this._consumeAttributeName();
+    let value;
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+    if (this._attemptCharCode(chars.$EQ)) {
+      this._attemptCharCodeUntilFn(isNotWhitespace);
+      value = this._consumeAttributeValue();
+    }
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+    return {prefix, name, value};
   }
 
   private _consumeAttributeName() {
@@ -882,7 +962,33 @@ class _Tokenizer {
       throw this._createError(_unexpectedCharacterErrorMsg(attrNameStart), this._cursor.getSpan());
     }
     this._beginToken(TokenType.ATTR_NAME);
-    const prefixAndName = this._consumePrefixAndName();
+    let nameEndPredicate: (code: number) => boolean;
+
+    if (this._openDirectiveCount > 0) {
+      // If we're parsing attributes inside of directive syntax, we have to terminate the name
+      // on the first non-matching closing paren. For example, if we have `@Dir(someAttr)`,
+      // `@Dir` and `(` will have already been captured as `DIRECTIVE_NAME` and `DIRECTIVE_OPEN`
+      // respectively, but the `)` will get captured as a part of the name for `someAttr`
+      // because normally that would be an event binding.
+      let openParens = 0;
+      nameEndPredicate = (code: number) => {
+        if (this._openDirectiveCount > 0) {
+          if (code === chars.$LPAREN) {
+            openParens++;
+          } else if (code === chars.$RPAREN) {
+            if (openParens === 0) {
+              return true;
+            }
+            openParens--;
+          }
+        }
+        return isNameEnd(code);
+      };
+    } else {
+      nameEndPredicate = isNameEnd;
+    }
+
+    const prefixAndName = this._consumePrefixAndName(nameEndPredicate);
     this._endToken(prefixAndName);
     return prefixAndName;
   }
@@ -929,7 +1035,31 @@ class _Tokenizer {
     this._endToken([]);
   }
 
+  private _consumeComponentOpenEnd() {
+    const tokenType = this._attemptCharCode(chars.$SLASH)
+      ? TokenType.COMPONENT_OPEN_END_VOID
+      : TokenType.COMPONENT_OPEN_END;
+    this._beginToken(tokenType);
+    this._requireCharCode(chars.$GT);
+    this._endToken([]);
+  }
+
   private _consumeTagClose(start: CharacterCursor) {
+    if (this._selectorlessEnabled) {
+      const clone = start.clone();
+      while (clone.peek() !== chars.$GT && !isSelectorlessNameStart(clone.peek())) {
+        clone.advance();
+      }
+      if (isSelectorlessNameStart(clone.peek())) {
+        this._beginToken(TokenType.COMPONENT_CLOSE, start);
+        const parts = this._consumeComponentName();
+        this._attemptCharCodeUntilFn(isNotWhitespace);
+        this._requireCharCode(chars.$GT);
+        this._endToken(parts);
+        return;
+      }
+    }
+
     this._beginToken(TokenType.TAG_CLOSE, start);
     this._attemptCharCodeUntilFn(isNotWhitespace);
 
@@ -939,7 +1069,7 @@ class _Tokenizer {
       this._requireCharCode(chars.$GT);
       this._endToken([]);
     } else {
-      const [prefix, name] = this._consumePrefixAndName();
+      const [prefix, name] = this._consumePrefixAndName(isNameEnd);
       this._attemptCharCodeUntilFn(isNotWhitespace);
       this._requireCharCode(chars.$GT);
       this._endToken([prefix, name]);
@@ -1126,6 +1256,64 @@ class _Tokenizer {
     this._endToken(parts);
   }
 
+  private _consumeDirective(start: CharacterCursor, nameStart: CharacterCursor) {
+    this._requireCharCode(chars.$AT);
+
+    // Skip over the @ since it's not part of the name.
+    this._cursor.advance();
+
+    // Capture the rest of the name.
+    while (isSelectorlessNameChar(this._cursor.peek())) {
+      this._cursor.advance();
+    }
+
+    // Capture the opening token.
+    this._beginToken(TokenType.DIRECTIVE_NAME, start);
+    const name = this._cursor.getChars(nameStart);
+    this._endToken([name]);
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+
+    // Optionally there might be attributes bound to the specific directive.
+    // Stop parsing if there's no opening character for them.
+    if (this._cursor.peek() !== chars.$LPAREN) {
+      return;
+    }
+
+    this._openDirectiveCount++;
+    this._beginToken(TokenType.DIRECTIVE_OPEN);
+    this._cursor.advance();
+    this._endToken([]);
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+
+    // Capture all the attributes until we hit a closing paren.
+    while (!isAttributeTerminator(this._cursor.peek()) && this._cursor.peek() !== chars.$RPAREN) {
+      this._consumeAttribute();
+    }
+
+    // Trim any trailing whitespace.
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+    this._openDirectiveCount--;
+
+    if (this._cursor.peek() !== chars.$RPAREN) {
+      // Stop parsing, instead of throwing, if we've hit the end of the tag.
+      // This can be handled better later when turning the tokens into AST.
+      if (this._cursor.peek() === chars.$GT || this._cursor.peek() === chars.$SLASH) {
+        return;
+      }
+
+      throw this._createError(
+        _unexpectedCharacterErrorMsg(this._cursor.peek()),
+        this._cursor.getSpan(start),
+      );
+    }
+
+    // Capture the closing token.
+    this._beginToken(TokenType.DIRECTIVE_CLOSE);
+    this._cursor.advance();
+    this._endToken([]);
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+  }
+
   private _getProcessedChars(start: CharacterCursor, end: CharacterCursor): string {
     return this._processCarriageReturns(end.getChars(start));
   }
@@ -1302,6 +1490,18 @@ function isBlockNameChar(code: number): boolean {
 
 function isBlockParameterChar(code: number): boolean {
   return code !== chars.$SEMICOLON && isNotWhitespace(code);
+}
+
+function isSelectorlessNameStart(code: number): boolean {
+  return code === chars.$_ || (code >= chars.$A && code <= chars.$Z);
+}
+
+function isSelectorlessNameChar(code: number): boolean {
+  return chars.isAsciiLetter(code) || chars.isDigit(code) || code === chars.$_;
+}
+
+function isAttributeTerminator(code: number): boolean {
+  return code === chars.$SLASH || code === chars.$GT || code === chars.$LT || code === chars.$EOF;
 }
 
 function mergeTextTokens(srcTokens: Token[]): Token[] {

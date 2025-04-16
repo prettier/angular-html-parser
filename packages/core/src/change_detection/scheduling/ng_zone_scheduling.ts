@@ -11,6 +11,7 @@ import {Subscription} from 'rxjs';
 import {ApplicationRef} from '../../application/application_ref';
 import {
   ENVIRONMENT_INITIALIZER,
+  EnvironmentInjector,
   EnvironmentProviders,
   inject,
   Injectable,
@@ -134,8 +135,12 @@ export function internalProvideZoneChangeDetection({
       provide: INTERNAL_APPLICATION_ERROR_HANDLER,
       useFactory: () => {
         const zone = inject(NgZone);
-        const userErrorHandler = inject(ErrorHandler);
-        return (e: unknown) => zone.runOutsideAngular(() => userErrorHandler.handleError(e));
+        const injector = inject(EnvironmentInjector);
+        let userErrorHandler: ErrorHandler;
+        return (e: unknown) => {
+          userErrorHandler ??= injector.get(ErrorHandler);
+          zone.runOutsideAngular(() => userErrorHandler.handleError(e));
+        };
       },
     },
   ];
@@ -158,7 +163,7 @@ export function internalProvideZoneChangeDetection({
  * ```
  *
  * @publicApi
- * @see {@link /api/core/bootstrapApplication bootstrapApplication}
+ * @see {@link /api/platform-browser/bootstrapApplication bootstrapApplication}
  * @see {@link NgZoneOptions}
  */
 export function provideZoneChangeDetection(options?: NgZoneOptions): EnvironmentProviders {

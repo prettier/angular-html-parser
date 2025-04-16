@@ -24,11 +24,10 @@ import {
   RendererStyleFlags2,
   RendererType2,
   ViewEncapsulation,
-} from '@angular/core';
-import {RElement} from '@angular/core/src/render3/interfaces/renderer_dom';
-import {ngDevModeResetPerfCounters} from '@angular/core/src/util/ng_dev_mode';
-import {NoopNgZone} from '@angular/core/src/zone/ng_zone';
-import {TestBed} from '@angular/core/testing';
+} from '../../src/core';
+import {RElement} from '../../src/render3/interfaces/renderer_dom';
+import {NoopNgZone} from '../../src/zone/ng_zone';
+import {TestBed} from '../../testing';
 import {EventManager, ɵSharedStylesHost} from '@angular/platform-browser';
 import {DomRendererFactory2} from '@angular/platform-browser/src/dom/dom_renderer';
 import {expect} from '@angular/platform-browser/testing/src/matchers';
@@ -115,6 +114,8 @@ describe('renderer factory lifecycle', () => {
       'create',
       'create',
       'begin',
+      'end',
+      'begin',
       'some_component create',
       'some_component update',
       'end',
@@ -129,7 +130,7 @@ describe('renderer factory lifecycle', () => {
       const fixture = TestBed.createComponent(SomeComponentWhichThrows);
       fixture.componentRef.changeDetectorRef.detectChanges();
     }).toThrow();
-    expect(logs).toEqual(['create', 'create', 'begin', 'end']);
+    expect(logs).toEqual(['create', 'create', 'begin', 'end', 'begin', 'end']);
   });
 
   it('should pass in the component styles directly into the underlying renderer', () => {
@@ -477,10 +478,6 @@ describe('Renderer2 destruction hooks', () => {
   }
 
   beforeEach(() => {
-    // Tests below depend on perf counters when running with Ivy. In order to have
-    // clean perf counters at the beginning of a test, we reset those here.
-    ngDevModeResetPerfCounters();
-
     TestBed.configureTestingModule({
       declarations: [SimpleApp, AppWithComponents, BasicComponent],
       providers: [

@@ -6,8 +6,6 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-/// <reference types="dom-view-transitions" />
-
 import {DOCUMENT} from '@angular/common';
 import {
   afterNextRender,
@@ -56,31 +54,11 @@ export interface ViewTransitionsFeatureOptions {
  * @experimental
  */
 export interface ViewTransitionInfo {
-  // TODO(atscott): This type can/should be the built-in `ViewTransition` type
-  // from @types/dom-view-transitions but exporting that type from the public API is currently not
-  // supported by tooling.
   /**
    * The `ViewTransition` returned by the call to `startViewTransition`.
    * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition
    */
-  transition: {
-    /**
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/finished
-     */
-    finished: Promise<void>;
-    /**
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/ready
-     */
-    ready: Promise<void>;
-    /**
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/updateCallbackDone
-     */
-    updateCallbackDone: Promise<void>;
-    /**
-     * @see https://developer.mozilla.org/en-US/docs/Web/API/ViewTransition/skipTransition
-     */
-    skipTransition(): void;
-  };
+  transition: ViewTransition;
   /**
    * The `ActivatedRouteSnapshot` that the navigation is transitioning from.
    */

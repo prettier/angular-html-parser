@@ -15,6 +15,8 @@ import {
   producerUpdatesAllowed,
   REACTIVE_NODE,
   ReactiveNode,
+  ReactiveHookFn,
+  runPostProducerCreatedFn,
   SIGNAL,
 } from './graph';
 
@@ -28,7 +30,7 @@ declare const ngDevMode: boolean | undefined;
  * This hook can be used to achieve various effects, such as running effects synchronously as part
  * of setting a signal.
  */
-let postSignalSetFn: (() => void) | null = null;
+let postSignalSetFn: ReactiveHookFn | null = null;
 
 export interface SignalNode<T> extends ReactiveNode {
   value: T;
@@ -46,26 +48,33 @@ export interface SignalGetter<T> extends SignalBaseGetter<T> {
 /**
  * Create a `Signal` that can be set or updated directly.
  */
-export function createSignal<T>(initialValue: T): SignalGetter<T> {
+export function createSignal<T>(initialValue: T, equal?: ValueEqualityFn<T>): SignalGetter<T> {
   const node: SignalNode<T> = Object.create(SIGNAL_NODE);
   node.value = initialValue;
-  const getter = (() => {
-    producerAccessed(node);
-    return node.value;
-  }) as SignalGetter<T>;
+  if (equal !== undefined) {
+    node.equal = equal;
+  }
+  const getter = (() => signalGetFn(node)) as SignalGetter<T>;
   (getter as any)[SIGNAL] = node;
+  if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+    const debugName = node.debugName ? ' (' + node.debugName + ')' : '';
+    getter.toString = () => `[Signal${debugName}: ${node.value}]`;
+  }
+
+  runPostProducerCreatedFn(node);
+
   return getter;
 }
 
-export function setPostSignalSetFn(fn: (() => void) | null): (() => void) | null {
+export function setPostSignalSetFn(fn: ReactiveHookFn | null): ReactiveHookFn | null {
   const prev = postSignalSetFn;
   postSignalSetFn = fn;
   return prev;
 }
 
-export function signalGetFn<T>(this: SignalNode<T>): T {
-  producerAccessed(this);
-  return this.value;
+export function signalGetFn<T>(node: SignalNode<T>): T {
+  producerAccessed(node);
+  return node.value;
 }
 
 export function signalSetFn<T>(node: SignalNode<T>, newValue: T) {
@@ -87,8 +96,8 @@ export function signalUpdateFn<T>(node: SignalNode<T>, updater: (value: T) => T)
   signalSetFn(node, updater(node.value));
 }
 
-export function runPostSignalSetFn(): void {
-  postSignalSetFn?.();
+export function runPostSignalSetFn<T>(node: SignalNode<T>): void {
+  postSignalSetFn?.(node);
 }
 
 // Note: Using an IIFE here to ensure that the spread assignment is not considered
@@ -107,5 +116,5 @@ function signalValueChanged<T>(node: SignalNode<T>): void {
   node.version++;
   producerIncrementEpoch();
   producerNotifyConsumers(node);
-  postSignalSetFn?.();
+  postSignalSetFn?.(node);
 }

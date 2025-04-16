@@ -350,6 +350,54 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
           ),
         );
         break;
+      case ir.OpKind.ConditionalCreate:
+        if (!(unit instanceof ViewCompilationUnit)) {
+          throw new Error(`AssertionError: must be compiling a component`);
+        }
+        if (Array.isArray(op.localRefs)) {
+          throw new Error(
+            `AssertionError: local refs array should have been extracted into a constant`,
+          );
+        }
+        const conditionalCreateChildView = unit.job.views.get(op.xref)!;
+        ir.OpList.replace(
+          op,
+          ng.conditionalCreate(
+            op.handle.slot!,
+            o.variable(conditionalCreateChildView.fnName!),
+            conditionalCreateChildView.decls!,
+            conditionalCreateChildView.vars!,
+            op.tag,
+            op.attributes,
+            op.localRefs,
+            op.startSourceSpan,
+          ),
+        );
+        break;
+      case ir.OpKind.ConditionalBranchCreate:
+        if (!(unit instanceof ViewCompilationUnit)) {
+          throw new Error(`AssertionError: must be compiling a component`);
+        }
+        if (Array.isArray(op.localRefs)) {
+          throw new Error(
+            `AssertionError: local refs array should have been extracted into a constant`,
+          );
+        }
+        const conditionalBranchCreateChildView = unit.job.views.get(op.xref)!;
+        ir.OpList.replace(
+          op,
+          ng.conditionalBranchCreate(
+            op.handle.slot!,
+            o.variable(conditionalBranchCreateChildView.fnName!),
+            conditionalBranchCreateChildView.decls!,
+            conditionalBranchCreateChildView.vars!,
+            op.tag,
+            op.attributes,
+            op.localRefs,
+            op.startSourceSpan,
+          ),
+        );
+        break;
       case ir.OpKind.RepeaterCreate:
         if (op.handle.slot === null) {
           throw new Error('No slot was assigned for repeater instruction');
@@ -527,7 +575,7 @@ function reifyUpdateOperations(_unit: CompilationUnit, ops: ir.OpList<ir.UpdateO
           ir.OpList.replace(op, ng.attribute(op.name, op.expression, op.sanitizer, op.namespace));
         }
         break;
-      case ir.OpKind.HostProperty:
+      case ir.OpKind.DomProperty:
         if (op.expression instanceof ir.Interpolation) {
           throw new Error('not yet handled');
         } else {
@@ -536,7 +584,7 @@ function reifyUpdateOperations(_unit: CompilationUnit, ops: ir.OpList<ir.UpdateO
           } else {
             ir.OpList.replace(
               op,
-              ng.hostProperty(op.name, op.expression, op.sanitizer, op.sourceSpan),
+              ng.domProperty(op.name, op.expression, op.sanitizer, op.sourceSpan),
             );
           }
         }

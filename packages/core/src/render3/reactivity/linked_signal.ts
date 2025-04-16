@@ -6,25 +6,24 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {signalAsReadonlyFn, WritableSignal} from './signal';
-import {Signal, ValueEqualityFn} from './api';
-import {performanceMarkFeature} from '../../util/performance';
 import {
   ComputationFn,
   createLinkedSignal,
   LinkedSignalGetter,
   LinkedSignalNode,
-  SIGNAL,
   linkedSignalSetFn,
   linkedSignalUpdateFn,
-} from '@angular/core/primitives/signals';
+  SIGNAL,
+} from '../../../primitives/signals';
+import {Signal, ValueEqualityFn} from './api';
+import {signalAsReadonlyFn, WritableSignal} from './signal';
 
 const identityFn = <T>(v: T) => v;
 
 /**
  * Creates a writable signal whose value is initialized and reset by the linked, reactive computation.
  *
- * @developerPreview
+ * @publicApi
  */
 export function linkedSignal<D>(
   computation: () => D,
@@ -37,7 +36,7 @@ export function linkedSignal<D>(
  *
  * Note: The computation is reactive, meaning the linked signal will automatically update whenever any of the signals used within the computation change.
  *
- * @developerPreview
+ * @publicApi
  */
 export function linkedSignal<S, D>(options: {
   source: () => S;

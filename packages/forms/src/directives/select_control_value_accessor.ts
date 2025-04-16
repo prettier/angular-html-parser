@@ -102,7 +102,7 @@ function _extractId(valueString: string): string {
 @Directive({
   selector:
     'select:not([multiple])[formControlName],select:not([multiple])[formControl],select:not([multiple])[ngModel]',
-  host: {'(change)': 'onChange($event.target.value)', '(blur)': 'onTouched()'},
+  host: {'(change)': 'onChange($any($event.target).value)', '(blur)': 'onTouched()'},
   providers: [SELECT_VALUE_ACCESSOR],
   standalone: false,
 })
@@ -198,7 +198,6 @@ export class NgSelectOption implements OnDestroy {
    * @description
    * ID of the option element
    */
-  // TODO(issue/24571): remove '!'.
   id!: string;
 
   constructor(

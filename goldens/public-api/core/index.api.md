@@ -6,8 +6,6 @@
 
 import * as _angular_core from '@angular/core';
 import { Observable } from 'rxjs';
-import { SIGNAL } from '@angular/core/primitives/signals';
-import { SignalNode } from '@angular/core/primitives/signals';
 import { Subject } from 'rxjs';
 import { Subscription } from 'rxjs';
 
@@ -64,16 +62,6 @@ export function afterRenderEffect<E = never, W = never, M = never>(spec: {
 export interface AfterRenderOptions {
     injector?: Injector;
     manualCleanup?: boolean;
-    // @deprecated
-    phase?: AfterRenderPhase;
-}
-
-// @public @deprecated
-export enum AfterRenderPhase {
-    EarlyRead = 0,
-    MixedReadWrite = 2,
-    Read = 3,
-    Write = 1
 }
 
 // @public
@@ -145,7 +133,7 @@ export class ApplicationRef {
     get destroyed(): boolean;
     detachView(viewRef: ViewRef): void;
     get injector(): EnvironmentInjector;
-    readonly isStable: Observable<boolean>;
+    get isStable(): Observable<boolean>;
     onDestroy(callback: () => void): VoidFunction;
     tick(): void;
     get viewCount(): number;
@@ -469,7 +457,6 @@ export interface CreateEffectOptions {
     // @deprecated (undocumented)
     allowSignalWrites?: boolean;
     debugName?: string;
-    forceRoot?: true;
     injector?: Injector;
     manualCleanup?: boolean;
 }
@@ -650,6 +637,9 @@ export interface DoBootstrap {
 export interface DoCheck {
     ngDoCheck(): void;
 }
+
+// @public
+export const DOCUMENT: InjectionToken<Document>;
 
 // @public
 export function effect(effectFn: (onCleanup: EffectCleanupRegisterFn) => void, options?: CreateEffectOptions): EffectRef;
@@ -905,7 +895,10 @@ export interface InjectableType<T> extends Type<T> {
 
 // @public
 export interface InjectDecorator {
+    (token: string): any;
     (token: any): any;
+    // (undocumented)
+    new (token: string): Inject;
     // (undocumented)
     new (token: any): Inject;
 }
@@ -1025,11 +1018,11 @@ export interface InputSignal<T> extends InputSignalWithTransform<T, T> {
 // @public
 export interface InputSignalWithTransform<T, TransformT> extends Signal<T> {
     // (undocumented)
+    [SIGNAL]: InputSignalNode<T, TransformT>;
+    // (undocumented)
     [ɵINPUT_SIGNAL_BRAND_READ_TYPE]: T;
     // (undocumented)
     [ɵINPUT_SIGNAL_BRAND_WRITE_TYPE]: TransformT;
-    // (undocumented)
-    [SIGNAL]: InputSignalNode<T, TransformT>;
 }
 
 // @public
@@ -1388,7 +1381,7 @@ export const PACKAGE_ROOT_URL: InjectionToken<string>;
 // @public
 export class PendingTasks {
     add(): () => void;
-    run<T>(fn: () => Promise<T>): void;
+    run(fn: () => Promise<unknown>): void;
     // (undocumented)
     static ɵprov: unknown;
 }
@@ -1450,6 +1443,9 @@ export interface PromiseResourceOptions<T, R> extends BaseResourceOptions<T, R> 
 
 // @public
 export function provideAppInitializer(initializerFn: () => Observable<unknown> | Promise<unknown> | void): EnvironmentProviders;
+
+// @public
+export function provideBrowserGlobalErrorListeners(): EnvironmentProviders;
 
 // @public
 export function provideEnvironmentInitializer(initializerFn: () => void): EnvironmentProviders;
@@ -1834,6 +1830,9 @@ export const TRANSLATIONS: InjectionToken<string>;
 
 // @public
 export const TRANSLATIONS_FORMAT: InjectionToken<string>;
+
+// @public
+export function twoWayBinding(publicName: string, value: WritableSignal<unknown>): Binding;
 
 // @public
 export const Type: FunctionConstructor;

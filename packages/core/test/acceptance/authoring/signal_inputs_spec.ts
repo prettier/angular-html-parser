@@ -16,8 +16,8 @@ import {
   Output,
   ViewChild,
 } from '@angular/core';
-import {SIGNAL} from '@angular/core/primitives/signals';
-import {TestBed} from '@angular/core/testing';
+import {SIGNAL} from '../../../primitives/signals';
+import {TestBed} from '../../../testing';
 
 describe('signal inputs', () => {
   beforeEach(() =>
@@ -179,7 +179,7 @@ describe('signal inputs', () => {
       template: 'input:{{input()}}',
     })
     class InputComp {
-      input = input.required<string>();
+      input = input.required<number>();
 
       constructor() {
         this.input();

@@ -158,7 +158,6 @@ export function listener(
 ): ir.CreateOp {
   const args = [o.literal(name), handlerFn];
   if (eventTargetResolver !== null) {
-    args.push(o.literal(false)); // `useCapture` flag, defaults to `false`
     args.push(o.importExpr(eventTargetResolver));
   }
   return call(
@@ -386,6 +385,62 @@ export function i18nStart(
     args.push(o.literal(subTemplateIndex));
   }
   return call(Identifiers.i18nStart, args, sourceSpan);
+}
+
+export function conditionalCreate(
+  slot: number,
+  templateFnRef: o.Expression,
+  decls: number,
+  vars: number,
+  tag: string | null,
+  constIndex: number | null,
+  localRefs: number | null,
+  sourceSpan: ParseSourceSpan,
+): ir.CreateOp {
+  const args = [
+    o.literal(slot),
+    templateFnRef,
+    o.literal(decls),
+    o.literal(vars),
+    o.literal(tag),
+    o.literal(constIndex),
+  ];
+  if (localRefs !== null) {
+    args.push(o.literal(localRefs));
+    args.push(o.importExpr(Identifiers.templateRefExtractor));
+  }
+  while (args[args.length - 1].isEquivalent(o.NULL_EXPR)) {
+    args.pop();
+  }
+  return call(Identifiers.conditionalCreate, args, sourceSpan);
+}
+
+export function conditionalBranchCreate(
+  slot: number,
+  templateFnRef: o.Expression,
+  decls: number,
+  vars: number,
+  tag: string | null,
+  constIndex: number | null,
+  localRefs: number | null,
+  sourceSpan: ParseSourceSpan,
+): ir.CreateOp {
+  const args = [
+    o.literal(slot),
+    templateFnRef,
+    o.literal(decls),
+    o.literal(vars),
+    o.literal(tag),
+    o.literal(constIndex),
+  ];
+  if (localRefs !== null) {
+    args.push(o.literal(localRefs));
+    args.push(o.importExpr(Identifiers.templateRefExtractor));
+  }
+  while (args[args.length - 1].isEquivalent(o.NULL_EXPR)) {
+    args.pop();
+  }
+  return call(Identifiers.conditionalBranchCreate, args, sourceSpan);
 }
 
 export function repeaterCreate(
@@ -692,7 +747,7 @@ export function classMapInterpolate(
   );
 }
 
-export function hostProperty(
+export function domProperty(
   name: string,
   expression: o.Expression,
   sanitizer: o.Expression | null,
@@ -702,7 +757,7 @@ export function hostProperty(
   if (sanitizer !== null) {
     args.push(sanitizer);
   }
-  return call(Identifiers.hostProperty, args, sourceSpan);
+  return call(Identifiers.domProperty, args, sourceSpan);
 }
 
 export function syntheticHostProperty(

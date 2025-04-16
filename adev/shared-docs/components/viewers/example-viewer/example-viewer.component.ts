@@ -21,7 +21,7 @@ import {
   Input,
   signal,
   Type,
-  ViewChild,
+  viewChild,
 } from '@angular/core';
 import {CommonModule, DOCUMENT} from '@angular/common';
 import {MatTabGroup, MatTabsModule} from '@angular/material/tabs';
@@ -29,8 +29,8 @@ import {Clipboard} from '@angular/cdk/clipboard';
 import {CopySourceCodeButton} from '../../copy-source-code-button/copy-source-code-button.component';
 import {ExampleMetadata, Snippet} from '../../../interfaces/index';
 import {EXAMPLE_VIEWER_CONTENT_LOADER} from '../../../providers/index';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {DocViewer} from '../docs-viewer/docs-viewer.component';
-import {takeUntilDestroyed} from '../../../services/rxjs-interop';
 
 export enum CodeExampleViewMode {
   SNIPPET = 'snippet',
@@ -54,7 +54,7 @@ export class ExampleViewer {
 
   @Input() githubUrl: string | null = null;
   @Input() stackblitzUrl: string | null = null;
-  @ViewChild('codeTabs') matTabGroup?: MatTabGroup;
+  readonly matTabGroup = viewChild<MatTabGroup>('codeTabs');
 
   private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly clipboard = inject(Clipboard);
@@ -111,7 +111,7 @@ export class ExampleViewer {
           `example-${this.exampleMetadata()?.id.toString()!}`,
         );
 
-        this.matTabGroup?.realignInkBar();
+        this.matTabGroup()?.realignInkBar();
 
         this.listenToMatTabIndexChange();
 
@@ -142,8 +142,9 @@ export class ExampleViewer {
   }
 
   private listenToMatTabIndexChange(): void {
-    this.matTabGroup?.realignInkBar();
-    this.matTabGroup?.selectedIndexChange
+    const matTabGroup = this.matTabGroup();
+    matTabGroup?.realignInkBar();
+    matTabGroup?.selectedIndexChange
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((index) => {
         this.snippetCode.set(this.exampleMetadata()?.files[index]);

@@ -16,9 +16,14 @@ import {
   producerUpdateValueVersion,
   REACTIVE_NODE,
   ReactiveNode,
+  runPostProducerCreatedFn,
   SIGNAL,
 } from './graph';
 import {signalSetFn, signalUpdateFn} from './signal';
+
+// Required as the signals library is in a separate package, so we need to explicitly ensure the
+// global `ngDevMode` type is defined.
+declare const ngDevMode: boolean | undefined;
 
 export type ComputationFn<S, D> = (source: S, previous?: {source: S; value: D}) => D;
 
@@ -86,6 +91,12 @@ export function createLinkedSignal<S, D>(
 
   const getter = linkedSignalGetter as LinkedSignalGetter<S, D>;
   getter[SIGNAL] = node;
+  if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+    const debugName = node.debugName ? ' (' + node.debugName + ')' : '';
+    getter.toString = () => `[LinkedSignal${debugName}: ${node.value}]`;
+  }
+
+  runPostProducerCreatedFn(node);
 
   return getter;
 }
@@ -115,6 +126,7 @@ export const LINKED_SIGNAL_NODE = /* @__PURE__ */ (() => {
     dirty: true,
     error: null,
     equal: defaultEquals,
+    kind: 'linkedSignal',
 
     producerMustRecompute(node: LinkedSignalNode<unknown, unknown>): boolean {
       // Force a recomputation if there's no current value, or if the current value is in the

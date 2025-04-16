@@ -14,6 +14,7 @@ import {isSignal} from '../reactivity/api';
 import {applyChanges} from './change_detection_utils';
 import {getDeferBlocks} from './defer';
 import {
+  DirectiveDebugMetadata,
   getComponent,
   getContext,
   getDirectiveMetadata,
@@ -31,6 +32,8 @@ import {
   getInjectorResolutionPath,
 } from './injector_discovery_utils';
 import {getSignalGraph} from './signal_debug';
+
+import {enableProfiling} from '../debug/chrome_dev_tools_performance';
 
 /**
  * This file introduces series of globally accessible debug tools
@@ -81,6 +84,8 @@ const globalUtilsFunctions = {
   'getDirectives': getDirectives,
   'applyChanges': applyChanges,
   'isSignal': isSignal,
+
+  'enableProfiling': enableProfiling,
 };
 type CoreGlobalUtilsFunctions = keyof typeof globalUtilsFunctions;
 type ExternalGlobalUtilsFunctions = keyof NgGlobalPublishUtils;
@@ -124,6 +129,21 @@ export function publishGlobalUtil<K extends CoreGlobalUtilsFunctions>(
 ): void {
   publishUtil(name, fn);
 }
+
+/**
+ * Defines the framework-agnostic `ng` global type, not just the `@angular/core` implementation.
+ *
+ * `typeof globalUtilsFunctions` is specifically the `@angular/core` implementation, so we
+ * overwrite some properties to make them more framework-agnostic. Longer term, we should define
+ * the `ng` global type as an interface implemented by `globalUtilsFunctions` rather than a type
+ * derived from it.
+ */
+export type FrameworkAgnosticGlobalUtils = Omit<
+  typeof globalUtilsFunctions,
+  'getDirectiveMetadata'
+> & {
+  getDirectiveMetadata(directiveOrComponentInstance: any): DirectiveDebugMetadata | null;
+};
 
 /**
  * Publishes the given function to `window.ng` from package other than @angular/core

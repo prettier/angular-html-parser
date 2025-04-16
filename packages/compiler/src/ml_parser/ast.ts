@@ -27,8 +27,9 @@ export type Node =
   | Text
   | Block
   | BlockParameter
-  | LetDeclaration;
-  // Expansion|ExpansionCase -- not used by angular-html-parser, should be removed on publish
+  | LetDeclaration
+  | Component
+  | Directive;
 
 export abstract class NodeWithI18n implements BaseNode {
   constructor(
@@ -126,6 +127,7 @@ export class Element extends NodeWithI18n {
   constructor(
     public name: string,
     public attrs: Attribute[],
+    readonly directives: Directive[],
     public children: Node[],
     sourceSpan: ParseSourceSpan,
     public startSourceSpan: ParseSourceSpan,
@@ -181,6 +183,41 @@ export class Block extends NodeWithI18n {
   readonly type = 'block';
 }
 
+export class Component extends NodeWithI18n {
+  constructor(
+    readonly componentName: string,
+    readonly tagName: string | null,
+    readonly fullName: string,
+    public attrs: Attribute[],
+    readonly directives: Directive[],
+    readonly children: Node[],
+    sourceSpan: ParseSourceSpan,
+    readonly startSourceSpan: ParseSourceSpan,
+    public endSourceSpan: ParseSourceSpan | null = null,
+    i18n?: I18nMeta,
+  ) {
+    super(sourceSpan, i18n);
+  }
+
+  override visit(visitor: Visitor, context: any): any {
+    return visitor.visitComponent(this, context);
+  }
+}
+
+export class Directive implements BaseNode {
+  constructor(
+    readonly name: string,
+    readonly attrs: Attribute[],
+    readonly sourceSpan: ParseSourceSpan,
+    readonly startSourceSpan: ParseSourceSpan,
+    readonly endSourceSpan: ParseSourceSpan | null = null,
+  ) {}
+
+  visit(visitor: Visitor, context: any): any {
+    return visitor.visitDirective(this, context);
+  }
+}
+
 export class BlockParameter implements BaseNode {
   constructor(
     public expression: string,
@@ -230,6 +267,8 @@ export interface Visitor {
   visitBlock(block: Block, context: any): any;
   visitBlockParameter(parameter: BlockParameter, context: any): any;
   visitLetDeclaration(decl: LetDeclaration, context: any): any;
+  visitComponent(component: Component, context: any): any;
+  visitDirective(directive: Directive, context: any): any;
 }
 
 export function visitAll(visitor: Visitor, nodes: Node[], context: any = null): any[] {
@@ -253,6 +292,7 @@ export class RecursiveVisitor implements Visitor {
   visitElement(ast: Element, context: any): any {
     this.visitChildren(context, (visit) => {
       visit(ast.attrs);
+      visit(ast.directives);
       visit(ast.children);
     });
   }
@@ -282,7 +322,20 @@ export class RecursiveVisitor implements Visitor {
 
   visitLetDeclaration(decl: LetDeclaration, context: any) {}
 
-  private visitChildren<T extends Node>(
+  visitComponent(component: Component, context: any) {
+    this.visitChildren(context, (visit) => {
+      visit(component.attrs);
+      visit(component.children);
+    });
+  }
+
+  visitDirective(directive: Directive, context: any) {
+    this.visitChildren(context, (visit) => {
+      visit(directive.attrs);
+    });
+  }
+
+  private visitChildren(
     context: any,
     cb: (visit: <V extends Node>(children: V[] | undefined) => void) => void,
   ) {

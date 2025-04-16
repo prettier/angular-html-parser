@@ -23,7 +23,9 @@ APPLICATION_FILES = [
     exclude = [
         "src/**/*.spec.ts",
     ],
-)
+) + [
+    "//adev/src/content/examples:embeddable",
+]
 
 TEST_FILES = APPLICATION_FILES + [
     "karma.conf.js",
@@ -58,9 +60,11 @@ APPLICATION_DEPS = [
     "@npm//@angular/platform-server",
     "@npm//@angular/router",
     "@npm//@angular/ssr",
+    "@npm//@types/dom-navigation",
     "@npm//marked",
     "@npm//ngx-progressbar",
     "@npm//rxjs",
+    "@npm//xhr2",
     "@npm//typescript",
     "@npm//@typescript/vfs",
     "@npm//@codemirror/state",
@@ -88,7 +92,6 @@ APPLICATION_DEPS = [
 ]
 
 TEST_DEPS = APPLICATION_DEPS + [
-    "@npm//@angular/platform-browser-dynamic",
     "@npm//@types/jasmine",
     "@npm//@types/node",
     "@npm//jasmine",
@@ -151,6 +154,7 @@ architect(
     name = "build",
     args = config_based_architect_flags + [
         "--output-path=build",
+        "",
     ],
     chdir = "$(RULEDIR)",
     data = ensure_local_package_deps(APPLICATION_DEPS) + APPLICATION_ASSETS + [

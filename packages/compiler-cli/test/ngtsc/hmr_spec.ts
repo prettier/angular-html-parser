@@ -9,9 +9,9 @@
 import {runInEachFileSystem} from '../../src/ngtsc/file_system/testing';
 import {loadStandardTestFiles} from '../../src/ngtsc/testing';
 import {NgtscTestEnvironment} from './env';
-import {CompilerOptions} from '@angular/compiler-cli/src/transformers/api';
-import {createCompilerHost} from '@angular/compiler-cli/src/transformers/compiler_host';
-import {NgtscProgram} from '@angular/compiler-cli/src/ngtsc/program';
+import {CompilerOptions} from '../../src/transformers/api';
+import {createCompilerHost} from '../../src/transformers/compiler_host';
+import {NgtscProgram} from '../../src/ngtsc/program';
 import ts from 'typescript';
 
 runInEachFileSystem(() => {
@@ -24,14 +24,18 @@ runInEachFileSystem(() => {
       env.tsconfig();
     });
 
-    function enableHmr(additionalOptions: Record<string, unknown> = {}): void {
+    function enableHmr(
+      additionalAngularOptions: Record<string, unknown> = {},
+      additionalCompilerOptions: Record<string, unknown> = {},
+    ): void {
       env.write(
         'tsconfig.json',
         JSON.stringify({
           extends: './tsconfig-base.json',
+          ...additionalCompilerOptions,
           angularCompilerOptions: {
             _enableHmr: true,
-            ...additionalOptions,
+            ...additionalAngularOptions,
           },
         }),
       );
@@ -225,7 +229,9 @@ runInEachFileSystem(() => {
         'export default function Cmp_UpdateMetadata(Cmp, ɵɵnamespaces, Component) {',
       );
       expect(hmrContents).toContain('function Cmp_Conditional_0_Template(rf, ctx) {');
-      expect(hmrContents).toContain('ɵhmr0.ɵɵtemplate(0, Cmp_Conditional_0_Template, 1, 0);');
+      expect(hmrContents).toContain(
+        'ɵhmr0.ɵɵconditionalCreate(0, Cmp_Conditional_0_Template, 1, 0);',
+      );
     });
 
     it('should generate an HMR update function for a component whose definition produces variables', () => {
@@ -970,6 +976,32 @@ runInEachFileSystem(() => {
       expect(jsContents).toContain('ɵreplaceMetadata(Cmp');
       expect(jsContents).toContain('newProp = 123');
       expect(hmrContents).toContain('export default function Cmp_UpdateMetadata');
+    });
+
+    it('should generate an HMR initializer and update function for a class that depends on multiple namespaces', () => {
+      enableHmr(undefined, {
+        compilerOptions: {
+          module: 'NodeNext',
+          moduleResolution: 'NodeNext',
+        },
+      });
+
+      env.write(
+        'test.ts',
+        `
+          import {Component} from '@angular/core';
+
+          @Component({selector: 'cmp', template: ''})
+          export class Cmp {}
+        `,
+      );
+
+      env.driveMain();
+
+      const hmrContents = env.driveHmr('test.ts', 'Cmp');
+      expect(hmrContents).toContain(
+        'export default function Cmp_UpdateMetadata(Cmp, ɵɵnamespaces, Component) {',
+      );
     });
   });
 });

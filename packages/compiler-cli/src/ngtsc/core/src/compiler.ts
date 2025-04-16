@@ -122,7 +122,6 @@ import {SourceFileValidator} from '../../validation';
 import {Xi18nContext} from '../../xi18n';
 import {DiagnosticCategoryLabel, NgCompilerAdapter, NgCompilerOptions} from '../api';
 
-import {coreHasSymbol} from './core_version';
 import {coreVersionSupportsFeature} from './feature_detection';
 import {angularJitApplicationTransform} from '../../transform/jit';
 import {untagAllTsFiles} from '../../shims';
@@ -738,7 +737,8 @@ export class NgCompiler {
     const {resourceRegistry} = this.ensureAnalyzed();
     const styles = resourceRegistry.getStyles(classDecl);
     const template = resourceRegistry.getTemplate(classDecl);
-    return {styles, template};
+    const hostBindings = resourceRegistry.getHostBindings(classDecl);
+    return {styles, template, hostBindings};
   }
 
   getMeta(classDecl: DeclarationNode): PipeMeta | DirectiveMeta | null {
@@ -965,7 +965,15 @@ export class NgCompiler {
     const nodeText = printer.printNode(ts.EmitHint.Unspecified, callback, sourceFile);
 
     return ts.transpileModule(nodeText, {
-      compilerOptions: this.options,
+      compilerOptions: {
+        ...this.options,
+
+        // Some module types can produce additional code (see #60795) whereas we need the
+        // HMR update module to use a native `export`. Override the `target` and `module`
+        // to ensure that it looks as expected.
+        module: ts.ModuleKind.ES2022,
+        target: ts.ScriptTarget.ES2022,
+      } as ts.CompilerOptions,
       fileName: sourceFile.fileName,
       reportDiagnostics: false,
     }).outputText;
@@ -1026,14 +1034,12 @@ export class NgCompiler {
     const checkTwoWayBoundEvents = this.options['_checkTwoWayBoundEvents'] ?? false;
 
     // Check whether the loaded version of `@angular/core` in the `ts.Program` supports unwrapping
-    // writable signals for type-checking. If this check fails to find a suitable .d.ts file, fall
-    // back to version detection. Only Angular versions greater than 17.2 have the necessary symbols
-    // to type check signals in two-way bindings. We also allow version 0.0.0 in case somebody is
+    // writable signals for type-checking. Only Angular versions greater than 17.2 have the necessary
+    // symbols to type check signals in two-way bindings. We also allow version 0.0.0 in case somebody is
     // using Angular at head.
-    let allowSignalsInTwoWayBindings =
-      coreHasSymbol(this.inputProgram, R3Identifiers.unwrapWritableSignal) ??
-      (this.angularCoreVersion === null ||
-        coreVersionSupportsFeature(this.angularCoreVersion, '>= 17.2.0'));
+    const allowSignalsInTwoWayBindings =
+      this.angularCoreVersion === null ||
+      coreVersionSupportsFeature(this.angularCoreVersion, '>= 17.2.0-0');
 
     // First select a type-checking configuration, based on whether full template type-checking is
     // requested.
@@ -1300,10 +1306,7 @@ export class NgCompiler {
       // namespace" and the logic of `LogicalProjectStrategy` is required to generate correct
       // imports which may cross these multiple directories. Otherwise, plain relative imports are
       // sufficient.
-      if (
-        this.options.rootDir !== undefined ||
-        (this.options.rootDirs !== undefined && this.options.rootDirs.length > 0)
-      ) {
+      if (this.options.rootDirs !== undefined && this.options.rootDirs.length > 0) {
         // rootDirs logic is in effect - use the `LogicalProjectStrategy` for in-project relative
         // imports.
         localImportStrategy = new LogicalProjectStrategy(
@@ -1430,6 +1433,7 @@ export class NgCompiler {
     const supportJitMode = this.options['supportJitMode'] ?? true;
     const supportTestBed = this.options['supportTestBed'] ?? true;
     const externalRuntimeStyles = this.options['externalRuntimeStyles'] ?? false;
+    const typeCheckHostBindings = this.options.typeCheckHostBindings ?? false;
 
     // Libraries compiled in partial mode could potentially be used with TestBed within an
     // application. Since this is not known at library compilation time, support is required to
@@ -1502,6 +1506,7 @@ export class NgCompiler {
         !!this.options.strictStandalone,
         this.enableHmr,
         this.implicitStandaloneValue,
+        typeCheckHostBindings,
       ),
 
       // TODO(alxhub): understand why the cast here is necessary (something to do with `null`
@@ -1522,10 +1527,14 @@ export class NgCompiler {
         this.delegatingPerfRecorder,
         importTracker,
         supportTestBed,
+        typeCheckScopeRegistry,
         compilationMode,
         jitDeclarationRegistry,
+        resourceRegistry,
         !!this.options.strictStandalone,
         this.implicitStandaloneValue,
+        this.usePoisonedData,
+        typeCheckHostBindings,
       ) as Readonly<DecoratorHandler<unknown, unknown, SemanticSymbol | null, unknown>>,
       // Pipe handler must be before injectable handler in list so pipe factories are printed
       // before injectable factories (so injectable factories can delegate to them)

@@ -14,8 +14,8 @@ import {
   httpResource,
   HttpContext,
   HttpContextToken,
-} from '@angular/common/http';
-import {HttpTestingController, provideHttpClientTesting} from '@angular/common/http/testing';
+} from '../index';
+import {HttpTestingController, provideHttpClientTesting} from '../testing';
 
 describe('httpResource', () => {
   beforeEach(() => {
@@ -24,7 +24,7 @@ describe('httpResource', () => {
 
   it('should send a basic request', async () => {
     const backend = TestBed.inject(HttpTestingController);
-    const res = httpResource('/data', {injector: TestBed.inject(Injector)});
+    const res = httpResource(() => '/data', {injector: TestBed.inject(Injector)});
     TestBed.flushEffects();
     const req = backend.expectOne('/data');
     req.flush([]);
@@ -79,7 +79,7 @@ describe('httpResource', () => {
   it('should support the suite of HttpRequest APIs', async () => {
     const backend = TestBed.inject(HttpTestingController);
     const res = httpResource(
-      {
+      () => ({
         url: '/data',
         method: 'POST',
         body: {message: 'Hello, backend!'},
@@ -90,7 +90,7 @@ describe('httpResource', () => {
           'fast': 'yes',
         },
         withCredentials: true,
-      },
+      }),
       {injector: TestBed.inject(Injector)},
     );
     TestBed.flushEffects();
@@ -108,7 +108,7 @@ describe('httpResource', () => {
 
   it('should return response headers & status when resolved', async () => {
     const backend = TestBed.inject(HttpTestingController);
-    const res = httpResource('/data', {injector: TestBed.inject(Injector)});
+    const res = httpResource(() => '/data', {injector: TestBed.inject(Injector)});
     TestBed.flushEffects();
     const req = backend.expectOne('/data');
     req.flush([], {
@@ -122,13 +122,31 @@ describe('httpResource', () => {
     expect(res.statusCode()).toBe(200);
   });
 
+  it('should return response headers & status when request errored', async () => {
+    const backend = TestBed.inject(HttpTestingController);
+    const res = httpResource(() => '/data', {injector: TestBed.inject(Injector)});
+    TestBed.flushEffects();
+    const req = backend.expectOne('/data');
+    req.flush([], {
+      headers: {
+        'X-Special': '123',
+      },
+      status: 429,
+      statusText: 'Too many requests',
+    });
+    await TestBed.inject(ApplicationRef).whenStable();
+    expect((res.error() as any).error).toEqual([]);
+    expect(res.headers()?.get('X-Special')).toBe('123');
+    expect(res.statusCode()).toBe(429);
+  });
+
   it('should support progress events', async () => {
     const backend = TestBed.inject(HttpTestingController);
     const res = httpResource(
-      {
+      () => ({
         url: '/data',
         reportProgress: true,
-      },
+      }),
       {injector: TestBed.inject(Injector)},
     );
     TestBed.flushEffects();
@@ -188,10 +206,10 @@ describe('httpResource', () => {
   it('should allow mapping data to an arbitrary type', async () => {
     const backend = TestBed.inject(HttpTestingController);
     const res = httpResource(
-      {
+      () => ({
         url: '/data',
         reportProgress: true,
-      },
+      }),
       {
         injector: TestBed.inject(Injector),
         parse: (value) => JSON.stringify(value),
@@ -207,7 +225,7 @@ describe('httpResource', () => {
 
   it('should allow defining an equality function', async () => {
     const backend = TestBed.inject(HttpTestingController);
-    const res = httpResource<number>('/data', {
+    const res = httpResource<number>(() => '/data', {
       injector: TestBed.inject(Injector),
       equal: (_a, _b) => true,
     });
@@ -225,10 +243,10 @@ describe('httpResource', () => {
   it('should support text responses', async () => {
     const backend = TestBed.inject(HttpTestingController);
     const res = httpResource.text(
-      {
+      () => ({
         url: '/data',
         reportProgress: true,
-      },
+      }),
       {injector: TestBed.inject(Injector)},
     );
     TestBed.flushEffects();
@@ -242,10 +260,10 @@ describe('httpResource', () => {
   it('should support ArrayBuffer responses', async () => {
     const backend = TestBed.inject(HttpTestingController);
     const res = httpResource.arrayBuffer(
-      {
+      () => ({
         url: '/data',
         reportProgress: true,
-      },
+      }),
       {injector: TestBed.inject(Injector)},
     );
     TestBed.flushEffects();

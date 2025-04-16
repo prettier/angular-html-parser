@@ -244,7 +244,10 @@ export class DefaultUrlSerializer implements UrlSerializer {
 }
 
 // @public @deprecated
-export type DeprecatedGuard = ProviderToken<any> | any;
+export type DeprecatedGuard = ProviderToken<any> | string;
+
+// @public @deprecated
+export type DeprecatedResolve = DeprecatedGuard | any;
 
 // @public
 export type DetachedRouteHandle = {};
@@ -398,13 +401,14 @@ export type MaybeAsync<T> = T | Observable<T> | Promise<T>;
 
 // @public
 export interface Navigation {
+    readonly abort: () => void;
     extractedUrl: UrlTree;
     extras: NavigationExtras;
     finalUrl?: UrlTree;
     id: number;
     initialUrl: UrlTree;
     previousNavigation: Navigation | null;
-    trigger: 'imperative' | 'popstate' | 'hashchange';
+    trigger: NavigationTrigger;
 }
 
 // @public
@@ -436,6 +440,7 @@ export class NavigationCancel extends RouterEvent {
 
 // @public
 export enum NavigationCancellationCode {
+    Aborted = 4,
     GuardRejected = 3,
     NoDataFromResolver = 2,
     Redirect = 0,
@@ -611,7 +616,7 @@ export interface Resolve<T> {
 
 // @public
 export type ResolveData = {
-    [key: string | symbol]: ResolveFn<unknown> | DeprecatedGuard;
+    [key: string | symbol]: ResolveFn<unknown> | DeprecatedResolve;
 };
 
 // @public
@@ -784,7 +789,7 @@ export interface RouterFeature<FeatureKind extends RouterFeatureKind> {
     // (undocumented)
     ɵkind: FeatureKind;
     // (undocumented)
-    ɵproviders: Provider[];
+    ɵproviders: Array<Provider | EnvironmentProviders>;
 }
 
 // @public
@@ -1109,12 +1114,7 @@ export const VERSION: Version;
 export interface ViewTransitionInfo {
     from: ActivatedRouteSnapshot;
     to: ActivatedRouteSnapshot;
-    transition: {
-        finished: Promise<void>;
-        ready: Promise<void>;
-        updateCallbackDone: Promise<void>;
-        skipTransition(): void;
-    };
+    transition: ViewTransition;
 }
 
 // @public

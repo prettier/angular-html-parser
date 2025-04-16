@@ -21,7 +21,14 @@ import {assertFirstCreatePass} from '../assert';
 import {attachPatchData} from '../context_discovery';
 import {registerPostOrderHooks} from '../hooks';
 import {ComponentTemplate} from '../interfaces/definition';
-import {LocalRefExtractor, TAttributes, TContainerNode, TNode, TNodeType} from '../interfaces/node';
+import {
+  LocalRefExtractor,
+  TAttributes,
+  TContainerNode,
+  TNode,
+  TNodeFlags,
+  TNodeType,
+} from '../interfaces/node';
 import {RComment} from '../interfaces/renderer_dom';
 import {isDirectiveHost} from '../interfaces/type_checks';
 import {HEADER_OFFSET, HYDRATION, LView, RENDERER, TView, TViewType} from '../interfaces/view';
@@ -60,7 +67,6 @@ function templateFirstCreatePass(
   localRefsIndex?: number | null,
 ): TContainerNode {
   ngDevMode && assertFirstCreatePass(tView);
-  ngDevMode && ngDevMode.firstCreatePass++;
   const tViewConsts = tView.consts;
 
   // TODO(pk): refactor getOrCreateTNode to have the "create" only version
@@ -127,6 +133,7 @@ export function declareTemplate(
   vars: number,
   tagName?: string | null,
   attrs?: TAttributes | null,
+  flags?: TNodeFlags,
   localRefsIndex?: number | null,
   localRefExtractor?: LocalRefExtractor,
 ): TNode {
@@ -144,6 +151,10 @@ export function declareTemplate(
         localRefsIndex,
       )
     : (declarationTView.data[adjustedIndex] as TContainerNode);
+
+  if (flags) {
+    tNode.flags |= flags;
+  }
   setCurrentTNode(tNode, false);
 
   const comment = _locateOrCreateContainerAnchor(
@@ -219,6 +230,7 @@ export function ɵɵtemplate(
     vars,
     tagName,
     attrs,
+    undefined,
     localRefsIndex,
     localRefExtractor,
   );

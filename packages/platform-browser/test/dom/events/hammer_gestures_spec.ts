@@ -5,13 +5,10 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import {ApplicationRef, NgZone} from '@angular/core';
+import {ApplicationRef, Injector, NgZone} from '@angular/core';
 import {fakeAsync, inject, TestBed, tick} from '@angular/core/testing';
-import {EventManager} from '@angular/platform-browser';
-import {
-  HammerGestureConfig,
-  HammerGesturesPlugin,
-} from '@angular/platform-browser/src/dom/events/hammer_gestures';
+import {EventManager} from '../../../index';
+import {HammerGestureConfig, HammerGesturesPlugin} from '../../../src/dom/events/hammer_gestures';
 
 describe('HammerGesturesPlugin', () => {
   let plugin: HammerGesturesPlugin;
@@ -24,7 +21,11 @@ describe('HammerGesturesPlugin', () => {
 
   describe('with no custom loader', () => {
     beforeEach(() => {
-      plugin = new HammerGesturesPlugin(document, new HammerGestureConfig(), TestBed);
+      plugin = new HammerGesturesPlugin(
+        document,
+        new HammerGestureConfig(),
+        TestBed.inject(Injector),
+      );
     });
 
     it('should warn user and do nothing when Hammer.js not loaded', () => {
@@ -86,7 +87,7 @@ describe('HammerGesturesPlugin', () => {
       const hammerConfig = new HammerGestureConfig();
       spyOn(hammerConfig, 'buildHammer').and.returnValue(fakeHammerInstance);
 
-      plugin = new HammerGesturesPlugin(document, hammerConfig, TestBed, loader);
+      plugin = new HammerGesturesPlugin(document, hammerConfig, TestBed.inject(Injector), loader);
 
       // Use a fake EventManager that has access to the NgZone.
       plugin.manager = {getZone: () => ngZone} as EventManager;

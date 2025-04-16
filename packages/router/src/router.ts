@@ -23,14 +23,13 @@ import {createSegmentGroupFromRoute, createUrlTreeFromSegmentGroup} from './crea
 import {INPUT_BINDER} from './directives/router_outlet';
 import {RuntimeErrorCode} from './errors';
 import {
-  BeforeActivateRoutes,
   Event,
   IMPERATIVE_NAVIGATION,
+  isPublicRouterEvent,
   NavigationCancel,
   NavigationCancellationCode,
   NavigationEnd,
   NavigationTrigger,
-  PrivateRouterEvents,
   RedirectRequest,
 } from './events';
 import {NavigationBehaviorOptions, OnSameUrlNavigation, Routes} from './models';
@@ -179,13 +178,11 @@ export class Router {
   constructor() {
     this.resetConfig(this.config);
 
-    this.navigationTransitions
-      .setupNavigations(this, this.currentUrlTree, this.routerState)
-      .subscribe({
-        error: (e) => {
-          this.console.warn(ngDevMode ? `Unhandled Navigation Error: ${e}` : e);
-        },
-      });
+    this.navigationTransitions.setupNavigations(this).subscribe({
+      error: (e) => {
+        this.console.warn(ngDevMode ? `Unhandled Navigation Error: ${e}` : e);
+      },
+    });
     this.subscribeToNavigationEvents();
   }
 
@@ -244,7 +241,7 @@ export class Router {
           this._events.next(e);
         }
       } catch (e: unknown) {
-        this.navigationTransitions.transitionAbortSubject.next(e as Error);
+        this.navigationTransitions.transitionAbortWithErrorSubject.next(e as Error);
       }
     });
     this.eventsSubscription.add(subscription);
@@ -282,12 +279,8 @@ export class Router {
     // already patch onPopState, so location change callback will
     // run into ngZone
     this.nonRouterCurrentEntryChangeSubscription ??=
-      this.stateManager.registerNonRouterCurrentEntryChangeListener((url, state) => {
-        // The `setTimeout` was added in #12160 and is likely to support Angular/AngularJS
-        // hybrid apps.
-        setTimeout(() => {
-          this.navigateToSyncWithBrowser(url, 'popstate', state);
-        }, 0);
+      this.stateManager.registerNonRouterCurrentEntryChangeListener((url, state, source) => {
+        this.navigateToSyncWithBrowser(url, source, state);
       });
   }
 
@@ -691,8 +684,4 @@ function validateCommands(commands: string[]): void {
       );
     }
   }
-}
-
-function isPublicRouterEvent(e: Event | PrivateRouterEvents): e is Event {
-  return !(e instanceof BeforeActivateRoutes) && !(e instanceof RedirectRequest);
 }

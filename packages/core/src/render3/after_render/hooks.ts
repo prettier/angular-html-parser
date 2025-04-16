@@ -14,7 +14,7 @@ import {DestroyRef} from '../../linker/destroy_ref';
 import {performanceMarkFeature} from '../../util/performance';
 import {assertNotInReactiveContext} from '../reactivity/asserts';
 import {ViewContext} from '../view_context';
-import {AfterRenderPhase, AfterRenderRef} from './api';
+import {AfterRenderRef} from './api';
 import {
   AfterRenderHooks,
   AfterRenderImpl,
@@ -35,7 +35,7 @@ export type ɵFirstAvailable<T extends unknown[]> = T extends [infer H, ...infer
 /**
  * Options passed to `afterRender` and `afterNextRender`.
  *
- * @developerPreview
+ * @publicApi
  */
 export interface AfterRenderOptions {
   /**
@@ -52,21 +52,6 @@ export interface AfterRenderOptions {
    * with the current `DestroyRef`.
    */
   manualCleanup?: boolean;
-
-  /**
-   * The phase the callback should be invoked in.
-   *
-   * <div class="docs-alert docs-alert-critical">
-   *
-   * Defaults to `AfterRenderPhase.MixedReadWrite`. You should choose a more specific
-   * phase instead. See `AfterRenderPhase` for more information.
-   *
-   * </div>
-   *
-   * @deprecated Specify the phase for your callback to run in by passing a spec-object as the first
-   *   parameter to `afterRender` or `afterNextRender` instead of a function.
-   */
-  phase?: AfterRenderPhase;
 }
 
 /**
@@ -380,7 +365,7 @@ export function afterNextRender<E = never, W = never, M = never>(
  * }
  * ```
  *
- * @developerPreview
+ * @publicApi
  */
 export function afterNextRender(
   callback: VoidFunction,
@@ -419,12 +404,9 @@ function getHooks(
         mixedReadWrite?: (r?: unknown) => unknown;
         read?: (r?: unknown) => void;
       },
-  phase: AfterRenderPhase,
 ): AfterRenderHooks {
   if (callbackOrSpec instanceof Function) {
-    const hooks: AfterRenderHooks = [undefined, undefined, undefined, undefined];
-    hooks[phase] = callbackOrSpec;
-    return hooks;
+    return [undefined, undefined, /* MixedReadWrite */ callbackOrSpec, undefined];
   } else {
     return [
       callbackOrSpec.earlyRead,
@@ -458,12 +440,11 @@ function afterRenderImpl(
 
   const tracing = injector.get(TracingService, null, {optional: true});
 
-  const hooks = options?.phase ?? AfterRenderPhase.MixedReadWrite;
   const destroyRef = options?.manualCleanup !== true ? injector.get(DestroyRef) : null;
   const viewContext = injector.get(ViewContext, null, {optional: true});
   const sequence = new AfterRenderSequence(
     manager.impl,
-    getHooks(callbackOrSpec, hooks),
+    getHooks(callbackOrSpec),
     viewContext?.view,
     once,
     destroyRef,

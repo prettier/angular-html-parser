@@ -56,12 +56,6 @@
           "name": "project",
           "type": "string",
           "description": "The name of the project where the app-shell should be generated."
-        },
-        {
-          "name": "server-routing",
-          "type": "boolean",
-          "default": false,
-          "description": "Set up a server application using the Server Routing and App Engine APIs (Developer Preview)."
         }
       ],
       "aliases": [],
@@ -125,11 +119,6 @@
           "type": "boolean",
           "default": true,
           "description": "Generate an application with routing already configured. This sets up the necessary files and modules for managing navigation between different views in your application."
-        },
-        {
-          "name": "server-routing",
-          "type": "boolean",
-          "description": "Set up a server application using the Server Routing and App Engine APIs (Developer Preview)."
         },
         {
           "name": "skip-install",
@@ -311,8 +300,8 @@
         {
           "name": "ng-html",
           "type": "boolean",
-          "default": true,
-          "description": "Generate component template files with an '.ng.html' file extension instead of '.html'. The '.ng.html' file extension is recommended by the Angular style guide."
+          "default": false,
+          "description": "Generate component template files with an '.ng.html' file extension instead of '.html'."
         },
         {
           "name": "prefix",
@@ -372,7 +361,6 @@
         {
           "name": "type",
           "type": "string",
-          "default": "Component",
           "description": "Append a custom type to the component's filename. For example, if you set the type to `container`, the file will be named `my-component.container.ts`."
         },
         {
@@ -484,6 +472,11 @@
           "type": "boolean",
           "default": true,
           "description": "Generate a standalone directive. Standalone directives are self-contained and don't need to be declared in an NgModule. They can be used independently or imported directly into other standalone components or directives."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Append a custom type to the directive's filename. For example, if you set the type to `directive`, the file will be named `example.directive.ts`."
         }
       ],
       "aliases": [
@@ -573,6 +566,16 @@
           "type": "boolean",
           "default": false,
           "description": "Skip the generation of a unit test file `spec.ts` for the new guard."
+        },
+        {
+          "name": "type-separator",
+          "type": "string",
+          "default": "-",
+          "enum": [
+            "-",
+            "."
+          ],
+          "description": "The separator character to use before the type within the generated file's name. For example, if you set the option to `.`, the file will be named `example.guard.ts`."
         }
       ],
       "aliases": [
@@ -613,6 +616,16 @@
           "type": "boolean",
           "default": false,
           "description": "Skip the generation of a unit test file `spec.ts` for the new interceptor."
+        },
+        {
+          "name": "type-separator",
+          "type": "string",
+          "default": "-",
+          "enum": [
+            "-",
+            "."
+          ],
+          "description": "The separator character to use before the type within the generated file's name. For example, if you set the option to `.`, the file will be named `example.interceptor.ts`."
         }
       ],
       "aliases": [],
@@ -762,6 +775,16 @@
             "Root"
           ],
           "description": "The scope for the new routing module."
+        },
+        {
+          "name": "type-separator",
+          "type": "string",
+          "default": "-",
+          "enum": [
+            "-",
+            "."
+          ],
+          "description": "The separator character to use before the type within the generated file's name. For example, if you set the option to `.`, the file will be named `example.module.ts`."
         }
       ],
       "aliases": [
@@ -822,6 +845,16 @@
           "type": "boolean",
           "default": true,
           "description": "Generate a standalone pipe. Standalone pipes are self-contained and don't need to be declared in an NgModule. They can be used independently or imported directly into other standalone components, directives, or pipes."
+        },
+        {
+          "name": "type-separator",
+          "type": "string",
+          "default": "-",
+          "enum": [
+            "-",
+            "."
+          ],
+          "description": "The separator character to use before the type within the generated file's name. For example, if you set the option to `.`, the file will be named `example.pipe.ts`."
         }
       ],
       "aliases": [
@@ -862,6 +895,16 @@
           "type": "boolean",
           "default": false,
           "description": "Skip the generation of a unit test file `spec.ts` for the new resolver."
+        },
+        {
+          "name": "type-separator",
+          "type": "string",
+          "default": "-",
+          "enum": [
+            "-",
+            "."
+          ],
+          "description": "The separator character to use before the type within the generated file's name. For example, if you set the option to `.`, the file will be named `example.resolver.ts`."
         }
       ],
       "aliases": [
@@ -896,6 +939,11 @@
           "type": "boolean",
           "default": false,
           "description": "Skip the generation of a unit test file `spec.ts` for the service."
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "description": "Append a custom type to the service's filename. For example, if you set the type to `service`, the file will be named `my-service.service.ts`."
         }
       ],
       "aliases": [

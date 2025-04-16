@@ -1099,7 +1099,7 @@ export function transformExpressionsInOp(
       }
       break;
     case OpKind.Property:
-    case OpKind.HostProperty:
+    case OpKind.DomProperty:
     case OpKind.Attribute:
       if (op.expression instanceof Interpolation) {
         transformExpressionsInInterpolation(op.expression, transform, flags);
@@ -1227,6 +1227,8 @@ export function transformExpressionsInOp(
     case OpKind.IcuPlaceholder:
     case OpKind.DeclareLet:
     case OpKind.SourceLocation:
+    case OpKind.ConditionalCreate:
+    case OpKind.ConditionalBranchCreate:
       // These operations contain no expressions.
       break;
     default:

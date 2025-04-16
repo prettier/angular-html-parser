@@ -414,14 +414,23 @@ function getDefinitionForExpressionAtPosition(
 
   let resourceForExpression: Resource | null = null;
 
-  if (resource.template?.expression === expression) {
+  if (resource.template?.node === expression) {
     resourceForExpression = resource.template;
   }
 
   if (resourceForExpression === null && resource.styles !== null) {
     for (const style of resource.styles) {
-      if (style.expression === expression) {
+      if (style.node === expression) {
         resourceForExpression = style;
+        break;
+      }
+    }
+  }
+
+  if (resourceForExpression === null && resource.hostBindings !== null) {
+    for (const binding of resource.hostBindings) {
+      if (binding.node === expression) {
+        resourceForExpression = binding;
         break;
       }
     }

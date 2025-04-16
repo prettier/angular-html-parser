@@ -5,6 +5,20 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
+
+import type {
+  ClassProvider,
+  ExistingProvider,
+  FactoryProvider,
+  InjectOptions,
+  InjectionToken,
+  Injector,
+  Type,
+  ValueProvider,
+  ɵAngularComponentDebugMetadata as AngularComponentDebugMetadata,
+  ɵAcxComponentDebugMetadata as AcxComponentDebugMetadata,
+  ɵProviderRecord as ProviderRecord,
+} from '@angular/core';
 import {
   ComponentExplorerViewQuery,
   DirectiveMetadata,
@@ -16,7 +30,6 @@ import {
   SerializedProviderRecord,
   UpdatedStateData,
 } from 'protocol';
-
 import {buildDirectiveTree, getLViewFromDirectiveOrElementInstance} from './directive-forest/index';
 import {
   ngDebugApiIsSupported,
@@ -27,6 +40,8 @@ import {
   deeplySerializeSelectedProperties,
   serializeDirectiveState,
 } from './state-serializer/state-serializer';
+import {mutateNestedProp} from './property-mutation';
+import {ComponentTreeNode, DirectiveInstanceType, ComponentInstanceType} from './interfaces';
 
 // Need to be kept in sync with Angular framework
 // We can't directly import it from framework now
@@ -37,21 +52,16 @@ enum ChangeDetectionStrategy {
   Default = 1,
 }
 
-import {ComponentTreeNode, DirectiveInstanceType, ComponentInstanceType} from './interfaces';
+enum AcxChangeDetectionStrategy {
+  Default = 0,
+  OnPush = 1,
+}
 
-import type {
-  ClassProvider,
-  ExistingProvider,
-  FactoryProvider,
-  InjectOptions,
-  InjectionToken,
-  Injector,
-  Type,
-  ValueProvider,
-  ɵComponentDebugMetadata as ComponentDebugMetadata,
-  ɵProviderRecord as ProviderRecord,
-} from '@angular/core';
-import {isSignal} from './utils';
+enum Framework {
+  Angular = 'angular',
+  ACX = 'acx',
+  Wiz = 'wiz',
+}
 
 export const injectorToId = new WeakMap<Injector | HTMLElement, string>();
 export const nodeInjectorToResolutionPath = new WeakMap<HTMLElement, SerializedInjector[]>();
@@ -122,7 +132,7 @@ export const getLatestComponentState = (
   const populateResultSet = (dir: DirectiveInstanceType | ComponentInstanceType) => {
     const {instance, name} = dir;
     const metadata = getDirectiveMetadata(instance);
-    if (injector) {
+    if (injector && metadata.framework === Framework.Angular) {
       metadata.dependencies = getDependenciesForDirective(
         injector,
         resolutionPathWithProviders,
@@ -221,14 +231,44 @@ const enum DirectiveMetadataKey {
 // the method directly interacts with the directive/component definition.
 const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
   const getMetadata = ngDebugClient().getDirectiveMetadata!;
-  const metadata = getMetadata?.(dir) as ComponentDebugMetadata;
+  const metadata = getMetadata?.(dir);
   if (metadata) {
-    return {
-      inputs: metadata.inputs,
-      outputs: metadata.outputs,
-      encapsulation: metadata.encapsulation,
-      onPush: metadata.changeDetection === ChangeDetectionStrategy.OnPush,
-    };
+    const {framework} = metadata;
+    switch (framework) {
+      case undefined: // Back compat, older Angular versions did not set `framework`.
+      case Framework.Angular: {
+        const meta = metadata as typeof metadata & Partial<AngularComponentDebugMetadata>;
+        return {
+          framework: Framework.Angular,
+          name: meta.name,
+          inputs: meta.inputs,
+          outputs: meta.outputs,
+          encapsulation: meta.encapsulation,
+          onPush: meta.changeDetection === ChangeDetectionStrategy.OnPush,
+        };
+      }
+      case Framework.ACX: {
+        const meta = metadata as typeof metadata & Partial<AcxComponentDebugMetadata>;
+        return {
+          framework: Framework.ACX,
+          name: meta.name,
+          inputs: meta.inputs,
+          outputs: meta.outputs,
+          encapsulation: meta.encapsulation,
+          onPush: meta.changeDetection === AcxChangeDetectionStrategy.OnPush,
+        };
+      }
+      case Framework.Wiz: {
+        return {
+          framework: Framework.Wiz,
+          name: metadata.name,
+          props: metadata.props,
+        };
+      }
+      default: {
+        throw new Error(`Unknown framework: "${framework}".`);
+      }
+    }
   }
 
   // Used in older Angular versions, prior to the introduction of `getDirectiveMetadata`.
@@ -242,6 +282,7 @@ const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
   };
 
   return {
+    framework: Framework.Angular,
     inputs: safelyGrabMetadata(DirectiveMetadataKey.INPUTS),
     outputs: safelyGrabMetadata(DirectiveMetadataKey.OUTPUTS),
     encapsulation: safelyGrabMetadata(DirectiveMetadataKey.ENCAPSULATION),
@@ -251,7 +292,16 @@ const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
 
 export function isOnPushDirective(dir: any): boolean {
   const metadata = getDirectiveMetadata(dir.instance);
-  return metadata.onPush;
+  switch (metadata.framework) {
+    case Framework.Angular:
+      return Boolean(metadata.onPush);
+    case Framework.ACX:
+      return Boolean(metadata.onPush);
+    case Framework.Wiz:
+      return false;
+    default:
+      throw new Error(`Unknown framework: "${metadata.framework}".`);
+  }
 }
 
 export function getInjectorProviders(injector: Injector) {
@@ -581,7 +631,7 @@ export const updateState = (updatedStateData: UpdatedStateData): void => {
   }
   if (updatedStateData.directiveId.directive !== undefined) {
     const directive = node.directives[updatedStateData.directiveId.directive].instance;
-    mutateComponentOrDirective(updatedStateData, directive);
+    mutateNestedProp(directive, updatedStateData.keyPath, updatedStateData.newValue);
     if (ngDebugApiIsSupported(ng, 'getOwningComponent')) {
       ng.applyChanges?.(ng.getOwningComponent(directive)!);
     }
@@ -589,37 +639,10 @@ export const updateState = (updatedStateData: UpdatedStateData): void => {
   }
   if (node.component) {
     const comp = node.component.instance;
-    mutateComponentOrDirective(updatedStateData, comp);
+    mutateNestedProp(comp, updatedStateData.keyPath, updatedStateData.newValue);
     ng.applyChanges?.(comp);
     return;
   }
-};
-
-const mutateComponentOrDirective = (updatedStateData: UpdatedStateData, compOrDirective: any) => {
-  const valueKey = updatedStateData.keyPath.pop();
-  if (valueKey === undefined) {
-    return;
-  }
-
-  let parentObjectOfValueToUpdate = compOrDirective;
-  updatedStateData.keyPath.forEach((key) => {
-    parentObjectOfValueToUpdate = parentObjectOfValueToUpdate[key];
-  });
-
-  if (isSignal(parentObjectOfValueToUpdate)) {
-    // we don't support updating nested objects in signals yet
-    return;
-  }
-
-  // When we try to set a property which only has a getter
-  // the line below could throw an error.
-  try {
-    if (isSignal(parentObjectOfValueToUpdate[valueKey])) {
-      parentObjectOfValueToUpdate[valueKey].set(updatedStateData.newValue);
-    } else {
-      parentObjectOfValueToUpdate[valueKey] = updatedStateData.newValue;
-    }
-  } catch {}
 };
 
 export function serializeResolutionPath(resolutionPath: Injector[]): SerializedInjector[] {

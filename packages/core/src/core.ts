@@ -90,7 +90,7 @@ export {
 export {ApplicationModule} from './application/application_module';
 export {AbstractType, Type} from './interface/type';
 export {EventEmitter} from './event_emitter';
-export {ErrorHandler} from './error_handler';
+export {ErrorHandler, provideBrowserGlobalErrorListeners} from './error_handler';
 export * from './core_private_export';
 export * from './core_render3_private_export';
 export * from './core_reactivity_export';
@@ -104,7 +104,7 @@ export {
 } from './render3/ng_module_ref';
 export {createComponent, reflectComponentType, ComponentMirror} from './render3/component';
 export {isStandalone} from './render3/def_getters';
-export {AfterRenderPhase, AfterRenderRef} from './render3/after_render/api';
+export {AfterRenderRef} from './render3/after_render/api';
 export {publishExternalGlobalUtil as ɵpublishExternalGlobalUtil} from './render3/util/global_utils';
 export {
   AfterRenderOptions,
@@ -112,11 +112,12 @@ export {
   afterNextRender,
   ɵFirstAvailable,
 } from './render3/after_render/hooks';
-export {inputBinding, outputBinding} from './render3/dynamic_bindings';
+export {inputBinding, outputBinding, twoWayBinding} from './render3/dynamic_bindings';
 export {ApplicationConfig, mergeApplicationConfig} from './application/application_config';
 export {makeStateKey, StateKey, TransferState} from './transfer_state';
 export {booleanAttribute, numberAttribute} from './util/coercion';
 export {REQUEST, REQUEST_CONTEXT, RESPONSE_INIT} from './application/platform_tokens';
+export {DOCUMENT} from './document';
 
 import {global} from './util/global';
 if (typeof ngDevMode !== 'undefined' && ngDevMode) {

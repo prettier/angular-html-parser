@@ -15,22 +15,25 @@ import {
   Compiler,
   CompilerFactory,
   Component,
+  effect,
   EnvironmentInjector,
   InjectionToken,
+  Injector,
   LOCALE_ID,
   NgModule,
   NgZone,
   PlatformRef,
+  ProviderToken,
   provideZoneChangeDetection,
   RendererFactory2,
   TemplateRef,
   Type,
   ViewChild,
   ViewContainerRef,
-} from '@angular/core';
-import {ErrorHandler} from '@angular/core/src/error_handler';
-import {ComponentRef} from '@angular/core/src/linker/component_factory';
-import {createEnvironmentInjector, getLocaleId} from '@angular/core/src/render3';
+} from '../src/core';
+import {ErrorHandler} from '../src/error_handler';
+import {ComponentRef} from '../src/linker/component_factory';
+import {createEnvironmentInjector, getLocaleId} from '../src/render3';
 import {BrowserModule} from '@angular/platform-browser';
 import {DomRendererFactory2} from '@angular/platform-browser/src/dom/dom_renderer';
 import {
@@ -134,7 +137,7 @@ describe('bootstrap', () => {
 
       createRootEl();
       const modFactory = compiler.compileModuleSync(SomeModule);
-      const module = modFactory.create(TestBed);
+      const module = modFactory.create(TestBed.inject(Injector));
       const cmpFactory = module.componentFactoryResolver.resolveComponentFactory(SomeComponent);
       const component = app.bootstrap(cmpFactory);
 
@@ -162,7 +165,7 @@ describe('bootstrap', () => {
 
       createRootEl('custom-selector');
       const modFactory = compiler.compileModuleSync(SomeModule);
-      const module = modFactory.create(TestBed);
+      const module = modFactory.create(TestBed.inject(Injector));
       const cmpFactory = module.componentFactoryResolver.resolveComponentFactory(SomeComponent);
       const component = app.bootstrap(cmpFactory, 'custom-selector');
 
@@ -253,6 +256,50 @@ describe('bootstrap', () => {
           }),
         ),
       );
+
+      it('runs in `NgZone`', inject([ApplicationRef], async (ref: ApplicationRef) => {
+        @Component({
+          selector: 'zone-comp',
+          template: `
+            <div>{{ name }}</div>
+          `,
+        })
+        class ZoneComp {
+          readonly inNgZone = NgZone.isInAngularZone();
+        }
+
+        createRootEl('zone-comp');
+        const comp = ref.bootstrap(ZoneComp);
+        expect(comp.instance.inNgZone).toBeTrue();
+      }));
+    });
+
+    describe('bootstrapImpl', () => {
+      it('should use a provided injector', inject([ApplicationRef], (ref: ApplicationRef) => {
+        class MyService {}
+        const myService = new MyService();
+
+        @Component({
+          selector: 'injecting-component',
+          template: `<div>Hello, World!</div>`,
+        })
+        class InjectingComponent {
+          constructor(readonly myService: MyService) {}
+        }
+
+        const injector = Injector.create({
+          providers: [{provide: MyService, useValue: myService}],
+        });
+
+        createRootEl('injecting-component');
+        const appRef = ref as unknown as {bootstrapImpl: ApplicationRef['bootstrapImpl']};
+        const compRef = appRef.bootstrapImpl(
+          InjectingComponent,
+          /* rootSelectorOrNode */ undefined,
+          injector,
+        );
+        expect(compRef.instance.myService).toBe(myService);
+      }));
     });
   });
 
@@ -810,195 +857,197 @@ describe('bootstrap', () => {
 });
 
 describe('AppRef', () => {
-  @Component({
-    selector: 'sync-comp',
-    template: `<span>{{text}}</span>`,
-    standalone: false,
-  })
-  class SyncComp {
-    text: string = '1';
-  }
-
-  @Component({
-    selector: 'click-comp',
-    template: `<span (click)="onClick()">{{text}}</span>`,
-    standalone: false,
-  })
-  class ClickComp {
-    text: string = '1';
-
-    onClick() {
-      this.text += '1';
+  describe('stability', () => {
+    @Component({
+      selector: 'sync-comp',
+      template: `<span>{{text}}</span>`,
+      standalone: false,
+    })
+    class SyncComp {
+      text: string = '1';
     }
-  }
 
-  @Component({
-    selector: 'micro-task-comp',
-    template: `<span>{{text}}</span>`,
-    standalone: false,
-  })
-  class MicroTaskComp {
-    text: string = '1';
+    @Component({
+      selector: 'click-comp',
+      template: `<span (click)="onClick()">{{text}}</span>`,
+      standalone: false,
+    })
+    class ClickComp {
+      text: string = '1';
 
-    ngOnInit() {
-      Promise.resolve(null).then((_) => {
+      onClick() {
         this.text += '1';
-      });
+      }
     }
-  }
 
-  @Component({
-    selector: 'macro-task-comp',
-    template: `<span>{{text}}</span>`,
-    standalone: false,
-  })
-  class MacroTaskComp {
-    text: string = '1';
+    @Component({
+      selector: 'micro-task-comp',
+      template: `<span>{{text}}</span>`,
+      standalone: false,
+    })
+    class MicroTaskComp {
+      text: string = '1';
 
-    ngOnInit() {
-      setTimeout(() => {
-        this.text += '1';
-      }, 10);
+      ngOnInit() {
+        Promise.resolve(null).then((_) => {
+          this.text += '1';
+        });
+      }
     }
-  }
 
-  @Component({
-    selector: 'micro-macro-task-comp',
-    template: `<span>{{text}}</span>`,
-    standalone: false,
-  })
-  class MicroMacroTaskComp {
-    text: string = '1';
+    @Component({
+      selector: 'macro-task-comp',
+      template: `<span>{{text}}</span>`,
+      standalone: false,
+    })
+    class MacroTaskComp {
+      text: string = '1';
 
-    ngOnInit() {
-      Promise.resolve(null).then((_) => {
-        this.text += '1';
+      ngOnInit() {
         setTimeout(() => {
           this.text += '1';
         }, 10);
-      });
+      }
     }
-  }
 
-  @Component({
-    selector: 'macro-micro-task-comp',
-    template: `<span>{{text}}</span>`,
-    standalone: false,
-  })
-  class MacroMicroTaskComp {
-    text: string = '1';
+    @Component({
+      selector: 'micro-macro-task-comp',
+      template: `<span>{{text}}</span>`,
+      standalone: false,
+    })
+    class MicroMacroTaskComp {
+      text: string = '1';
 
-    ngOnInit() {
-      setTimeout(() => {
-        this.text += '1';
-        Promise.resolve(null).then((_: any) => {
+      ngOnInit() {
+        Promise.resolve(null).then((_) => {
           this.text += '1';
+          setTimeout(() => {
+            this.text += '1';
+          }, 10);
         });
-      }, 10);
+      }
     }
-  }
 
-  let stableCalled = false;
+    @Component({
+      selector: 'macro-micro-task-comp',
+      template: `<span>{{text}}</span>`,
+      standalone: false,
+    })
+    class MacroMicroTaskComp {
+      text: string = '1';
 
-  beforeEach(() => {
-    stableCalled = false;
-    TestBed.configureTestingModule({
-      providers: [provideZoneChangeDetection({ignoreChangesOutsideZone: true})],
-      declarations: [
-        SyncComp,
-        MicroTaskComp,
-        MacroTaskComp,
-        MicroMacroTaskComp,
-        MacroMicroTaskComp,
-        ClickComp,
-      ],
+      ngOnInit() {
+        setTimeout(() => {
+          this.text += '1';
+          Promise.resolve(null).then((_: any) => {
+            this.text += '1';
+          });
+        }, 10);
+      }
+    }
+
+    let stableCalled = false;
+
+    beforeEach(() => {
+      stableCalled = false;
+      TestBed.configureTestingModule({
+        providers: [provideZoneChangeDetection({ignoreChangesOutsideZone: true})],
+        declarations: [
+          SyncComp,
+          MicroTaskComp,
+          MacroTaskComp,
+          MicroMacroTaskComp,
+          MacroMicroTaskComp,
+          ClickComp,
+        ],
+      });
     });
-  });
-
-  afterEach(() => {
-    expect(stableCalled).toBe(true, 'isStable did not emit true on stable');
-  });
-
-  function expectStableTexts(component: Type<any>, expected: string[]) {
-    const fixture = TestBed.createComponent(component);
-    const appRef: ApplicationRef = TestBed.inject(ApplicationRef);
-    const zone: NgZone = TestBed.inject(NgZone);
-    appRef.attachView(fixture.componentRef.hostView);
-    zone.run(() => appRef.tick());
-
-    let i = 0;
-    appRef.isStable.subscribe({
-      next: (stable: boolean) => {
-        if (stable) {
-          expect(i).toBeLessThan(expected.length);
-          expect(fixture.nativeElement).toHaveText(expected[i++]);
-          stableCalled = true;
-        }
-      },
-    });
-  }
-
-  it('isStable should fire on synchronous component loading', waitForAsync(() => {
-    expectStableTexts(SyncComp, ['1']);
-  }));
-
-  it('isStable should fire after a microtask on init is completed', waitForAsync(() => {
-    expectStableTexts(MicroTaskComp, ['11']);
-  }));
-
-  it('isStable should fire after a macrotask on init is completed', waitForAsync(() => {
-    expectStableTexts(MacroTaskComp, ['11']);
-  }));
-
-  it('isStable should fire only after chain of micro and macrotasks on init are completed', waitForAsync(() => {
-    expectStableTexts(MicroMacroTaskComp, ['111']);
-  }));
-
-  it('isStable should fire only after chain of macro and microtasks on init are completed', waitForAsync(() => {
-    expectStableTexts(MacroMicroTaskComp, ['111']);
-  }));
-
-  it('isStable can be subscribed to many times', async () => {
-    const appRef: ApplicationRef = TestBed.inject(ApplicationRef);
-    // Create stable subscription but do not unsubscribe before the second subscription is made
-    appRef.isStable.subscribe();
-    await expectAsync(appRef.isStable.pipe(take(1)).toPromise()).toBeResolved();
-    stableCalled = true;
-  });
-
-  describe('unstable', () => {
-    let unstableCalled = false;
 
     afterEach(() => {
-      expect(unstableCalled).toBe(true, 'isStable did not emit false on unstable');
+      expect(stableCalled).toBe(true, 'isStable did not emit true on stable');
     });
 
-    function expectUnstable(appRef: ApplicationRef) {
-      appRef.isStable.subscribe({
-        next: (stable: boolean) => {
-          if (stable) {
-            stableCalled = true;
-          }
-          if (!stable) {
-            unstableCalled = true;
-          }
-        },
-      });
-    }
-
-    it('should be fired after app becomes unstable', waitForAsync(() => {
-      const fixture = TestBed.createComponent(ClickComp);
+    function expectStableTexts(component: Type<any>, expected: string[]) {
+      const fixture = TestBed.createComponent(component);
       const appRef: ApplicationRef = TestBed.inject(ApplicationRef);
       const zone: NgZone = TestBed.inject(NgZone);
       appRef.attachView(fixture.componentRef.hostView);
       zone.run(() => appRef.tick());
 
-      fixture.whenStable().then(() => {
-        expectUnstable(appRef);
-        const element = fixture.debugElement.children[0];
-        dispatchEvent(element.nativeElement, 'click');
+      let i = 0;
+      appRef.isStable.subscribe({
+        next: (stable: boolean) => {
+          if (stable) {
+            expect(i).toBeLessThan(expected.length);
+            expect(fixture.nativeElement).toHaveText(expected[i++]);
+            stableCalled = true;
+          }
+        },
       });
+    }
+
+    it('isStable should fire on synchronous component loading', waitForAsync(() => {
+      expectStableTexts(SyncComp, ['1']);
     }));
+
+    it('isStable should fire after a microtask on init is completed', waitForAsync(() => {
+      expectStableTexts(MicroTaskComp, ['11']);
+    }));
+
+    it('isStable should fire after a macrotask on init is completed', waitForAsync(() => {
+      expectStableTexts(MacroTaskComp, ['11']);
+    }));
+
+    it('isStable should fire only after chain of micro and macrotasks on init are completed', waitForAsync(() => {
+      expectStableTexts(MicroMacroTaskComp, ['111']);
+    }));
+
+    it('isStable should fire only after chain of macro and microtasks on init are completed', waitForAsync(() => {
+      expectStableTexts(MacroMicroTaskComp, ['111']);
+    }));
+
+    it('isStable can be subscribed to many times', async () => {
+      const appRef: ApplicationRef = TestBed.inject(ApplicationRef);
+      // Create stable subscription but do not unsubscribe before the second subscription is made
+      appRef.isStable.subscribe();
+      await expectAsync(appRef.isStable.pipe(take(1)).toPromise()).toBeResolved();
+      stableCalled = true;
+    });
+
+    describe('unstable', () => {
+      let unstableCalled = false;
+
+      afterEach(() => {
+        expect(unstableCalled).toBe(true, 'isStable did not emit false on unstable');
+      });
+
+      function expectUnstable(appRef: ApplicationRef) {
+        appRef.isStable.subscribe({
+          next: (stable: boolean) => {
+            if (stable) {
+              stableCalled = true;
+            }
+            if (!stable) {
+              unstableCalled = true;
+            }
+          },
+        });
+      }
+
+      it('should be fired after app becomes unstable', waitForAsync(() => {
+        const fixture = TestBed.createComponent(ClickComp);
+        const appRef: ApplicationRef = TestBed.inject(ApplicationRef);
+        const zone: NgZone = TestBed.inject(NgZone);
+        appRef.attachView(fixture.componentRef.hostView);
+        zone.run(() => appRef.tick());
+
+        fixture.whenStable().then(() => {
+          expectUnstable(appRef);
+          const element = fixture.debugElement.children[0];
+          dispatchEvent(element.nativeElement, 'click');
+        });
+      }));
+    });
   });
 });
 

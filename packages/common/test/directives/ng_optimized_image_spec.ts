@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {CommonModule, DOCUMENT, IMAGE_CONFIG, ImageConfig} from '@angular/common';
-import {RuntimeErrorCode} from '@angular/common/src/errors';
-import {PLATFORM_SERVER_ID} from '@angular/common/src/platform_id';
+import {CommonModule, DOCUMENT, IMAGE_CONFIG, ImageConfig} from '../../index';
+import {RuntimeErrorCode} from '../../src/errors';
+import {PLATFORM_SERVER_ID} from '../../src/platform_id';
 import {ChangeDetectionStrategy, Component, PLATFORM_ID, Provider, Type} from '@angular/core';
 import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
@@ -28,13 +28,14 @@ import {
   DATA_URL_ERROR_LIMIT,
   DATA_URL_WARN_LIMIT,
   NgOptimizedImage,
-  PLACEHOLDER_BLUR_AMOUNT,
   RECOMMENDED_SRCSET_DENSITY_CAP,
   resetImagePriorityCount,
 } from '../../src/directives/ng_optimized_image/ng_optimized_image';
 import {PRECONNECT_CHECK_BLOCKLIST} from '../../src/directives/ng_optimized_image/preconnect_link_checker';
 
 describe('Image directive', () => {
+  const PLACEHOLDER_BLUR_AMOUNT = 15;
+
   describe('preload <link> element on a server', () => {
     describe('server', () => {
       beforeEach(() => {

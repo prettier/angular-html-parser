@@ -6,14 +6,12 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import '../util/ng_hmr_mode';
 import '../util/ng_jit_mode';
 import '../util/ng_server_mode';
 
-import {
-  setActiveConsumer,
-  setThrowInvalidWriteToSignalError,
-} from '@angular/core/primitives/signals';
-import {Observable, Subject, Subscription} from 'rxjs';
+import {setActiveConsumer, setThrowInvalidWriteToSignalError} from '../../primitives/signals';
+import {type Observable, Subject, type Subscription} from 'rxjs';
 import {map} from 'rxjs/operators';
 
 import {ZONELESS_ENABLED} from '../change_detection/scheduling/zoneless_scheduling';
@@ -24,7 +22,7 @@ import {InjectionToken} from '../di/injection_token';
 import {Injector} from '../di/injector';
 import {EnvironmentInjector, type R3Injector} from '../di/r3_injector';
 import {formatRuntimeError, RuntimeError, RuntimeErrorCode} from '../errors';
-import {ErrorHandler, INTERNAL_APPLICATION_ERROR_HANDLER} from '../error_handler';
+import {INTERNAL_APPLICATION_ERROR_HANDLER} from '../error_handler';
 import {Type} from '../interface/type';
 import {ComponentFactory, ComponentRef} from '../linker/component_factory';
 import {ComponentFactoryResolver} from '../linker/component_factory_resolver';
@@ -336,12 +334,15 @@ export class ApplicationRef {
    */
   public readonly components: ComponentRef<any>[] = [];
 
+  private internalPendingTask = inject(PendingTasksInternal);
+
   /**
    * Returns an Observable that indicates when the application is stable or unstable.
    */
-  public readonly isStable: Observable<boolean> = inject(PendingTasksInternal).hasPendingTasks.pipe(
-    map((pending) => !pending),
-  );
+  public get isStable(): Observable<boolean> {
+    // This is a getter because it might be invoked after the application has been destroyed.
+    return this.internalPendingTask.hasPendingTasksObservable.pipe(map((pending) => !pending));
+  }
 
   constructor() {
     // Inject the tracing service to initialize it.
@@ -501,59 +502,70 @@ export class ApplicationRef {
     componentOrFactory: ComponentFactory<C> | Type<C>,
     rootSelectorOrNode?: string | any,
   ): ComponentRef<C> {
-    profiler(ProfilerEvent.BootstrapComponentStart);
+    return this.bootstrapImpl(componentOrFactory, rootSelectorOrNode);
+  }
 
-    (typeof ngDevMode === 'undefined' || ngDevMode) && warnIfDestroyed(this._destroyed);
-    const isComponentFactory = componentOrFactory instanceof ComponentFactory;
-    const initStatus = this._injector.get(ApplicationInitStatus);
+  private bootstrapImpl<C>(
+    componentOrFactory: ComponentFactory<C> | Type<C>,
+    rootSelectorOrNode?: string | any,
+    injector: Injector = Injector.NULL,
+  ): ComponentRef<C> {
+    const ngZone = this._injector.get(NgZone);
+    return ngZone.run(() => {
+      profiler(ProfilerEvent.BootstrapComponentStart);
 
-    if (!initStatus.done) {
-      let errorMessage = '';
-      if (typeof ngDevMode === 'undefined' || ngDevMode) {
-        const standalone = !isComponentFactory && isStandalone(componentOrFactory);
-        errorMessage =
-          'Cannot bootstrap as there are still asynchronous initializers running.' +
-          (standalone
-            ? ''
-            : ' Bootstrap components in the `ngDoBootstrap` method of the root module.');
+      (typeof ngDevMode === 'undefined' || ngDevMode) && warnIfDestroyed(this._destroyed);
+      const isComponentFactory = componentOrFactory instanceof ComponentFactory;
+      const initStatus = this._injector.get(ApplicationInitStatus);
+
+      if (!initStatus.done) {
+        let errorMessage = '';
+        if (typeof ngDevMode === 'undefined' || ngDevMode) {
+          const standalone = !isComponentFactory && isStandalone(componentOrFactory);
+          errorMessage =
+            'Cannot bootstrap as there are still asynchronous initializers running.' +
+            (standalone
+              ? ''
+              : ' Bootstrap components in the `ngDoBootstrap` method of the root module.');
+        }
+        throw new RuntimeError(RuntimeErrorCode.ASYNC_INITIALIZERS_STILL_RUNNING, errorMessage);
       }
-      throw new RuntimeError(RuntimeErrorCode.ASYNC_INITIALIZERS_STILL_RUNNING, errorMessage);
-    }
 
-    let componentFactory: ComponentFactory<C>;
-    if (isComponentFactory) {
-      componentFactory = componentOrFactory;
-    } else {
-      const resolver = this._injector.get(ComponentFactoryResolver);
-      componentFactory = resolver.resolveComponentFactory(componentOrFactory)!;
-    }
-    this.componentTypes.push(componentFactory.componentType);
+      let componentFactory: ComponentFactory<C>;
+      if (isComponentFactory) {
+        componentFactory = componentOrFactory;
+      } else {
+        const resolver = this._injector.get(ComponentFactoryResolver);
+        componentFactory = resolver.resolveComponentFactory(componentOrFactory)!;
+      }
+      this.componentTypes.push(componentFactory.componentType);
 
-    // Create a factory associated with the current module if it's not bound to some other
-    const ngModule = isBoundToModule(componentFactory)
-      ? undefined
-      : this._injector.get(NgModuleRef);
-    const selectorOrNode = rootSelectorOrNode || componentFactory.selector;
-    const compRef = componentFactory.create(Injector.NULL, [], selectorOrNode, ngModule);
-    const nativeElement = compRef.location.nativeElement;
-    const testability = compRef.injector.get(TESTABILITY, null);
-    testability?.registerApplication(nativeElement);
+      // Create a factory associated with the current module if it's not bound to some other
+      const ngModule = isBoundToModule(componentFactory)
+        ? undefined
+        : this._injector.get(NgModuleRef);
+      const selectorOrNode = rootSelectorOrNode || componentFactory.selector;
+      const compRef = componentFactory.create(injector, [], selectorOrNode, ngModule);
+      const nativeElement = compRef.location.nativeElement;
+      const testability = compRef.injector.get(TESTABILITY, null);
+      testability?.registerApplication(nativeElement);
 
-    compRef.onDestroy(() => {
-      this.detachView(compRef.hostView);
-      remove(this.components, compRef);
-      testability?.unregisterApplication(nativeElement);
+      compRef.onDestroy(() => {
+        this.detachView(compRef.hostView);
+        remove(this.components, compRef);
+        testability?.unregisterApplication(nativeElement);
+      });
+
+      this._loadComponent(compRef);
+      if (typeof ngDevMode === 'undefined' || ngDevMode) {
+        const _console = this._injector.get(Console);
+        _console.log(`Angular is running in development mode.`);
+      }
+
+      profiler(ProfilerEvent.BootstrapComponentEnd, compRef);
+
+      return compRef;
     });
-
-    this._loadComponent(compRef);
-    if (typeof ngDevMode === 'undefined' || ngDevMode) {
-      const _console = this._injector.get(Console);
-      _console.log(`Angular is running in development mode.`);
-    }
-
-    profiler(ProfilerEvent.BootstrapComponentEnd, compRef);
-
-    return compRef;
   }
 
   /**
@@ -654,6 +666,7 @@ export class ApplicationRef {
     }
 
     // First check dirty views, if there are any.
+    let ranDetectChanges = false;
     if (this.dirtyFlags & ApplicationRefDirtyFlags.ViewTreeAny) {
       // Change detection on views starts in targeted mode (only check components if they're
       // marked as dirty) unless global checking is specifically requested via APIs like
@@ -668,7 +681,21 @@ export class ApplicationRef {
 
       // Check all potentially dirty views.
       for (let {_lView} of this.allViews) {
-        detectChangesInViewIfRequired(_lView, useGlobalCheck, this.zonelessEnabled);
+        // When re-checking, only check views which actually need it.
+        if (!useGlobalCheck && !requiresRefreshOrTraversal(_lView)) {
+          continue;
+        }
+
+        const mode =
+          useGlobalCheck && !this.zonelessEnabled
+            ? // Global mode includes `CheckAlways` views.
+              // When using zoneless, all root views must be explicitly marked for refresh, even if they are
+              // `CheckAlways`.
+              ChangeDetectionMode.Global
+            : // Only refresh views with the `RefreshView` flag or views is a changed signal
+              ChangeDetectionMode.Targeted;
+        detectChangesInternal(_lView, mode);
+        ranDetectChanges = true;
       }
 
       // If `markForCheck()` was called during view checking, it will have set the `ViewTreeCheck`
@@ -686,7 +713,8 @@ export class ApplicationRef {
         // hooks.
         return;
       }
-    } else {
+    }
+    if (!ranDetectChanges) {
       // If we skipped refreshing views above, there might still be unflushed animations
       // because we never called `detectChangesInternal` on the views.
       this._rendererFactory?.begin?.();
@@ -886,25 +914,4 @@ export const enum ApplicationRefDirtyFlags {
    * Effects at the `ApplicationRef` level.
    */
   RootEffects = 0b00010000,
-}
-
-export function detectChangesInViewIfRequired(
-  lView: LView,
-  isFirstPass: boolean,
-  zonelessEnabled: boolean,
-) {
-  // When re-checking, only check views which actually need it.
-  if (!isFirstPass && !requiresRefreshOrTraversal(lView)) {
-    return;
-  }
-
-  const mode =
-    isFirstPass && !zonelessEnabled
-      ? // The first pass is always in Global mode, which includes `CheckAlways` views.
-        // When using zoneless, all root views must be explicitly marked for refresh, even if they are
-        // `CheckAlways`.
-        ChangeDetectionMode.Global
-      : // Only refresh views with the `RefreshView` flag or views is a changed signal
-        ChangeDetectionMode.Targeted;
-  detectChangesInternal(lView, mode);
 }

@@ -7,7 +7,7 @@
  */
 
 import {Injector} from '../../di/injector';
-import {ErrorHandler, INTERNAL_APPLICATION_ERROR_HANDLER} from '../../error_handler';
+import {INTERNAL_APPLICATION_ERROR_HANDLER} from '../../error_handler';
 import {hasSkipHydrationAttrOnRElement} from '../../hydration/skip_hydration';
 import {PRESERVE_HOST_CONTENT, PRESERVE_HOST_CONTENT_DEFAULT} from '../../hydration/tokens';
 import {processTextNodeMarkersBeforeHydration} from '../../hydration/utils';
@@ -29,7 +29,6 @@ import {
   InitialInputData,
   InitialInputs,
   LocalRefExtractor,
-  NodeInputBindings,
   TContainerNode,
   TDirectiveHostNode,
   TElementContainerNode,
@@ -51,6 +50,7 @@ import {
   LViewFlags,
   RENDERER,
   TData,
+  TVIEW,
   TView,
 } from '../interfaces/view';
 import {assertTNodeType} from '../node_assert';
@@ -58,7 +58,6 @@ import {isNodeMatchingSelectorList} from '../node_selector_matcher';
 import {profiler} from '../profiler';
 import {ProfilerEvent} from '../profiler_types';
 import {
-  getBindingsEnabled,
   getCurrentDirectiveIndex,
   getSelectedIndex,
   isInCheckNoChangesMode,
@@ -238,35 +237,51 @@ function mapPropName(name: string): string {
   return name;
 }
 
-export function elementPropertyInternal<T>(
-  tView: TView,
+export function setPropertyAndInputs<T>(
   tNode: TNode,
   lView: LView,
   propName: string,
   value: T,
   renderer: Renderer,
   sanitizer: SanitizerFn | null | undefined,
-  nativeOnly: boolean,
 ): void {
   ngDevMode && assertNotSame(value, NO_CHANGE as any, 'Incoming value should never be NO_CHANGE.');
+  const tView = lView[TVIEW];
+  const hasSetInput = setAllInputsForProperty(tNode, tView, lView, propName, value);
 
-  if (!nativeOnly) {
-    const hasSetInput = setAllInputsForProperty(tNode, tView, lView, propName, value);
-
-    if (hasSetInput) {
-      isComponentHost(tNode) && markDirtyIfOnPush(lView, tNode.index);
-      ngDevMode && setNgReflectProperties(lView, tView, tNode, propName, value);
-      return; // Stop propcessing if we've matched at least one input.
-    }
+  if (hasSetInput) {
+    isComponentHost(tNode) && markDirtyIfOnPush(lView, tNode.index);
+    ngDevMode && setNgReflectProperties(lView, tView, tNode, propName, value);
+    return; // Stop propcessing if we've matched at least one input.
   }
 
+  setDomProperty(tNode, lView, propName, value, renderer, sanitizer);
+}
+
+/**
+ * Sets a DOM property on a specific node.
+ * @param tNode TNode on which to set the value.
+ * @param lView View in which the node is located.
+ * @param propName Name of the property.
+ * @param value Value to set on the property.
+ * @param renderer Renderer to use when setting the property.
+ * @param sanitizer Function used to sanitize the value before setting it.
+ */
+export function setDomProperty<T>(
+  tNode: TNode,
+  lView: LView,
+  propName: string,
+  value: T,
+  renderer: Renderer,
+  sanitizer: SanitizerFn | null | undefined,
+) {
   if (tNode.type & TNodeType.AnyRNode) {
     const element = getNativeByTNode(tNode, lView) as RElement | RComment;
     propName = mapPropName(propName);
 
     if (ngDevMode) {
       validateAgainstEventProperties(propName);
-      if (!isPropertyValid(element, propName, tNode.value, tView.schemas)) {
+      if (!isPropertyValid(element, propName, tNode.value, lView[TVIEW].schemas)) {
         handleUnknownPropertyError(propName, tNode.value, tNode.type, lView);
       }
     }
@@ -278,7 +293,7 @@ export function elementPropertyInternal<T>(
   } else if (tNode.type & TNodeType.AnyContainer) {
     // If the node is a container and the property didn't
     // match any of the inputs or schemas we should throw.
-    if (ngDevMode && !matchingSchemas(tView.schemas, tNode.value)) {
+    if (ngDevMode && !matchingSchemas(lView[TVIEW].schemas, tNode.value)) {
       handleUnknownPropertyError(propName, tNode.value, tNode.type, lView);
     }
   }
@@ -611,18 +626,6 @@ export function handleUncaughtError(lView: LView, error: any): void {
   }
   const errorHandler = injector.get(INTERNAL_APPLICATION_ERROR_HANDLER, null);
   errorHandler?.(error);
-}
-
-/**
- * Handles an error thrown in an LView.
- * @deprecated Use handleUncaughtError to report to application error handler
- */
-export function handleError(lView: LView, error: any): void {
-  const injector = lView[INJECTOR];
-  if (!injector) {
-    return;
-  }
-  injector.get(ErrorHandler, null)?.handleError(error);
 }
 
 /**

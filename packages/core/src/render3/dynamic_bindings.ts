@@ -6,15 +6,16 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {WritableSignal} from '../core_reactivity_export_internal';
 import {RuntimeError, RuntimeErrorCode} from '../errors';
-import {Type} from '../interface/type';
+import {Type, Writable} from '../interface/type';
+import {assertNotDefined} from '../util/assert';
 import {bindingUpdated} from './bindings';
-import {listenToDirectiveOutput, wrapListener} from './instructions/listener';
 import {setDirectiveInput, storePropertyBindingMetadata} from './instructions/shared';
-import {DirectiveDef} from './interfaces/definition';
-import {CONTEXT} from './interfaces/view';
-import {getCurrentTNode, getLView, getSelectedTNode, getTView, nextBindingIndex} from './state';
+import {TVIEW} from './interfaces/view';
+import {getCurrentTNode, getLView, getSelectedTNode, nextBindingIndex} from './state';
 import {stringifyForError} from './util/stringify_utils';
+import {createOutputListener} from './view/directive_outputs';
 
 /** Symbol used to store and retrieve metadata about a binding. */
 export const BINDING = /* @__PURE__ */ Symbol('BINDING');
@@ -29,8 +30,8 @@ export interface Binding {
     readonly requiredVars: number;
   };
 
-  /** Target to which to apply the binding. */
-  readonly target?: unknown;
+  /** Target index (in a view's registry) to which to apply the binding. */
+  readonly targetIdx?: number;
 
   /** Callback that will be invoked during creation. */
   create?(): void;
@@ -53,6 +54,41 @@ export interface DirectiveWithBindings<T> {
 // These are constant between all the bindings so we can reuse the objects.
 const INPUT_BINDING_METADATA: Binding[typeof BINDING] = {kind: 'input', requiredVars: 1};
 const OUTPUT_BINDING_METADATA: Binding[typeof BINDING] = {kind: 'output', requiredVars: 0};
+
+// TODO(pk): this is a sketch of an input binding instruction that still needs some cleanups
+// - take an index of a directive on TNode (as matched), review all the index mappings that we need to do
+// - move more logic to the first creation pass
+// - move this function to under the instructions folder
+function inputBindingUpdate(targetDirectiveIdx: number, publicName: string, value: unknown) {
+  const lView = getLView();
+  const bindingIndex = nextBindingIndex();
+  if (bindingUpdated(lView, bindingIndex, value)) {
+    const tView = lView[TVIEW];
+    const tNode = getSelectedTNode();
+
+    // TODO(pk): don't check on each and every binding, just assert in dev mode
+    const targetDef = tView.directiveRegistry![targetDirectiveIdx];
+    if (ngDevMode && !targetDef) {
+      throw new RuntimeError(
+        RuntimeErrorCode.NO_BINDING_TARGET,
+        `Input binding to property "${publicName}" does not have a target.`,
+      );
+    }
+
+    // TODO(pk): the hasSet check should be replaced by one-off check in the first creation pass
+    const hasSet = setDirectiveInput(tNode, tView, lView, targetDef, publicName, value);
+
+    if (ngDevMode) {
+      if (!hasSet) {
+        throw new RuntimeError(
+          RuntimeErrorCode.NO_BINDING_TARGET,
+          `${stringifyForError(targetDef.type)} does not have an input with a public name of "${publicName}".`,
+        );
+      }
+      storePropertyBindingMetadata(tView.data, tNode, publicName, bindingIndex);
+    }
+  }
+}
 
 /**
  * Creates an input binding.
@@ -77,36 +113,7 @@ export function inputBinding(publicName: string, value: () => unknown): Binding 
   // don't get tree shaken when constructed by a function like this.
   const binding: Binding = {
     [BINDING]: INPUT_BINDING_METADATA,
-    target: null,
-    update: () => {
-      const target = binding.target as DirectiveDef<unknown>;
-      const lView = getLView();
-      const bindingIndex = nextBindingIndex();
-      const resolvedValue = value();
-      if (bindingUpdated(lView, bindingIndex, resolvedValue)) {
-        const tView = getTView();
-        const tNode = getSelectedTNode();
-
-        if (!target && ngDevMode) {
-          throw new RuntimeError(
-            RuntimeErrorCode.NO_BINDING_TARGET,
-            `Input binding to property "${publicName}" does not have a target.`,
-          );
-        }
-
-        const hasSet = setDirectiveInput(tNode, tView, lView, target, publicName, resolvedValue);
-
-        if (ngDevMode) {
-          if (!hasSet) {
-            throw new RuntimeError(
-              RuntimeErrorCode.NO_BINDING_TARGET,
-              `${stringifyForError(target.type)} does not have an input with a public name of "${publicName}".`,
-            );
-          }
-          storePropertyBindingMetadata(tView.data, tNode, publicName, bindingIndex);
-        }
-      }
-    },
+    update: () => inputBindingUpdate(binding.targetIdx!, publicName, value()),
   };
 
   return binding;
@@ -138,39 +145,59 @@ export function outputBinding<T>(eventName: string, listener: (event: T) => unkn
   // don't get tree shaken when constructed by a function like this.
   const binding: Binding = {
     [BINDING]: OUTPUT_BINDING_METADATA,
-    target: null,
     create: () => {
-      const target = binding.target as DirectiveDef<unknown>;
-
-      if (!target && ngDevMode) {
-        throw new RuntimeError(
-          RuntimeErrorCode.NO_BINDING_TARGET,
-          `Output binding to "${eventName}" does not have a target.`,
-        );
-      }
-
       const lView = getLView<{} | null>();
-      const tView = getTView();
       const tNode = getCurrentTNode()!;
-      const context = lView[CONTEXT];
-      const wrappedListener = wrapListener(tNode, lView, context, listener);
-      const hasBound = listenToDirectiveOutput(
-        tNode,
-        tView,
-        lView,
-        target,
-        eventName,
-        wrappedListener,
-      );
-
-      if (!hasBound && ngDevMode) {
-        throw new RuntimeError(
-          RuntimeErrorCode.INVALID_BINDING_TARGET,
-          `${stringifyForError(target.type)} does not have an output with a public name of "${eventName}".`,
-        );
-      }
+      const tView = lView[TVIEW];
+      const targetDef = tView.directiveRegistry![binding.targetIdx!];
+      createOutputListener(tNode, lView, listener, targetDef, eventName);
     },
   };
 
   return binding;
+}
+
+/**
+ * Creates a two-way binding.
+ * @param eventName Public name of the two-way compatible input.
+ * @param value Writable signal from which to get the current value and to which to write new
+ * values.
+ *
+ * ### Usage example
+ * In this example we create an instance of the `MyCheckbox` component and bind to its `value`
+ * input using a two-way binding.
+ *
+ * ```
+ * const checkboxValue = signal('');
+ *
+ * createComponent(MyCheckbox, {
+ *   bindings: [
+ *    twoWayBinding('value', checkboxValue),
+ *   ],
+ * });
+ * ```
+ */
+export function twoWayBinding(publicName: string, value: WritableSignal<unknown>): Binding {
+  const input = inputBinding(publicName, value);
+  const output = outputBinding(publicName + 'Change', (eventValue) => value.set(eventValue));
+
+  // We take advantage of inputs only having a `create` block and outputs only having an `update`
+  // block by passing them through directly instead of creating dedicated functions here. This
+  // assumption can break down if one of them starts targeting both blocks. These assertions
+  // are here to help us catch it if something changes in the future.
+  ngDevMode && assertNotDefined(input.create, 'Unexpected `create` callback in inputBinding');
+  ngDevMode && assertNotDefined(output.update, 'Unexpected `update` callback in outputBinding');
+
+  return {
+    [BINDING]: {
+      kind: 'twoWay',
+      requiredVars: input[BINDING].requiredVars + output[BINDING].requiredVars,
+    },
+    set targetIdx(idx: number) {
+      (input as Writable<Binding>).targetIdx = idx;
+      (output as Writable<Binding>).targetIdx = idx;
+    },
+    create: output.create,
+    update: input.update,
+  };
 }

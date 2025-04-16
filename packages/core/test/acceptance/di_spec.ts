@@ -60,10 +60,10 @@ import {
   ɵINJECTOR_SCOPE,
   ɵInternalEnvironmentProviders as InternalEnvironmentProviders,
   DestroyRef,
-} from '@angular/core';
-import {RuntimeError, RuntimeErrorCode} from '@angular/core/src/errors';
-import {ViewRef as ViewRefInternal} from '@angular/core/src/render3/view_ref';
-import {TestBed} from '@angular/core/testing';
+} from '../../src/core';
+import {RuntimeError, RuntimeErrorCode} from '../../src/errors';
+import {ViewRef as ViewRefInternal} from '../../src/render3/view_ref';
+import {TestBed} from '../../testing';
 import {By} from '@angular/platform-browser';
 import {BehaviorSubject} from 'rxjs';
 
@@ -2873,7 +2873,7 @@ describe('di', () => {
         constructor(public injector: Injector) {}
       }
 
-      const testBedInjector: Injector = TestBed.get(Injector);
+      const testBedInjector = TestBed.inject(Injector);
       const childInjector = Injector.create({providers: [], parent: testBedInjector});
 
       const anyService = childInjector.get(AnyService);

@@ -330,9 +330,7 @@ You can also provide a custom title strategy by extending the `TitleStrategy`.
 ```ts
 @Injectable({ providedIn: 'root' })
 export class TemplatePageTitleStrategy extends TitleStrategy {
-  constructor(private readonly title: Title) {
-    super();
-  }
+  private readonly title = inject(Title);
 
   override updateTitle(routerState: RouterStateSnapshot) {
     const title = this.buildTitle(routerState);
@@ -484,9 +482,6 @@ const routes: Routes = [
 ];
 </docs-code>
 This works as long as the loaded component is standalone.
-
-
-For more information on lazy loading and preloading see the dedicated guide [Lazy loading](guide/ngmodules/lazy-loading).
 
 ## Preventing unauthorized access
 

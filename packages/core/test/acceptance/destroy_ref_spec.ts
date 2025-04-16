@@ -14,8 +14,8 @@ import {
   Directive,
   EnvironmentInjector,
   inject,
-} from '@angular/core';
-import {TestBed} from '@angular/core/testing';
+} from '../../src/core';
+import {TestBed} from '../../testing';
 
 describe('DestroyRef', () => {
   describe('for environnement injector', () => {
@@ -237,24 +237,6 @@ describe('DestroyRef', () => {
     // Check that the callback was invoked only 2 times
     // (since we've unregistered one of the callbacks)
     expect(onDestroyCalls).toBe(2);
-  });
-
-  it('should throw when trying to register destroy callback on destroyed LView', () => {
-    @Component({
-      selector: 'test',
-      template: ``,
-    })
-    class TestCmp {
-      constructor(public destroyRef: DestroyRef) {}
-    }
-
-    const fixture = TestBed.createComponent(TestCmp);
-    const destroyRef = fixture.componentRef.instance.destroyRef;
-    fixture.componentRef.destroy();
-
-    expect(() => {
-      destroyRef.onDestroy(() => {});
-    }).toThrowError('NG0911: View has already been destroyed.');
   });
 
   it('should allow unregistration while destroying', () => {

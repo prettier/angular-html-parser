@@ -21,15 +21,18 @@ import {
   TmplAstBoundDeferredTrigger,
   TmplAstBoundEvent,
   TmplAstBoundText,
+  TmplAstComponent,
   TmplAstContent,
   TmplAstDeferredBlock,
   TmplAstDeferredBlockError,
   TmplAstDeferredBlockLoading,
   TmplAstDeferredBlockPlaceholder,
   TmplAstDeferredTrigger,
+  TmplAstDirective,
   TmplAstElement,
   TmplAstForLoopBlock,
   TmplAstForLoopBlockEmpty,
+  TmplAstHostElement,
   TmplAstIcu,
   TmplAstIfBlock,
   TmplAstIfBlockBranch,
@@ -430,8 +433,7 @@ class TemplateTargetVisitor implements TmplAstVisitor {
   private constructor(private readonly position: number) {}
 
   visit(node: TmplAstNode) {
-    const {start, end} = getSpanIncludingEndTag(node);
-    if (end !== null && !isWithin(this.position, {start, end})) {
+    if (!isWithinNode(this.position, node)) {
       return;
     }
 
@@ -461,6 +463,10 @@ class TemplateTargetVisitor implements TmplAstVisitor {
       // If cursor is within source span but not within key span or value span,
       // do not return the node.
       this.path.push(OUTSIDE_K_V_MARKER);
+    } else if (node instanceof TmplAstHostElement) {
+      this.path.push(node);
+      this.visitAll(node.bindings);
+      this.visitAll(node.listeners);
     } else {
       this.path.push(node);
       node.visit(this);
@@ -476,7 +482,11 @@ class TemplateTargetVisitor implements TmplAstVisitor {
   }
 
   visitElementOrTemplate(element: TmplAstTemplate | TmplAstElement) {
+    const isTemplate = element instanceof TmplAstTemplate;
     this.visitAll(element.attributes);
+    if (!isTemplate) {
+      this.visitAll(element.directives);
+    }
     this.visitAll(element.inputs);
     // We allow the path to contain both the `TmplAstBoundAttribute` and `TmplAstBoundEvent` for
     // two-way bindings but do not want the path to contain both the `TmplAstBoundAttribute` with
@@ -491,11 +501,11 @@ class TemplateTargetVisitor implements TmplAstVisitor {
       return;
     }
     this.visitAll(element.outputs);
-    if (element instanceof TmplAstTemplate) {
+    if (isTemplate) {
       this.visitAll(element.templateAttrs);
     }
     this.visitAll(element.references);
-    if (element instanceof TmplAstTemplate) {
+    if (isTemplate) {
       this.visitAll(element.variables);
     }
 
@@ -616,6 +626,14 @@ class TemplateTargetVisitor implements TmplAstVisitor {
     this.visitBinding(decl.value);
   }
 
+  visitComponent(component: TmplAstComponent) {
+    throw new Error('TODO');
+  }
+
+  visitDirective(directive: TmplAstDirective) {
+    throw new Error('TODO');
+  }
+
   visitAll(nodes: TmplAstNode[]) {
     for (const node of nodes) {
       this.visit(node);
@@ -672,4 +690,21 @@ function getSpanIncludingEndTag(ast: TmplAstNode) {
     }
   }
   return result;
+}
+
+/** Checks whether a position is within an AST node. */
+function isWithinNode(position: number, node: TmplAstNode): boolean {
+  if (!(node instanceof TmplAstHostElement)) {
+    return isWithin(position, getSpanIncludingEndTag(node));
+  }
+
+  // Host elements are special in that they don't have a contiguous source span. E.g. some bindings
+  // can be in the `host` literal in the decorator while others are on class members. That's why we
+  // need to check each binding, rather than the host element itself.
+  return (
+    (node.bindings.length > 0 &&
+      node.bindings.some((binding) => isWithin(position, binding.sourceSpan))) ||
+    (node.listeners.length > 0 &&
+      node.listeners.some((listener) => isWithin(position, listener.sourceSpan)))
+  );
 }

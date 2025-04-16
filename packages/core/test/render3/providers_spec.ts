@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {TestBed} from '@angular/core/testing';
+import {TestBed} from '../../testing';
 
 import {
   Component,
@@ -1095,7 +1095,7 @@ describe('providers', () => {
 
       const environmentInjector = createEnvironmentInjector(
         [{provide: String, useValue: 'From module injector'}],
-        TestBed.get(EnvironmentInjector),
+        TestBed.inject(EnvironmentInjector),
       );
 
       hostComponent!.vcref.createComponent(EmbeddedComponent, {

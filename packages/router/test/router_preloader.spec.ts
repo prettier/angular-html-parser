@@ -26,11 +26,15 @@ import {
   RouterPreloader,
   ROUTES,
   withPreloading,
-} from '@angular/router';
+  Route,
+  RouteConfigLoadEnd,
+  RouteConfigLoadStart,
+  Router,
+  RouterModule,
+} from '../index';
 import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
 import {catchError, delay, filter, switchMap, take} from 'rxjs/operators';
 
-import {Route, RouteConfigLoadEnd, RouteConfigLoadStart, Router, RouterModule} from '../index';
 import {provideRouter} from '../src/provide_router';
 import {
   getLoadedComponent,
@@ -52,7 +56,7 @@ describe('RouterPreloader', () => {
         providers: [
           provideLocationMocks(),
           provideRouter(
-            [{path: 'lazy', loadChildren: jasmine.createSpy('expected'), canLoad: ['someGuard']}],
+            [{path: 'lazy', loadChildren: jasmine.createSpy('expected'), canLoad: [() => true]}],
             withPreloading(PreloadAllModules),
           ),
         ],
@@ -60,7 +64,7 @@ describe('RouterPreloader', () => {
     });
 
     it('being destroyed before expected', () => {
-      const preloader: RouterPreloader = TestBed.get(RouterPreloader);
+      const preloader = TestBed.inject(RouterPreloader);
       // Calling the RouterPreloader's ngOnDestroy method is done to simulate what would happen if
       // the containing NgModule is destroyed.
       expect(() => preloader.ngOnDestroy()).not.toThrow();
@@ -85,7 +89,7 @@ describe('RouterPreloader', () => {
         providers: [
           provideLocationMocks(),
           provideRouter(
-            [{path: 'lazy', loadChildren: () => LoadedModule, canLoad: ['someGuard']}],
+            [{path: 'lazy', loadChildren: () => LoadedModule, canLoad: [() => true]}],
             withPreloading(PreloadAllModules),
           ),
         ],

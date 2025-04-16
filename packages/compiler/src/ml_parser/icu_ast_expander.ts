@@ -68,6 +68,7 @@ class _Expander implements html.Visitor {
     return new html.Element(
       element.name,
       element.attrs,
+      element.directives,
       html.visitAll(this, element.children),
       element.sourceSpan,
       element.startSourceSpan,
@@ -125,6 +126,24 @@ class _Expander implements html.Visitor {
   visitLetDeclaration(decl: html.LetDeclaration, context: any) {
     return decl;
   }
+
+  visitComponent(node: html.Component, context: any): any {
+    return new html.Component(
+      node.componentName,
+      node.tagName,
+      node.fullName,
+      node.attrs,
+      node.directives,
+      html.visitAll(this, node.children),
+      node.sourceSpan,
+      node.startSourceSpan,
+      node.endSourceSpan,
+    );
+  }
+
+  visitDirective(directive: html.Directive, context: any) {
+    return directive;
+  }
 }
 
 // Plural forms are expanded to `NgPlural` and `NgPluralCase`s
@@ -155,6 +174,7 @@ function _expandPluralForm(ast: html.Expansion, errors: ParseError[]): html.Elem
           undefined /* i18n */,
         ),
       ],
+      [],
       expansionResult.nodes,
       c.sourceSpan,
       c.sourceSpan,
@@ -173,6 +193,7 @@ function _expandPluralForm(ast: html.Expansion, errors: ParseError[]): html.Elem
   return new html.Element(
     'ng-container',
     [switchAttr],
+    [],
     children,
     ast.sourceSpan,
     ast.sourceSpan,
@@ -201,6 +222,7 @@ function _expandDefaultForm(ast: html.Expansion, errors: ParseError[]): html.Ele
             undefined /* i18n */,
           ),
         ],
+        [],
         expansionResult.nodes,
         c.sourceSpan,
         c.sourceSpan,
@@ -221,6 +243,7 @@ function _expandDefaultForm(ast: html.Expansion, errors: ParseError[]): html.Ele
           undefined /* i18n */,
         ),
       ],
+      [],
       expansionResult.nodes,
       c.sourceSpan,
       c.sourceSpan,
@@ -240,6 +263,7 @@ function _expandDefaultForm(ast: html.Expansion, errors: ParseError[]): html.Ele
     'ng-container',
     [switchAttr],
     children,
+    [],
     ast.sourceSpan,
     ast.sourceSpan,
     ast.sourceSpan,

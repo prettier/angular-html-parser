@@ -29,6 +29,10 @@ export enum ExtendedTemplateDiagnosticName {
     // (undocumented)
     UNINVOKED_FUNCTION_IN_EVENT_BINDING = "uninvokedFunctionInEventBinding",
     // (undocumented)
+    UNINVOKED_TRACK_FUNCTION = "uninvokedTrackFunction",
+    // (undocumented)
+    UNPARENTHESIZED_NULLISH_COALESCING = "unparenthesizedNullishCoalescing",
+    // (undocumented)
     UNUSED_LET_DECLARATION = "unusedLetDeclaration",
     // (undocumented)
     UNUSED_STANDALONE_IMPORTS = "unusedStandaloneImports"

@@ -16,7 +16,12 @@ import {
   ReactiveNode,
   setActiveConsumer,
   SIGNAL,
+  runPostProducerCreatedFn,
 } from './graph';
+
+// Required as the signals library is in a separate package, so we need to explicitly ensure the
+// global `ngDevMode` type is defined.
+declare const ngDevMode: boolean | undefined;
 
 /**
  * A computation, which derives a value from a declarative reactive expression.
@@ -51,9 +56,16 @@ export type ComputedGetter<T> = (() => T) & {
 /**
  * Create a computed signal which derives a reactive value from an expression.
  */
-export function createComputed<T>(computation: () => T): ComputedGetter<T> {
+export function createComputed<T>(
+  computation: () => T,
+  equal?: ValueEqualityFn<T>,
+): ComputedGetter<T> {
   const node: ComputedNode<T> = Object.create(COMPUTED_NODE);
   node.computation = computation;
+
+  if (equal !== undefined) {
+    node.equal = equal;
+  }
 
   const computed = () => {
     // Check if the value needs updating before returning it.
@@ -68,7 +80,15 @@ export function createComputed<T>(computation: () => T): ComputedGetter<T> {
 
     return node.value;
   };
+
   (computed as ComputedGetter<T>)[SIGNAL] = node;
+  if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+    const debugName = node.debugName ? ' (' + node.debugName + ')' : '';
+    computed.toString = () => `[Computed${debugName}: ${node.value}]`;
+  }
+
+  runPostProducerCreatedFn(node);
+
   return computed as unknown as ComputedGetter<T>;
 }
 
