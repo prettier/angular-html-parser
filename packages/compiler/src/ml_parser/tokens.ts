@@ -71,6 +71,7 @@ export type Token =
   | AttributeQuoteToken
   | AttributeValueTextToken
   | AttributeValueInterpolationToken
+  | DocTypeStartToken
   | ExpansionFormStartToken
   | ExpansionCaseValueToken
   | ExpansionCaseExpressionStartToken
@@ -86,7 +87,6 @@ export type Token =
   | LetValueToken
   | LetEndToken
   | IncompleteLetToken
-  | DocTypeStartToken
   | ComponentOpenStartToken
   | ComponentOpenEndToken
   | ComponentOpenEndVoidToken

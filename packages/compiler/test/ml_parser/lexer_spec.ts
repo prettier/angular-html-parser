@@ -375,7 +375,9 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.COMPONENT_OPEN_START, 'MyComp', '', 'script'],
           [TokenType.COMPONENT_OPEN_END],
-          [TokenType.RAW_TEXT, 't\ne\ns\nt'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 't\ne\ns\nt'],
+          // [TokenType.RAW_TEXT, 't\ne\ns\nt'],
           [TokenType.COMPONENT_CLOSE, 'MyComp', '', 'script'],
           [TokenType.EOF],
         ]);
@@ -387,7 +389,9 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.COMPONENT_OPEN_START, 'MyComp', '', 'title'],
           [TokenType.COMPONENT_OPEN_END],
-          [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
+          // angular-html-parser: division
+          [TokenType.TEXT, 't\ne\ns\nt'],
+          // [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
           [TokenType.COMPONENT_CLOSE, 'MyComp', '', 'title'],
           [TokenType.EOF],
         ]);
