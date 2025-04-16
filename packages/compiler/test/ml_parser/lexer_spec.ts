@@ -2877,6 +2877,16 @@ describe('HtmlLexer', () => {
       ]);
     });
 
+    it('should accept closing tags with prefix', () => {
+      expect(tokenizeAndHumanizeParts(`<html:script>a</html:script>`)).toEqual([
+        [TokenType.TAG_OPEN_START, 'html', 'script'],
+        [TokenType.TAG_OPEN_END],
+        [TokenType.TEXT, 'a'],
+        [TokenType.TAG_CLOSE, 'html', 'script'],
+        [TokenType.EOF],
+      ]);
+    });
+
     it('should store the locations', () => {
       expect(tokenizeAndHumanizeSourceSpans(`<script>a</script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '<script'],
