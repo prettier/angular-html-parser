@@ -96,3 +96,9 @@ describe("AST format", () => {
     ]);
   });
 });
+
+it("Edge cases", () => {
+  expect(humanizeDom(parse("<html:style></html:style>"))).toEqual([
+    [html.Element, ":html:style", 0],
+  ]);
+});
