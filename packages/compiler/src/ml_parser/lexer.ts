@@ -902,7 +902,11 @@ class _Tokenizer {
       if (!this._attemptCharCode(chars.$LT)) return false;
       if (!this._attemptCharCode(chars.$SLASH)) return false;
       this._attemptCharCodeUntilFn(isNotWhitespace);
-      if (!this._attemptStrCaseInsensitive(tagName)) return false;
+      if (!this._attemptStrCaseInsensitive(
+        prefix && openToken.type !== TokenType.COMPONENT_OPEN_START ?
+          `${prefix}:${tagName}`
+        : tagName
+      )) return false;
       this._attemptCharCodeUntilFn(isNotWhitespace);
       return this._attemptCharCode(chars.$GT);
     });
