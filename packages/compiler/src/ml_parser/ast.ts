@@ -202,6 +202,8 @@ export class Component extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitComponent(this, context);
   }
+
+  readonly type = 'component';
 }
 
 export class Directive implements BaseNode {
@@ -216,6 +218,8 @@ export class Directive implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitDirective(this, context);
   }
+
+  readonly type = 'directive';
 }
 
 export class BlockParameter implements BaseNode {
