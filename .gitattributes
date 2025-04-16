@@ -6,4 +6,4 @@
 *.ts eol=lf
 
 # angular-html-parser
-packages/angular-html-parser/**/* eol.lf
+packages/angular-html-parser/**/* eol=lf
