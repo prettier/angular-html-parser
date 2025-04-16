@@ -186,7 +186,7 @@ describe('HtmlParser', () => {
       });
 
       // angular-html-parser: isTagNameCaseSensitive
-      // `isTagNameCaseSensitive: true` not implmemented
+      // `isTagNameCaseSensitive: true` not implemented
       it('should match closing tags incasesensitive', () => {
         expect(humanizeDom(parser.parse('<DiV><P></p></dIv>', 'TestComp'))).toEqual([
           [html.Element, 'DiV', 0],

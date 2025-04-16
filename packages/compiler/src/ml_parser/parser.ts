@@ -76,11 +76,18 @@ export class Parser {
   constructor(public getTagDefinition: (tagName: string) => TagDefinition) {}
 
   parse(
-      source: string, url: string, options?: TokenizeOptions, isTagNameCaseSensitive = false,
+      source: string,
+      url: string,
+      options?: TokenizeOptions,
+      isTagNameCaseSensitive = false,
       getTagContentType?:
-          (tagName: string, prefix: string, hasParent: boolean,
-           attrs: Array<{prefix: string, name: string, value?: string}>) => void|
-      TagContentType): ParseTreeResult {
+        (
+          tagName: string,
+          prefix: string,
+          hasParent: boolean,
+          attrs: Array<{prefix: string, name: string, value?: string}>
+        ) => void | TagContentType
+  ): ParseTreeResult {
     const lowercasify = <T, U extends any[]>(fn: (x: string, ...args: U) => T) =>
         (x: string, ...args: U): T => fn(x.toLowerCase(), ...args);
     const getTagDefinition =
@@ -104,8 +111,12 @@ export class Parser {
     const canSelfClose = (options && options.canSelfClose) || false;
     const allowHtmComponentClosingTags = (options && options.allowHtmComponentClosingTags) || false;
     const parser = new _TreeBuilder(
-        tokenizeResult.tokens, getTagDefinition, canSelfClose, allowHtmComponentClosingTags,
-        isTagNameCaseSensitive);
+        tokenizeResult.tokens,
+        getTagDefinition,
+        canSelfClose,
+        allowHtmComponentClosingTags,
+        isTagNameCaseSensitive
+    );
     parser.build();
     return new ParseTreeResult(
       parser.rootNodes,
@@ -126,9 +137,9 @@ class _TreeBuilder {
   constructor(
     private tokens: Token[],
     private tagDefinitionResolver: (tagName: string) => TagDefinition,
-    private getTagDefinition: (tagName: string) => TagDefinition,
     private canSelfClose: boolean,
     private allowHtmComponentClosingTags: boolean,
+    private isTagNameCaseSensitive: boolean,
   ) {
     this._advance();
   }
@@ -142,7 +153,7 @@ class _TreeBuilder {
         this._consumeElementStartTag(this._advance());
       } else if (this._peek.type === TokenType.TAG_CLOSE) {
         this._closeVoidElement();
-        this._consumeEndTag(this._advance());
+        this._consumeElementEndTag(this._advance());
       } else if (this._peek.type === TokenType.CDATA_START) {
         this._closeVoidElement();
         this._consumeCdata(this._advance());
@@ -314,7 +325,6 @@ class _TreeBuilder {
     const expansionCaseParser = new _TreeBuilder(
         exp,
         this.tagDefinitionResolver,
-        this.getTagDefinition,
         this.canSelfClose,
         this.allowHtmComponentClosingTags
     );
@@ -392,9 +402,9 @@ class _TreeBuilder {
   private _getText(token: InterpolatedTextToken) {
     let text = token.parts[0];
     if (text.length > 0 && text[0] == '\n') {
-      const parent = this._getClosestParentElement();
+      const parent = this._getClosestElementLikeParent();
       if (parent != null && parent.children.length == 0 &&
-          this.getTagDefinition(parent.name).ignoreFirstLf) {
+          this._getTagDefinition(parent)?.ignoreFirstLf) {
         text = text.substring(1);
       }
     }
@@ -628,15 +638,10 @@ class _TreeBuilder {
   }
 
   private _consumeElementEndTag(endTagToken: TagCloseToken) {
-    // @ts-expect-error -- in angular-html-parser endTagToken.parts.length can be 0 (HTM component
-    // end-tags)
+    // @ts-expect-error -- in angular-html-parser endTagToken.parts.length can be 0 (HTM component end-tags)
     const fullName = this.allowHtmComponentClosingTags && endTagToken.parts.length === 0 ?
         null :
-        this._getElementFullName(
-          endTagToken.parts[0],
-          endTagToken.parts[1],
-          this._getClosestParentElement(),
-        );
+        this._getElementFullName(endTagToken, this._getClosestElementLikeParent());;
 
     if (fullName && this._getTagDefinition(fullName)?.isVoid) {
       this.errors.push(

@@ -32,8 +32,4 @@ export class HtmlParser extends Parser {
       getTagContentType,
     );
   }
-
-  // override parse(source: string, url: string, options?: TokenizeOptions): ParseTreeResult {
-  //   return super.parse(source, url, options);
-  // }
 }
