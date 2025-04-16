@@ -24,7 +24,7 @@
     "build-lib": "tsc -p tsconfig.build.json",
     "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
     "test": "vitest",
-    "release": "standard-version",
+    "release": "release-it",
     "fix": "prettier . --write",
     "lint": "prettier . --check"
   },
@@ -35,6 +35,7 @@
     "jasmine": "5.6.0",
     "jscodeshift": "17.3.0",
     "prettier": "3.5.3",
+    "release-it": "18.1.2",
     "standard-version": "9.5.0",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
