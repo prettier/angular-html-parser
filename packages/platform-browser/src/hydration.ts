@@ -93,7 +93,6 @@ export function withHttpTransferCacheOptions(
 /**
  * Enables support for hydrating i18n blocks.
  *
- * @developerPreview
  * @publicApi
  */
 export function withI18nSupport(): HydrationFeature<HydrationFeatureKind.I18nSupport> {
@@ -133,7 +132,6 @@ export function withEventReplay(): HydrationFeature<HydrationFeatureKind.EventRe
  *   providers: [provideClientHydration(withIncrementalHydration())]
  * });
  * ```
- * @experimental
  * @publicApi
  * @see {@link provideClientHydration}
  */

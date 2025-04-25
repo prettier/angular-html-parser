@@ -10,7 +10,7 @@ import {CommonModule, NgForOf} from '@angular/common';
 import {
   Component,
   inject,
-  provideExperimentalZonelessChangeDetection,
+  provideZonelessChangeDetection,
   Input,
   Signal,
   Type,
@@ -89,7 +89,7 @@ describe('router outlet name', () => {
     expect(fixture.nativeElement.innerHTML).toContain('hello');
     expect(fixture.nativeElement.innerHTML).not.toContain('goodbye');
 
-    fixture.componentInstance.name = 'goodbye';
+    fixture.componentInstance.name = 'farewell';
     advance(fixture);
     expect(fixture.nativeElement.innerHTML).toContain('goodbye');
     expect(fixture.nativeElement.innerHTML).not.toContain('hello');
@@ -487,7 +487,7 @@ describe('router outlet data', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{path: '**', component: MyComponent}]),
-        provideExperimentalZonelessChangeDetection(),
+        provideZonelessChangeDetection(),
       ],
     });
 

@@ -43,9 +43,13 @@ export {
   provideZoneChangeDetection,
   NgZoneOptions,
 } from './change_detection/scheduling/ng_zone_scheduling';
-export {provideExperimentalZonelessChangeDetection} from './change_detection/scheduling/zoneless_scheduling_impl';
+export {
+  provideZonelessChangeDetection,
+  // TODO(atscott): Remove after internal LSC for name change
+  provideZonelessChangeDetection as provideExperimentalZonelessChangeDetection,
+} from './change_detection/scheduling/zoneless_scheduling_impl';
 export {PendingTasks} from './pending_tasks';
-export {provideExperimentalCheckNoChangesForDebug} from './change_detection/scheduling/exhaustive_check_no_changes';
+export {provideCheckNoChangesConfig} from './change_detection/provide_check_no_changes_config';
 export {enableProdMode, isDevMode} from './util/is_dev_mode';
 export {
   APP_ID,
@@ -112,12 +116,14 @@ export {
   afterNextRender,
   ɵFirstAvailable,
 } from './render3/after_render/hooks';
+export {afterRender as afterEveryRender} from './render3/after_render/hooks';
 export {inputBinding, outputBinding, twoWayBinding} from './render3/dynamic_bindings';
 export {ApplicationConfig, mergeApplicationConfig} from './application/application_config';
 export {makeStateKey, StateKey, TransferState} from './transfer_state';
 export {booleanAttribute, numberAttribute} from './util/coercion';
 export {REQUEST, REQUEST_CONTEXT, RESPONSE_INIT} from './application/platform_tokens';
 export {DOCUMENT} from './document';
+export {provideNgReflectAttributes} from './ng_reflect';
 
 import {global} from './util/global';
 if (typeof ngDevMode !== 'undefined' && ngDevMode) {

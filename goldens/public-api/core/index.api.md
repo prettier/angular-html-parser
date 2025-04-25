@@ -4,7 +4,6 @@
 
 ```ts
 
-import * as _angular_core from '@angular/core';
 import { Observable } from 'rxjs';
 import { Subject } from 'rxjs';
 import { Subscription } from 'rxjs';
@@ -37,7 +36,7 @@ export function afterNextRender<E = never, W = never, M = never>(spec: {
 export function afterNextRender(callback: VoidFunction, options?: AfterRenderOptions): AfterRenderRef;
 
 // @public
-export function afterRender<E = never, W = never, M = never>(spec: {
+function afterRender<E = never, W = never, M = never>(spec: {
     earlyRead?: () => E;
     write?: (...args: ɵFirstAvailable<[E]>) => W;
     mixedReadWrite?: (...args: ɵFirstAvailable<[W, E]>) => M;
@@ -45,7 +44,9 @@ export function afterRender<E = never, W = never, M = never>(spec: {
 }, options?: Omit<AfterRenderOptions, 'phase'>): AfterRenderRef;
 
 // @public
-export function afterRender(callback: VoidFunction, options?: AfterRenderOptions): AfterRenderRef;
+function afterRender(callback: VoidFunction, options?: AfterRenderOptions): AfterRenderRef;
+export { afterRender as afterEveryRender }
+export { afterRender }
 
 // @public
 export function afterRenderEffect(callback: (onCleanup: EffectCleanupRegisterFn) => void, options?: Omit<AfterRenderOptions, 'phase'>): AfterRenderRef;
@@ -177,7 +178,7 @@ export interface BaseResourceOptions<T, R> {
     defaultValue?: NoInfer<T>;
     equal?: ValueEqualityFn<T>;
     injector?: Injector;
-    request?: () => R;
+    params?: () => R;
 }
 
 // @public
@@ -1448,17 +1449,21 @@ export function provideAppInitializer(initializerFn: () => Observable<unknown> |
 export function provideBrowserGlobalErrorListeners(): EnvironmentProviders;
 
 // @public
+export function provideCheckNoChangesConfig(options: {
+    exhaustive: false;
+}): EnvironmentProviders;
+
+// @public
+export function provideCheckNoChangesConfig(options: {
+    interval?: number;
+    exhaustive: true;
+}): EnvironmentProviders;
+
+// @public
 export function provideEnvironmentInitializer(initializerFn: () => void): EnvironmentProviders;
 
 // @public
-export function provideExperimentalCheckNoChangesForDebug(options: {
-    interval?: number;
-    useNgZoneOnStable?: boolean;
-    exhaustive?: boolean;
-}): _angular_core.EnvironmentProviders;
-
-// @public
-export function provideExperimentalZonelessChangeDetection(): EnvironmentProviders;
+export function provideNgReflectAttributes(): EnvironmentProviders;
 
 // @public
 export function providePlatformInitializer(initializerFn: () => void): EnvironmentProviders;
@@ -1471,6 +1476,11 @@ export type ProviderToken<T> = Type<T> | AbstractType<T> | InjectionToken<T>;
 
 // @public
 export function provideZoneChangeDetection(options?: NgZoneOptions): EnvironmentProviders;
+
+// @public
+function provideZonelessChangeDetection(): EnvironmentProviders;
+export { provideZonelessChangeDetection as provideExperimentalZonelessChangeDetection }
+export { provideZonelessChangeDetection }
 
 // @public
 export interface Query {
@@ -1616,11 +1626,11 @@ export interface ResourceLoaderParams<R> {
     // (undocumented)
     abortSignal: AbortSignal;
     // (undocumented)
+    params: NoInfer<Exclude<R, undefined>>;
+    // (undocumented)
     previous: {
         status: ResourceStatus;
     };
-    // (undocumented)
-    request: Exclude<NoInfer<R>, undefined>;
 }
 
 // @public (undocumented)
@@ -1634,14 +1644,7 @@ export interface ResourceRef<T> extends WritableResource<T> {
 }
 
 // @public
-export enum ResourceStatus {
-    Error = 1,
-    Idle = 0,
-    Loading = 2,
-    Local = 5,
-    Reloading = 3,
-    Resolved = 4
-}
+export type ResourceStatus = 'idle' | 'error' | 'loading' | 'reloading' | 'resolved' | 'local';
 
 // @public
 export type ResourceStreamingLoader<T, R> = (param: ResourceLoaderParams<R>) => PromiseLike<Signal<ResourceStreamItem<T>>>;

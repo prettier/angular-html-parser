@@ -140,13 +140,10 @@
 
         code {
           font-size: 0.875rem;
+          overflow: hidden;
 
           &:has(pre) {
             padding: 0;
-          }
-
-          &:not(pre *) {
-            padding: 0 0.3rem;
           }
         }
 
@@ -257,6 +254,10 @@
       overflow-x: auto;
       margin: 0;
     }
+  }
+
+  .pipe-usage {
+    padding: 1rem;
   }
 
   // "API member card"-specific styles
