@@ -40,13 +40,13 @@ import {
   TransferState,
   Type,
   ViewEncapsulation,
-  ɵPendingTasksInternal as PendingTasks,
+  PendingTasks,
   APP_INITIALIZER,
   inject,
   getPlatform,
   provideNgReflectAttributes,
+  ɵSSR_CONTENT_INTEGRITY_MARKER as SSR_CONTENT_INTEGRITY_MARKER,
 } from '@angular/core';
-import {SSR_CONTENT_INTEGRITY_MARKER} from '@angular/core/src/hydration/utils';
 import {TestBed} from '@angular/core/testing';
 import {
   bootstrapApplication,
@@ -115,9 +115,9 @@ function createAppWithPendingTask(standalone: boolean) {
 
     constructor() {
       const pendingTasks = coreInject(PendingTasks);
-      const taskId = pendingTasks.add();
+      const removeTask = pendingTasks.add();
       setTimeout(() => {
-        pendingTasks.remove(taskId);
+        removeTask();
         this.completed = 'Yes';
       });
     }

@@ -14,14 +14,14 @@ import {
   linkedSignal,
   assertInInjectionContext,
   signal,
-  ResourceStatus,
   computed,
-  Resource,
-  WritableSignal,
   ResourceStreamItem,
   type ValueEqualityFn,
+  ɵRuntimeError,
+  ɵRuntimeErrorCode,
+  ɵencapsulateResourceError as encapsulateResourceError,
 } from '@angular/core';
-import {Subscription} from 'rxjs';
+import type {Subscription} from 'rxjs';
 
 import {HttpRequest} from './request';
 import {HttpClient} from './client';
@@ -35,7 +35,7 @@ import {HttpResourceRef, HttpResourceOptions, HttpResourceRequest} from './resou
  * based `httpRequest` as well as sub-functions for `ArrayBuffer`, `Blob`, and `string` type
  * requests.
  *
- * @experimental
+ * @experimental 19.2
  */
 export interface HttpResourceFn {
   /**
@@ -47,7 +47,7 @@ export interface HttpResourceFn {
    * of the `HttpClient` API. Data is parsed as JSON by default - use a sub-function of
    * `httpResource`, such as `httpResource.text()`, to parse the response differently.
    *
-   * @experimental
+   * @experimental 19.2
    */
   <TResult = unknown>(
     url: () => string | undefined,
@@ -63,7 +63,7 @@ export interface HttpResourceFn {
    * of the `HttpClient` API. Data is parsed as JSON by default - use a sub-function of
    * `httpResource`, such as `httpResource.text()`, to parse the response differently.
    *
-   * @experimental
+   * @experimental 19.2
    */
   <TResult = unknown>(
     url: () => string | undefined,
@@ -79,7 +79,7 @@ export interface HttpResourceFn {
    * of the `HttpClient` API. Data is parsed as JSON by default - use a sub-function of
    * `httpResource`, such as `httpResource.text()`, to parse the response differently.
    *
-   * @experimental
+   * @experimental 19.2
    */
   <TResult = unknown>(
     request: () => HttpResourceRequest | undefined,
@@ -95,7 +95,7 @@ export interface HttpResourceFn {
    * of the `HttpClient` API. Data is parsed as JSON by default - use a sub-function of
    * `httpResource`, such as `httpResource.text()`, to parse the response differently.
    *
-   * @experimental
+   * @experimental 19.2
    */
   <TResult = unknown>(
     request: () => HttpResourceRequest | undefined,
@@ -110,7 +110,7 @@ export interface HttpResourceFn {
    * Uses `HttpClient` to make requests and supports interceptors, testing, and the other features
    * of the `HttpClient` API. Data is parsed into an `ArrayBuffer`.
    *
-   * @experimental
+   * @experimental 19.2
    */
   arrayBuffer: {
     <TResult = ArrayBuffer>(
@@ -142,7 +142,7 @@ export interface HttpResourceFn {
    * Uses `HttpClient` to make requests and supports interceptors, testing, and the other features
    * of the `HttpClient` API. Data is parsed into a `Blob`.
    *
-   * @experimental
+   * @experimental 19.2
    */
   blob: {
     <TResult = Blob>(
@@ -174,7 +174,7 @@ export interface HttpResourceFn {
    * Uses `HttpClient` to make requests and supports interceptors, testing, and the other features
    * of the `HttpClient` API. Data is parsed as a `string`.
    *
-   * @experimental
+   * @experimental 19.2
    */
   text: {
     <TResult = string>(
@@ -205,7 +205,7 @@ export interface HttpResourceFn {
  * request that expects a different kind of data, you can use a sub-constructor of `httpResource`,
  * such as `httpResource.text`.
  *
- * @experimental
+ * @experimental 19.2
  * @initializerApiFunction
  */
 export const httpResource: HttpResourceFn = (() => {
@@ -226,11 +226,13 @@ type ResponseType = 'arraybuffer' | 'blob' | 'json' | 'text';
 type RawRequestType = (() => string | undefined) | (() => HttpResourceRequest | undefined);
 
 function makeHttpResourceFn<TRaw>(responseType: ResponseType) {
-  return function httpResourceRef<TResult = TRaw>(
+  return function httpResource<TResult = TRaw>(
     request: RawRequestType,
     options?: HttpResourceOptions<TResult, TRaw>,
   ): HttpResourceRef<TResult> {
-    options?.injector || assertInInjectionContext(httpResource);
+    if (ngDevMode && !options?.injector) {
+      assertInInjectionContext(httpResource);
+    }
     const injector = options?.injector ?? inject(Injector);
     return new HttpResourceImpl(
       injector,
@@ -343,7 +345,7 @@ class HttpResourceImpl<T>
                 try {
                   send({value: parse ? parse(event.body) : (event.body as T)});
                 } catch (error) {
-                  send({error});
+                  send({error: encapsulateResourceError(error)});
                 }
                 break;
               case HttpEventType.DownloadProgress:
@@ -358,10 +360,16 @@ class HttpResourceImpl<T>
             }
 
             send({error});
+            abortSignal.removeEventListener('abort', onAbort);
           },
           complete: () => {
             if (resolve) {
-              send({error: new Error('Resource completed before producing a value')});
+              send({
+                error: new ɵRuntimeError(
+                  ɵRuntimeErrorCode.RESOURCE_COMPLETED_BEFORE_PRODUCING_VALUE,
+                  ngDevMode && 'Resource completed before producing a value',
+                ),
+              });
             }
             abortSignal.removeEventListener('abort', onAbort);
           },

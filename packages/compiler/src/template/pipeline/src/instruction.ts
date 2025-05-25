@@ -674,22 +674,18 @@ export function attributeInterpolate(
   strings: string[],
   expressions: o.Expression[],
   sanitizer: o.Expression | null,
+  namespace: string | null,
   sourceSpan: ParseSourceSpan,
 ): ir.UpdateOp {
   const interpolationArgs = collateInterpolationArgs(strings, expressions);
-
-  const extraArgs = [];
-  if (sanitizer !== null) {
-    extraArgs.push(sanitizer);
-  }
-
-  return callVariadicInstruction(
-    ATTRIBUTE_INTERPOLATE_CONFIG,
-    [o.literal(name)],
+  const value = callVariadicInstructionExpr(
+    VALUE_INTERPOLATE_CONFIG,
+    [],
     interpolationArgs,
-    extraArgs,
+    [],
     sourceSpan,
   );
+  return attribute(name, value, sanitizer, namespace);
 }
 
 export function stylePropInterpolate(
@@ -894,6 +890,27 @@ const PROPERTY_INTERPOLATE_CONFIG: VariadicInstructionConfig = {
   },
 };
 
+const VALUE_INTERPOLATE_CONFIG: VariadicInstructionConfig = {
+  constant: [
+    Identifiers.interpolate,
+    Identifiers.interpolate1,
+    Identifiers.interpolate2,
+    Identifiers.interpolate3,
+    Identifiers.interpolate4,
+    Identifiers.interpolate5,
+    Identifiers.interpolate6,
+    Identifiers.interpolate7,
+    Identifiers.interpolate8,
+  ],
+  variable: Identifiers.interpolateV,
+  mapping: (n) => {
+    if (n % 2 === 0) {
+      throw new Error(`Expected odd number of arguments`);
+    }
+    return (n - 1) / 2;
+  },
+};
+
 /**
  * `InterpolationConfig` for the `stylePropInterpolate` instruction.
  */
@@ -910,30 +927,6 @@ const STYLE_PROP_INTERPOLATE_CONFIG: VariadicInstructionConfig = {
     Identifiers.stylePropInterpolate8,
   ],
   variable: Identifiers.stylePropInterpolateV,
-  mapping: (n) => {
-    if (n % 2 === 0) {
-      throw new Error(`Expected odd number of arguments`);
-    }
-    return (n - 1) / 2;
-  },
-};
-
-/**
- * `InterpolationConfig` for the `attributeInterpolate` instruction.
- */
-const ATTRIBUTE_INTERPOLATE_CONFIG: VariadicInstructionConfig = {
-  constant: [
-    Identifiers.attribute,
-    Identifiers.attributeInterpolate1,
-    Identifiers.attributeInterpolate2,
-    Identifiers.attributeInterpolate3,
-    Identifiers.attributeInterpolate4,
-    Identifiers.attributeInterpolate5,
-    Identifiers.attributeInterpolate6,
-    Identifiers.attributeInterpolate7,
-    Identifiers.attributeInterpolate8,
-  ],
-  variable: Identifiers.attributeInterpolateV,
   mapping: (n) => {
     if (n % 2 === 0) {
       throw new Error(`Expected odd number of arguments`);

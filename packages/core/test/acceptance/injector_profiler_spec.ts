@@ -8,7 +8,7 @@
 
 import {NgForOf, PercentPipe} from '@angular/common';
 import {
-  afterRender,
+  afterEveryRender,
   ClassProvider,
   Component,
   Directive,
@@ -23,7 +23,7 @@ import {
   ViewChild,
   ViewChildren,
 } from '../../src/core';
-import {InternalInjectFlags} from '@angular/core/src/di/interface/injector';
+import {InternalInjectFlags} from '../../src/di/interface/injector';
 import {NullInjector} from '../../src/di/null_injector';
 import {
   isClassProvider,
@@ -475,7 +475,7 @@ describe('getInjectorMetadata', () => {
       elementRef = inject(ElementRef);
 
       constructor() {
-        afterRender(() => afterLazyComponentRendered(this));
+        afterEveryRender(() => afterLazyComponentRendered(this));
       }
     }
 

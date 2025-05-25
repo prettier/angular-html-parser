@@ -7,10 +7,10 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {PLATFORM_BROWSER_ID} from '@angular/common/src/platform_id';
+import {expect} from '@angular/private/testing/matchers';
+import {BehaviorSubject} from 'rxjs';
 import {
   ApplicationRef,
-  NgZone,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
@@ -22,26 +22,21 @@ import {
   EventEmitter,
   inject,
   Input,
-  NgModule,
   OnInit,
   Output,
+  provideCheckNoChangesConfig,
+  provideZoneChangeDetection,
+  provideZonelessChangeDetection,
   QueryList,
+  ɵRuntimeError as RuntimeError,
+  ɵRuntimeErrorCode as RuntimeErrorCode,
   TemplateRef,
   Type,
   ViewChild,
   ViewChildren,
   ViewContainerRef,
-  provideCheckNoChangesConfig,
-  provideZonelessChangeDetection,
-  ɵRuntimeError as RuntimeError,
-  ɵRuntimeErrorCode as RuntimeErrorCode,
-  afterRender,
-  PLATFORM_ID,
-  provideZoneChangeDetection,
 } from '../../src/core';
 import {ComponentFixture, fakeAsync, TestBed, tick} from '../../testing';
-import {expect} from '@angular/platform-browser/testing/src/matchers';
-import {BehaviorSubject} from 'rxjs';
 
 describe('change detection', () => {
   it('can provide zone and zoneless (last one wins like any other provider) in TestBed', () => {
@@ -1676,7 +1671,7 @@ describe('change detection', () => {
     });
 
     it('should include field name in case of attribute interpolation', () => {
-      const message = `Previous value for 'attr.id': 'Expressions: a and initial!'. Current value: 'Expressions: a and changed!'`;
+      const message = `Expression has changed after it was checked. Previous value: 'initial'. Current value: 'changed'`;
       expect(() =>
         initWithTemplate(
           '<div attr.id="Expressions: {{ a }} and {{ unstableStringExpression }}!"></div>',

@@ -502,6 +502,11 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             contentPath: 'guide/testing/utility-apis',
           },
           {
+            label: 'Experimental unit testing integration',
+            path: 'guide/testing/unit-tests',
+            contentPath: 'guide/testing/experimental-unit-test',
+          },
+          {
             label: 'Component harnesses overview',
             path: 'guide/testing/component-harnesses-overview',
             contentPath: 'guide/testing/component-harnesses-overview',
@@ -582,6 +587,36 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             contentPath: 'guide/i18n/example',
           },
         ],
+      },
+      {
+        label: 'Animations',
+        children: [
+          {
+            label: 'Animating your content',
+            path: 'guide/animations/css',
+            contentPath: 'guide/animations/css',
+          },
+          {
+            label: 'Route transition animations',
+            path: 'guide/animations/route-animations',
+            contentPath: 'guide/animations/route-animations',
+          },
+        ],
+      },
+      {
+        label: 'Drag and drop',
+        path: 'guide/drag-drop',
+        contentPath: 'guide/drag-drop',
+      },
+    ],
+  },
+  {
+    label: 'Build with AI',
+    children: [
+      {
+        label: 'Get Started',
+        path: 'ai',
+        contentPath: 'ai/overview',
       },
     ],
   },
@@ -788,9 +823,9 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             contentPath: 'guide/animations/reusable-animations',
           },
           {
-            label: 'Route transition animations',
-            path: 'guide/animations/route-animations',
-            contentPath: 'guide/animations/route-animations',
+            label: 'Migrating to Native CSS Animations',
+            path: 'guide/animations/migration',
+            contentPath: 'guide/animations/migration',
           },
         ],
       },
@@ -877,11 +912,11 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
       },
       {
         label: 'Angular CDK',
-        path: 'https://material.angular.io/cdk/categories',
+        path: 'https://material.angular.dev/cdk/categories',
       },
       {
         label: 'Angular Material',
-        path: 'https://material.angular.io/',
+        path: 'https://material.angular.dev/',
       },
     ],
   },

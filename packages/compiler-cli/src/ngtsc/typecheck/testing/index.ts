@@ -33,8 +33,10 @@ import {globSync} from 'tinyglobby';
 import {
   absoluteFrom,
   AbsoluteFsPath,
+  getFileSystem,
   getSourceFileOrError,
   LogicalFileSystem,
+  NgtscCompilerHost,
 } from '../../file_system';
 import {TestFile} from '../../file_system/testing';
 import {
@@ -46,7 +48,7 @@ import {
   ReferenceEmitter,
   RelativePathStrategy,
 } from '../../imports';
-import {NOOP_INCREMENTAL_BUILD} from '../../incremental';
+import {NOOP_INCREMENTAL_BUILD, NoopIncrementalBuildStrategy} from '../../incremental';
 import {
   ClassPropertyMapping,
   CompoundMetadataReader,
@@ -97,6 +99,7 @@ import {TypeCheckShimGenerator} from '../src/shim';
 import {TcbGenericContextBehavior} from '../src/type_check_block';
 import {TypeCheckFile} from '../src/type_check_file';
 import {sfExtensionData} from '../../shims';
+import {freshCompilationTicket, NgCompiler, NgCompilerHost} from '../../core';
 
 export function typescriptLibDts(): TestFile {
   return {
@@ -285,7 +288,6 @@ export const ALL_ENABLED_CONFIG: Readonly<TypeCheckingConfig> = {
   unusedStandaloneImports: 'warning',
   allowSignalsInTwoWayBindings: true,
   checkTwoWayBoundEvents: true,
-  selectorlessEnabled: false,
 };
 
 // Remove 'ref' from TypeCheckableDirectiveMeta and add a 'selector' instead.
@@ -428,7 +430,6 @@ export function tcb(
     suggestionsForSuboptimalTypeInference: false,
     allowSignalsInTwoWayBindings: true,
     checkTwoWayBoundEvents: true,
-    selectorlessEnabled,
     ...config,
   };
   options = options || {emitSpans: false};
@@ -476,7 +477,7 @@ export interface TypeCheckingTarget {
   /**
    * A map of component class names to string templates for that component.
    */
-  templates: {[className: string]: string};
+  templates?: {[className: string]: string};
 
   /**
    * Any declarations (e.g. directives) which should be considered as part of the scope for the
@@ -517,8 +518,10 @@ export function setup(
       contents = target.source;
     } else {
       contents = `// generated from templates\n\nexport const MODULE = true;\n\n`;
-      for (const className of Object.keys(target.templates)) {
-        contents += `export class ${className} {}\n`;
+      if (target.templates) {
+        for (const className of Object.keys(target.templates)) {
+          contents += `export class ${className} {}\n`;
+        }
       }
     }
 
@@ -581,15 +584,17 @@ export function setup(
       sfExtensionData(shimSf).fileShim = {extension: 'ngtypecheck', generatedFrom: target.fileName};
     }
 
-    for (const className of Object.keys(target.templates)) {
-      const classDecl = getClass(sf, className);
-      scopeMap.set(classDecl, scope);
+    if (target.templates) {
+      for (const className of Object.keys(target.templates)) {
+        const classDecl = getClass(sf, className);
+        scopeMap.set(classDecl, scope);
+      }
     }
   }
 
   const checkAdapter = createTypeCheckAdapter((sf, ctx) => {
     for (const target of targets) {
-      if (getSourceFileOrError(program, target.fileName) !== sf) {
+      if (getSourceFileOrError(program, target.fileName) !== sf || !target.templates) {
         continue;
       }
 
@@ -940,6 +945,8 @@ function makeScope(program: ts.Program, sf: ts.SourceFile, decls: TestDeclaratio
         preserveWhitespaces: decl.preserveWhitespaces ?? false,
         isExplicitlyDeferred: false,
         inputFieldNamesFromMetadataArray: null,
+        selectorlessEnabled: false,
+        localReferencedSymbols: null,
         hostDirectives:
           decl.hostDirectives === undefined
             ? null
@@ -1041,4 +1048,32 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
     id: TypeCheckId,
     node: TmplAstComponent | TmplAstDirective,
   ): void {}
+}
+
+export function createNgCompilerForFile(fileContent: string) {
+  const fs = getFileSystem();
+  fs.ensureDir(absoluteFrom('/node_modules/@angular/core'));
+  const FILE = absoluteFrom('/main.ts');
+
+  fs.writeFile(FILE, fileContent);
+
+  const options: ts.CompilerOptions = {
+    strictTemplates: true,
+    lib: ['dom', 'dom.iterable', 'esnext'],
+  };
+  const baseHost = new NgtscCompilerHost(getFileSystem(), options);
+  const host = NgCompilerHost.wrap(baseHost, [FILE], options, /* oldProgram */ null);
+  const program = ts.createProgram({host, options, rootNames: host.inputFiles});
+
+  const ticket = freshCompilationTicket(
+    program,
+    options,
+    new NoopIncrementalBuildStrategy(),
+    new TsCreateProgramDriver(program, host, options, []),
+    /* perfRecorder */ null,
+    /*enableTemplateTypeChecker*/ true,
+    /*usePoisonedData*/ false,
+  );
+  const compiler = NgCompiler.fromTicket(ticket, host);
+  return {compiler, sourceFile: program.getSourceFile(FILE)!};
 }

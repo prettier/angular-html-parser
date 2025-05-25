@@ -153,6 +153,7 @@ export class DirectiveDecoratorHandler
     private readonly implicitStandaloneValue: boolean,
     private readonly usePoisonedData: boolean,
     private readonly typeCheckHostBindings: boolean,
+    private readonly emitDeclarationOnly: boolean,
   ) {}
 
   readonly precedence = HandlerPrecedence.PRIMARY;
@@ -209,6 +210,7 @@ export class DirectiveDecoratorHandler
       /* defaultSelector */ null,
       this.strictStandalone,
       this.implicitStandaloneValue,
+      this.emitDeclarationOnly,
     );
     // `extractDirectiveMetadata` returns `jitForced = true` when the `@Directive` has
     // set `jit: true`. In this case, compilation of the decorator is skipped. Returning
@@ -305,6 +307,8 @@ export class DirectiveDecoratorHandler
       // Instead, we statically analyze their imports to make a direct determination.
       assumedToExportProviders: false,
       isExplicitlyDeferred: false,
+      selectorlessEnabled: false,
+      localReferencedSymbols: null,
     });
 
     this.resourceRegistry.registerResources(analysis.resources, node);

@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {Properties, PropType} from 'protocol';
+import {Properties, PropType} from '../../../../../../protocol';
 
 import {IndexedNode} from '../directive-forest/index-forest';
 
@@ -29,6 +29,8 @@ const mockIndexedNode: IndexedNode = {
       name: 'BazDir',
     },
   ],
+  defer: null,
+  hasNativeElement: true,
   children: [],
   element: 'foo',
   position: [0],

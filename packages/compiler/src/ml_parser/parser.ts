@@ -517,7 +517,17 @@ class _TreeBuilder {
       startTagToken.sourceSpan.start.moveBy(1),
       startTagToken.sourceSpan.end
     );
-    const el = new html.Element(fullName, attrs, directives, [], span, startSpan, undefined, nameSpan);
+    const el = new html.Element(
+      fullName,
+      attrs,
+      directives,
+      [],
+      selfClosing,
+      span,
+      startSpan,
+      undefined,
+      nameSpan
+    );
     const parent = this._getContainer();
     const isClosedByChild =
       parent !== null && !!this._getTagDefinition(parent)?.isClosedByChild(el.name);
@@ -569,6 +579,7 @@ class _TreeBuilder {
       attrs,
       directives,
       [],
+      selfClosing,
       span,
       startSpan,
       undefined,

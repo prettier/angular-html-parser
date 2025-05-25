@@ -38,16 +38,13 @@ export {
   destroyPlatform,
   getPlatform,
   providePlatformInitializer,
+  createOrReusePlatformInjector as ɵcreateOrReusePlatformInjector,
 } from './platform/platform';
 export {
   provideZoneChangeDetection,
   NgZoneOptions,
 } from './change_detection/scheduling/ng_zone_scheduling';
-export {
-  provideZonelessChangeDetection,
-  // TODO(atscott): Remove after internal LSC for name change
-  provideZonelessChangeDetection as provideExperimentalZonelessChangeDetection,
-} from './change_detection/scheduling/zoneless_scheduling_impl';
+export {provideZonelessChangeDetection} from './change_detection/scheduling/zoneless_scheduling_impl';
 export {PendingTasks} from './pending_tasks';
 export {provideCheckNoChangesConfig} from './change_detection/provide_check_no_changes_config';
 export {enableProdMode, isDevMode} from './util/is_dev_mode';
@@ -110,14 +107,14 @@ export {createComponent, reflectComponentType, ComponentMirror} from './render3/
 export {isStandalone} from './render3/def_getters';
 export {AfterRenderRef} from './render3/after_render/api';
 export {publishExternalGlobalUtil as ɵpublishExternalGlobalUtil} from './render3/util/global_utils';
+export {enableProfiling} from './render3/debug/chrome_dev_tools_performance';
 export {
   AfterRenderOptions,
-  afterRender,
+  afterEveryRender,
   afterNextRender,
   ɵFirstAvailable,
 } from './render3/after_render/hooks';
-export {afterRender as afterEveryRender} from './render3/after_render/hooks';
-export {inputBinding, outputBinding, twoWayBinding} from './render3/dynamic_bindings';
+export {Binding, inputBinding, outputBinding, twoWayBinding} from './render3/dynamic_bindings';
 export {ApplicationConfig, mergeApplicationConfig} from './application/application_config';
 export {makeStateKey, StateKey, TransferState} from './transfer_state';
 export {booleanAttribute, numberAttribute} from './util/coercion';

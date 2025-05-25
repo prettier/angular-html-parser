@@ -29,7 +29,7 @@ import {
   SerializedInjector,
   SerializedProviderRecord,
   UpdatedStateData,
-} from 'protocol';
+} from '../../../../protocol';
 import {
   buildDirectiveTree,
   getLViewFromDirectiveOrElementInstance,
@@ -99,7 +99,7 @@ export const getLatestComponentState = (
   directiveForest = directiveForest ?? buildDirectiveForest();
 
   const node = queryDirectiveForest(query.selectedElement, directiveForest);
-  if (!node) {
+  if (!node || !node.nativeElement) {
     return;
   }
 

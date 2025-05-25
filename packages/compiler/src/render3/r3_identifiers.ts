@@ -45,43 +45,6 @@ export class Identifiers {
 
   static attribute: o.ExternalReference = {name: 'ɵɵattribute', moduleName: CORE};
 
-  static attributeInterpolate1: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate1',
-    moduleName: CORE,
-  };
-  static attributeInterpolate2: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate2',
-    moduleName: CORE,
-  };
-  static attributeInterpolate3: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate3',
-    moduleName: CORE,
-  };
-  static attributeInterpolate4: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate4',
-    moduleName: CORE,
-  };
-  static attributeInterpolate5: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate5',
-    moduleName: CORE,
-  };
-  static attributeInterpolate6: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate6',
-    moduleName: CORE,
-  };
-  static attributeInterpolate7: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate7',
-    moduleName: CORE,
-  };
-  static attributeInterpolate8: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolate8',
-    moduleName: CORE,
-  };
-  static attributeInterpolateV: o.ExternalReference = {
-    name: 'ɵɵattributeInterpolateV',
-    moduleName: CORE,
-  };
-
   static classProp: o.ExternalReference = {name: 'ɵɵclassProp', moduleName: CORE};
 
   static elementContainerStart: o.ExternalReference = {
@@ -210,6 +173,47 @@ export class Identifiers {
   };
   static stylePropInterpolateV: o.ExternalReference = {
     name: 'ɵɵstylePropInterpolateV',
+    moduleName: CORE,
+  };
+
+  static interpolate: o.ExternalReference = {
+    name: 'ɵɵinterpolate',
+    moduleName: CORE,
+  };
+  static interpolate1: o.ExternalReference = {
+    name: 'ɵɵinterpolate1',
+    moduleName: CORE,
+  };
+  static interpolate2: o.ExternalReference = {
+    name: 'ɵɵinterpolate2',
+    moduleName: CORE,
+  };
+  static interpolate3: o.ExternalReference = {
+    name: 'ɵɵinterpolate3',
+    moduleName: CORE,
+  };
+  static interpolate4: o.ExternalReference = {
+    name: 'ɵɵinterpolate4',
+    moduleName: CORE,
+  };
+  static interpolate5: o.ExternalReference = {
+    name: 'ɵɵinterpolate5',
+    moduleName: CORE,
+  };
+  static interpolate6: o.ExternalReference = {
+    name: 'ɵɵinterpolate6',
+    moduleName: CORE,
+  };
+  static interpolate7: o.ExternalReference = {
+    name: 'ɵɵinterpolate7',
+    moduleName: CORE,
+  };
+  static interpolate8: o.ExternalReference = {
+    name: 'ɵɵinterpolate8',
+    moduleName: CORE,
+  };
+  static interpolateV: o.ExternalReference = {
+    name: 'ɵɵinterpolateV',
     moduleName: CORE,
   };
 
@@ -416,6 +420,10 @@ export class Identifiers {
   static resolveForwardRef: o.ExternalReference = {name: 'resolveForwardRef', moduleName: CORE};
 
   static replaceMetadata: o.ExternalReference = {name: 'ɵɵreplaceMetadata', moduleName: CORE};
+  static getReplaceMetadataURL: o.ExternalReference = {
+    name: 'ɵɵgetReplaceMetadataURL',
+    moduleName: CORE,
+  };
 
   static ɵɵdefineInjectable: o.ExternalReference = {name: 'ɵɵdefineInjectable', moduleName: CORE};
   static declareInjectable: o.ExternalReference = {name: 'ɵɵngDeclareInjectable', moduleName: CORE};

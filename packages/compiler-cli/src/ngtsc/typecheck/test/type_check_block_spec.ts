@@ -1050,7 +1050,6 @@ describe('type check blocks', () => {
       unusedStandaloneImports: 'warning',
       allowSignalsInTwoWayBindings: true,
       checkTwoWayBoundEvents: true,
-      selectorlessEnabled: false,
     };
 
     describe('config.applyTemplateContextGuards', () => {
@@ -2166,6 +2165,7 @@ describe('type check blocks', () => {
           name: 'Comp',
           isComponent: true,
           selector: null,
+          isStandalone: true,
           inputs: {dynamic: 'dynamic', static: 'static'},
         },
       ];
@@ -2182,6 +2182,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
           inputs: {dynamic: 'dynamic', static: 'static'},
         },
       ];
@@ -2198,6 +2199,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
           inputs: {dynamic: 'dynamic', static: 'static'},
         },
       ];
@@ -2214,6 +2216,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
           inputs: {someInput: 'someInput'},
           ngTemplateGuards: [
             {
@@ -2237,6 +2240,7 @@ describe('type check blocks', () => {
           name: 'Comp',
           isComponent: true,
           selector: null,
+          isStandalone: true,
           inputs: {claimed: 'claimed'},
         },
       ];
@@ -2254,6 +2258,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
           inputs: {claimed: 'claimed'},
         },
       ];
@@ -2271,6 +2276,7 @@ describe('type check blocks', () => {
           name: 'Comp',
           isComponent: true,
           selector: null,
+          isStandalone: true,
           outputs: {someEvent: 'someEvent'},
         },
       ];
@@ -2288,6 +2294,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
           outputs: {someEvent: 'someEvent'},
         },
       ];
@@ -2306,6 +2313,7 @@ describe('type check blocks', () => {
           name: 'Comp',
           isComponent: true,
           selector: null,
+          isStandalone: true,
         },
       ];
       const block = selectorlessTcb(TEMPLATE, DIRECTIVES);
@@ -2323,6 +2331,7 @@ describe('type check blocks', () => {
           name: 'Comp',
           isComponent: true,
           selector: null,
+          isStandalone: true,
         },
       ];
       const block = selectorlessTcb(TEMPLATE, DIRECTIVES);
@@ -2340,6 +2349,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
         },
       ];
       const block = selectorlessTcb(TEMPLATE, DIRECTIVES);
@@ -2354,6 +2364,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: '[my-dir]',
+          isStandalone: true,
           inputs: {dirInput: 'dirInput'},
         },
       ];
@@ -2371,6 +2382,7 @@ describe('type check blocks', () => {
           name: 'Comp',
           isComponent: true,
           selector: null,
+          isStandalone: true,
         },
       ];
       const block = selectorlessTcb(TEMPLATE, DIRECTIVES);
@@ -2386,6 +2398,7 @@ describe('type check blocks', () => {
           type: 'directive',
           name: 'Dir',
           selector: null,
+          isStandalone: true,
         },
       ];
       const block = selectorlessTcb(TEMPLATE, DIRECTIVES);
@@ -2403,6 +2416,7 @@ describe('type check blocks', () => {
           isComponent: true,
           selector: null,
           isGeneric: true,
+          isStandalone: true,
           inputs: {input: 'input'},
         },
       ];
@@ -2422,6 +2436,7 @@ describe('type check blocks', () => {
           name: 'Dir',
           selector: null,
           isGeneric: true,
+          isStandalone: true,
           inputs: {input: 'input'},
         },
       ];

@@ -1,3 +1,207 @@
+<a name="19.2.13"></a>
+# 19.2.13 (2025-05-23)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [2c876b4fc5](https://github.com/angular/angular/commit/2c876b4fc5d89ce925b1403e239c7d162e39346b) | fix | avoid injecting ApplicationRef in FetchBackend ([#61649](https://github.com/angular/angular/pull/61649)) |
+### service-worker
+| Commit | Type | Description |
+| -- | -- | -- |
+| [b15bddfa04](https://github.com/angular/angular/commit/b15bddfa04e11827166b466c9acbb89c77499d5d) | fix | do not register service worker if app is destroyed before it is ready to register ([#61101](https://github.com/angular/angular/pull/61101)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="20.0.0-rc.2"></a>
+# 20.0.0-rc.2 (2025-05-21)
+## Deprecations
+### platform-browser
+- All entries of the `@angular/platform-browser-dynamic`
+## Breaking Changes
+### core
+- `Resource.value()` now returns a default value when in a loading state after reloading the error state
+- `Resource.value()` now throws an error when it's in an error state. Previously it returned `undefined`.
+- `Resource.error` now has a type of `Signal<Error | undefined>` instead of `Signal<unknown>`
+- `Resource.reload` has been moved to `WritableResource.reload`.
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [af7881abac](https://github.com/angular/angular/commit/af7881abac268d2a6d93bbc2b64fa4a33ce3de31) | fix | cancel reader when app is destroyed ([#61528](https://github.com/angular/angular/pull/61528)) |
+| [966df84351](https://github.com/angular/angular/commit/966df843516fd7758c988b99bdf262fa1e3fc1fc) | fix | prevent reading chunks if app is destroyed ([#61354](https://github.com/angular/angular/pull/61354)) |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [e74266b108](https://github.com/angular/angular/commit/e74266b10881261eec540bcdbe1875f7696181c5) | fix | avoid conflicts between HMR code and local symbols ([#61550](https://github.com/angular/angular/pull/61550)) |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [b57084267e](https://github.com/angular/angular/commit/b57084267e3f737e035cc6c62e349a0b6f77407c) | fix | Always retain prior results for all files ([#61487](https://github.com/angular/angular/pull/61487)) |
+| [7a3a41f33f](https://github.com/angular/angular/commit/7a3a41f33f1c24bb985eee253b6dbe4ebeb1db73) | fix | avoid ECMAScript private field metadata emit ([#61227](https://github.com/angular/angular/pull/61227)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [7efb3384a7](https://github.com/angular/angular/commit/7efb3384a74cde41f36a4ed8675ac1af676d227b) | fix | cleanup `rxResource` abort listener ([#58306](https://github.com/angular/angular/pull/58306)) |
+| [b90160d10a](https://github.com/angular/angular/commit/b90160d10a25f3ca77804377a937f637396a606a) | fix | cleanup testability subscriptions ([#61261](https://github.com/angular/angular/pull/61261)) |
+| [3ba39bc28f](https://github.com/angular/angular/commit/3ba39bc28f93c208f7b50fcb878fe1aa1bc0413d) | fix | getting resource value throws an error instead of returning undefined ([#61441](https://github.com/angular/angular/pull/61441)) |
+| [ca6295e90b](https://github.com/angular/angular/commit/ca6295e90b72b352319ebf77d969b33783b284ed) | fix | handle different DI token types in Chrome DevTools integration ([#61333](https://github.com/angular/angular/pull/61333)) |
+| [d62379bb13](https://github.com/angular/angular/commit/d62379bb13f08e9e0fe9c7b93fe7c6ef46f8f181) | fix | move reload method from Resource to WritableResource ([#61441](https://github.com/angular/angular/pull/61441)) |
+| [a89f1cff24](https://github.com/angular/angular/commit/a89f1cff2465cca383765e9f9d7e719970a3a6e4) | fix | narrow error type for resources API ([#61441](https://github.com/angular/angular/pull/61441)) |
+| [6e79eaf739](https://github.com/angular/angular/commit/6e79eaf7399170611bcbefda0082947b629f2693) | fix | reading resource value after reload in the error state ([#61441](https://github.com/angular/angular/pull/61441)) |
+| [350776b412](https://github.com/angular/angular/commit/350776b4128271760008c4f1430c9a44c8b83234) | fix | TestBed.tick should ensure test components are synchronized ([#61382](https://github.com/angular/angular/pull/61382)) |
+| [648d42fe65](https://github.com/angular/angular/commit/648d42fe6511198c8027a20c1be0728e6f963335) | fix | Testing should not throw when Zone does not patch test FW APIs ([#61376](https://github.com/angular/angular/pull/61376)) |
+| [5dbeb42308](https://github.com/angular/angular/commit/5dbeb423087206e57c51c5e4f935fcdf45068a8b) | fix | unregister `onDestroy` in `toSignal`. ([#61514](https://github.com/angular/angular/pull/61514)) |
+| [30e081287d](https://github.com/angular/angular/commit/30e081287da68d6801f8ebd5a00d495b51d4c68d) | fix | update min Node.js support to 20.19, 22.12, and 24.0 ([#61500](https://github.com/angular/angular/pull/61500)) |
+### platform-browser
+| Commit | Type | Description |
+| -- | -- | -- |
+| [bc2cab747f](https://github.com/angular/angular/commit/bc2cab747f23e517128bdefedd7d5296a1c9ebbc) | refactor | Deprecate the `platform-browser-dynamic` package ([#61043](https://github.com/angular/angular/pull/61043)) |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [6d8e57d131](https://github.com/angular/angular/commit/6d8e57d13151759d16a6296b6db78e4e018415a4) | perf | speed up resolution of base ([#61392](https://github.com/angular/angular/pull/61392)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="19.2.12"></a>
+# 19.2.12 (2025-05-21)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [126efc9972](https://github.com/angular/angular/commit/126efc9972e18806e71977d51a55f8ec2f0514d6) | fix | cancel reader when app is destroyed ([#61528](https://github.com/angular/angular/pull/61528)) |
+| [efda872453](https://github.com/angular/angular/commit/efda8724535a8560a64b28cc2bf81df5931af686) | fix | prevent reading chunks if app is destroyed ([#61354](https://github.com/angular/angular/pull/61354)) |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [44bb328eae](https://github.com/angular/angular/commit/44bb328eaea028524206d0d2b9f12702c9bf3861) | fix | avoid conflicts between HMR code and local symbols ([#61550](https://github.com/angular/angular/pull/61550)) |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [107180260f](https://github.com/angular/angular/commit/107180260f2ac4ca8e8995e123f36944c8bec2f3) | fix | Always retain prior results for all files ([#61487](https://github.com/angular/angular/pull/61487)) |
+| [1191e62d70](https://github.com/angular/angular/commit/1191e62d70ee16f3b083b635dd60a9f2e0c2d4c7) | fix | avoid ECMAScript private field metadata emit ([#61227](https://github.com/angular/angular/pull/61227)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [2b1b14f4d3](https://github.com/angular/angular/commit/2b1b14f4d3751b9b3c351ddc412ecdcb2aea4781) | fix | cleanup `rxResource` abort listener ([#58306](https://github.com/angular/angular/pull/58306)) |
+| [8f9b05eaaa](https://github.com/angular/angular/commit/8f9b05eaaabf14d7570fde16e26a73d69f78dc14) | fix | cleanup testability subscriptions ([#61261](https://github.com/angular/angular/pull/61261)) |
+| [eb53bda470](https://github.com/angular/angular/commit/eb53bda470312d449039ef9b1494e3b6cc081e42) | fix | enable stashing only when `withEventReplay()` is invoked ([#61352](https://github.com/angular/angular/pull/61352)) |
+| [94f5a4b4d6](https://github.com/angular/angular/commit/94f5a4b4d6ee195e05e7d2683ab386ee02d60a06) | fix | Testing should not throw when Zone does not patch test FW APIs ([#61376](https://github.com/angular/angular/pull/61376)) |
+| [c0c69a5abc](https://github.com/angular/angular/commit/c0c69a5abc7262887eaa1f0b84a6ec22be225994) | fix | unregister `onDestroy` in `toSignal`. ([#61514](https://github.com/angular/angular/pull/61514)) |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [8edafd0559](https://github.com/angular/angular/commit/8edafd05599b402f383e36879f76f2d5507450e8) | perf | speed up resolution of base ([#61392](https://github.com/angular/angular/pull/61392)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="20.0.0-rc.1"></a>
+# 20.0.0-rc.1 (2025-05-15)
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [e0d378d20e7](https://github.com/angular/angular/commit/e0d378d20e768d353b01bc28e10ad53c5485b426) | fix | incorrectly handling let declarations inside i18n ([#60512](https://github.com/angular/angular/pull/60512)) |
+| [768239a89cb](https://github.com/angular/angular/commit/768239a89cba7e7cf1f497e15589705b1446f8a6) | perf | reduce allocations for let declarations only used in the same view ([#60512](https://github.com/angular/angular/pull/60512)) |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [9ec9c7e1b84](https://github.com/angular/angular/commit/9ec9c7e1b8473c76661ad09a3961016ccc4ddfc7) | fix | avoid fatal diagnostics for invalid module schemas ([#61220](https://github.com/angular/angular/pull/61220)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [4fe34f4cfea](https://github.com/angular/angular/commit/4fe34f4cfea2aa0e355afa04c7183545637283c3) | fix | enable stashing only when `withEventReplay()` is invoked ([#61077](https://github.com/angular/angular/pull/61077)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="19.2.11"></a>
+# 19.2.11 (2025-05-15)
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="20.0.0-rc.0"></a>
+# 20.0.0-rc.0 (2025-05-07)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [255c79e048](https://github.com/angular/angular/commit/255c79e0480b0adc876b526e2a96d5005692e42f) | fix | cleanup `updateLatestValue` if view is destroyed before promise resolves ([#58041](https://github.com/angular/angular/pull/58041)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [017cc0a37c](https://github.com/angular/angular/commit/017cc0a37cf5b2534a07ebd207061a05d6ab89ec) | fix | properly handle app stabilization with defer blocks ([#61040](https://github.com/angular/angular/pull/61040)) |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [bc31ad91a0](https://github.com/angular/angular/commit/bc31ad91a074de9016059dcaf1fb37715c821b52) | fix | less aggressive ngServerMode cleanup ([#61106](https://github.com/angular/angular/pull/61106)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="19.2.10"></a>
+# 19.2.10 (2025-05-07)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [89056a0356](https://github.com/angular/angular/commit/89056a035648906d82ed2bbf523b793bce732474) | fix | cleanup `updateLatestValue` if view is destroyed before promise resolves ([#61064](https://github.com/angular/angular/pull/61064)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [4623b61448](https://github.com/angular/angular/commit/4623b6144897c6063139afa2d189be4e2e1d70ba) | fix | missing useExisting providers throwing for optional calls ([#61152](https://github.com/angular/angular/pull/61152)) |
+| [400dbc5b89](https://github.com/angular/angular/commit/400dbc5b89a2af0ae5fd7830f6ea47352c8556ef) | fix | properly handle app stabilization with defer blocks ([#61056](https://github.com/angular/angular/pull/61056)) |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [a6f0d5bc20](https://github.com/angular/angular/commit/a6f0d5bc20382689b7336a7e1c79c0685252cc21) | fix | less aggressive ngServerMode cleanup ([#61106](https://github.com/angular/angular/pull/61106)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="20.0.0-next.9"></a>
+# 20.0.0-next.9 (2025-04-30)
+## Breaking Changes
+### core
+- the `TestBed.flushEffects()` was removed - use
+  the `TestBed.tick()` instead.
+- `provideExperimentalCheckNoChangesForDebug` has several
+  breaking changes:
+  * It is renamed to `provideCheckNoChangesConfig`
+  * The behavior applies to _all_ checkNoChanges runs
+  * The `useNgZoneOnStable` option is removed. This wasn't found to be generally
+    more useful than `interval`
+- afterRender was renamed to afterEveryRender.
+- This commit deprecates `ng-reflect-*` attributes and updates the runtime to stop producing them by default. Please refactor application and test code to avoid relying on `ng-reflect-*` attributes.
+  
+  To enable a more seamless upgrade to v20, we've added the `provideNgReflectAttributes()` function (can be imported from the `@angular/core` package), which enables the mode in which Angular would be producing those attribites (in dev mode only). You can add the `provideNgReflectAttributes()` function to the list of providers within the bootstrap call.
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [b7d3f3dbfc](https://github.com/angular/angular/commit/b7d3f3dbfcfc40000ca34087d3b8b42319468177) | feat | Allow passing ScrollOptions to ViewportScroller ([#61002](https://github.com/angular/angular/pull/61002)) |
+| [fc4a56d5c5](https://github.com/angular/angular/commit/fc4a56d5c5fa270dbb1402c7cafe6d4f2af571eb) | fix | rename httpResource function in factory ([#60022](https://github.com/angular/angular/pull/60022)) |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [c889382a20](https://github.com/angular/angular/commit/c889382a2044f9a024f475680c8573d0f7112562) | feat | detect missing structural directive imports ([#59443](https://github.com/angular/angular/pull/59443)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [d5fd7349fb](https://github.com/angular/angular/commit/d5fd7349fb8b3942f0727cd7ee62e7a7b231e9e4) | feat | introduce TestBed.tick() ([#60993](https://github.com/angular/angular/pull/60993)) |
+| [e711f99d81](https://github.com/angular/angular/commit/e711f99d81ea7dbd4526f859c363244fccdf0626) | feat | move `provideExperimentalCheckNoChangesForDebug` to `provideCheckNoChangesConfig` ([#60906](https://github.com/angular/angular/pull/60906)) |
+| [d8fbb909ce](https://github.com/angular/angular/commit/d8fbb909ce4380c0ea48512cf5d364a2785fd428) | feat | rename afterRender to afterEveryRender and stabilize ([#60999](https://github.com/angular/angular/pull/60999)) |
+| [8d82a39a60](https://github.com/angular/angular/commit/8d82a39a601fbedee58f140a7432c4adf0b054ff) | fix | async EventEmitter error should not prevent stability ([#61028](https://github.com/angular/angular/pull/61028)) |
+| [624be2ef0c](https://github.com/angular/angular/commit/624be2ef0c7255e62082751cc339d2cd618bd633) | fix | prevent stash listener conflicts ([#59635](https://github.com/angular/angular/pull/59635)) |
+| [c2987d8402](https://github.com/angular/angular/commit/c2987d8402b7b03333b0081a7f97750cdf612e99) | refactor | stop producing `ng-reflect` attributes by default ([#60973](https://github.com/angular/angular/pull/60973)) |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [ccc5cc068f](https://github.com/angular/angular/commit/ccc5cc068f788013c19498c44d13530c1bc98912) | feat | add keepalive support for fetch requests ([#60621](https://github.com/angular/angular/pull/60621)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="19.2.9"></a>
+# 19.2.9 (2025-04-30)
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [946b844e0d](https://github.com/angular/angular/commit/946b844e0db7e8f2cabcaf4cb63abced62c01fc7) | fix | async EventEmitter error should not prevent stability ([#61028](https://github.com/angular/angular/pull/61028)) |
+| [dbb87026ca](https://github.com/angular/angular/commit/dbb87026ca10c5fb04fc1a350da27ea42cea7dc5) | fix | call DestroyRef on destroy callback if view is destroyed [patch] ([#61061](https://github.com/angular/angular/pull/61061)) |
+| [2e140a136a](https://github.com/angular/angular/commit/2e140a136a044a965da7f55e0d83731860671a05) | fix | prevent stash listener conflicts [patch] ([#61063](https://github.com/angular/angular/pull/61063)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
 <a name="20.0.0-next.8"></a>
 # 20.0.0-next.8 (2025-04-23)
 ## Breaking Changes

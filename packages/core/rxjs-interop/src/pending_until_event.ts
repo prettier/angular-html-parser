@@ -16,11 +16,11 @@ import {MonoTypeOperatorFunction, Observable} from 'rxjs';
  *
  * @param injector The `Injector` to use during creation. If this is not provided, the current injection context will be used instead (via `inject`).
  *
- * @developerPreview
+ * @developerPreview 20.0
  */
 export function pendingUntilEvent<T>(injector?: Injector): MonoTypeOperatorFunction<T> {
   if (injector === undefined) {
-    assertInInjectionContext(pendingUntilEvent);
+    ngDevMode && assertInInjectionContext(pendingUntilEvent);
     injector = inject(Injector);
   }
   const taskService = injector.get(PendingTasks);

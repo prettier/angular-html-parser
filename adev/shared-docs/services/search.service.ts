@@ -6,33 +6,21 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {
-  DestroyRef,
-  Injectable,
-  InjectionToken,
-  Provider,
-  ResourceRef,
-  inject,
-  resource,
-  signal,
-} from '@angular/core';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {NavigationEnd, Router} from '@angular/router';
+import {Injectable, InjectionToken, Provider, inject, resource, signal} from '@angular/core';
 import {ENVIRONMENT} from '../providers/index';
 import type {Environment, SearchResult, SearchResultItem, SnippetResult} from '../interfaces/index';
-import {filter} from 'rxjs';
 import {
+  LiteClient,
   liteClient as algoliasearch,
   SearchResponses,
   SearchResult as AlgoliaSearchResult,
-  Hit,
 } from 'algoliasearch/lite';
 
 export const SEARCH_DELAY = 200;
 // Maximum number of facet values to return for each facet during a regular search.
 export const MAX_VALUE_PER_FACET = 5;
 
-export const ALGOLIA_CLIENT = new InjectionToken<ReturnType<typeof algoliasearch>>(
+export const ALGOLIA_CLIENT: InjectionToken<LiteClient> = new InjectionToken<LiteClient>(
   'Search service',
 );
 
@@ -49,8 +37,6 @@ export const provideAlgoliaSearchClient = (config: Environment): Provider => {
 export class Search {
   readonly searchQuery = signal('');
 
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly router = inject(Router);
   private readonly config = inject(ENVIRONMENT);
   private readonly client = inject(ALGOLIA_CLIENT);
 
@@ -103,10 +89,6 @@ export class Search {
     },
   });
 
-  constructor() {
-    this.resetSearchQueryOnNavigationEnd();
-  }
-
   private getUniqueSearchResultItems(items: SearchResult[]): SearchResult[] {
     const uniqueUrls = new Set<string>();
 
@@ -132,15 +114,6 @@ export class Search {
       }
       return false;
     });
-  }
-
-  private resetSearchQueryOnNavigationEnd(): void {
-    this.router.events
-      .pipe(filter((event) => event instanceof NavigationEnd))
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.searchQuery.set('');
-      });
   }
 
   private parseResult(response: SearchResponses<unknown>): SearchResultItem[] | undefined {

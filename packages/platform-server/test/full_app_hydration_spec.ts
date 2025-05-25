@@ -24,7 +24,7 @@ import {
 import {MockPlatformLocation} from '@angular/common/testing';
 import {computeMsgId} from '@angular/compiler';
 import {
-  afterRender,
+  afterEveryRender,
   ApplicationRef,
   ChangeDetectorRef,
   Component,
@@ -32,6 +32,7 @@ import {
   createComponent,
   destroyPlatform,
   Directive,
+  ɵCLIENT_RENDER_MODE_FLAG as CLIENT_RENDER_MODE_FLAG,
   ElementRef,
   EnvironmentInjector,
   ErrorHandler,
@@ -49,8 +50,8 @@ import {
   ViewChild,
   ViewContainerRef,
   ViewEncapsulation,
+  ɵNoopNgZone as NoopNgZone,
 } from '@angular/core';
-import {NoopNgZone} from '@angular/core/src/zone/ng_zone';
 import {TestBed} from '@angular/core/testing';
 import {clearTranslations, loadTranslations} from '@angular/localize';
 import {withI18nSupport} from '@angular/platform-browser';
@@ -88,8 +89,6 @@ import {
   withDebugConsole,
   withNoopErrorHandler,
 } from './hydration_utils';
-
-import {CLIENT_RENDER_MODE_FLAG} from '@angular/core/src/hydration/api';
 
 describe('platform-server full application hydration integration', () => {
   beforeEach(() => {
@@ -4847,7 +4846,7 @@ describe('platform-server full application hydration integration', () => {
           elementRef = inject(ElementRef);
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               observedChildCountLog.push(this.elementRef.nativeElement.childElementCount);
             });
           }
@@ -4890,7 +4889,7 @@ describe('platform-server full application hydration integration', () => {
           elementRef = inject(ElementRef);
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               observedChildCountLog.push(this.elementRef.nativeElement.childElementCount);
             });
 

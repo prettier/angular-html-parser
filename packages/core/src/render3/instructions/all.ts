@@ -28,7 +28,6 @@
 export * from '../../defer/instructions';
 export * from './advance';
 export * from './attribute';
-export * from './attribute_interpolation';
 export * from './change_detection';
 export * from './class_map_interpolation';
 export * from './component_instance';
@@ -64,3 +63,4 @@ export * from './text_interpolation';
 export * from './two_way';
 export * from './let_declaration';
 export * from './attach_source_locations';
+export * from './value_interpolation';

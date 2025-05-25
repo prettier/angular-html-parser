@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {isNode} from '@angular/private/testing';
 import {ApplicationRef, Injector, signal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {
@@ -19,7 +20,21 @@ import {HttpTestingController, provideHttpClientTesting} from '../testing';
 
 describe('httpResource', () => {
   beforeEach(() => {
+    globalThis['ngServerMode'] = isNode;
+  });
+
+  afterEach(() => {
+    globalThis['ngServerMode'] = undefined;
+  });
+
+  beforeEach(() => {
     TestBed.configureTestingModule({providers: [provideHttpClient(), provideHttpClientTesting()]});
+  });
+
+  it('should throw if used outside injection context', () => {
+    expect(() => httpResource(() => '/data')).toThrowMatching((thrown) =>
+      thrown.message.includes('httpResource() can only be used within an injection context'),
+    );
   });
 
   it('should send a basic request', async () => {
@@ -273,5 +288,19 @@ describe('httpResource', () => {
 
     await TestBed.inject(ApplicationRef).whenStable();
     expect(res.value()).toBe(buffer);
+  });
+
+  it('should send request on reload', async () => {
+    const backend = TestBed.inject(HttpTestingController);
+    const res = httpResource(() => '/data', {injector: TestBed.inject(Injector)});
+    TestBed.tick();
+    let req = backend.expectOne('/data');
+    req.flush([]);
+    await TestBed.inject(ApplicationRef).whenStable();
+
+    res.reload();
+    TestBed.tick();
+    req = backend.expectOne('/data');
+    req.flush([]);
   });
 });

@@ -697,7 +697,8 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
         ts.DiagnosticCategory.Error,
         ngErrorCode(ErrorCode.MISSING_NAMED_TEMPLATE_DEPENDENCY),
         // Wording is meant to mimic the wording TS uses in their diagnostic for missing symbols.
-        `Cannot find name "${node instanceof TmplAstDirective ? node.name : node.componentName}".`,
+        `Cannot find name "${node instanceof TmplAstDirective ? node.name : node.componentName}". ` +
+          `Selectorless references are only supported to classes or non-type import statements.`,
       ),
     );
   }
@@ -713,7 +714,7 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
         node.startSourceSpan,
         ts.DiagnosticCategory.Error,
         ngErrorCode(ErrorCode.INCORRECT_NAMED_TEMPLATE_DEPENDENCY_TYPE),
-        `Incorrect reference type. Type must be an ${node instanceof TmplAstComponent ? '@Component' : '@Directive'}.`,
+        `Incorrect reference type. Type must be a standalone ${node instanceof TmplAstComponent ? '@Component' : '@Directive'}.`,
       ),
     );
   }

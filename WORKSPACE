@@ -1,10 +1,8 @@
 workspace(
     name = "angular",
-    managed_directories = {
-        "@npm": ["node_modules"],
-    },
 )
 
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("//:yarn.bzl", "YARN_LABEL")
 
@@ -34,33 +32,43 @@ http_archive(
     ],
 )
 
-# Fetch Aspect lib for utilities like write_source_files
-# NOTE: We cannot move past version 1.23.2 of aspect_bazel_lib because it requires us to move to bazel 6.0.0 which
-#       breaks our usage of managed_directories
 http_archive(
-    name = "aspect_bazel_lib",
-    sha256 = "4b2e774387bae6242879820086b7b738d49bf3d0659522ea5d9363be01a27582",
-    strip_prefix = "bazel-lib-1.23.2",
-    url = "https://github.com/aspect-build/bazel-lib/archive/refs/tags/v1.23.2.tar.gz",
+    name = "aspect_rules_js",
+    sha256 = "75c25a0f15a9e4592bbda45b57aa089e4bf17f9176fd735351e8c6444df87b52",
+    strip_prefix = "rules_js-2.1.0",
+    url = "https://github.com/aspect-build/rules_js/releases/download/v2.1.0/rules_js-v2.1.0.tar.gz",
 )
+
+load("@aspect_rules_js//js:repositories.bzl", "rules_js_dependencies")
+
+rules_js_dependencies()
 
 # Setup the Node.js toolchain.
 load("@rules_nodejs//nodejs:repositories.bzl", "nodejs_register_toolchains")
 
+NODE_VERSION = "20.19.0"
+
 NODE_20_REPO = {
-    "20.11.1-darwin_arm64": ("node-v20.11.1-darwin-arm64.tar.gz", "node-v20.11.1-darwin-arm64", "e0065c61f340e85106a99c4b54746c5cee09d59b08c5712f67f99e92aa44995d"),
-    "20.11.1-darwin_amd64": ("node-v20.11.1-darwin-x64.tar.gz", "node-v20.11.1-darwin-x64", "c52e7fb0709dbe63a4cbe08ac8af3479188692937a7bd8e776e0eedfa33bb848"),
-    "20.11.1-linux_arm64": ("node-v20.11.1-linux-arm64.tar.xz", "node-v20.11.1-linux-arm64", "c957f29eb4e341903520caf362534f0acd1db7be79c502ae8e283994eed07fe1"),
-    "20.11.1-linux_ppc64le": ("node-v20.11.1-linux-ppc64le.tar.xz", "node-v20.11.1-linux-ppc64le", "51343cacf5cdf5c4b5e93e919d19dd373d6ef43d5f2c666eae299f26e31d08b5"),
-    "20.11.1-linux_s390x": ("node-v20.11.1-linux-s390x.tar.xz", "node-v20.11.1-linux-s390x", "b32616b705cd0ddbb230b95c693e3d7a37becc2ced9bcadea8dc824cceed6be0"),
-    "20.11.1-linux_amd64": ("node-v20.11.1-linux-x64.tar.xz", "node-v20.11.1-linux-x64", "d8dab549b09672b03356aa2257699f3de3b58c96e74eb26a8b495fbdc9cf6fbe"),
-    "20.11.1-windows_amd64": ("node-v20.11.1-win-x64.zip", "node-v20.11.1-win-x64", "bc032628d77d206ffa7f133518a6225a9c5d6d9210ead30d67e294ff37044bda"),
+    "20.19.0-darwin_arm64": ("node-v20.19.0-darwin-arm64.tar.gz", "node-v20.19.0-darwin-arm64", "c016cd1975a264a29dc1b07c6fbe60d5df0a0c2beb4113c0450e3d998d1a0d9c"),
+    "20.19.0-darwin_amd64": ("node-v20.19.0-darwin-x64.tar.gz", "node-v20.19.0-darwin-x64", "a8554af97d6491fdbdabe63d3a1cfb9571228d25a3ad9aed2df856facb131b20"),
+    "20.19.0-linux_arm64": ("node-v20.19.0-linux-arm64.tar.xz", "node-v20.19.0-linux-arm64", "dbe339e55eb393955a213e6b872066880bb9feceaa494f4d44c7aac205ec2ab9"),
+    "20.19.0-linux_ppc64le": ("node-v20.19.0-linux-ppc64le.tar.xz", "node-v20.19.0-linux-ppc64le", "84937108f005679e60b486ed8e801cebfe923f02b76d8e710463d32f82181f65"),
+    "20.19.0-linux_s390x": ("node-v20.19.0-linux-s390x.tar.xz", "node-v20.19.0-linux-s390x", "11f8ee99d792a83bba7b29911e0229dd6cd5e88987d7416346067db1cc76d89a"),
+    "20.19.0-linux_amd64": ("node-v20.19.0-linux-x64.tar.xz", "node-v20.19.0-linux-x64", "b4e336584d62abefad31baecff7af167268be9bb7dd11f1297112e6eed3ca0d5"),
+    "20.19.0-windows_amd64": ("node-v20.19.0-win-x64.zip", "node-v20.19.0-win-x64", "be72284c7bc62de07d5a9fd0ae196879842c085f11f7f2b60bf8864c0c9d6a4f"),
 }
 
 nodejs_register_toolchains(
     name = "nodejs",
     node_repositories = NODE_20_REPO,
-    node_version = "20.11.1",
+    node_version = NODE_VERSION,
+)
+
+load("@aspect_rules_js//js:toolchains.bzl", "rules_js_register_toolchains")
+
+rules_js_register_toolchains(
+    node_repositories = NODE_20_REPO,
+    node_version = NODE_VERSION,
 )
 
 # Download npm dependencies.
@@ -74,9 +82,11 @@ yarn_install(
     data = [
         YARN_LABEL,
         "//:.yarnrc",
+        "//:tools/npm-patches/@angular+ng-dev+0.0.0-a6dcd24107d12114198251ee5d20cda814a1986a.patch",
         "//:tools/npm-patches/@bazel+jasmine+5.8.1.patch",
+        "//:tools/npm-patches/dagre-d3-es+7.0.11.patch",
         "//tools:postinstall-patches.js",
-        "//tools/esm-interop:patches/npm/@angular+build-tooling+0.0.0-d30a56c19bafaac67cf44e605ed8c2c0e45b0a51.patch",
+        "//tools/esm-interop:patches/npm/@angular+build-tooling+0.0.0-2670abf637fa155971cdd1f7e570a7f234922a65.patch",
         "//tools/esm-interop:patches/npm/@bazel+concatjs+5.8.1.patch",
         "//tools/esm-interop:patches/npm/@bazel+esbuild+5.7.1.patch",
         "//tools/esm-interop:patches/npm/@bazel+protractor+5.7.1.patch",
@@ -88,12 +98,64 @@ yarn_install(
     exports_directories_only = False,
     manual_build_file_contents = npm_package_archives(),
     package_json = "//:package.json",
-    # We prefer to symlink the `node_modules` to only maintain a single install.
-    # See https://github.com/angular/dev-infra/pull/446#issuecomment-1059820287 for details.
-    symlink_node_modules = True,
     yarn = YARN_LABEL,
     yarn_lock = "//:yarn.lock",
 )
+
+load("@aspect_rules_js//npm:repositories.bzl", "npm_translate_lock")
+
+npm_translate_lock(
+    name = "npm2",
+    data = [
+        "//:package.json",
+        "//:pnpm-workspace.yaml",
+        "//packages/compiler:package.json",
+        "//packages/compiler-cli:package.json",
+        "//tools/bazel/rules_angular_store:package.json",
+    ],
+    npmrc = "//:.npmrc",
+    pnpm_lock = "//:pnpm-lock.yaml",
+    update_pnpm_lock = True,
+    verify_node_modules_ignored = "//:.bazelignore",
+    yarn_lock = "//:yarn.lock",
+)
+
+load("@npm2//:repositories.bzl", "npm_repositories")
+
+npm_repositories()
+
+http_archive(
+    name = "aspect_rules_ts",
+    sha256 = "9acd128abe77397505148eaa6895faed57839560dbf2177dd6285e51235e2724",
+    strip_prefix = "rules_ts-3.3.1",
+    url = "https://github.com/aspect-build/rules_ts/releases/download/v3.3.1/rules_ts-v3.3.1.tar.gz",
+)
+
+load("@aspect_rules_ts//ts:repositories.bzl", "rules_ts_dependencies")
+
+rules_ts_dependencies(
+    # Obtained by: curl --silent https://registry.npmjs.org/typescript/5.8.2 | jq -r '.dist.integrity'
+    ts_integrity = "sha512-aJn6wq13/afZp/jT9QZmwEjDqqvSGp1VT5GVg+f/t6/oVyrgXM6BY1h9BRh/O5p3PlUPAe+WuiEZOmb/49RqoQ==",
+    ts_version_from = "//:package.json",
+)
+
+http_archive(
+    name = "aspect_rules_rollup",
+    sha256 = "c4062681968f5dcd3ce01e09e4ba73670c064744a7046211763e17c98ab8396e",
+    strip_prefix = "rules_rollup-2.0.0",
+    url = "https://github.com/aspect-build/rules_rollup/releases/download/v2.0.0/rules_rollup-v2.0.0.tar.gz",
+)
+
+http_archive(
+    name = "aspect_rules_jasmine",
+    sha256 = "0d2f9c977842685895020cac721d8cc4f1b37aae15af46128cf619741dc61529",
+    strip_prefix = "rules_jasmine-2.0.0",
+    url = "https://github.com/aspect-build/rules_jasmine/releases/download/v2.0.0/rules_jasmine-v2.0.0.tar.gz",
+)
+
+load("@aspect_rules_jasmine//jasmine:dependencies.bzl", "rules_jasmine_dependencies")
+
+rules_jasmine_dependencies()
 
 load("@aspect_bazel_lib//lib:repositories.bzl", "aspect_bazel_lib_dependencies")
 
@@ -193,4 +255,39 @@ yarn_install(
     package_json = "//packages/core/schematics/migrations/signal-migration/test/ts-versions:package.json",
     yarn = YARN_LABEL,
     yarn_lock = "//packages/core/schematics/migrations/signal-migration/test/ts-versions:yarn.lock",
+)
+
+git_repository(
+    name = "devinfra",
+    commit = "fd57e38fdd95d2d145adb87a1ff0cbbc231316bc",
+    remote = "https://github.com/angular/dev-infra.git",
+)
+
+load("@devinfra//bazel:setup_dependencies_1.bzl", "setup_dependencies_1")
+
+setup_dependencies_1()
+
+load("@devinfra//bazel:setup_dependencies_2.bzl", "setup_dependencies_2")
+
+setup_dependencies_2()
+
+git_repository(
+    name = "rules_angular",
+    commit = "ad3a2d652f41c953fad8f55c3959fde628fa8ebf",
+    remote = "https://github.com/devversion/rules_angular.git",
+)
+
+load("@rules_angular//setup:step_1.bzl", "rules_angular_step1")
+
+rules_angular_step1()
+
+load("@rules_angular//setup:step_2.bzl", "rules_angular_step2")
+
+rules_angular_step2()
+
+load("@rules_angular//setup:step_3.bzl", "rules_angular_step3")
+
+rules_angular_step3(
+    angular_compiler_cli = "@angular//tools/bazel/rules_angular_store:node_modules/@angular/compiler-cli",
+    typescript = "@angular//:node_modules/typescript",
 )

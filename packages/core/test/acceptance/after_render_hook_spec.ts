@@ -6,7 +6,10 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {PLATFORM_BROWSER_ID, PLATFORM_SERVER_ID} from '@angular/common/src/platform_id';
+import {
+  ɵPLATFORM_BROWSER_ID as PLATFORM_BROWSER_ID,
+  ɵPLATFORM_SERVER_ID as PLATFORM_SERVER_ID,
+} from '@angular/common';
 import {
   AfterRenderRef,
   ApplicationRef,
@@ -20,7 +23,7 @@ import {
   Type,
   ViewContainerRef,
   afterNextRender,
-  afterRender,
+  afterEveryRender,
   computed,
   createComponent,
   effect,
@@ -61,7 +64,7 @@ describe('after render hooks', () => {
           afterRenderCount = 0;
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               this.afterRenderCount++;
             });
           }
@@ -77,7 +80,7 @@ describe('after render hooks', () => {
           viewContainerRef = inject(ViewContainerRef);
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               this.afterRenderCount++;
             });
           }
@@ -127,7 +130,7 @@ describe('after render hooks', () => {
           afterRenderCount = 0;
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               this.afterRenderCount++;
             });
           }
@@ -143,7 +146,7 @@ describe('after render hooks', () => {
           viewContainerRef = inject(ViewContainerRef);
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               this.afterRenderCount++;
             });
           }
@@ -191,7 +194,7 @@ describe('after render hooks', () => {
         })
         class ChildComp {
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               log.push('child-comp');
             });
           }
@@ -206,7 +209,7 @@ describe('after render hooks', () => {
           changeDetectorRef = inject(ChangeDetectorRef);
 
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               log.push('parent-comp');
             });
           }
@@ -237,7 +240,7 @@ describe('after render hooks', () => {
         })
         class MyComp {
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               log.push('render');
             });
           }
@@ -266,7 +269,7 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            hookRef = afterRender(() => {
+            hookRef = afterEveryRender(() => {
               afterRenderCount++;
             });
           }
@@ -299,7 +302,7 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               zoneLog.push(NgZone.isInAngularZone());
             });
           }
@@ -334,19 +337,19 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               log.push('pass 1');
             });
 
-            afterRender(() => {
+            afterEveryRender(() => {
               throw new Error('fail 1');
             });
 
-            afterRender(() => {
+            afterEveryRender(() => {
               log.push('pass 2');
             });
 
-            afterRender(() => {
+            afterEveryRender(() => {
               throw new Error('fail 2');
             });
           }
@@ -379,25 +382,25 @@ describe('after render hooks', () => {
         })
         class CompA {
           constructor() {
-            afterRender({
+            afterEveryRender({
               earlyRead: () => {
                 log.push('early-read-1');
               },
             });
 
-            afterRender({
+            afterEveryRender({
               write: () => {
                 log.push('write-1');
               },
             });
 
-            afterRender({
+            afterEveryRender({
               mixedReadWrite: () => {
                 log.push('mixed-read-write-1');
               },
             });
 
-            afterRender({
+            afterEveryRender({
               read: () => {
                 log.push('read-1');
               },
@@ -411,25 +414,25 @@ describe('after render hooks', () => {
         })
         class CompB {
           constructor() {
-            afterRender({
+            afterEveryRender({
               read: () => {
                 log.push('read-2');
               },
             });
 
-            afterRender({
+            afterEveryRender({
               mixedReadWrite: () => {
                 log.push('mixed-read-write-2');
               },
             });
 
-            afterRender({
+            afterEveryRender({
               write: () => {
                 log.push('write-2');
               },
             });
 
-            afterRender({
+            afterEveryRender({
               earlyRead: () => {
                 log.push('early-read-2');
               },
@@ -466,7 +469,7 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            afterRender({
+            afterEveryRender({
               earlyRead: () => {
                 log.push('early-read-1');
               },
@@ -481,7 +484,7 @@ describe('after render hooks', () => {
               },
             });
 
-            afterRender(() => {
+            afterEveryRender(() => {
               log.push('mixed-read-write-2');
             });
           }
@@ -513,7 +516,7 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            afterRender({
+            afterEveryRender({
               earlyRead: () => 'earlyRead result',
               write: (results) => {
                 log.push(`results for write: ${results}`);
@@ -528,7 +531,7 @@ describe('after render hooks', () => {
               },
             });
 
-            afterRender({
+            afterEveryRender({
               earlyRead: () => 'earlyRead 2 result',
               read: (results) => {
                 log.push(`results for read 2: ${results}`);
@@ -561,23 +564,23 @@ describe('after render hooks', () => {
           })
           class TestCmp {
             someFn() {
-              afterRender(() => {});
+              afterEveryRender(() => {});
             }
           }
 
           const fixture = TestBed.createComponent(TestCmp);
           expect(() => fixture.detectChanges()).toThrowError(
-            /afterRender\(\) cannot be called from within a reactive context/,
+            /afterEveryRender\(\) cannot be called from within a reactive context/,
           );
         });
 
         it('inside computed', () => {
           const testComputed = computed(() => {
-            afterRender(() => {});
+            afterEveryRender(() => {});
           });
 
           expect(() => testComputed()).toThrowError(
-            /afterRender\(\) cannot be called from within a reactive context/,
+            /afterEveryRender\(\) cannot be called from within a reactive context/,
           );
         });
 
@@ -594,7 +597,7 @@ describe('after render hooks', () => {
             }
 
             someFnThatWillScheduleAfterRender() {
-              afterRender(() => {});
+              afterEveryRender(() => {});
             }
           }
 
@@ -613,7 +616,7 @@ describe('after render hooks', () => {
           const fixture = TestBed.createComponent(TestCmp);
 
           expect(() => fixture.detectChanges()).toThrowError(
-            /afterRender\(\) cannot be called from within a reactive context/,
+            /afterEveryRender\(\) cannot be called from within a reactive context/,
           );
         });
       });
@@ -625,7 +628,7 @@ describe('after render hooks', () => {
         @Component({selector: 'comp', template: '', standalone: false})
         class Comp {
           constructor() {
-            afterRenderRef = afterRender(() => count++, {manualCleanup: true});
+            afterRenderRef = afterEveryRender(() => count++, {manualCleanup: true});
           }
         }
 
@@ -1201,7 +1204,7 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            afterRender({
+            afterEveryRender({
               earlyRead: () => {
                 log.push('early-read');
                 return 'early';
@@ -1361,7 +1364,7 @@ describe('after render hooks', () => {
         counter = counter;
         injector = inject(EnvironmentInjector);
         ngOnInit() {
-          afterRender(
+          afterEveryRender(
             () => {
               this.counter.update((v) => v + 1);
             },
@@ -1449,7 +1452,7 @@ describe('after render hooks', () => {
         })
         class Comp {
           constructor() {
-            afterRender(() => {
+            afterEveryRender(() => {
               afterRenderCount++;
             });
           }

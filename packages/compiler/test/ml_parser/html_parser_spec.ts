@@ -204,13 +204,13 @@ describe('HtmlParser', () => {
 
       it('should support self closing void elements', () => {
         expect(humanizeDom(parser.parse('<input />', 'TestComp'))).toEqual([
-          [html.Element, 'input', 0],
+          [html.Element, 'input', 0, '#selfClosing'],
         ]);
       });
 
       it('should support self closing foreign elements', () => {
         expect(humanizeDom(parser.parse('<math />', 'TestComp'))).toEqual([
-          [html.Element, ':math:math', 0],
+          [html.Element, ':math:math', 0, '#selfClosing'],
         ]);
       });
 
@@ -414,7 +414,7 @@ describe('HtmlParser', () => {
 
       it('should support namespace', () => {
         expect(humanizeDom(parser.parse('<svg:use xlink:href="Port" />', 'TestComp'))).toEqual([
-          [html.Element, ':svg:use', 0],
+          [html.Element, ':svg:use', 0, '#selfClosing'],
           [html.Attribute, ':xlink:href', 'Port', ['Port']],
         ]);
       });
@@ -814,7 +814,7 @@ describe('HtmlParser', () => {
       it('should parse a block with an HTML element', () => {
         expect(humanizeDom(parser.parse('@defer {<my-cmp/>}', 'TestComp'))).toEqual([
           [html.Block, 'defer', 0],
-          [html.Element, 'my-cmp', 1],
+          [html.Element, 'my-cmp', 1, '#selfClosing'],
         ]);
       });
 
@@ -836,7 +836,7 @@ describe('HtmlParser', () => {
           [html.Block, 'case', 1],
           [html.BlockParameter, '1'],
           [html.Text, 'hello', 2, ['hello']],
-          [html.Element, 'my-cmp', 2],
+          [html.Element, 'my-cmp', 2, '#selfClosing'],
           [html.Text, 'there', 2, ['there']],
           [html.Block, 'case', 1],
           [html.BlockParameter, 'two'],
@@ -883,28 +883,28 @@ describe('HtmlParser', () => {
           `} <root-sibling-two/>`;
 
         expect(humanizeDom(parser.parse(markup, 'TestComp'))).toEqual([
-          [html.Element, 'root-sibling-one', 0],
+          [html.Element, 'root-sibling-one', 0, '#selfClosing'],
           [html.Block, 'root', 0],
-          [html.Element, 'outer-child-one', 1],
+          [html.Element, 'outer-child-one', 1, '#selfClosing'],
           [html.Element, 'outer-child-two', 1],
           [html.Block, 'child', 2],
           [html.BlockParameter, 'childParam === 1'],
           [html.Block, 'innerChild', 3],
           [html.BlockParameter, 'innerChild1 === foo'],
-          [html.Element, 'inner-child-one', 4],
+          [html.Element, 'inner-child-one', 4, '#selfClosing'],
           [html.Block, 'grandChild', 4],
           [html.Block, 'innerGrandChild', 5],
-          [html.Element, 'inner-grand-child-one', 6],
+          [html.Element, 'inner-grand-child-one', 6, '#selfClosing'],
           [html.Block, 'innerGrandChild', 5],
-          [html.Element, 'inner-grand-child-two', 6],
+          [html.Element, 'inner-grand-child-two', 6, '#selfClosing'],
           [html.Block, 'innerChild', 3],
-          [html.Element, 'inner-child-two', 4],
+          [html.Element, 'inner-child-two', 4, '#selfClosing'],
           [html.Block, 'outerChild', 1],
           [html.BlockParameter, 'outerChild1'],
           [html.BlockParameter, 'outerChild2'],
-          [html.Element, 'outer-child-three', 2],
+          [html.Element, 'outer-child-three', 2, '#selfClosing'],
           [html.Text, ' ', 0, [' ']],
-          [html.Element, 'root-sibling-two', 0],
+          [html.Element, 'root-sibling-two', 0, '#selfClosing'],
         ]);
       });
 
@@ -913,7 +913,7 @@ describe('HtmlParser', () => {
           [html.Element, ':svg:svg', 0],
           [html.Block, 'if', 1],
           [html.BlockParameter, 'cond'],
-          [html.Element, ':svg:circle', 2],
+          [html.Element, ':svg:circle', 2, '#selfClosing'],
         ]);
       });
 
@@ -1220,7 +1220,7 @@ describe('HtmlParser', () => {
         const parsed = humanizeDom(parser.parse('<MyComp/>Hello', '', options));
 
         expect(parsed).toEqual([
-          [html.Component, 'MyComp', null, 'MyComp', 0],
+          [html.Component, 'MyComp', null, 'MyComp', 0, '#selfClosing'],
           [html.Text, 'Hello', 0, ['Hello']],
         ]);
       });
@@ -1318,7 +1318,7 @@ describe('HtmlParser', () => {
           [html.Text, 'Hello: ', 2, ['Hello: ']],
           [html.Component, 'MyComp', null, 'MyComp', 2],
           [html.Element, 'span', 3],
-          [html.Component, 'OtherComp', null, 'OtherComp', 4],
+          [html.Component, 'OtherComp', null, 'OtherComp', 4, '#selfClosing'],
         ]);
       });
 
@@ -1393,6 +1393,7 @@ describe('HtmlParser', () => {
             'MyComp',
             0,
             '<MyComp one="1" two [three]="3"/>',
+            '#selfClosing',
             '<MyComp one="1" two [three]="3"/>',
             '<MyComp one="1" two [three]="3"/>',
           ],
@@ -1407,6 +1408,7 @@ describe('HtmlParser', () => {
             'MyOtherComp',
             0,
             '<MyOtherComp/>',
+            '#selfClosing',
             '<MyOtherComp/>',
             '<MyOtherComp/>',
           ],
@@ -1417,6 +1419,7 @@ describe('HtmlParser', () => {
             'MyThirdComp:button',
             0,
             '<MyThirdComp:button/>',
+            '#selfClosing',
             '<MyThirdComp:button/>',
             '<MyThirdComp:button/>',
           ],
@@ -1550,14 +1553,14 @@ describe('HtmlParser', () => {
 
       it('should set the end source span for standalone self-closing elements', () => {
         expect(humanizeDomSourceSpans(parser.parse('<br/>', 'TestComp'))).toEqual([
-          [html.Element, 'br', 0, '<br/>', '<br/>', '<br/>'],
+          [html.Element, 'br', 0, '<br/>', '#selfClosing', '<br/>', '<br/>'],
         ]);
       });
 
       it('should set the end source span for self-closing elements', () => {
         expect(humanizeDomSourceSpans(parser.parse('<div><br/></div>', 'TestComp'))).toEqual([
           [html.Element, 'div', 0, '<div><br/></div>', '<div>', '</div>'],
-          [html.Element, 'br', 1, '<br/>', '<br/>', '<br/>'],
+          [html.Element, 'br', 1, '<br/>', '#selfClosing', '<br/>', '<br/>'],
         ]);
       });
 
@@ -1574,6 +1577,7 @@ describe('HtmlParser', () => {
             'input',
             0,
             '<input type="text" />',
+            '#selfClosing',
             '<input type="text" />',
             '<input type="text" />',
           ],

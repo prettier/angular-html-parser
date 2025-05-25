@@ -905,10 +905,9 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
       return undefined;
     }
     if (
-      element.endSourceSpan &&
-      isWithin(this.position, element.endSourceSpan) &&
-      // start and end spans are the same for self closing tags
-      element.endSourceSpan.start !== element.startSourceSpan.start
+      !element.isSelfClosing &&
+      element.endSourceSpan !== null &&
+      isWithin(this.position, element.endSourceSpan)
     ) {
       return undefined;
     }
@@ -1180,13 +1179,19 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
     }
 
     const replacementSpan = makeReplacementSpanFromAst(this.node);
+    const entries: ts.CompletionEntry[] = [];
 
-    const entries: ts.CompletionEntry[] = pipes.map((pipe) => ({
-      name: pipe.name,
-      sortText: pipe.name,
-      kind: unsafeCastDisplayInfoKindToScriptElementKind(DisplayInfoKind.PIPE),
-      replacementSpan,
-    }));
+    for (const pipe of pipes) {
+      if (pipe.name !== null) {
+        entries.push({
+          name: pipe.name,
+          sortText: pipe.name,
+          kind: unsafeCastDisplayInfoKindToScriptElementKind(DisplayInfoKind.PIPE),
+          replacementSpan,
+        });
+      }
+    }
+
     return {
       entries,
       isGlobalCompletion: false,

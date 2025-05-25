@@ -21,15 +21,6 @@ import * as r3 from '../index';
  */
 export const angularCoreEnv: {[name: string]: unknown} = (() => ({
   'ɵɵattribute': r3.ɵɵattribute,
-  'ɵɵattributeInterpolate1': r3.ɵɵattributeInterpolate1,
-  'ɵɵattributeInterpolate2': r3.ɵɵattributeInterpolate2,
-  'ɵɵattributeInterpolate3': r3.ɵɵattributeInterpolate3,
-  'ɵɵattributeInterpolate4': r3.ɵɵattributeInterpolate4,
-  'ɵɵattributeInterpolate5': r3.ɵɵattributeInterpolate5,
-  'ɵɵattributeInterpolate6': r3.ɵɵattributeInterpolate6,
-  'ɵɵattributeInterpolate7': r3.ɵɵattributeInterpolate7,
-  'ɵɵattributeInterpolate8': r3.ɵɵattributeInterpolate8,
-  'ɵɵattributeInterpolateV': r3.ɵɵattributeInterpolateV,
   'ɵɵdefineComponent': r3.ɵɵdefineComponent,
   'ɵɵdefineDirective': r3.ɵɵdefineDirective,
   'ɵɵdefineInjectable': ɵɵdefineInjectable,
@@ -200,6 +191,16 @@ export const angularCoreEnv: {[name: string]: unknown} = (() => ({
   'ɵɵstoreLet': r3.ɵɵstoreLet,
   'ɵɵreadContextLet': r3.ɵɵreadContextLet,
   'ɵɵattachSourceLocations': r3.ɵɵattachSourceLocations,
+  'ɵɵinterpolate': r3.ɵɵinterpolate,
+  'ɵɵinterpolate1': r3.ɵɵinterpolate1,
+  'ɵɵinterpolate2': r3.ɵɵinterpolate2,
+  'ɵɵinterpolate3': r3.ɵɵinterpolate3,
+  'ɵɵinterpolate4': r3.ɵɵinterpolate4,
+  'ɵɵinterpolate5': r3.ɵɵinterpolate5,
+  'ɵɵinterpolate6': r3.ɵɵinterpolate6,
+  'ɵɵinterpolate7': r3.ɵɵinterpolate7,
+  'ɵɵinterpolate8': r3.ɵɵinterpolate8,
+  'ɵɵinterpolateV': r3.ɵɵinterpolateV,
 
   'ɵɵsanitizeHtml': sanitization.ɵɵsanitizeHtml,
   'ɵɵsanitizeStyle': sanitization.ɵɵsanitizeStyle,
@@ -219,4 +220,5 @@ export const angularCoreEnv: {[name: string]: unknown} = (() => ({
   'ɵɵtwoWayListener': r3.ɵɵtwoWayListener,
 
   'ɵɵreplaceMetadata': r3.ɵɵreplaceMetadata,
+  'ɵɵgetReplaceMetadataURL': r3.ɵɵgetReplaceMetadataURL,
 }))();

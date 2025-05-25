@@ -21,7 +21,7 @@ import {
   getParentBlockHydrationQueue,
   isIncrementalHydrationEnabled,
 } from '../hydration/utils';
-import {PendingTasksInternal} from '../pending_tasks';
+import {PendingTasks, PendingTasksInternal} from '../pending_tasks';
 import {assertLContainer} from '../render3/assert';
 import {getComponentDef, getDirectiveDef, getPipeDef} from '../render3/def_getters';
 import {getTemplateLocationDetails} from '../render3/instructions/element_validation';
@@ -36,7 +36,7 @@ import {
   invokeTriggerCleanupFns,
   storeTriggerCleanupFn,
 } from './cleanup';
-import {onViewport} from './dom_triggers';
+import {onViewportWrapper} from './dom_triggers';
 import {onIdle} from './idle_scheduler';
 import {
   DEFER_BLOCK_STATE,
@@ -70,7 +70,7 @@ import {
   getTDeferBlockDetails,
 } from './utils';
 import {ApplicationRef} from '../application/application_ref';
-import {DEHYDRATED_VIEWS} from '../render3/interfaces/container';
+import type {PromiseConstructor} from '../util/promise_with_resolvers';
 
 /**
  * Schedules triggering of a defer block for `on idle` and `on timer` conditions.
@@ -205,8 +205,7 @@ export function triggerResourceLoading(
   }
 
   // Indicate that an application is not stable and has a pending task.
-  const pendingTasks = injector.get(PendingTasksInternal);
-  const taskId = pendingTasks.add();
+  const removeTask = injector.get(PendingTasks).add();
 
   // The `dependenciesFn` might be `null` when all dependencies within
   // a given defer block were eagerly referenced elsewhere in a file,
@@ -215,7 +214,7 @@ export function triggerResourceLoading(
     tDetails.loadingPromise = Promise.resolve().then(() => {
       tDetails.loadingPromise = null;
       tDetails.loadingState = DeferDependenciesLoadingState.COMPLETE;
-      pendingTasks.remove(taskId);
+      removeTask();
     });
     return tDetails.loadingPromise;
   }
@@ -243,11 +242,6 @@ export function triggerResourceLoading(
         break;
       }
     }
-
-    // Loading is completed, we no longer need the loading Promise
-    // and a pending task should also be removed.
-    tDetails.loadingPromise = null;
-    pendingTasks.remove(taskId);
 
     if (failed) {
       tDetails.loadingState = DeferDependenciesLoadingState.FAILED;
@@ -288,7 +282,13 @@ export function triggerResourceLoading(
       }
     }
   });
-  return tDetails.loadingPromise;
+
+  return tDetails.loadingPromise.finally(() => {
+    // Loading is completed, we no longer need the loading Promise
+    // and a pending task should also be removed.
+    tDetails.loadingPromise = null;
+    removeTask();
+  });
 }
 
 /**
@@ -549,7 +549,7 @@ function cleanupRemainingHydrationQueue(
  */
 function populateHydratingStateForQueue(registry: DehydratedBlockRegistry, queue: string[]) {
   for (let blockId of queue) {
-    registry.hydrating.set(blockId, Promise.withResolvers());
+    registry.hydrating.set(blockId, (Promise as unknown as PromiseConstructor).withResolvers());
   }
 }
 
@@ -701,7 +701,7 @@ function setViewportTriggers(injector: Injector, elementTriggers: ElementTrigger
   if (elementTriggers.length > 0) {
     const registry = injector.get(DEHYDRATED_BLOCK_REGISTRY);
     for (let elementTrigger of elementTriggers) {
-      const cleanupFn = onViewport(
+      const cleanupFn = onViewportWrapper(
         elementTrigger.el,
         () => triggerHydrationFromBlockName(injector, elementTrigger.blockName),
         injector,

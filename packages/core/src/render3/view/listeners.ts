@@ -9,9 +9,9 @@
 import {setActiveConsumer} from '@angular/core/primitives/signals';
 
 import {NotificationSource} from '../../change_detection/scheduling/zoneless_scheduling';
-import {TNode} from '../interfaces/node';
+import type {TNode} from '../interfaces/node';
 import {isComponentHost, isDirectiveHost} from '../interfaces/type_checks';
-import {CLEANUP, CONTEXT, INJECTOR, LView, TView} from '../interfaces/view';
+import {CLEANUP, CONTEXT, type LView, type TView} from '../interfaces/view';
 import {
   getComponentLViewByIndex,
   getNativeByTNode,
@@ -22,28 +22,15 @@ import {
 import {profiler} from '../profiler';
 import {ProfilerEvent} from '../profiler_types';
 import {markViewDirty} from '../instructions/mark_view_dirty';
-import {RElement, RNode} from '../interfaces/renderer_dom';
-import {GlobalTargetResolver, Renderer} from '../interfaces/renderer';
+import type {RElement} from '../interfaces/renderer_dom';
+import type {GlobalTargetResolver, Renderer} from '../interfaces/renderer';
 import {assertNotSame} from '../../util/assert';
 import {handleUncaughtError} from '../instructions/shared';
-
-/** Shorthand for an event listener callback function to reduce duplication. */
-export type EventCallback = (event?: any) => any;
-
-/** Utility type used to make it harder to swap a wrapped and unwrapped callback. */
-export type WrappedEventCallback = EventCallback & {__wrapped: boolean};
-
-/**
- * Contains a reference to a function that disables event replay feature
- * for server-side rendered applications. This function is overridden with
- * an actual implementation when the event replay feature is enabled via
- * `withEventReplay()` call.
- */
-let stashEventListener = (el: RNode, eventName: string, listenerFn: EventCallback) => {};
-
-export function setStashFn(fn: typeof stashEventListener) {
-  stashEventListener = fn;
-}
+import {
+  type EventCallback,
+  stashEventListenerImpl,
+  type WrappedEventCallback,
+} from '../../event_delegation_utils';
 
 /**
  * Wraps an event listener with a function that marks ancestors dirty and prevents default behavior,
@@ -172,7 +159,8 @@ export function listenToDomEvent(
   } else {
     const native = getNativeByTNode(tNode, lView) as RElement;
     const target = eventTargetResolver ? eventTargetResolver(native) : native;
-    stashEventListener(target as RElement, eventName, wrappedListener);
+
+    stashEventListenerImpl(lView, target, eventName, wrappedListener);
 
     const cleanupFn = renderer.listen(target as RElement, eventName, wrappedListener);
     const idxOrTargetGetter = eventTargetResolver

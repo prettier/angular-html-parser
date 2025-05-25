@@ -32,6 +32,7 @@ import {publishFacade} from './jit_compiler_facade';
 import * as outputAst from './output/output_ast';
 import {global} from './util';
 
+export {SECURITY_SCHEMA} from './schema/dom_security_schema';
 export {CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, SchemaMetadata} from './core';
 export {core};
 
@@ -190,7 +191,6 @@ export {
 } from './render3/r3_class_metadata_compiler';
 export {
   compileFactoryFunction,
-  FactoryTarget,
   R3DependencyMetadata,
   R3FactoryMetadata,
 } from './render3/r3_factory';
@@ -237,6 +237,7 @@ export {
   parseTemplate,
   ParseTemplateOptions,
 } from './render3/view/template';
+export {CombinedRecursiveAstVisitor} from './combined_visitor';
 
 // Note: BindingParser is intentionally exported as a type only, because it should
 // be constructed through `makeBindingParser`, rather than its constructor.
@@ -246,9 +247,12 @@ export * from './resource_loader';
 export * from './schema/dom_element_schema_registry';
 export * from './schema/element_schema_registry';
 export * from './directive_matching';
-export {Version} from './util';
+export {Version, escapeRegExp} from './util';
 export * from './version';
 export {outputAst};
+export {CompilerFacadeImpl} from './jit_compiler_facade';
+export {FactoryTarget} from './compiler_facade_interface';
+
 // This file only reexports content of the `src` folder. Keep it that way.
 
 // This function call has a global side effects and publishes the compiler into global namespace for

@@ -25,7 +25,7 @@ import {
   Type,
   ViewContainerRef,
   ViewEncapsulation,
-  ɵPendingTasksInternal as PendingTasks,
+  PendingTasks,
   output,
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
@@ -58,6 +58,7 @@ export const GITHUB_CONTENT_URL = 'https://github.com/angular/angular/blob/main/
   encapsulation: ViewEncapsulation.None,
   host: {
     '[class.docs-animate-content]': 'animateContent',
+    '[class.docs-with-TOC]': 'hasToc',
   },
 })
 export class DocViewer implements OnChanges {
@@ -84,11 +85,11 @@ export class DocViewer implements OnChanges {
   private countOfExamples = 0;
 
   async ngOnChanges(changes: SimpleChanges): Promise<void> {
-    const taskId = this.pendingTasks.add();
+    const removeTask = this.pendingTasks.add();
     if ('docContent' in changes) {
       await this.renderContentsAndRunClientSetup(this.docContent!);
     }
-    this.pendingTasks.remove(taskId);
+    removeTask();
   }
 
   async renderContentsAndRunClientSetup(content?: string): Promise<void> {

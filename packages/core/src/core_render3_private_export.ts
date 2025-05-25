@@ -73,15 +73,16 @@ export {
   DirectiveDebugMetadata as ɵDirectiveDebugMetadata,
   ɵɵadvance,
   ɵɵattribute,
-  ɵɵattributeInterpolate1,
-  ɵɵattributeInterpolate2,
-  ɵɵattributeInterpolate3,
-  ɵɵattributeInterpolate4,
-  ɵɵattributeInterpolate5,
-  ɵɵattributeInterpolate6,
-  ɵɵattributeInterpolate7,
-  ɵɵattributeInterpolate8,
-  ɵɵattributeInterpolateV,
+  ɵɵinterpolate,
+  ɵɵinterpolate1,
+  ɵɵinterpolate2,
+  ɵɵinterpolate3,
+  ɵɵinterpolate4,
+  ɵɵinterpolate5,
+  ɵɵinterpolate6,
+  ɵɵinterpolate7,
+  ɵɵinterpolate8,
+  ɵɵinterpolateV,
   ɵɵclassMap,
   ɵɵclassMapInterpolate1,
   ɵɵclassMapInterpolate2,
@@ -258,6 +259,7 @@ export {
   ɵɵstoreLet,
   ɵɵreadContextLet,
   ɵɵreplaceMetadata,
+  ɵɵgetReplaceMetadataURL,
   ɵɵattachSourceLocations,
 } from './render3/index';
 export {CONTAINER_HEADER_OFFSET as ɵCONTAINER_HEADER_OFFSET} from './render3/interfaces/container';
@@ -320,9 +322,7 @@ export {
 export {ɵɵvalidateIframeAttribute} from './sanitization/iframe_attrs_validation';
 export {noSideEffects as ɵnoSideEffects} from './util/closure';
 export {AfterRenderManager as ɵAfterRenderManager} from './render3/after_render/manager';
-export {
-  depsTracker as ɵdepsTracker,
-  USE_RUNTIME_DEPS_TRACKER_FOR_JIT as ɵUSE_RUNTIME_DEPS_TRACKER_FOR_JIT,
-} from './render3/deps_tracker/deps_tracker';
+export {depsTracker as ɵdepsTracker} from './render3/deps_tracker/deps_tracker';
 export {generateStandaloneInDeclarationsError as ɵgenerateStandaloneInDeclarationsError} from './render3/jit/module';
 export {getAsyncClassMetadataFn as ɵgetAsyncClassMetadataFn} from './render3/metadata';
+export {DeferBlockData as ɵDeferBlockData} from './render3/util/defer';

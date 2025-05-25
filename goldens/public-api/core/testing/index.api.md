@@ -9,12 +9,11 @@ import { Subject } from 'rxjs';
 import { Subscription } from 'rxjs';
 
 // @public
-export const __core_private_testing_placeholder__ = "";
-
-// @public
 export class ComponentFixture<T> {
     constructor(componentRef: ComponentRef<T>);
-    autoDetectChanges(autoDetect?: boolean): void;
+    // @deprecated
+    autoDetectChanges(autoDetect: boolean): void;
+    autoDetectChanges(): void;
     changeDetectorRef: ChangeDetectorRef;
     checkNoChanges(): void;
     componentInstance: T;

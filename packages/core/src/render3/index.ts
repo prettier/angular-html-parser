@@ -52,18 +52,18 @@ export {ComponentFactory, ComponentFactoryResolver, ComponentRef} from './compon
 export {ɵɵgetInheritedFactory} from './di';
 export {getLocaleId, setLocaleId} from './i18n/i18n_locale_id';
 export {
-  store,
   ɵɵadvance,
   ɵɵattribute,
-  ɵɵattributeInterpolate1,
-  ɵɵattributeInterpolate2,
-  ɵɵattributeInterpolate3,
-  ɵɵattributeInterpolate4,
-  ɵɵattributeInterpolate5,
-  ɵɵattributeInterpolate6,
-  ɵɵattributeInterpolate7,
-  ɵɵattributeInterpolate8,
-  ɵɵattributeInterpolateV,
+  ɵɵinterpolate,
+  ɵɵinterpolate1,
+  ɵɵinterpolate2,
+  ɵɵinterpolate3,
+  ɵɵinterpolate4,
+  ɵɵinterpolate5,
+  ɵɵinterpolate6,
+  ɵɵinterpolate7,
+  ɵɵinterpolate8,
+  ɵɵinterpolateV,
   ɵɵclassMap,
   ɵɵclassMapInterpolate1,
   ɵɵclassMapInterpolate2,
@@ -228,7 +228,9 @@ export {ɵɵresolveBody, ɵɵresolveDocument, ɵɵresolveWindow} from './util/mi
 export {ɵɵtemplateRefExtractor} from './view_engine_compatibility_prebound';
 export {ɵɵgetComponentDepsFactory} from './local_compilation';
 export {ɵsetClassDebugInfo} from './debug/set_debug_info';
-export {ɵɵreplaceMetadata} from './hmr';
+export {ɵɵreplaceMetadata, ɵɵgetReplaceMetadataURL} from './hmr';
+
+export {store} from './util/view_utils';
 
 export {
   ComponentDef,

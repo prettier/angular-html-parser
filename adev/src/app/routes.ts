@@ -16,7 +16,7 @@ import MainComponent from './main.component';
 
 // Docs navigation data contains routes which navigates to /tutorials pages, in
 // that case we should load Tutorial component
-export const DOCS_ROUTES = mapNavigationItemsToRoutes(
+export const DOCS_ROUTES: Route[] = mapNavigationItemsToRoutes(
   flatNavigationData(SUB_NAVIGATION_DATA.docs).filter(
     (route) =>
       !route.path?.startsWith(PagePrefix.TUTORIALS) && route.path !== PagePrefix.PLAYGROUND,
@@ -222,6 +222,10 @@ const REDIRECT_ROUTES: Route[] = [
   {
     path: 'guide/prerendering',
     redirectTo: '/guide/ssr',
+  },
+  {
+    path: 'hmr',
+    redirectTo: '/tools/cli/build-system-migration#hot-module-replacement',
   },
   {
     path: 'guide',

@@ -27,8 +27,8 @@ import {
   waitForAsync,
   withModule,
 } from '../testing';
-import {dispatchEvent} from '@angular/platform-browser/testing/src/browser_util';
-import {expect} from '@angular/platform-browser/testing/src/matchers';
+import {dispatchEvent} from '@angular/private/testing';
+import {expect} from '@angular/private/testing/matchers';
 
 @Component({
   selector: 'simple-comp',
@@ -634,7 +634,7 @@ describe('ComponentFixture with zoneless', () => {
     expect(() => fixture.detectChanges()).toThrowError(/ExpressionChanged/);
   });
 
-  it('runs change detection when autoDetect is false', () => {
+  it('disallows autoDetect: false', () => {
     @Component({
       template: '{{thing()}}',
     })
@@ -643,9 +643,6 @@ describe('ComponentFixture with zoneless', () => {
     }
 
     const fixture = TestBed.createComponent(App);
-    fixture.autoDetectChanges(false);
-    fixture.componentInstance.thing.set(2);
-    fixture.detectChanges();
-    expect(fixture.nativeElement.innerText).toBe('2');
+    expect(() => fixture.autoDetectChanges(false)).toThrow();
   });
 });
