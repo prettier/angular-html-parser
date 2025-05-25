@@ -169,7 +169,7 @@ describe('HtmlLexer', () => {
 
     it('should report missing end doctype', () => {
       expect(tokenizeAndHumanizeErrors('<!')).toEqual([
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.RAW_TEXT, 'Unexpected character "EOF"', '0:2'],
         // [TokenType.DOC_TYPE, 'Unexpected character "EOF"', '0:2'],
       ]);
@@ -375,7 +375,7 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.COMPONENT_OPEN_START, 'MyComp', '', 'script'],
           [TokenType.COMPONENT_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 't\ne\ns\nt'],
           // [TokenType.RAW_TEXT, 't\ne\ns\nt'],
           [TokenType.COMPONENT_CLOSE, 'MyComp', '', 'script'],
@@ -389,7 +389,7 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.COMPONENT_OPEN_START, 'MyComp', '', 'title'],
           [TokenType.COMPONENT_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 't\ne\ns\nt'],
           // [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
           [TokenType.COMPONENT_CLOSE, 'MyComp', '', 'title'],
@@ -602,7 +602,7 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>t\ne\rs\r\nt</title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 't\ne\ns\nt'],
           // [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
           [TokenType.TAG_CLOSE, '', 'title'],
@@ -614,7 +614,7 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>&amp;</title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, ''],
           [TokenType.ENCODED_ENTITY, '&', '&amp;'],
           [TokenType.TEXT, ''],
@@ -630,7 +630,7 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>a<div></title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 'a'],
           [TokenType.TAG_OPEN_START, '', 'div'],
           [TokenType.TAG_OPEN_END],
@@ -644,7 +644,7 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeParts(`<title>a</test></title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 'a'],
           [TokenType.TAG_CLOSE, '', 'test'],
           // [TokenType.ESCAPABLE_RAW_TEXT, 'a</test>'],
@@ -657,7 +657,7 @@ describe('HtmlLexer', () => {
         expect(tokenizeAndHumanizeSourceSpans(`<title>a</title>`)).toEqual([
           [TokenType.TAG_OPEN_START, '<title'],
           [TokenType.TAG_OPEN_END, '>'],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 'a'],
           // [TokenType.ESCAPABLE_RAW_TEXT, 'a'],
           [TokenType.TAG_CLOSE, '</title>'],
@@ -1294,7 +1294,7 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.TAG_OPEN_START, '', 'script'],
           [TokenType.TAG_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
           // [TokenType.RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
           [TokenType.TAG_CLOSE, '', 'script'],
@@ -1310,7 +1310,7 @@ describe('HtmlLexer', () => {
         ).toEqual([
           [TokenType.TAG_OPEN_START, '', 'title'],
           [TokenType.TAG_OPEN_END],
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
           // [TokenType.ESCAPABLE_RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
           [TokenType.TAG_CLOSE, '', 'title'],
@@ -2827,7 +2827,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>t\ne\rs\r\nt</script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 't\ne\ns\nt'],
         // [TokenType.RAW_TEXT, 't\ne\ns\nt'],
         [TokenType.TAG_CLOSE, '', 'script'],
@@ -2839,7 +2839,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>&amp;</SCRIPT>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, ''],
         [TokenType.ENCODED_ENTITY, '&', '&amp;'],
         [TokenType.TEXT, ''],
@@ -2854,7 +2854,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>a<div></script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'a'],
         [TokenType.TAG_OPEN_START, '', 'div'],
         [TokenType.TAG_OPEN_END],
@@ -2868,7 +2868,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<script>a</test></script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'a'],
         [TokenType.TAG_CLOSE, '', 'test'],
         // [TokenType.RAW_TEXT, 'a</test>'],
@@ -2891,7 +2891,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeSourceSpans(`<script>a</script>`)).toEqual([
         [TokenType.TAG_OPEN_START, '<script'],
         [TokenType.TAG_OPEN_END, '>'],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'a'],
         // [TokenType.RAW_TEXT, 'a'],
         [TokenType.TAG_CLOSE, '</script>'],
@@ -2905,7 +2905,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>t\ne\rs\r\nt</title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 't\ne\ns\nt'],
         // [TokenType.ESCAPABLE_RAW_TEXT, 't\ne\ns\nt'],
         [TokenType.TAG_CLOSE, '', 'title'],
@@ -2917,11 +2917,11 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>&amp;</title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, ''],
         // [TokenType.ESCAPABLE_RAW_TEXT, ''],
         [TokenType.ENCODED_ENTITY, '&', '&amp;'],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, ''],
         // [TokenType.ESCAPABLE_RAW_TEXT, ''],
         [TokenType.TAG_CLOSE, '', 'title'],
@@ -2933,7 +2933,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>a<div></title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'a'],
         [TokenType.TAG_OPEN_START, '', 'div'],
         [TokenType.TAG_OPEN_END],
@@ -2947,7 +2947,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeParts(`<title>a</test></title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'a'],
         [TokenType.TAG_CLOSE, '', 'test'],
         // [TokenType.ESCAPABLE_RAW_TEXT, 'a</test>'],
@@ -2960,7 +2960,7 @@ describe('HtmlLexer', () => {
       expect(tokenizeAndHumanizeSourceSpans(`<title>a</title>`)).toEqual([
         [TokenType.TAG_OPEN_START, '<title'],
         [TokenType.TAG_OPEN_END, '>'],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'a'],
         // [TokenType.ESCAPABLE_RAW_TEXT, 'a'],
         [TokenType.TAG_CLOSE, '</title>'],
@@ -3597,7 +3597,7 @@ describe('HtmlLexer', () => {
       ).toEqual([
         [TokenType.TAG_OPEN_START, '', 'script'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
         // [TokenType.RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
         [TokenType.TAG_CLOSE, '', 'script'],
@@ -3613,7 +3613,7 @@ describe('HtmlLexer', () => {
       ).toEqual([
         [TokenType.TAG_OPEN_START, '', 'title'],
         [TokenType.TAG_OPEN_END],
-        // angular-html-parser: division
+        // angular-html-parser: diverge
         [TokenType.TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
         // [TokenType.ESCAPABLE_RAW_TEXT, 'abc\ndef\nghi\tjkl`\'"mno'],
         [TokenType.TAG_CLOSE, '', 'title'],

@@ -49,7 +49,7 @@ describe('HtmlParser', () => {
 
       it('should parse CDATA', () => {
         expect(humanizeDom(parser.parse('<![CDATA[text]]>', 'TestComp'))).toEqual([
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [html.CDATA, 'text', 0, ['text']],
           // [html.Text, 'text', 0, ['text']],
         ]);
@@ -58,7 +58,7 @@ describe('HtmlParser', () => {
       it('should normalize line endings within CDATA', () => {
         const parsed = parser.parse('<![CDATA[ line 1 \r\n line 2 ]]>', 'TestComp');
         expect(humanizeDom(parsed)).toEqual([
-          // angular-html-parser: division
+          // angular-html-parser: diverge
           [html.CDATA, ' line 1 \n line 2 ', 0, [' line 1 \n line 2 ']],
           // [html.Text, ' line 1 \n line 2 ', 0, [' line 1 \n line 2 ']],
         ]);
