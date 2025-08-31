@@ -26,6 +26,10 @@ import {
   ɵTracingService as TracingService,
   ɵTracingSnapshot as TracingSnapshot,
   Optional,
+  ɵAnimationRemovalRegistry as AnimationRemovalRegistry,
+  ɵgetAnimationElementRemovalRegistry as getAnimationElementRemovalRegistry,
+  ɵANIMATIONS_DISABLED as ANIMATIONS_DISABLED,
+  MAX_ANIMATION_TIMEOUT,
 } from '@angular/core';
 
 import {RuntimeErrorCode} from '../errors';
@@ -136,6 +140,7 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
   >();
   private readonly defaultRenderer: Renderer2;
   private readonly platformIsServer: boolean;
+  private registry: AnimationRemovalRegistry;
 
   constructor(
     private readonly eventManager: EventManager,
@@ -146,6 +151,8 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
     @Inject(PLATFORM_ID) readonly platformId: Object,
     readonly ngZone: NgZone,
     @Inject(CSP_NONCE) private readonly nonce: string | null = null,
+    @Inject(ANIMATIONS_DISABLED) private readonly animationDisabled: boolean,
+    @Inject(MAX_ANIMATION_TIMEOUT) private readonly maxAnimationTimeout: number,
     @Inject(TracingService)
     @Optional()
     private readonly tracingService: TracingService<TracingSnapshot> | null = null,
@@ -157,6 +164,8 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
       ngZone,
       this.platformIsServer,
       this.tracingService,
+      (this.registry = getAnimationElementRemovalRegistry()),
+      this.maxAnimationTimeout,
     );
   }
 
@@ -168,7 +177,8 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
     if (
       typeof ngServerMode !== 'undefined' &&
       ngServerMode &&
-      type.encapsulation === ViewEncapsulation.ShadowDom
+      (type.encapsulation === ViewEncapsulation.ShadowDom ||
+        type.encapsulation === ViewEncapsulation.IsolatedShadowDom)
     ) {
       // Domino does not support shadow DOM.
       type = {...type, encapsulation: ViewEncapsulation.Emulated};
@@ -211,12 +221,14 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
             ngZone,
             platformIsServer,
             tracingService,
+            this.registry,
+            this.animationDisabled,
+            this.maxAnimationTimeout,
           );
           break;
         case ViewEncapsulation.ShadowDom:
           return new ShadowDomRenderer(
             eventManager,
-            sharedStylesHost,
             element,
             type,
             doc,
@@ -224,7 +236,24 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
             this.nonce,
             platformIsServer,
             tracingService,
+            this.registry,
+            this.maxAnimationTimeout,
+            sharedStylesHost,
           );
+        case ViewEncapsulation.IsolatedShadowDom:
+          return new ShadowDomRenderer(
+            eventManager,
+            element,
+            type,
+            doc,
+            ngZone,
+            this.nonce,
+            platformIsServer,
+            tracingService,
+            this.registry,
+            this.maxAnimationTimeout,
+          );
+
         default:
           renderer = new NoneEncapsulationDomRenderer(
             eventManager,
@@ -235,6 +264,9 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
             ngZone,
             platformIsServer,
             tracingService,
+            this.registry,
+            this.animationDisabled,
+            this.maxAnimationTimeout,
           );
           break;
       }
@@ -270,9 +302,11 @@ class DefaultDomRenderer2 implements Renderer2 {
   constructor(
     private readonly eventManager: EventManager,
     private readonly doc: Document,
-    private readonly ngZone: NgZone,
+    protected readonly ngZone: NgZone,
     private readonly platformIsServer: boolean,
     private readonly tracingService: TracingService<TracingSnapshot> | null,
+    protected readonly registry: AnimationRemovalRegistry,
+    protected readonly maxAnimationTimeout: number,
   ) {}
 
   destroy(): void {}
@@ -317,6 +351,12 @@ class DefaultDomRenderer2 implements Renderer2 {
   }
 
   removeChild(_parent: any, oldChild: any): void {
+    const {elements} = this.registry;
+    if (elements) {
+      elements.animate(oldChild, () => oldChild.remove(), this.maxAnimationTimeout);
+      return;
+    }
+    // child was removed
     oldChild.remove();
   }
 
@@ -476,6 +516,7 @@ class DefaultDomRenderer2 implements Renderer2 {
 }
 
 const AT_CHARCODE = (() => '@'.charCodeAt(0))();
+
 function checkNoSyntheticProp(name: string, nameKind: string) {
   if (name.charCodeAt(0) === AT_CHARCODE) {
     throw new RuntimeError(
@@ -496,7 +537,6 @@ class ShadowDomRenderer extends DefaultDomRenderer2 {
 
   constructor(
     eventManager: EventManager,
-    private sharedStylesHost: SharedStylesHost,
     private hostEl: any,
     component: RendererType2,
     doc: Document,
@@ -504,10 +544,26 @@ class ShadowDomRenderer extends DefaultDomRenderer2 {
     nonce: string | null,
     platformIsServer: boolean,
     tracingService: TracingService<TracingSnapshot> | null,
+    registry: AnimationRemovalRegistry,
+    maxAnimationTimeout: number,
+    private sharedStylesHost?: SharedStylesHost,
   ) {
-    super(eventManager, doc, ngZone, platformIsServer, tracingService);
+    super(
+      eventManager,
+      doc,
+      ngZone,
+      platformIsServer,
+      tracingService,
+      registry,
+      maxAnimationTimeout,
+    );
     this.shadowRoot = (hostEl as any).attachShadow({mode: 'open'});
-    this.sharedStylesHost.addHost(this.shadowRoot);
+
+    // SharedStylesHost is used to add styles to the shadow root by ShadowDom.
+    // This is optional as it is not used by IsolatedShadowDom.
+    if (this.sharedStylesHost) {
+      this.sharedStylesHost.addHost(this.shadowRoot);
+    }
     let styles = component.styles;
     if (ngDevMode) {
       // We only do this in development, as for production users should not add CSS sourcemaps to components.
@@ -553,24 +609,30 @@ class ShadowDomRenderer extends DefaultDomRenderer2 {
   override appendChild(parent: any, newChild: any): void {
     return super.appendChild(this.nodeOrShadowRoot(parent), newChild);
   }
+
   override insertBefore(parent: any, newChild: any, refChild: any): void {
     return super.insertBefore(this.nodeOrShadowRoot(parent), newChild, refChild);
   }
+
   override removeChild(_parent: any, oldChild: any): void {
     return super.removeChild(null, oldChild);
   }
+
   override parentNode(node: any): any {
     return this.nodeOrShadowRoot(super.parentNode(this.nodeOrShadowRoot(node)));
   }
 
   override destroy() {
-    this.sharedStylesHost.removeHost(this.shadowRoot);
+    if (this.sharedStylesHost) {
+      this.sharedStylesHost.removeHost(this.shadowRoot);
+    }
   }
 }
 
 class NoneEncapsulationDomRenderer extends DefaultDomRenderer2 {
   private readonly styles: string[];
   private readonly styleUrls?: string[];
+  private readonly _animationDisabled: boolean;
 
   constructor(
     eventManager: EventManager,
@@ -581,9 +643,21 @@ class NoneEncapsulationDomRenderer extends DefaultDomRenderer2 {
     ngZone: NgZone,
     platformIsServer: boolean,
     tracingService: TracingService<TracingSnapshot> | null,
+    registry: AnimationRemovalRegistry,
+    animationDisabled: boolean,
+    maxAnimationTimeout: number,
     compId?: string,
   ) {
-    super(eventManager, doc, ngZone, platformIsServer, tracingService);
+    super(
+      eventManager,
+      doc,
+      ngZone,
+      platformIsServer,
+      tracingService,
+      registry,
+      maxAnimationTimeout,
+    );
+    this._animationDisabled = animationDisabled;
     let styles = component.styles;
     if (ngDevMode) {
       // We only do this in development, as for production users should not add CSS sourcemaps to components.
@@ -604,6 +678,30 @@ class NoneEncapsulationDomRenderer extends DefaultDomRenderer2 {
       return;
     }
 
+    // In the case that animate.leave animations are used, depending on
+    // app structure, a race condition happens with the destroy call and
+    // the animation being added to the element. Either the DOM node is
+    // immediately removed or the animate instruction is called right
+    // as the styles are pruned, causing the animated element to sit
+    // until the timeout removes it. This delays the pruning of style
+    // sheets for a few seconds to avoid this problem.
+    //
+    // TODO(thePunderWoman): replace this with a more targeted delay on only
+    // cases where we know there's a leave animation, that the leave animation
+    // is actually running, and to instead use the longest animation value
+    // for the timeout duration.
+    if (
+      (typeof ngServerMode === 'undefined' || !ngServerMode) &&
+      !this._animationDisabled &&
+      this.registry.elements
+    ) {
+      this.ngZone.runOutsideAngular(() => {
+        setTimeout(() => {
+          this.sharedStylesHost.removeStyles(this.styles, this.styleUrls);
+        }, this.maxAnimationTimeout);
+      });
+      return;
+    }
     this.sharedStylesHost.removeStyles(this.styles, this.styleUrls);
   }
 }
@@ -622,6 +720,9 @@ class EmulatedEncapsulationDomRenderer2 extends NoneEncapsulationDomRenderer {
     ngZone: NgZone,
     platformIsServer: boolean,
     tracingService: TracingService<TracingSnapshot> | null,
+    registry: AnimationRemovalRegistry,
+    animationDisabled: boolean,
+    maxAnimationTimeout: number,
   ) {
     const compId = appId + '-' + component.id;
     super(
@@ -633,6 +734,9 @@ class EmulatedEncapsulationDomRenderer2 extends NoneEncapsulationDomRenderer {
       ngZone,
       platformIsServer,
       tracingService,
+      registry,
+      animationDisabled,
+      maxAnimationTimeout,
       compId,
     );
     this.contentAttr = shimContentAttribute(compId);

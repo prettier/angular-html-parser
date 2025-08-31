@@ -1,48 +1,29 @@
-load("//tools:defaults.bzl", "jasmine_node_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "jasmine_test", "ts_project")
 
 ts_project(
     name = "legacy_lib",
     testonly = True,
     srcs = glob(["*.ts"]),
-    interop_deps = [
+    deps = [
+        "//:node_modules/typescript",
         "//packages/compiler",
         "//packages/compiler-cli/src/ngtsc/core:api",
         "//packages/compiler-cli/src/ngtsc/diagnostics",
-    ],
-    deps = [
-        "//:node_modules/typescript",
-        "//packages/language-service/src:src_rjs",
-        "//packages/language-service/src/utils:utils_rjs",
+        "//packages/language-service/src",
+        "//packages/language-service/src/utils",
     ],
 )
 
-filegroup(
-    name = "package_types",
-    srcs = [
-        "//packages/common:common_rjs",
-        "//packages/core:core_rjs",
-        "//packages/forms:forms_rjs",
-    ],
-    output_group = "types",
-)
-
-jasmine_node_test(
+jasmine_test(
     name = "legacy",
     data = [
-        # Note that we used to depend on the npm_package of common, core, and
-        # forms, but this is no longer the case. We did it for View Engine
-        # because we wanted to load the flat dts, which is only available in the
-        # npm_package. Ivy does not currently produce flat dts, so we might
-        # as well just depend on the outputs of ng_module.
-        "//packages/common",
-        "//packages/forms",
-        ":package_types",
-        ":project",
-    ],
-    deps = [
         ":legacy_lib",
+        ":project",
+        "//packages/common:common_types",
+        "//packages/core:core_types",
+        "//packages/forms:forms_types",
     ],
+    shard_count = 4,
 )
 
 filegroup(

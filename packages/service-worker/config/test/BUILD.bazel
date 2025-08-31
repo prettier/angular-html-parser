@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "ts_project")
 
 ts_project(
     name = "test_lib",
@@ -8,15 +7,14 @@ ts_project(
         ["**/*.ts"],
     ),
     deps = [
-        "//packages/service-worker/config:config_rjs",
-        "//packages/service-worker/config/testing:testing_rjs",
+        "//packages/service-worker/config",
+        "//packages/service-worker/config/testing",
     ],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":test_lib",
         "//packages/service-worker/config",
         "//packages/service-worker/config/testing",

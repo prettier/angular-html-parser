@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "generate_api_docs")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "generate_api_docs", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -8,16 +7,14 @@ exports_files(["package.json"])
 ng_project(
     name = "testing",
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
-        "//packages/compiler",
-    ],
     deps = [
-        "//packages/common:common_rjs",
-        "//packages/core:core_rjs",
-        "//packages/core/testing:testing_rjs",
-        "//packages/platform-browser:platform-browser_rjs",
-        "//packages/platform-browser-dynamic:platform-browser-dynamic_rjs",
-        "//packages/platform-browser/testing:testing_rjs",
+        "//packages/common",
+        "//packages/compiler",
+        "//packages/core",
+        "//packages/core/testing",
+        "//packages/platform-browser",
+        "//packages/platform-browser-dynamic",
+        "//packages/platform-browser/testing",
     ],
 )
 

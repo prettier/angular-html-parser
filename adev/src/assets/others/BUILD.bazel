@@ -1,4 +1,4 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "copy_to_bin")
+load("//adev/shared-docs:defaults.bzl", "copy_to_bin")
 
 exports_files(
     glob(["*"]),

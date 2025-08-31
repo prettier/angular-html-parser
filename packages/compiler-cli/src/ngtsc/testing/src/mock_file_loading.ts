@@ -40,10 +40,12 @@ class CachedFolder {
 }
 
 const typescriptFolder = new CachedFolder(() =>
-  loadFolder(resolveFromRunfiles('npm/node_modules/typescript')),
+  loadFolder(resolveFromRunfiles('_main/node_modules/typescript')),
 );
 const angularFolder = new CachedFolder(loadAngularFolder);
-const rxjsFolder = new CachedFolder(() => loadFolder(resolveFromRunfiles('npm/node_modules/rxjs')));
+const rxjsFolder = new CachedFolder(() =>
+  loadFolder(resolveFromRunfiles('_main/node_modules/rxjs')),
+);
 
 export function loadStandardTestFiles({
   fakeCommon = false,
@@ -72,7 +74,7 @@ export function loadStandardTestFiles({
 export function loadTsLib(fs: FileSystem, basePath: string = '/') {
   loadTestDirectory(
     fs,
-    resolveFromRunfiles('npm/node_modules/tslib'),
+    resolveFromRunfiles('_main/node_modules/tslib'),
     fs.resolve(basePath, 'node_modules/tslib'),
   );
 }
@@ -80,7 +82,7 @@ export function loadTsLib(fs: FileSystem, basePath: string = '/') {
 export function loadFakeCommon(fs: FileSystem, basePath: string = '/') {
   loadTestDirectory(
     fs,
-    resolveFromRunfiles('angular/packages/compiler-cli/src/ngtsc/testing/fake_common/npm_package'),
+    resolveFromRunfiles('_main/packages/compiler-cli/src/ngtsc/testing/fake_common/npm_package'),
     fs.resolve(basePath, 'node_modules/@angular/common'),
   );
 }
@@ -88,7 +90,7 @@ export function loadFakeCommon(fs: FileSystem, basePath: string = '/') {
 export function loadAngularCore(fs: FileSystem, basePath: string = '/') {
   loadTestDirectory(
     fs,
-    resolveFromRunfiles('angular/packages/core/npm_package'),
+    resolveFromRunfiles('_main/packages/core/npm_package'),
     fs.resolve(basePath, 'node_modules/@angular/core'),
   );
 }

@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {isDevMode} from '@angular/core';
 import {NavigationItem} from '@angular/docs';
 
 // These 2 imports are expected to be red because they are generated a build time
@@ -15,8 +16,8 @@ import DEFERRABLE_VIEWS_TUTORIAL_NAV_DATA from '../../src/assets/tutorials/defer
 import ERRORS_NAV_DATA from '../../src/assets/content/reference/errors/routes.json';
 import EXT_DIAGNOSTICS_NAV_DATA from '../../src/assets/content/reference/extended-diagnostics/routes.json';
 
-import {DefaultPage} from './core/enums/pages';
 import {getApiNavigationItems} from './features/references/helpers/manifest.helper';
+import {DEFAULT_PAGES} from './core/constants/pages';
 
 interface SubNavigationData {
   docs: NavigationItem[];
@@ -325,6 +326,7 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
       },
       {
         label: 'Routing',
+        status: 'updated',
         children: [
           {
             label: 'Overview',
@@ -352,14 +354,62 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             contentPath: 'guide/routing/read-route-state',
           },
           {
+            label: 'Redirecting routes',
+            path: 'guide/routing/redirecting-routes',
+            contentPath: 'guide/routing/redirecting-routes',
+          },
+          {
+            label: 'Control route access with guards',
+            path: 'guide/routing/route-guards',
+            contentPath: 'guide/routing/route-guards',
+          },
+          {
+            label: 'Route data resolvers',
+            path: 'guide/routing/data-resolvers',
+            contentPath: 'guide/routing/data-resolvers',
+          },
+          {
+            label: 'Lifecycle and events',
+            path: 'guide/routing/lifecycle-and-events',
+            contentPath: 'guide/routing/lifecycle-and-events',
+          },
+          {
+            label: 'Testing routing and navigation',
+            path: 'guide/routing/testing',
+            contentPath: 'guide/routing/testing',
+            status: 'new',
+          },
+          {
             label: 'Other routing tasks',
             path: 'guide/routing/common-router-tasks',
             contentPath: 'guide/routing/common-router-tasks',
           },
           {
+            label: 'Creating custom route matches',
+            path: 'guide/routing/routing-with-urlmatcher',
+            contentPath: 'guide/routing/routing-with-urlmatcher',
+          },
+          {
+            label: 'Rendering strategies',
+            path: 'guide/routing/rendering-strategies',
+            contentPath: 'guide/routing/rendering-strategies',
+            status: 'new',
+          },
+          {
+            label: 'Customizing route behavior',
+            path: 'guide/routing/customizing-route-behavior',
+            contentPath: 'guide/routing/customizing-route-behavior',
+            status: 'new',
+          },
+          {
             label: 'Router reference',
             path: 'guide/routing/router-reference',
             contentPath: 'guide/routing/router-reference',
+          },
+          {
+            label: 'Route transition animations',
+            path: 'guide/routing/route-transition-animations',
+            contentPath: 'guide/routing/route-transition-animations',
           },
         ],
       },
@@ -415,6 +465,11 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             label: 'Making requests',
             path: 'guide/http/making-requests',
             contentPath: 'guide/http/making-requests',
+          },
+          {
+            label: 'Reactive data fetching with httpResource',
+            path: 'guide/http/http-resource',
+            contentPath: 'guide/http/http-resource',
           },
           {
             label: 'Intercepting requests and responses',
@@ -490,6 +545,12 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             label: 'Testing pipes',
             path: 'guide/testing/pipes',
             contentPath: 'guide/testing/pipes',
+          },
+          {
+            label: 'Testing routing and navigation',
+            path: 'guide/routing/testing',
+            contentPath: 'guide/routing/testing',
+            status: 'new',
           },
           {
             label: 'Debugging tests',
@@ -590,16 +651,23 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
       },
       {
         label: 'Animations',
+        status: 'updated',
         children: [
           {
-            label: 'Animating your content',
+            label: 'Enter and Leave animations',
+            path: 'guide/animations',
+            contentPath: 'guide/animations/enter-and-leave',
+            status: 'new',
+          },
+          {
+            label: 'Complex Animations with CSS',
             path: 'guide/animations/css',
             contentPath: 'guide/animations/css',
           },
           {
             label: 'Route transition animations',
-            path: 'guide/animations/route-animations',
-            contentPath: 'guide/animations/route-animations',
+            path: 'guide/routing/route-transition-animations',
+            contentPath: 'guide/routing/route-transition-animations',
           },
         ],
       },
@@ -612,11 +680,27 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
   },
   {
     label: 'Build with AI',
+    status: 'new',
     children: [
       {
         label: 'Get Started',
         path: 'ai',
         contentPath: 'ai/overview',
+      },
+      {
+        label: 'LLM prompts and AI IDE setup',
+        path: 'ai/develop-with-ai',
+        contentPath: 'ai/develop-with-ai',
+      },
+      {
+        label: 'Design Patterns',
+        path: 'ai/design-patterns',
+        contentPath: 'ai/design-patterns',
+      },
+      {
+        label: 'Angular CLI MCP Server setup',
+        path: 'ai/mcp',
+        contentPath: 'ai/mcp-server-setup',
       },
     ],
   },
@@ -730,8 +814,35 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
       },
       {
         label: 'DevTools',
-        path: 'tools/devtools',
-        contentPath: 'tools/devtools',
+        children: [
+          {
+            label: 'Overview',
+            path: 'tools/devtools',
+            contentPath: 'tools/devtools/overview',
+          },
+          {
+            label: 'Components',
+            path: 'tools/devtools/component',
+            contentPath: 'tools/devtools/component',
+          },
+          {
+            label: 'Profiler',
+            path: 'tools/devtools/profiler',
+            contentPath: 'tools/devtools/profiler',
+          },
+          // TODO: create those guides
+          // The signal debugging docs should also be added to the signal section
+          // {
+          //   label: 'Signals',
+          //   path: 'tools/devtools/signals',
+          //   contentPath: 'tools/devtools/signals',
+          // },
+          // {
+          //   label: 'Router',
+          //   path: 'tools/devtools/router',
+          //   contentPath: 'tools/devtools/router',
+          // }
+        ],
       },
       {
         label: 'Language Service',
@@ -747,6 +858,7 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         label: 'Style Guide',
         path: 'style-guide',
         contentPath: 'best-practices/style-guide',
+        status: 'updated',
       },
       {
         label: 'Security',
@@ -757,6 +869,11 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         label: 'Accessibility',
         path: 'best-practices/a11y',
         contentPath: 'best-practices/a11y',
+      },
+      {
+        label: 'Unhandled errors in Angular',
+        path: 'best-practices/error-handling',
+        contentPath: 'best-practices/error-handling',
       },
       {
         label: 'Performance',
@@ -781,6 +898,11 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             path: 'best-practices/skipping-subtrees',
             contentPath: 'best-practices/runtime-performance/skipping-subtrees',
           },
+          {
+            label: 'Profiling with the Chrome DevTools',
+            path: 'best-practices/profiling-with-chrome-devtools',
+            contentPath: 'best-practices/runtime-performance/profiling-with-chrome-devtools',
+          },
           {label: 'Zoneless', path: 'guide/zoneless', contentPath: 'guide/zoneless'},
         ],
       },
@@ -800,26 +922,26 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         contentPath: 'guide/ngmodules/overview',
       },
       {
-        label: 'Animations',
+        label: 'Legacy Animations',
         children: [
           {
             label: 'Overview',
-            path: 'guide/animations',
+            path: 'guide/legacy-animations',
             contentPath: 'guide/animations/overview',
           },
           {
             label: 'Transition and Triggers',
-            path: 'guide/animations/transition-and-triggers',
+            path: 'guide/legacy-animations/transition-and-triggers',
             contentPath: 'guide/animations/transition-and-triggers',
           },
           {
             label: 'Complex Sequences',
-            path: 'guide/animations/complex-sequences',
+            path: 'guide/legacy-animations/complex-sequences',
             contentPath: 'guide/animations/complex-sequences',
           },
           {
             label: 'Reusable Animations',
-            path: 'guide/animations/reusable-animations',
+            path: 'guide/legacy-animations/reusable-animations',
             contentPath: 'guide/animations/reusable-animations',
           },
           {
@@ -841,6 +963,11 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             label: 'Component output interop',
             path: 'ecosystem/rxjs-interop/output-interop',
             contentPath: 'ecosystem/rxjs-interop/output-interop',
+          },
+          {
+            label: 'Unsubscribing with takeUntilDestroyed',
+            path: 'ecosystem/rxjs-interop/take-until-destroyed',
+            contentPath: 'ecosystem/rxjs-interop/take-until-destroyed',
           },
         ],
       },
@@ -895,6 +1022,12 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         contentPath: 'ecosystem/custom-build-pipeline',
       },
       {
+        label: 'Tailwind',
+        path: 'guide/tailwind',
+        contentPath: 'guide/tailwind',
+        status: 'new',
+      },
+      {
         label: 'Angular Fire',
         path: 'https://github.com/angular/angularfire#readme',
       },
@@ -920,6 +1053,20 @@ const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
       },
     ],
   },
+  ...(isDevMode()
+    ? [
+        {
+          label: 'Adev Dev Guide',
+          children: [
+            {
+              label: 'Kitchen Sink',
+              path: 'kitchen-sink',
+              contentPath: 'kitchen-sink',
+            },
+          ],
+        },
+      ]
+    : []),
 ];
 
 export const TUTORIALS_SUB_NAVIGATION_DATA: NavigationItem[] = [
@@ -927,7 +1074,7 @@ export const TUTORIALS_SUB_NAVIGATION_DATA: NavigationItem[] = [
   LEARN_ANGULAR_TUTORIAL_NAV_DATA,
   DEFERRABLE_VIEWS_TUTORIAL_NAV_DATA,
   {
-    path: DefaultPage.TUTORIALS,
+    path: DEFAULT_PAGES.TUTORIALS,
     contentPath: 'tutorials/home',
     label: 'Tutorials',
   },
@@ -1054,6 +1201,10 @@ const REFERENCE_SUB_NAVIGATION_DATA: NavigationItem[] = [
           {
             label: 'Overview',
             path: 'cli/generate',
+          },
+          {
+            label: 'ai-config',
+            path: 'cli/generate/ai-config',
           },
           {
             label: 'app-shell',
@@ -1272,6 +1423,12 @@ const REFERENCE_SUB_NAVIGATION_DATA: NavigationItem[] = [
         label: 'Self-closing tags',
         path: 'reference/migrations/self-closing-tags',
         contentPath: 'reference/migrations/self-closing-tags',
+      },
+      {
+        label: 'NgClass to Class',
+        path: 'reference/migrations/ngclass-to-class',
+        contentPath: 'reference/migrations/ngclass-to-class',
+        status: 'new',
       },
     ],
   },

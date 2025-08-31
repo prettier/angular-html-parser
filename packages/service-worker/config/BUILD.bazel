@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -18,5 +18,6 @@ filegroup(
 ng_project(
     name = "config",
     srcs = [":sources"],
-    interop_deps = ["//packages/core"],
+    deps = [
+    ],
 )

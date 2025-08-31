@@ -94,16 +94,16 @@ In your IDE:
 1. Next, open  `first-app/src/app/app.ts`.
 1. In `app.ts`, in the `@Component` definition, replace the `template` line with this code to change the text in the app component.
 
-    <docs-code header="Replace in src/app/app.ts" path="adev/src/content/tutorials/first-app/steps/02-Home/src/app/app.ts" visibleLines="[7,9]"/>
+    <docs-code header="Replace in src/app/app.ts" path="adev/src/content/tutorials/first-app/steps/02-Home/src/app/app.ts" visibleLines="[6,8]"/>
 
 1. In `app.ts`, in the `App` class definition, replace the `title` line with this code to change the component title.
 
-    <docs-code header="Replace in src/app/app.ts" path="adev/src/content/tutorials/first-app/steps/02-Home/src/app/app.ts" visibleLines="[12,14]"/>
+    <docs-code header="Replace in src/app/app.ts" path="adev/src/content/tutorials/first-app/steps/02-Home/src/app/app.ts" visibleLines="[11,13]"/>
 
     Then, save the changes you made to `app.ts`.
 
 1. If you stopped the `ng serve` command from step 1, in the **Terminal** window of your IDE, run `ng serve` again.
-1. Open your browser and navigate to `localhost:4200` and confirm that the app builds without error and displays *Hello world* in the title and body of your app:
+1. Open your browser and navigate to `localhost:4200` and confirm that the app builds without error and displays *Homes* in the title and *Hello world* in the body of your app:
     <img alt="browser frame of page displaying the text 'Hello World'" src="assets/images/tutorials/first-app/homes-app-lesson-01-browser.png">
 </docs-step>
 

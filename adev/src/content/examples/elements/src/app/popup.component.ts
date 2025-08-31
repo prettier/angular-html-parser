@@ -1,5 +1,5 @@
 // #docregion
-import {Component, EventEmitter, HostBinding, Input, Output} from '@angular/core';
+import {Component, computed, input, output} from '@angular/core';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 
 @Component({
@@ -37,21 +37,13 @@ import {animate, state, style, transition, trigger} from '@angular/animations';
       }
     `,
   ],
+  host: {
+    '[@state]': 'state()',
+  },
 })
 export class PopupComponent {
-  @HostBinding('@state')
-  state: 'opened' | 'closed' = 'closed';
+  readonly message = input('');
+  readonly closed = output<void>();
 
-  @Input()
-  get message(): string {
-    return this._message;
-  }
-  set message(message: string) {
-    this._message = message;
-    this.state = 'opened';
-  }
-  private _message = '';
-
-  @Output()
-  closed = new EventEmitter<void>();
+  readonly state = computed(() => (this.message() ? 'opened' : 'closed'));
 }

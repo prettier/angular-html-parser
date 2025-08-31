@@ -38,6 +38,35 @@
   margin-left: 18px;
 }
 
+.show-signal-btn {
+  position: relative;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dynamic-blue-02);
+  color: var(--septenary-contrast);
+  vertical-align: middle;
+  padding: 0;
+  top: -1px;
+  margin-left: 0.25rem;
+  cursor: pointer;
+
+  &:hover {
+    background: color-mix(in srgb, var(--dynamic-blue-02) 80%, var(--full-contrast) 20%);
+  }
+
+  mat-icon {
+    width: 11px;
+    height: 11px;
+    font-size: 11px;
+    top: 0;
+  }
+}
+
 .property-list {
   margin: 5px 5px 5px 15px;
   mat-tree-node {

@@ -1,3 +1,4 @@
+load("//adev/shared-docs:defaults.bzl", "js_library")
 load("//adev/shared-docs:index.bzl", "generate_guides")
 
 generate_guides(
@@ -5,6 +6,7 @@ generate_guides(
     srcs = glob([
         "*.md",
     ]),
+    api_manifest = "//adev/src/assets:docs_api_manifest",
     data = [
         "//adev/src/assets/images:components.svg",
         "//adev/src/assets/images:dependency_injection.svg",
@@ -16,5 +18,11 @@ generate_guides(
         "//adev/src/assets/images:what_is_angular.svg",
     ],
     mermaid_blocks = True,
+    visibility = ["//adev:__subpackages__"],
+)
+
+js_library(
+    name = "guide_files",
+    srcs = glob(["**/*.md"]),
     visibility = ["//adev:__subpackages__"],
 )

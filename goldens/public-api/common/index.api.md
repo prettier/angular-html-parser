@@ -8,6 +8,7 @@ import { ChangeDetectorRef } from '@angular/core';
 import { DoCheck } from '@angular/core';
 import { DOCUMENT } from '@angular/core';
 import { ElementRef } from '@angular/core';
+import { EnvironmentInjector } from '@angular/core';
 import * as i0 from '@angular/core';
 import { ɵIMAGE_CONFIG as IMAGE_CONFIG } from '@angular/core';
 import { ɵImageConfig as ImageConfig } from '@angular/core';
@@ -16,7 +17,6 @@ import { Injector } from '@angular/core';
 import { IterableDiffers } from '@angular/core';
 import { KeyValueDiffers } from '@angular/core';
 import { NgIterable } from '@angular/core';
-import { NgModuleFactory } from '@angular/core';
 import { Observable } from 'rxjs';
 import { OnChanges } from '@angular/core';
 import { OnDestroy } from '@angular/core';
@@ -32,6 +32,16 @@ import { TrackByFunction } from '@angular/core';
 import { Type } from '@angular/core';
 import { Version } from '@angular/core';
 import { ViewContainerRef } from '@angular/core';
+import { ɵNavigateEvent } from '@angular/core';
+import { ɵNavigation } from '@angular/core';
+import { ɵNavigationCurrentEntryChangeEvent } from '@angular/core';
+import { ɵNavigationHistoryEntry } from '@angular/core';
+import { ɵNavigationNavigateOptions } from '@angular/core';
+import { ɵNavigationOptions } from '@angular/core';
+import { ɵNavigationReloadOptions } from '@angular/core';
+import { ɵNavigationResult } from '@angular/core';
+import { ɵNavigationTransition } from '@angular/core';
+import { ɵNavigationUpdateCurrentEntryOptions } from '@angular/core';
 
 // @public
 export const APP_BASE_HREF: InjectionToken<string>;
@@ -495,18 +505,18 @@ export class NgComponentOutlet<T = any> implements OnChanges, DoCheck, OnDestroy
     // (undocumented)
     ngComponentOutletContent?: any[][];
     // (undocumented)
+    ngComponentOutletEnvironmentInjector?: EnvironmentInjector;
+    // (undocumented)
     ngComponentOutletInjector?: Injector;
     // (undocumented)
     ngComponentOutletInputs?: Record<string, unknown>;
     // (undocumented)
     ngComponentOutletNgModule?: Type<any>;
-    // @deprecated (undocumented)
-    ngComponentOutletNgModuleFactory?: NgModuleFactory<any>;
     ngDoCheck(): void;
     ngOnChanges(changes: SimpleChanges): void;
     ngOnDestroy(): void;
     // (undocumented)
-    static ɵdir: i0.ɵɵDirectiveDeclaration<NgComponentOutlet<any>, "[ngComponentOutlet]", ["ngComponentOutlet"], { "ngComponentOutlet": { "alias": "ngComponentOutlet"; "required": false; }; "ngComponentOutletInputs": { "alias": "ngComponentOutletInputs"; "required": false; }; "ngComponentOutletInjector": { "alias": "ngComponentOutletInjector"; "required": false; }; "ngComponentOutletContent": { "alias": "ngComponentOutletContent"; "required": false; }; "ngComponentOutletNgModule": { "alias": "ngComponentOutletNgModule"; "required": false; }; "ngComponentOutletNgModuleFactory": { "alias": "ngComponentOutletNgModuleFactory"; "required": false; }; }, {}, never, never, true, never>;
+    static ɵdir: i0.ɵɵDirectiveDeclaration<NgComponentOutlet<any>, "[ngComponentOutlet]", ["ngComponentOutlet"], { "ngComponentOutlet": { "alias": "ngComponentOutlet"; "required": false; }; "ngComponentOutletInputs": { "alias": "ngComponentOutletInputs"; "required": false; }; "ngComponentOutletInjector": { "alias": "ngComponentOutletInjector"; "required": false; }; "ngComponentOutletEnvironmentInjector": { "alias": "ngComponentOutletEnvironmentInjector"; "required": false; }; "ngComponentOutletContent": { "alias": "ngComponentOutletContent"; "required": false; }; "ngComponentOutletNgModule": { "alias": "ngComponentOutletNgModule"; "required": false; }; }, {}, never, never, true, never>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<NgComponentOutlet<any>, never>;
 }
@@ -603,6 +613,7 @@ export abstract class NgLocalization {
 // @public
 export class NgOptimizedImage implements OnInit, OnChanges {
     constructor();
+    decoding?: 'sync' | 'async' | 'auto';
     disableOptimizedSrcset: boolean;
     fill: boolean;
     protected generatePlaceholder(placeholderInput: string | boolean): string | boolean | null;
@@ -636,7 +647,7 @@ export class NgOptimizedImage implements OnInit, OnChanges {
     sizes?: string;
     width: number | undefined;
     // (undocumented)
-    static ɵdir: i0.ɵɵDirectiveDeclaration<NgOptimizedImage, "img[ngSrc]", never, { "ngSrc": { "alias": "ngSrc"; "required": true; }; "ngSrcset": { "alias": "ngSrcset"; "required": false; }; "sizes": { "alias": "sizes"; "required": false; }; "width": { "alias": "width"; "required": false; }; "height": { "alias": "height"; "required": false; }; "loading": { "alias": "loading"; "required": false; }; "priority": { "alias": "priority"; "required": false; }; "loaderParams": { "alias": "loaderParams"; "required": false; }; "disableOptimizedSrcset": { "alias": "disableOptimizedSrcset"; "required": false; }; "fill": { "alias": "fill"; "required": false; }; "placeholder": { "alias": "placeholder"; "required": false; }; "placeholderConfig": { "alias": "placeholderConfig"; "required": false; }; "src": { "alias": "src"; "required": false; }; "srcset": { "alias": "srcset"; "required": false; }; }, {}, never, never, true, never>;
+    static ɵdir: i0.ɵɵDirectiveDeclaration<NgOptimizedImage, "img[ngSrc]", never, { "ngSrc": { "alias": "ngSrc"; "required": true; }; "ngSrcset": { "alias": "ngSrcset"; "required": false; }; "sizes": { "alias": "sizes"; "required": false; }; "width": { "alias": "width"; "required": false; }; "height": { "alias": "height"; "required": false; }; "decoding": { "alias": "decoding"; "required": false; }; "loading": { "alias": "loading"; "required": false; }; "priority": { "alias": "priority"; "required": false; }; "loaderParams": { "alias": "loaderParams"; "required": false; }; "disableOptimizedSrcset": { "alias": "disableOptimizedSrcset"; "required": false; }; "fill": { "alias": "fill"; "required": false; }; "placeholder": { "alias": "placeholder"; "required": false; }; "placeholderConfig": { "alias": "placeholderConfig"; "required": false; }; "src": { "alias": "src"; "required": false; }; "srcset": { "alias": "srcset"; "required": false; }; }, {}, never, never, true, never>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<NgOptimizedImage, never>;
 }
@@ -839,6 +850,50 @@ export abstract class PlatformLocation {
     static ɵfac: i0.ɵɵFactoryDeclaration<PlatformLocation, never>;
     // (undocumented)
     static ɵprov: i0.ɵɵInjectableDeclaration<PlatformLocation>;
+}
+
+// @public
+export abstract class PlatformNavigation implements ɵNavigation {
+    // (undocumented)
+    abstract addEventListener(type: unknown, listener: unknown, options?: unknown): void;
+    // (undocumented)
+    abstract back(options?: ɵNavigationOptions | undefined): ɵNavigationResult;
+    // (undocumented)
+    abstract canGoBack: boolean;
+    // (undocumented)
+    abstract canGoForward: boolean;
+    // (undocumented)
+    abstract currentEntry: ɵNavigationHistoryEntry | null;
+    // (undocumented)
+    abstract dispatchEvent(event: Event): boolean;
+    // (undocumented)
+    abstract entries(): ɵNavigationHistoryEntry[];
+    // (undocumented)
+    abstract forward(options?: ɵNavigationOptions | undefined): ɵNavigationResult;
+    // (undocumented)
+    abstract navigate(url: string, options?: ɵNavigationNavigateOptions | undefined): ɵNavigationResult;
+    // (undocumented)
+    abstract oncurrententrychange: ((this: ɵNavigation, ev: ɵNavigationCurrentEntryChangeEvent) => any) | null;
+    // (undocumented)
+    abstract onnavigate: ((this: ɵNavigation, ev: ɵNavigateEvent) => any) | null;
+    // (undocumented)
+    abstract onnavigateerror: ((this: ɵNavigation, ev: ErrorEvent) => any) | null;
+    // (undocumented)
+    abstract onnavigatesuccess: ((this: ɵNavigation, ev: Event) => any) | null;
+    // (undocumented)
+    abstract reload(options?: ɵNavigationReloadOptions | undefined): ɵNavigationResult;
+    // (undocumented)
+    abstract removeEventListener(type: unknown, listener: unknown, options?: unknown): void;
+    // (undocumented)
+    abstract transition: ɵNavigationTransition | null;
+    // (undocumented)
+    abstract traverseTo(key: string, options?: ɵNavigationOptions | undefined): ɵNavigationResult;
+    // (undocumented)
+    abstract updateCurrentEntry(options: ɵNavigationUpdateCurrentEntryOptions): void;
+    // (undocumented)
+    static ɵfac: i0.ɵɵFactoryDeclaration<PlatformNavigation, never>;
+    // (undocumented)
+    static ɵprov: i0.ɵɵInjectableDeclaration<PlatformNavigation>;
 }
 
 // @public @deprecated

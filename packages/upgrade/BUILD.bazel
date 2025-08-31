@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -8,25 +7,21 @@ ng_project(
     srcs = glob(
         [
             "*.ts",
-            "src/dynamic/src/*.ts",
         ],
     ),
-    interop_deps = [
+    deps = [
+        "//:node_modules/zone.js",
         "//packages/core",
         "//packages/platform-browser-dynamic",
-        "//packages/zone.js/lib:zone_d_ts",
-    ],
-    deps = [
-        "//packages/upgrade/src/common:common_rjs",
+        "//packages/upgrade/src/common",
     ],
 )
 
 ng_package(
-    name = "npm_package",
-    package_name = "@angular/upgrade",
     srcs = [
         "package.json",
     ],
+    package = "@angular/upgrade",
     tags = [
         "release-with-framework",
     ],
@@ -49,8 +44,8 @@ api_golden_test_npm_package(
         ":npm_package",
         "//goldens:public-api",
     ],
-    golden_dir = "angular/goldens/public-api/upgrade",
-    npm_package = "angular/packages/upgrade/npm_package",
+    golden_dir = "goldens/public-api/upgrade",
+    npm_package = "packages/upgrade/npm_package",
 )
 
 filegroup(

@@ -9,6 +9,12 @@ test --flaky_test_attempts=1
 common --@aspect_rules_ts//ts:skipLibCheck=always
 common --@aspect_rules_ts//ts:default_to_tsc_transpiler
 
+# Needed as otherwise `env` of TS actions would be ignored.
+common --incompatible_merge_fixed_and_default_shell_env
+
+# Frozen lockfile
+common --lockfile_mode=error
+
 ###############################
 # Filesystem interactions     #
 ###############################
@@ -35,7 +41,7 @@ test --nolegacy_external_runfiles
 # in Bazel 0.21.0 but turned off again in 0.22.0. Follow
 # https://github.com/bazelbuild/bazel/issues/7026 for more details.
 # This flag is needed to so that the bazel cache is not invalidated
-# when running bazel via `yarn bazel`.
+# when running bazel via `pnpm bazel`.
 # See https://github.com/angular/angular/issues/27514.
 build --incompatible_strict_action_env
 run --incompatible_strict_action_env
@@ -57,11 +63,11 @@ build --enable_runfiles
 # Releases should always be stamped with version control info
 # This command assumes node on the path and is a workaround for
 # https://github.com/bazelbuild/bazel/issues/4802
-build:release --workspace_status_command="yarn -s ng-dev release build-env-stamp --mode=release"
+build:release --workspace_status_command="pnpm --silent ng-dev release build-env-stamp --mode=release"
 build:release --stamp
 
 # Snapshots should also be stamped with version control information.
-build:snapshot-build --workspace_status_command="yarn -s ng-dev release build-env-stamp --mode=snapshot"
+build:snapshot-build --workspace_status_command="pnpm --silent ng-dev release build-env-stamp --mode=snapshot"
 build:snapshot-build --stamp
 
 # Angular DevTools for Firefox releases *cannot* be stamped and `--config snapshot-build-firefox` is a no-op.
@@ -106,9 +112,9 @@ build:remote --cpu=k8
 build:remote --host_cpu=k8
 
 # Toolchain and platform related flags
-build:remote --extra_execution_platforms=@npm//@angular/build-tooling/bazel/remote-execution:platform
-build:remote --host_platform=@npm//@angular/build-tooling/bazel/remote-execution:platform
-build:remote --platforms=@npm//@angular/build-tooling/bazel/remote-execution:platform
+build:remote --extra_execution_platforms=@devinfra//bazel/remote-execution:platform_with_network
+build:remote --host_platform=@devinfra//bazel/remote-execution:platform_with_network
+build:remote --platforms=@devinfra//bazel/remote-execution:platform_with_network
 
 # Remote instance and caching
 build:remote --remote_instance_name=projects/internal-200822/instances/primary_instance
@@ -139,7 +145,7 @@ common --experimental_allow_tags_propagation
 # Disable network access in the sandbox by default. To enable network access
 # for a particular target, use:
 #
-# load("@npm//@angular/build-tooling/bazel/remote-execution:index.bzl", "ENABLE_NETWORK")
+# load("@devinfra//bazel/remote-execution:index.bzl", "ENABLE_NETWORK")
 # my_target(
 #   ...,
 #   exec_properties = ENABLE_NETWORK,   # Enables network in remote exec

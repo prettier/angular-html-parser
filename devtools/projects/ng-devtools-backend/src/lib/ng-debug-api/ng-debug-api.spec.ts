@@ -11,6 +11,9 @@ import {
   ngDebugDependencyInjectionApiIsSupported,
   ngDebugProfilerApiIsSupported,
   ngDebugRoutesApiIsSupported,
+  ngDebugSignalGraphApiIsSupported,
+  ngDebugSignalPropertiesInspectionApiIsSupported,
+  ngDebugTransferStateApiIsSupported,
 } from './ng-debug-api';
 import {Framework} from '../component-tree/core-enums';
 
@@ -111,6 +114,63 @@ describe('ng-debug-api', () => {
       (globalThis as any).ng = fakeNgGlobal(Framework.Wiz);
 
       expect(ngDebugRoutesApiIsSupported()).toBeFalse();
+    });
+  });
+
+  describe('ngDebugSignalGraphIsSupported', () => {
+    beforeEach(() => mockRoot());
+
+    it('should support Signal Graph API with getSignalGraph', () => {
+      (globalThis as any).ng = fakeNgGlobal(Framework.Angular);
+      (globalThis as any).ng.ɵgetSignalGraph = () => {};
+      expect(ngDebugSignalGraphApiIsSupported()).toBeTrue();
+    });
+
+    it('should not support Signal Graph API with no getSignalGraph', () => {
+      (globalThis as any).ng = fakeNgGlobal(Framework.ACX);
+      (globalThis as any).ng.ɵgetSignalGraph = 'not implemented';
+      expect(ngDebugSignalGraphApiIsSupported()).toBeFalse();
+
+      (globalThis as any).ng = fakeNgGlobal(Framework.ACX);
+      (globalThis as any).ng.ɵgetSignalGraph = undefined;
+      expect(ngDebugSignalGraphApiIsSupported()).toBeFalse();
+    });
+  });
+
+  describe('ngDebugTransferStateApiIsSupported', () => {
+    beforeEach(() => mockRoot());
+
+    it('should support Transfer State API with getTransferState', () => {
+      (globalThis as any).ng = fakeNgGlobal(Framework.Angular);
+      (globalThis as any).ng.ɵgetTransferState = () => {};
+      expect(ngDebugTransferStateApiIsSupported()).toBeTrue();
+    });
+
+    it('should not support Transfer State API with no getTransferState', () => {
+      (globalThis as any).ng = fakeNgGlobal(Framework.ACX);
+      (globalThis as any).ng.ɵgetTransferState = 'not implemented';
+      expect(ngDebugTransferStateApiIsSupported()).toBeFalse();
+
+      (globalThis as any).ng = fakeNgGlobal(Framework.ACX);
+      (globalThis as any).ng.ɵgetTransferState = undefined;
+      expect(ngDebugTransferStateApiIsSupported()).toBeFalse();
+    });
+  });
+
+  describe('ngDebugSignalPropertiesInspectionApiIsSupported', () => {
+    beforeEach(() => mockRoot());
+
+    it('should support signal properties inspection API', () => {
+      (globalThis as any).ng = fakeNgGlobal(Framework.Angular);
+      expect(ngDebugSignalPropertiesInspectionApiIsSupported()).toBeTrue();
+    });
+
+    it('should NOT support signal properties inspection API', () => {
+      (globalThis as any).ng = fakeNgGlobal(Framework.Wiz);
+      expect(ngDebugSignalPropertiesInspectionApiIsSupported()).toBeFalse();
+
+      (globalThis as any).ng = fakeNgGlobal(Framework.ACX);
+      expect(ngDebugSignalPropertiesInspectionApiIsSupported()).toBeFalse();
     });
   });
 });

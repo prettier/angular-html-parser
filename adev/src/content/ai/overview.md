@@ -3,6 +3,8 @@
 Build AI-powered apps. Develop faster with AI.
 </docs-decorative-header>
 
+HELPFUL: Looking to get started with building in your favorite AI powered IDE? <br>Check out our [prompt rules and best practices](/ai/develop-with-ai).
+
 Generative AI (GenAI) with large language models (LLMs) enables the creation of sophisticated and engaging application experiences, including personalized content, intelligent recommendations, media generation and comprehension, information summarization, and dynamic functionality.
 
 Developing features like these would have previously required deep domain expertise and significant engineering effort. However, new products and SDKs are lowering the barrier to entry. Angular is well-suited for integrating AI into your web application as a result of:
@@ -11,7 +13,7 @@ Developing features like these would have previously required deep domain expert
 * Strong, signal-based architecture designed to dynamically manage data and state
 * Angular integrates seamlessly with AI SDKs and APIs
 
-This guide demonstrates how you can use [Genkit](/ai#build-ai-powered-applications-with-genkit-and-angular), [Firebase AI Logic](https://firebase.google.com/products/firebase-ai-logic), and the [Gemini API](https://ai.google.dev/) to infuse your Angular apps with AI today. This guide will jumpstart your AI-powered web app development journey by explaining how to begin integrating AI into Angular apps. This guide also shares resources, such as starter kits, example code, and recipes for common workflows, you can use to get up to speed quickly.
+This guide demonstrates how you can use [Genkit](/ai#build-ai-powered-applications-with-genkit-and-angular), [Firebase AI Logic](/ai#build-ai-powered-applications-with-firebase-ai-logic-and-angular), and the [Gemini API](/ai#build-ai-powered-applications-with-gemini-api-and-angular) to infuse your Angular apps with AI today. This guide will jumpstart your AI-powered web app development journey by explaining how to begin integrating AI into Angular apps. This guide also shares resources, such as starter kits, example code, and recipes for common workflows, you can use to get up to speed quickly.
 
 To get started, you should have a basic understanding of Angular. New to Angular? Try our [essentials guide](/essentials) or our [getting started tutorials](/tutorials).
 
@@ -20,20 +22,20 @@ NOTE: While this page features integrations and examples with Google AI products
 ## Getting Started
 Building AI-powered applications is a new and rapidly developing field. It can be challenging to decide where to start and which technologies to choose. The following section provides three options to choose from:
 
-1. *Genkit* gives you the choice of [supported model and interface with a unified API](https://firebase.google.com/docs/genkit) for building full-stack applications. Ideal for applications requiring sophisticated back-end AI logic, such as personalized recommendations.
+1. *Genkit* gives you the choice of [supported model and interface with a unified API](https://genkit.dev) for building full-stack applications. Ideal for applications requiring sophisticated back-end AI logic, such as personalized recommendations.
 
 1. *Firebase AI Logic* provides a secure client-side API for Google's models to build client-side only applications or mobile apps. Best for interactive AI features directly in the browser, such as real-time text analysis or basic chatbots.
 
 1. *Gemini API* enables you to build an application that uses the methods and functionality exposed through the API surface directly, best for full-stack applications. Suitable for applications needing direct control over AI models, like custom image generation or deep data processing.
 
 ### Build AI-powered applications with Genkit and Angular
-[Genkit](https://firebase.google.com/docs/genkit) is an open-source toolkit designed to help you build AI-powered features in web and mobile apps. It offers a unified interface for integrating AI models from Google, OpenAI, Anthropic, Ollama, and more, so you can explore and choose the best models for your needs. As a server-side solution, your web apps need a supported server environment, such as a node-based server in order to integrate with Genkit. Building a full-stack app using Angular SSR gives you the starting server-side code, for example. 
+[Genkit](https://genkit.dev) is an open-source toolkit designed to help you build AI-powered features in web and mobile apps. It offers a unified interface for integrating AI models from Google, OpenAI, Anthropic, Ollama, and more, so you can explore and choose the best models for your needs. As a server-side solution, your web apps need a supported server environment, such as a node-based server in order to integrate with Genkit. Building a full-stack app using Angular SSR gives you the starting server-side code, for example. 
 
 Here are examples of how to build with Genkit and Angular:
 
 * [Agentic Apps with Genkit and Angular starter-kit](https://github.com/angular/examples/tree/main/genkit-angular-starter-kit)— New to building with AI? Start here with a basic app that features an agentic workflow. Perfect place to start for your first AI building experience.
 
-* [Use Genkit in an Angular app](https://firebase.google.com/docs/genkit/angular)— Build a basic application that uses Genkit Flows, Angular and Gemini 2.0 Flash. This step-by-step walkthrough guides you through creating a full-stack Angular application with AI features.
+* [Use Genkit in an Angular app](https://genkit.dev/docs/angular/)— Build a basic application that uses Genkit Flows, Angular and Gemini 2.0 Flash. This step-by-step walkthrough guides you through creating a full-stack Angular application with AI features.
 
 * [Dynamic Story Generator app](https://github.com/angular/examples/tree/main/genkit-angular-story-generator)— Learn to build an agentic Angular app powered by Genkit, Gemini and Imagen 3 to dynamically generate a story based on user interaction featuring beautiful image panels to accompany the events that take place. Start here if you'd like to experiment with a more advanced use-case.
 
@@ -57,60 +59,6 @@ The [Gemini API](https://ai.google.dev/gemini-api/docs) provides access to state
 * [AI Text Editor Angular app template](https://github.com/FirebaseExtended/firebase-framework-tools/tree/main/starters/angular/ai-text-editor) - Use this template to start with a fully functioning text editor with AI-powered features like refining text, expanding text and formalizing text. This is a good starting point to gain experience with calling the Gemini API via HTTP.
 
 * [AI Chatbot app template](https://github.com/FirebaseExtended/firebase-framework-tools/tree/main/starters/angular/ai-chatbot) - This template starts with a chatbot user interface that communicates with the Gemini API via HTTP. 
-
-## AI patterns in action: Streaming chat responses
-Having text appear as the response is received from the model is a common UI pattern for web apps using AI. You can achieve this asynchronous task with Angular's `resource` API. The `stream` property of `resource` accepts an asynchronous function you can use to apply updates to a signal value over time. The signal being updated represents the data being streamed.
-
-```ts
-characters = resource({
-    stream: async () => {
-      const data = signal<{ value: string } | { error: unknown }>({
-        value: "",
-      });
-
-      fetch(this.url).then(async (response) => {
-        if (!response.body) return;
-        
-        for await (const chunk of response.body) {
-          const chunkText = this.decoder.decode(chunk);
-          data.update((prev) => {
-            if ("value" in prev) {
-              return { value: `${prev.value} ${chunkText}` };
-            } else {
-              return { error: chunkText };
-            }
-          });
-        }
-      });
-
-      return data;
-    },
-  });
-
-```
-
-The `characters` member is updated asynchronously and can be displayed in the template.
-
-```html
-<p>{{ characters.value() }}</p>
-```
-
-On the server side, in `server.ts` for example, the defined endpoint sends the data to be streamed to the client. The following code uses the Gemini API but this technique is applicable to other tools and frameworks that support streaming responses from LLMs:
-
-```ts
- app.get("/api/stream-response", async (req, res) => {
-   ai.models.generateContentStream({
-     model: "gemini-2.0-flash",
-     contents: "Explain how AI works",
-   }).then(async (response) => {
-     for await (const chunk of response) {
-       res.write(chunk.text);
-     }
-   });
- });
-
-```
-This example connects to the Gemini API but other APIs that support streaming responses can be used here as well. [You can find the complete example on the Angular Github](https://github.com/angular/examples/tree/main/streaming-example).
 
 ## Best Practices
 ### Connecting to model providers and keeping your API Credentials Secure
@@ -143,3 +91,11 @@ Consider this example: The LLM provider is not responding. A potential strategy 
 * Save the response from the user to used in a retry scenario (now or at a later time)
 * Alert the user to the outage with an appropriate message that doesn't reveal sensitive information
 * Resume the conversation at a later time once the services are available again.
+
+## Next steps
+
+To learn about LLM prompts and AI IDE setup, see the following guides:
+
+<docs-pill-row>
+  <docs-pill href="ai/develop-with-ai" title="LLM prompts and IDE setup"/>
+</docs-pill-row>

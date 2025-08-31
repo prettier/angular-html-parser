@@ -1,5 +1,4 @@
-load("//devtools/tools:defaults.bzl", "karma_web_test_suite")
-load("//devtools/tools:typescript.bzl", "ts_project", "ts_test_library")
+load("//devtools/tools:defaults.bzl", "ng_web_test_suite", "ts_project", "ts_test_library")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -7,17 +6,12 @@ ts_project(
     name = "component-inspector",
     srcs = ["component-inspector.ts"],
     deps = [
-        "//devtools/projects/ng-devtools-backend/src/lib:highlighter_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib:interfaces_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib/component-tree:component-tree_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib/hooks:hooks_rjs",
-        "//devtools/projects/protocol:protocol_rjs",
+        "//devtools/projects/ng-devtools-backend/src/lib:highlighter",
+        "//devtools/projects/ng-devtools-backend/src/lib:interfaces",
+        "//devtools/projects/ng-devtools-backend/src/lib/component-tree",
+        "//devtools/projects/ng-devtools-backend/src/lib/hooks",
+        "//devtools/projects/protocol",
     ],
-)
-
-karma_web_test_suite(
-    name = "test",
-    deps = [":test_lib"],
 )
 
 ts_test_library(
@@ -25,16 +19,19 @@ ts_test_library(
     srcs = [
         "component-inspector.spec.ts",
     ],
-    interop_deps = [
-        "//packages/core",
-    ],
     deps = [
-        ":component-inspector_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib:highlighter_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib:interfaces_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib:utils_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib/component-tree:component-tree_rjs",
-        "//devtools/projects/ng-devtools-backend/src/lib/hooks:hooks_rjs",
-        "//devtools/projects/protocol:protocol_rjs",
+        ":component-inspector",
+        "//:node_modules/@angular/core",
+        "//devtools/projects/ng-devtools-backend/src/lib:highlighter",
+        "//devtools/projects/ng-devtools-backend/src/lib:interfaces",
+        "//devtools/projects/ng-devtools-backend/src/lib:utils",
+        "//devtools/projects/ng-devtools-backend/src/lib/component-tree",
+        "//devtools/projects/ng-devtools-backend/src/lib/hooks",
+        "//devtools/projects/protocol",
     ],
+)
+
+ng_web_test_suite(
+    name = "test",
+    deps = [":test_lib"],
 )

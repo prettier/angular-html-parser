@@ -1,5 +1,4 @@
-load("@build_bazel_rules_nodejs//:providers.bzl", "run_node")
-load("@npm//@angular/build-tooling/bazel/private:path_relative_to_label.bzl", "path_relative_to_label")
+load("//adev/shared-docs:defaults.bzl", "path_relative_to_label")
 
 def _generate_guides(ctx):
     """Implementation of the markdown rule"""
@@ -17,6 +16,12 @@ def _generate_guides(ctx):
     # Pass the the output directory path (which is the bazel-bin directory).
     args.add(ctx.bin_dir.path)
 
+    # Add the api_manifest file if provided
+    if ctx.attr.api_manifest:
+        args.add(ctx.file.api_manifest.path)
+    else:
+        args.add("")
+
     # Determine the set of html output files. For each input markdown file, produce an html
     # file with the same name (replacing the markdown extension with `.html`).
     html_outputs = []
@@ -30,23 +35,30 @@ def _generate_guides(ctx):
         # For each input file "xxx.md", we want to write an output file "xxx.html"
         html_outputs += [ctx.actions.declare_file("%s.html" % relative_basepath)]
 
-    # Define an action that runs the nodejs_binary executable. This is the main thing that this
-    # rule does. If mermaid blocks are enabled then a different executable is used.
+    # Define an action that runs the executable.
+    inputs = ctx.files.srcs + ctx.files.data
+    if ctx.attr.api_manifest:
+        inputs.append(ctx.file.api_manifest)
+
     if (ctx.attr.mermaid_blocks):
-        run_node(
-            ctx = ctx,
-            inputs = depset(ctx.files.srcs + ctx.files.data),
-            executable = "_generate_guides",
+        ctx.actions.run(
+            inputs = depset(inputs),
+            executable = ctx.executable._generate_guides,
             outputs = html_outputs,
             arguments = [args],
+            env = {
+                "BAZEL_BINDIR": ".",
+            },
         )
     else:
-        run_node(
-            ctx = ctx,
-            inputs = depset(ctx.files.srcs + ctx.files.data),
-            executable = "_generate_guides_no_mermaid",
+        ctx.actions.run(
+            inputs = depset(inputs),
+            executable = ctx.executable._generate_guides_no_mermaid,
             outputs = html_outputs,
             arguments = [args],
+            env = {
+                "BAZEL_BINDIR": ".",
+            },
         )
 
     # The return value describes what the rule is producing. In this case we need to specify
@@ -68,6 +80,10 @@ generate_guides = rule(
         "data": attr.label_list(
             doc = """Source referenced from within the markdown.""",
             allow_files = True,
+        ),
+        "api_manifest": attr.label(
+            doc = """A file containing API entries to be used in the markdown.""",
+            allow_single_file = True,
         ),
         "mermaid_blocks": attr.bool(
             doc = """Whether to transform mermaid blocks.""",

@@ -1,6 +1,6 @@
-load("//tools:defaults.bzl", "ts_library")
+load("//tools:defaults.bzl", "ts_project")
 
-ts_library(
+ts_project(
     name = "test_helpers",
     testonly = True,
     srcs = glob(
@@ -10,6 +10,7 @@ ts_library(
         "//packages/compiler-cli/test/compliance:__subpackages__",
     ],
     deps = [
+        "//:node_modules/typescript",
         "//packages:types",
         "//packages/compiler",
         "//packages/compiler-cli",
@@ -18,7 +19,5 @@ ts_library(
         "//packages/compiler-cli/src/ngtsc/logging",
         "//packages/compiler-cli/src/ngtsc/sourcemaps",
         "//packages/compiler-cli/src/ngtsc/testing",
-        "@npm//@bazel/runfiles",
-        "@npm//typescript",
     ],
 )

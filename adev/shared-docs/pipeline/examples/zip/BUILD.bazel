@@ -1,4 +1,4 @@
-load("//adev/shared-docs:defaults.bzl", "ts_project")
+load("//adev/shared-docs:defaults.bzl", "esbuild", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,12 +13,12 @@ ts_project(
         ],
     ),
     deps = [
-        "//:node_modules/@types/node",
-        "//:node_modules/fflate",
-        "//:node_modules/tinyglobby",
-        "//adev/shared-docs/interfaces:interfaces_rjs",
-        "//adev/shared-docs/pipeline/examples/shared:shared_rjs",
-        "//adev/shared-docs/pipeline/guides:guides_rjs",
+        "//adev:node_modules/@types/node",
+        "//adev:node_modules/fflate",
+        "//adev:node_modules/tinyglobby",
+        "//adev/shared-docs/interfaces",
+        "//adev/shared-docs/pipeline/examples/shared",
+        "//adev/shared-docs/pipeline/shared/regions",
     ],
 )
 
@@ -31,11 +31,22 @@ ts_project(
         "//adev/shared-docs:__subpackages__",
     ],
     deps = [
-        ":zip_rjs",
-        "//:node_modules/@types/node",
+        ":zip",
+        "//adev:node_modules/@types/node",
     ],
 )
 
-exports_files([
-    "index.mts",
-])
+esbuild(
+    name = "bundle",
+    config = "//adev/shared-docs/pipeline:esbuild-config",
+    entry_point = ":index.mts",
+    format = "esm",
+    output = "zip.mjs",
+    platform = "node",
+    target = "es2022",
+    tsconfig = "//adev/shared-docs:tsconfig_build",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":index",
+    ],
+)

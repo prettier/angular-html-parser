@@ -27,6 +27,8 @@ describe('type definitions', () => {
     'lib.es2015.iterable.d.ts',
     'lib.es2015.symbol.wellknown.d.ts',
     'lib.es2016.array.include.d.ts',
+    'lib.es2019.array.d.ts',
+    'indexable.d.ts',
   ];
 
   beforeEach(() => {
@@ -294,10 +296,10 @@ describe('type definitions', () => {
       expect(definitions!.length).toEqual(2);
 
       const [def1, def2] = definitions;
-      expect(def1.textSpan).toEqual('MouseEvent');
-      expect(def1.contextSpan).toContain(`interface MouseEvent extends UIEvent`);
-      expect(def2.textSpan).toEqual('MouseEvent');
-      expect(def2.contextSpan).toContain(`declare var MouseEvent:`);
+      expect(def1.textSpan).toEqual('PointerEvent');
+      expect(def1.contextSpan).toContain(`interface PointerEvent extends MouseEvent`);
+      expect(def2.textSpan).toEqual('PointerEvent');
+      expect(def2.contextSpan).toContain(`declare var PointerEvent:`);
     });
 
     it('should work for method calls', () => {

@@ -1,5 +1,5 @@
-load("//tools:defaults.bzl", "esbuild", "http_server")
-load("//tools:defaults2.bzl", "ng_project")
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
+load("//tools:defaults.bzl", "http_server", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -8,27 +8,32 @@ ng_project(
     srcs = glob(
         ["**/*.ts"],
     ),
-    interop_deps = [
-        "//packages/zone.js/lib",
-        "//packages/platform-browser",
-    ],
     deps = [
         "//:node_modules/rxjs",
-        "//packages/core:core_rjs",
-        "//packages/router:router_rjs",
+        "//:node_modules/zone.js",
+        "//packages/core",
+        "//packages/platform-browser",
+        "//packages/router",
     ],
 )
 
 esbuild(
     name = "app_bundle",
+    config = {
+        "resolveExtensions": [".js"],
+    },
     entry_point = ":main.ts",
-    deps = [":router_activated_route_examples"],
+    tsconfig = "//packages/examples:tsconfig_build",
+    deps = [
+        ":router_activated_route_examples",
+        "//packages/examples:tsconfig_build",
+    ],
 )
 
 http_server(
     name = "devserver",
     srcs = ["//packages/examples:index.html"],
-    additional_root_paths = ["angular/packages/examples"],
+    additional_root_paths = ["_main/packages/examples"],
     deps = [":app_bundle"],
 )
 

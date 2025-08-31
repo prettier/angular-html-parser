@@ -15,8 +15,10 @@ import {RouterConfigLoader} from '../src/router_config_loader';
 import {ActivatedRouteSnapshot, RouterStateSnapshot} from '../src/router_state';
 import {Params, PRIMARY_OUTLET} from '../src/shared';
 import {DefaultUrlSerializer, UrlTree} from '../src/url_tree';
+import {useAutoTick} from './helpers';
 
 describe('recognize', () => {
+  useAutoTick();
   it('should work', async () => {
     const s = await recognize([{path: 'a', component: ComponentA}], 'a');
     checkActivatedRoute(s.root, '', {}, RootComponent);
@@ -571,9 +573,8 @@ describe('recognize', () => {
           tree('/b'),
           'emptyOnly',
           new DefaultUrlSerializer(),
-        )
-          .recognize()
-          .toPromise();
+          new AbortController().signal,
+        ).recognize();
         await expectAsync(recognizePromise).toBeRejected();
       });
     });
@@ -819,9 +820,8 @@ async function recognize(
     tree(url),
     paramsInheritanceStrategy,
     serializer,
-  )
-    .recognize()
-    .toPromise();
+    new AbortController().signal,
+  ).recognize();
   return result!.state;
 }
 

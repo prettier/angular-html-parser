@@ -1,11 +1,11 @@
-load("//tools:defaults.bzl", "jasmine_node_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "jasmine_test", "ts_project")
 
 ts_project(
     name = "test_lib",
     testonly = True,
     srcs = ["missing_control_flow_directive_spec.ts"],
-    interop_deps = [
+    deps = [
+        "//:node_modules/typescript",
         "//packages/compiler",
         "//packages/compiler-cli/src/ngtsc/core:api",
         "//packages/compiler-cli/src/ngtsc/diagnostics",
@@ -16,18 +16,12 @@ ts_project(
         "//packages/compiler-cli/src/ngtsc/typecheck/extended/checks/missing_control_flow_directive",
         "//packages/compiler-cli/src/ngtsc/typecheck/testing",
     ],
-    deps = [
-        "//:node_modules/typescript",
-    ],
 )
 
-jasmine_node_test(
+jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node_no_angular"],
     data = [
-        "//packages/core:npm_package",
-    ],
-    deps = [
         ":test_lib",
+        "//packages/core:npm_package",
     ],
 )

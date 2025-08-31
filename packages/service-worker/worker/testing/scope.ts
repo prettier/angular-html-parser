@@ -236,6 +236,24 @@ export class SwTestHarnessImpl
     return event.ready;
   }
 
+  handleMessageError(clientId: string | null) {
+    if (!this.eventHandlers.has('messageerror')) {
+      throw new Error('No messageerror handler registered');
+    }
+
+    if (clientId && !this.clients.getMock(clientId)) {
+      this.clients.add(clientId, this.scopeUrl);
+    }
+
+    const event = new MockExtendableMessageEvent(
+      null,
+      (clientId && this.clients.getMock(clientId)) || null,
+    );
+    this.eventHandlers.get('messageerror')!.call(this, event);
+
+    return event.ready;
+  }
+
   handlePush(data: Object): Promise<void> {
     if (!this.eventHandlers.has('push')) {
       throw new Error('No push handler registered');
@@ -252,6 +270,26 @@ export class SwTestHarnessImpl
     const event = new MockNotificationEvent(notification, action);
     this.eventHandlers.get('notificationclick')!.call(this, event);
     return event.ready;
+  }
+
+  handleClose(notification: Object, action: string): Promise<void> {
+    if (!this.eventHandlers.has('notificationclose')) {
+      throw new Error('No notificationclose handler registered');
+    }
+    const event = new MockNotificationEvent(notification, action);
+    this.eventHandlers.get('notificationclose')!.call(this, event);
+    return event.ready;
+  }
+
+  handleUnhandledRejection(reason: any): void {
+    if (!this.eventHandlers.has('unhandledrejection')) {
+      throw new Error('No unhandledrejection handler registered');
+    }
+    const event = {
+      reason,
+      promise: Promise.reject(reason),
+    } as PromiseRejectionEvent;
+    this.eventHandlers.get('unhandledrejection')!.call(this, event);
   }
 
   override timeout(ms: number): Promise<void> {

@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -6,13 +6,10 @@ ts_project(
     name = "testing",
     testonly = True,
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
-        "//packages/core",
-    ],
     deps = [
         "//:node_modules/rxjs",
         "//:node_modules/typescript",
-        "//packages:types_rjs",
-        "//packages/service-worker/worker:worker_rjs",
+        "//packages:types",
+        "//packages/service-worker/worker",
     ],
 )

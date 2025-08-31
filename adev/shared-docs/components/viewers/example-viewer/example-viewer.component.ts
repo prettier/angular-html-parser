@@ -14,11 +14,9 @@ import {
   computed,
   DestroyRef,
   ElementRef,
-  forwardRef,
   inject,
   Injector,
   input,
-  Input,
   signal,
   Type,
   viewChild,
@@ -30,7 +28,7 @@ import {CopySourceCodeButton} from '../../copy-source-code-button/copy-source-co
 import {ExampleMetadata, Snippet} from '../../../interfaces/index';
 import {EXAMPLE_VIEWER_CONTENT_LOADER} from '../../../providers/index';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {DocViewer} from '../docs-viewer/docs-viewer.component';
+import {MatTooltipModule} from '@angular/material/tooltip';
 
 export enum CodeExampleViewMode {
   SNIPPET = 'snippet',
@@ -44,16 +42,15 @@ export const HIDDEN_CLASS_NAME = 'hidden';
 
 @Component({
   selector: 'docs-example-viewer',
-  imports: [CommonModule, forwardRef(() => DocViewer), CopySourceCodeButton, MatTabsModule],
+  imports: [CommonModule, CopySourceCodeButton, MatTabsModule, MatTooltipModule],
   templateUrl: './example-viewer.component.html',
   styleUrls: ['./example-viewer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ExampleViewer {
-  exampleMetadata = input<ExampleMetadata | null>(null, {alias: 'metadata'});
-
-  @Input() githubUrl: string | null = null;
-  @Input() stackblitzUrl: string | null = null;
+  readonly exampleMetadata = input<ExampleMetadata | null>(null, {alias: 'metadata'});
+  readonly githubUrl = input<string | null>(null);
+  readonly stackblitzUrl = input<string | null>(null);
   readonly matTabGroup = viewChild<MatTabGroup>('codeTabs');
 
   private readonly changeDetector = inject(ChangeDetectorRef);
@@ -75,17 +72,17 @@ export class ExampleViewer {
   CodeExampleViewMode = CodeExampleViewMode;
   exampleComponent?: Type<unknown>;
 
-  expandable = signal<boolean>(false);
-  expanded = signal<boolean>(false);
-  snippetCode = signal<Snippet | undefined>(undefined);
-  tabs = computed(() =>
+  readonly expandable = signal<boolean>(false);
+  readonly expanded = signal<boolean>(false);
+  readonly snippetCode = signal<Snippet | undefined>(undefined);
+  readonly tabs = computed(() =>
     this.exampleMetadata()?.files.map((file) => ({
       name:
         file.title ?? (this.shouldDisplayFullName() ? file.name : this.getFileExtension(file.name)),
-      code: file.content,
+      code: file.sanitizedContent,
     })),
   );
-  view = computed(() =>
+  readonly view = computed(() =>
     this.exampleMetadata()?.files.length === 1
       ? CodeExampleViewMode.SNIPPET
       : CodeExampleViewMode.MULTI_FILE,

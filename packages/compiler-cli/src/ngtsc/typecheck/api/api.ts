@@ -50,7 +50,7 @@ export type TypeCheckId = string & {__brand: 'TypeCheckId'};
  * A `ts.Diagnostic` with additional information about the diagnostic related to template
  * type-checking.
  */
-export interface TemplateDiagnostic extends ts.Diagnostic {
+export interface TemplateDiagnostic extends ts.DiagnosticWithLocation {
   /**
    * The component with the template that resulted in this diagnostic.
    */
@@ -354,6 +354,11 @@ export interface TypeCheckingConfig {
   allowSignalsInTwoWayBindings: boolean;
 
   /**
+   * Whether the type of DOM events should be asserted with '@angular/core' 'ɵassertType' (see TCB implementation).
+   */
+  allowDomEventAssertion: boolean;
+
+  /**
    * Whether to descend into the bodies of control flow blocks (`@if`, `@switch` and `@for`).
    */
   checkControlFlowBodies: boolean;
@@ -423,4 +428,8 @@ export interface FullSourceMapping {
   sourceLocation: SourceLocation;
   sourceMapping: SourceMapping;
   span: ParseSourceSpan;
+}
+
+export interface GetPotentialAngularMetaOptions {
+  includeExternalModule: boolean;
 }

@@ -1,5 +1,5 @@
-load("//tools:defaults.bzl", "esbuild")
-load("//tools:defaults2.bzl", "ts_project")
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
+load("//tools:defaults.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -9,9 +9,9 @@ ts_project(
         "index.ts",
         "launcher.ts",
     ],
-    interop_deps = [
+    deps = [
+        "//:node_modules/@types/node",
         "//tools/saucelabs-daemon",
-        "@npm//@types/node",
     ],
 )
 

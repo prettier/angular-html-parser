@@ -77,7 +77,7 @@ import {executeContentQueries} from './queries/query_execution';
 import {enterView, leaveView} from './state';
 import {debugStringifyTypeForError, stringifyForError} from './util/stringify_utils';
 import {getComponentLViewByIndex, getTNode} from './util/view_utils';
-import {elementLikeEndFirstCreatePass, elementLikeStartFirstCreatePass} from './view/elements';
+import {directiveHostEndFirstCreatePass, directiveHostFirstCreatePass} from './view/elements';
 import {ViewRef} from './view_ref';
 import {createLView, createTView, getInitialLViewFlagsFromDef} from './view/construction';
 import {BINDING, Binding, BindingInternal, DirectiveWithBindings} from './dynamic_bindings';
@@ -183,14 +183,24 @@ function createRootLViewEnvironment(rootLViewInjector: Injector): LViewEnvironme
   };
 }
 
-function createHostElement(componentDef: ComponentDef<unknown>, render: Renderer): RElement {
+function createHostElement(componentDef: ComponentDef<unknown>, renderer: Renderer): RElement {
   // Determine a tag name used for creating host elements when this component is created
   // dynamically. Default to 'div' if this component did not specify any tag name in its
   // selector.
-  const tagName = ((componentDef.selectors[0][0] as string) || 'div').toLowerCase();
+  const tagName = inferTagNameFromDefinition(componentDef);
   const namespace =
     tagName === 'svg' ? SVG_NAMESPACE : tagName === 'math' ? MATH_ML_NAMESPACE : null;
-  return createElementNode(render, tagName, namespace);
+  return createElementNode(renderer, tagName, namespace);
+}
+
+/**
+ * Infers the tag name that should be used for a component based on its definition.
+ * @param componentDef Definition for which to resolve the tag name.
+ */
+export function inferTagNameFromDefinition(componentDef: ComponentDef<unknown>): string {
+  // Take the tag name from the first selector in the
+  // definition. If there is none, fall back to `div`.
+  return ((componentDef.selectors[0][0] as string) || 'div').toLowerCase();
 }
 
 /**
@@ -303,9 +313,8 @@ export class ComponentFactory<T> extends AbstractComponentFactory<T> {
       let componentView: LView | null = null;
 
       try {
-        const hostTNode = elementLikeStartFirstCreatePass(
+        const hostTNode = directiveHostFirstCreatePass(
           HEADER_OFFSET,
-          rootTView,
           rootLView,
           TNodeType.Element,
           '#host',
@@ -327,8 +336,7 @@ export class ComponentFactory<T> extends AbstractComponentFactory<T> {
         // TODO(pk): this logic is similar to the instruction code where a node can have directives
         createDirectivesInstances(rootTView, rootLView, hostTNode);
         executeContentQueries(rootTView, hostTNode, rootLView);
-
-        elementLikeEndFirstCreatePass(rootTView, hostTNode);
+        directiveHostEndFirstCreatePass(rootTView, hostTNode);
 
         if (projectableNodes !== undefined) {
           projectNodes(hostTNode, this.ngContentSelectors, projectableNodes);
@@ -537,7 +545,7 @@ export class ComponentRef<T> extends AbstractComponentRef<T> {
     if (ngDevMode && !hasSetInput) {
       const cmpNameForError = stringifyForError(this.componentType);
       let message = `Can't set value of the '${name}' input on the '${cmpNameForError}' component. `;
-      message += `Make sure that the '${name}' property is annotated with @Input() or a mapped @Input('${name}') exists.`;
+      message += `Make sure that the '${name}' property is declared as an input using the input() or model() function or the @Input() decorator.`;
       reportUnknownPropertyError(message);
     }
   }

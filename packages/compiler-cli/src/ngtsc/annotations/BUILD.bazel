@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -7,7 +7,9 @@ ts_project(
     srcs = ["index.ts"] + glob([
         "src/**/*.ts",
     ]),
-    interop_deps = [
+    deps = [
+        "//:node_modules/@types/node",
+        "//:node_modules/typescript",
         "//packages/compiler",
         "//packages/compiler-cli/src/ngtsc/annotations/common",
         "//packages/compiler-cli/src/ngtsc/annotations/component",
@@ -32,9 +34,5 @@ ts_project(
         "//packages/compiler-cli/src/ngtsc/typecheck/extended/api",
         "//packages/compiler-cli/src/ngtsc/util",
         "//packages/compiler-cli/src/ngtsc/xi18n",
-    ],
-    deps = [
-        "//:node_modules/@types/node",
-        "//:node_modules/typescript",
     ],
 )

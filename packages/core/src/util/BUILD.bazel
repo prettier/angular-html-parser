@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "tsec_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ts_project", "tsec_test")
 
 package(default_visibility = [
     "//devtools:__subpackages__",
@@ -17,16 +16,16 @@ ts_project(
     ),
     deps = [
         "//:node_modules/rxjs",
-        "//packages:goog_types_rjs",
-        "//packages/core/primitives/signals:signals_rjs",
-        "//packages/core/src/interface:interface_rjs",
+        "//packages:goog_types",
+        "//packages/core/primitives/signals",
+        "//packages/core/src/interface",
     ],
 )
 
 tsec_test(
     name = "tsec_test",
-    target = "util",
-    tsconfig = "//packages:tsec_config",
+    target = ":util",
+    tsconfig = "//packages/core:tsconfig_build",
 )
 
 filegroup(

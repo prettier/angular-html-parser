@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -11,16 +10,13 @@ ts_project(
             "src/**/*.ts",
         ],
     ),
-    module_name = "@angular/localize",
     deps = [
-        "//packages/localize/src/localize:localize_rjs",
-        "//packages/localize/src/utils:utils_rjs",
+        "//packages/localize/src/localize",
+        "//packages/localize/src/utils",
     ],
 )
 
 ng_package(
-    name = "npm_package",
-    package_name = "@angular/localize",
     srcs = [
         "package.json",
     ],
@@ -28,6 +24,10 @@ ng_package(
         "//packages/localize/schematics:npm_package",
         "//packages/localize/tools:npm_package",
     ],
+    package = "@angular/localize",
+    replace_prefixes = {
+        "tools/npm_package": "tools",
+    },
     side_effect_entry_points = [
         "@angular/localize/init",
     ],
@@ -46,14 +46,14 @@ api_golden_test_npm_package(
         ":npm_package",
         "//goldens:public-api",
     ],
-    golden_dir = "angular/goldens/public-api/localize",
-    npm_package = "angular/packages/localize/npm_package",
+    golden_dir = "goldens/public-api/localize",
+    npm_package = "packages/localize/npm_package",
     # The logic for the localize function is exported in the primary entry-point, but users
     # are not supposed to import it from there. We still want to guard these exports though.
     strip_export_pattern = "^ɵ(?!.localize|LocalizeFn|TranslateFn)",
-    # The tool entry-point uses namespace aliases and API extractor needs to be
-    # able to resolve `@babel/core` to fully understand the `types` re-export/alias.
-    types = ["@npm//@types/babel__core"],
+    types = {
+        "//:node_modules/@types/babel__core": "babel",
+    },
 )
 
 filegroup(

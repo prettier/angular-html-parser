@@ -11,24 +11,26 @@ function checkSearchedNodesLength(type, length) {
 }
 
 function inputSearchText(text) {
-  cy.get('.filter-input').type(text, {force: true});
+  cy.get('ng-filter .filter-input').type(text, {force: true});
+}
+
+function clearSearchInput() {
+  cy.get('ng-filter .filter-input').clear({force: true});
 }
 
 function checkComponentName(name) {
-  cy.get('.component-name').should('have.text', name);
+  cy.get('.component-name > span').should('have.text', name);
 }
 
 function checkEmptyNodes() {
-  cy.get('.tree-wrapper').find('.matched').should('not.exist');
+  cy.get('.tree-wrapper').find('.matched-text').should('not.exist');
 }
 
 function clickSearchArrows(upwards) {
-  const buttons = cy.get('.up-down-buttons').find('button');
-
   if (upwards) {
-    buttons.first().then((btn) => btn[0].click());
+    cy.get('#up-button').click();
   } else {
-    buttons.last().then((btn) => btn[0].click());
+    cy.get('#down-button').click();
   }
 }
 
@@ -44,7 +46,7 @@ describe('Search items in component tree', () => {
 
   it('should highlight correct nodes when searching and clear out', () => {
     inputSearchText('todo');
-    checkSearchedNodesLength('.matched', 4);
+    checkSearchedNodesLength('.matched-text', 4);
 
     // clear search input
     inputSearchText('{backspace}{backspace}{backspace}{backspace}');
@@ -53,22 +55,23 @@ describe('Search items in component tree', () => {
 
   it('should highlight correct nodes when searching and using arrow keys', () => {
     inputSearchText('todo');
-    checkSearchedNodesLength('.matched', 4);
+    checkSearchedNodesLength('.matched-text', 4);
+    checkComponentName('app-todo-demo');
 
     // press down arrow
     clickSearchArrows(false);
     checkSearchedNodesLength('.selected', 1);
-    checkComponentName('app-todo-demo');
+    checkComponentName('app-todos');
 
-    // press up arrow
+    // press down arrow
     clickSearchArrows(false);
     checkSearchedNodesLength('.selected', 1);
-    checkComponentName('app-todos');
+    checkComponentName('app-todo');
 
     // press up arrow
     clickSearchArrows(true);
     checkSearchedNodesLength('.selected', 1);
-    checkComponentName('app-todo-demo');
+    checkComponentName('app-todos');
 
     // clear search input
     inputSearchText('{backspace}{backspace}{backspace}{backspace}');
@@ -76,7 +79,7 @@ describe('Search items in component tree', () => {
   });
 
   it('should select correct node on enter', () => {
-    inputSearchText('todos{enter}');
+    inputSearchText('todo{enter}');
     checkSearchedNodesLength('.selected', 1);
 
     // should show correct buttons in breadcrumbs
@@ -91,14 +94,31 @@ describe('Search items in component tree', () => {
     checkComponentName('app-todos');
 
     // should display correct title for properties panel
-    cy.get('ng-property-view-header').should('have.text', 'app-todos');
+    cy.get('ng-property-view-header').should('contain.text', 'app-todos');
 
     // should show correct component properties
     cy.get('ng-property-view').find('mat-tree-node');
   });
 
-  it('should focus search input when search icon is clicked', () => {
-    cy.get('.filter label .search-icon').click({force: true});
-    cy.get('.filter label input').should('have.focus');
+  it('should be able to search and select @defers in different Angular applications', () => {
+    inputSearchText('@defer');
+    checkSearchedNodesLength('.matched-text', 2);
+    cy.get('.defer-details').should('contain.text', '@placeholder(minimum 5000 ms)');
+    inputSearchText('{enter}');
+    cy.get('.defer-details').should('contain.text', '@placeholder(minimum 2000 ms)');
   });
+
+  it('should not duplicate application roots if multiple applications are present', () => {
+    inputSearchText('app-root');
+    checkSearchedNodesLength('.matched-text', 1); // only one app-root should be found
+    clearSearchInput();
+    inputSearchText('other-app');
+    checkSearchedNodesLength('.matched-text', 1); // only one other-app should be found
+  });
+
+  // todo(aleksanderbodurri): revive this test if we decide to revive this functionality
+  // it('should focus search input when search icon is clicked', () => {
+  //   cy.get('.filter label .search-icon').click({force: true});
+  //   cy.get('.filter label input').should('have.focus');
+  // });
 });

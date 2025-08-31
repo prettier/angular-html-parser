@@ -216,6 +216,7 @@ export interface R3ComponentMetadataFacade extends R3DirectiveMetadataFacade {
   viewProviders: Provider[] | null;
   interpolation?: [string, string];
   changeDetection?: ChangeDetectionStrategy;
+  hasDirectiveDependencies: boolean;
 }
 
 // TODO(legacy-partial-output-inputs): Remove in v18.
@@ -347,6 +348,7 @@ export enum ViewEncapsulation {
   // Historically the 1 value was for `Native` encapsulation which has been removed as of v11.
   None = 2,
   ShadowDom = 3,
+  IsolatedShadowDom = 4,
 }
 
 export type ChangeDetectionStrategy = number;

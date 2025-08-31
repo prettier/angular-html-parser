@@ -133,7 +133,8 @@ export class Element extends NodeWithI18n {
     sourceSpan: ParseSourceSpan,
     public startSourceSpan: ParseSourceSpan,
     public endSourceSpan: ParseSourceSpan | null = null,
-    public nameSpan: ParseSourceSpan|null = null,
+    public nameSpan: ParseSourceSpan | null = null,
+    readonly isVoid: boolean,
     i18n?: I18nMeta,
   ) {
     super(sourceSpan, i18n);

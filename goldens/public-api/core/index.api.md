@@ -82,6 +82,15 @@ export interface AfterViewInit {
 export const ANIMATION_MODULE_TYPE: InjectionToken<"NoopAnimations" | "BrowserAnimations">;
 
 // @public
+export type AnimationCallbackEvent = {
+    target: Element;
+    animationComplete: Function;
+};
+
+// @public
+export type AnimationFunction = (event: AnimationCallbackEvent) => void;
+
+// @public
 export const APP_BOOTSTRAP_LISTENER: InjectionToken<readonly ((compRef: ComponentRef<any>) => void)[]>;
 
 // @public
@@ -188,12 +197,15 @@ export interface Binding {
 // @public
 export function booleanAttribute(value: unknown): boolean;
 
-// @public
+// @public @deprecated
 export interface BootstrapOptions {
     // @deprecated
     ignoreChangesOutsideZone?: boolean;
+    // @deprecated
     ngZone?: NgZone | 'zone.js' | 'noop';
+    // @deprecated
     ngZoneEventCoalescing?: boolean;
+    // @deprecated
     ngZoneRunCoalescing?: boolean;
 }
 
@@ -257,6 +269,7 @@ export type CompilerOptions = {
 
 // @public
 export interface Component extends Directive {
+    // @deprecated
     animations?: any[];
     changeDetection?: ChangeDetectionStrategy;
     encapsulation?: ViewEncapsulation;
@@ -579,9 +592,6 @@ export class DefaultIterableDiffer<V> implements IterableDiffer<V>, IterableChan
     onDestroy(): void;
 }
 
-// @public @deprecated (undocumented)
-export const defineInjectable: typeof ɵɵdefineInjectable;
-
 // @public
 export interface DestroyableInjector extends Injector {
     // (undocumented)
@@ -593,6 +603,7 @@ export function destroyPlatform(): void;
 
 // @public
 export abstract class DestroyRef {
+    abstract get destroyed(): boolean;
     abstract onDestroy(callback: () => void): () => void;
 }
 
@@ -685,6 +696,7 @@ export const ENVIRONMENT_INITIALIZER: InjectionToken<readonly (() => void)[]>;
 export abstract class EnvironmentInjector implements Injector {
     // (undocumented)
     abstract destroy(): void;
+    abstract get destroyed(): boolean;
     abstract get<T>(token: ProviderToken<T>, notFoundValue: undefined, options: InjectOptions & {
         optional?: false;
     }): T;
@@ -828,9 +840,6 @@ export interface HostListenerDecorator {
     // (undocumented)
     new (eventName: string, args?: string[]): any;
 }
-
-// @public @deprecated
-export type ImportedNgModuleProviders = EnvironmentProviders;
 
 // @public
 export function importProvidersFrom(...sources: ImportProvidersSource[]): EnvironmentProviders;
@@ -1163,6 +1172,9 @@ export function makeEnvironmentProviders(providers: (Provider | EnvironmentProvi
 export function makeStateKey<T = void>(key: string): StateKey<T>;
 
 // @public
+export const MAX_ANIMATION_TIMEOUT: InjectionToken<number>;
+
+// @public
 export function mergeApplicationConfig(...configs: ApplicationConfig[]): ApplicationConfig;
 
 // @public
@@ -1258,15 +1270,6 @@ export abstract class NgModuleRef<T> {
     abstract get injector(): EnvironmentInjector;
     abstract get instance(): T;
     abstract onDestroy(callback: () => void): void;
-}
-
-// @public @deprecated
-export class NgProbeToken {
-    constructor(name: string, token: any);
-    // (undocumented)
-    name: string;
-    // (undocumented)
-    token: any;
 }
 
 // @public
@@ -1382,9 +1385,6 @@ export interface OutputRefSubscription {
     // (undocumented)
     unsubscribe(): void;
 }
-
-// @public @deprecated
-export const PACKAGE_ROOT_URL: InjectionToken<string>;
 
 // @public
 export class PendingTasks {
@@ -2004,6 +2004,7 @@ export abstract class ViewContainerRef {
 // @public
 export enum ViewEncapsulation {
     Emulated = 0,
+    IsolatedShadowDom = 4,
     None = 2,
     ShadowDom = 3
 }

@@ -10,6 +10,6 @@ ts_project(
         ],
     ),
     deps = [
-        "//:node_modules/@types/node",
+        "//adev:node_modules/@types/node",
     ],
 )

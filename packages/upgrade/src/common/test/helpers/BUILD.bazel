@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ts_project")
 
 package(default_visibility = ["//packages/upgrade:__subpackages__"])
 
@@ -8,11 +8,8 @@ ts_project(
     srcs = glob([
         "*.ts",
     ]),
-    interop_deps = [
-        "//packages/core/testing",
-    ],
     deps = [
         "//:node_modules/@types/jasmine",
-        "//packages/upgrade/src/common:common_rjs",
+        "//packages/upgrade/src/common",
     ],
 )

@@ -1,13 +1,11 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "nodejs_binary")
-load("@npm//@angular/build-tooling/bazel/esbuild:index.bzl", "esbuild_esm_bundle")
-load("//adev/shared-docs:defaults.bzl", "ts_project")
+load("//adev/shared-docs:defaults.bzl", "esbuild", "js_binary", "ts_project")
 
 package(default_visibility = ["//adev/shared-docs/pipeline/api-gen:__subpackages__"])
 
-esbuild_esm_bundle(
+esbuild(
     name = "bin",
     entry_point = ":index.mts",
-    metafile = False,
+    format = "esm",
     output = "bin.mjs",
     platform = "node",
     target = "es2022",
@@ -22,22 +20,22 @@ ts_project(
         [
             "**/*.mts",
             "**/*.tsx",
-            "shiki.d.ts",
         ],
         exclude = [
             "entities.mts",
         ],
     ),
     deps = [
-        ":entities_rjs",
-        "//:node_modules/@bazel/runfiles",
-        "//:node_modules/@types/node",
-        "//:node_modules/html-entities",
-        "//:node_modules/marked",
-        "//:node_modules/preact",
-        "//:node_modules/preact-render-to-string",
-        "//:node_modules/prettier",
-        "//:node_modules/shiki",
+        ":entities",
+        "//adev:node_modules/marked",
+        "//adev:node_modules/preact",
+        "//adev:node_modules/preact-render-to-string",
+        "//adev:node_modules/prettier",
+        "//adev:node_modules/shiki",
+        "//adev/shared-docs/pipeline/shared:linking",
+        "//adev/shared-docs/pipeline/shared:shiki",
+        "//adev/shared-docs/pipeline/shared/marked",
+        "//adev/shared-docs/pipeline/shared/regions",
     ],
 )
 
@@ -53,7 +51,7 @@ ts_project(
 )
 
 # Action binary for the api_gen bazel rule.
-nodejs_binary(
+js_binary(
     name = "render_api_to_html",
     data = [
         ":render_api_to_html_lib",
@@ -62,8 +60,7 @@ nodejs_binary(
     # Do not use the NodeJS linker because:
     #  - it's brittle and causes race conditions on Windows.
     #  - it requires additional work to setup the runtime linker.
-    templated_args = [
-        "--bazel_patch_module_resolver",
+    fixed_args = [
         "--node_options=--preserve-symlinks-main",
     ],
     visibility = ["//visibility:public"],

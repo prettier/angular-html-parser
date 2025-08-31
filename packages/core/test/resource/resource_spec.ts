@@ -236,6 +236,44 @@ describe('resource', () => {
     expect(effectRuns).toBe(1);
   });
 
+  it('should not trigger consumers on every value change via hasValue()', async () => {
+    const testResource = resource<number | undefined, unknown>({
+      loader: () => Promise.resolve(undefined),
+      injector: TestBed.inject(Injector),
+    });
+
+    let effectRuns = 0;
+    effect(
+      () => {
+        testResource.hasValue();
+        effectRuns++;
+      },
+      {injector: TestBed.inject(Injector)},
+    );
+
+    TestBed.tick();
+    // Starts off without a value
+    expect(testResource.hasValue()).toBeFalse();
+    // Effect should run the first time.
+    expect(effectRuns).toBe(1);
+
+    // Set value to something defined
+    testResource.set(0);
+    TestBed.tick();
+    // Value is now defined
+    expect(testResource.hasValue()).toBeTrue();
+    // The effect should have been re-run.
+    expect(effectRuns).toBe(2);
+
+    // Set value to something else defined
+    testResource.set(1);
+    TestBed.tick();
+    // Value is still defined
+    expect(testResource.hasValue()).toBeTrue();
+    // The effect should not rerun.
+    expect(effectRuns).toBe(2);
+  });
+
   it('should update computed signals', async () => {
     const backend = new MockEchoBackend();
     const counter = signal(0);
@@ -727,6 +765,34 @@ describe('resource', () => {
     await appRef.whenStable();
     expect(res.status()).toBe('error');
     expect(res.error()).toEqual(new Error('fail'));
+  });
+
+  it('should allow to set a value on when in error state', async () => {
+    const appRef = TestBed.inject(ApplicationRef);
+    let res = resource({
+      stream: async () => signal({error: new Error('fail')}),
+      injector: TestBed.inject(Injector),
+    });
+
+    await appRef.whenStable();
+    expect(res.status()).toBe('error');
+
+    res.set('new value');
+    expect(res.status()).toBe('local');
+    expect(res.value()).toBe('new value');
+
+    // also via setting the value on the signal directly
+    res = resource({
+      stream: async () => signal({error: new Error('fail')}),
+      injector: TestBed.inject(Injector),
+    });
+
+    await appRef.whenStable();
+    expect(res.status()).toBe('error');
+
+    res.value.set('new value');
+    expect(res.status()).toBe('local');
+    expect(res.value()).toBe('new value');
   });
 
   it('should transition across streamed states', async () => {

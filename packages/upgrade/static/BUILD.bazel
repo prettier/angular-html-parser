@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "generate_api_docs")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "generate_api_docs", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,12 +12,10 @@ ng_project(
             "src/*.ts",
         ],
     ),
-    interop_deps = [
+    deps = [
         "//packages/core",
         "//packages/platform-browser",
-    ],
-    deps = [
-        "//packages/upgrade:upgrade_rjs",
+        "//packages/upgrade/src/common",
     ],
 )
 

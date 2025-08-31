@@ -15,10 +15,11 @@ import {EMPTY, of} from 'rxjs';
 
 import {provideRouter} from '../src/provide_router';
 import {isUrlTree} from '../src/url_tree';
-import {timeout} from './helpers';
+import {timeout, useAutoTick} from './helpers';
 import {afterNextNavigation} from '../src/utils/navigations';
 
 describe('`restoredState#ɵrouterPageId`', () => {
+  useAutoTick();
   @Injectable({providedIn: 'root'})
   class MyCanDeactivateGuard {
     allow: boolean = true;
@@ -376,6 +377,7 @@ describe('`restoredState#ɵrouterPageId`', () => {
 
       TestBed.inject(MyCanActivateGuard).redirectTo = '/unguarded';
       await router.navigateByUrl('/third');
+      await timeout();
       expect(location.path()).toEqual('/unguarded');
       expect(location.getState()).toEqual(jasmine.objectContaining({ɵrouterPageId: 4}));
 

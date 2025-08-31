@@ -7,13 +7,13 @@
  */
 
 import {
+  AST,
   BindingPipe,
   CssSelector,
   ParseSourceFile,
   parseTemplate,
   ParseTemplateOptions,
   PropertyRead,
-  PropertyWrite,
   R3TargetBinder,
   SelectorlessMatcher,
   SelectorMatcher,
@@ -22,8 +22,11 @@ import {
   TmplAstComponent,
   TmplAstDirective,
   TmplAstElement,
+  TmplAstHoverDeferredTrigger,
+  TmplAstInteractionDeferredTrigger,
   TmplAstLetDeclaration,
   TmplAstTextAttribute,
+  TmplAstViewportDeferredTrigger,
 } from '@angular/compiler';
 import {readFileSync} from 'fs';
 import path from 'path';
@@ -167,7 +170,7 @@ export function angularCoreDtsFiles(): TestFile[] {
     return _angularCoreDts;
   }
 
-  const directory = resolveFromRunfiles('angular/packages/core/npm_package');
+  const directory = resolveFromRunfiles('_main/packages/core/npm_package');
   const dtsFiles = globSync('**/*.d.ts', {cwd: directory});
 
   return (_angularCoreDts = dtsFiles.map((fileName) => ({
@@ -288,6 +291,7 @@ export const ALL_ENABLED_CONFIG: Readonly<TypeCheckingConfig> = {
   unusedStandaloneImports: 'warning',
   allowSignalsInTwoWayBindings: true,
   checkTwoWayBoundEvents: true,
+  allowDomEventAssertion: true,
 };
 
 // Remove 'ref' from TypeCheckableDirectiveMeta and add a 'selector' instead.
@@ -430,6 +434,7 @@ export function tcb(
     suggestionsForSuboptimalTypeInference: false,
     allowSignalsInTwoWayBindings: true,
     checkTwoWayBoundEvents: true,
+    allowDomEventAssertion: true,
     ...config,
   };
   options = options || {emitSpans: false};
@@ -1024,11 +1029,7 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
   illegalForLoopTrackAccess(): void {}
   inaccessibleDeferredTriggerElement(): void {}
   controlFlowPreventingContentProjection(): void {}
-  illegalWriteToLetDeclaration(
-    id: TypeCheckId,
-    node: PropertyWrite,
-    target: TmplAstLetDeclaration,
-  ): void {}
+  illegalWriteToLetDeclaration(id: TypeCheckId, node: AST, target: TmplAstLetDeclaration): void {}
   letUsedBeforeDefinition(
     id: TypeCheckId,
     node: PropertyRead,
@@ -1047,6 +1048,20 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
   incorrectTemplateDependencyType(
     id: TypeCheckId,
     node: TmplAstComponent | TmplAstDirective,
+  ): void {}
+  deferImplicitTriggerMissingPlaceholder(
+    id: TypeCheckId,
+    trigger:
+      | TmplAstHoverDeferredTrigger
+      | TmplAstInteractionDeferredTrigger
+      | TmplAstViewportDeferredTrigger,
+  ): void {}
+  deferImplicitTriggerInvalidPlaceholder(
+    id: TypeCheckId,
+    trigger:
+      | TmplAstHoverDeferredTrigger
+      | TmplAstInteractionDeferredTrigger
+      | TmplAstViewportDeferredTrigger,
   ): void {}
 }
 

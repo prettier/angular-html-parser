@@ -9,7 +9,7 @@ ts_project(
     ],
     visibility = ["//adev/shared-docs:__subpackages__"],
     deps = [
-        ":lib_rjs",
+        ":lib",
     ],
 )
 
@@ -24,12 +24,11 @@ ts_project(
             "**/*.spec.ts",
         ],
     ),
-    interop_deps = [
-        "//packages/core",
-        "//packages/router",
-    ],
     deps = [
-        "//:node_modules/@types/node",
-        "//:node_modules/@webcontainer/api",
+        "//adev:node_modules/@angular/core",
+        "//adev:node_modules/@angular/platform-browser",
+        "//adev:node_modules/@angular/router",
+        "//adev:node_modules/@types/node",
+        "//adev:node_modules/@webcontainer/api",
     ],
 )

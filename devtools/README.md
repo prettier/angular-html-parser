@@ -24,16 +24,16 @@ To set up your development environment, first install the [correct version of No
 nvm install
 ```
 
-Second, install [Yarn](https://classic.yarnpkg.com/en/):
+Second, install [pnpm](https://pnpm.io/):
 
 ```shell
-npm install -g yarn@1
+npm install -g pnpm
 ```
 
 Third, install NPM dependencies:
 
 ```shell
-yarn --frozen-lockfile
+pnpm install --frozen-lockfile
 ```
 
 Now you should be ready to build the DevTools extension.
@@ -43,26 +43,41 @@ Now you should be ready to build the DevTools extension.
 To run the extension in development mode run:
 
 ```shell
-yarn devtools:devserver
-```
-
-You can also run a standalone version of the demo app with:
-
-```shell
-yarn devtools:devserver:demo-standalone
+pnpm devtools:devserver
 ```
 
 This would start a development server that you can access on <http://localhost:4200>. In development, Angular DevTools
 uses a "development shell." This is different from "chrome shell" in a way, that it runs the user's app in an iframe.
 DevTools then communicate with the user's app via message passing.
 
+### Running End-to-End Tests
+
+Before running end-to-end tests, you need to start the development server using:
+
+```shell
+pnpm devtools:devserver
+```
+You have two options for running cypress, you can use the interactive cypress UI or you can run Cypress in headless mode.
+
+To open Cypress for Angular DevTools in interactive mode, run:
+
+```shell
+pnpm devtools:e2e:open
+```
+
+To run Cypress tests headless, use:
+
+```shell
+pnpm devtools:test:e2e
+```
+
 ### Release builds
 
 You can build the release version of Angular DevTools for either Chrome or Firefox with:
 
 ```shell
-yarn devtools:build:chrome
-yarn devtools:build:firefox
+pnpm devtools:build:chrome:release
+pnpm devtools:build:firefox:release
 ```
 
 Either way, the built extension will be at `dist/bin/devtools/projects/shell-browser/src/prodapp`.

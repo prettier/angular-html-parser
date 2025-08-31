@@ -82,10 +82,8 @@ import {createComponentLView} from '../view/construction';
 import {selectIndexInternal} from './advance';
 import {handleUnknownPropertyError, isPropertyValid, matchingSchemas} from './element_validation';
 import {writeToDirectiveInput} from './write_to_directive_input';
-import {elementLikeEndFirstCreatePass, elementLikeStartFirstCreatePass} from '../view/elements';
 import {isDetachedByI18n} from '../../i18n/utils';
 import {appendChild} from '../node_manipulation';
-import {executeContentQueries} from '../queries/query_execution';
 
 export function executeTemplate<T>(
   tView: TView,
@@ -179,7 +177,10 @@ export function locateHostElement(
 
   // When using native Shadow DOM, do not clear host element to allow native slot
   // projection.
-  const preserveContent = preserveHostContent || encapsulation === ViewEncapsulation.ShadowDom;
+  const preserveContent =
+    preserveHostContent ||
+    encapsulation === ViewEncapsulation.ShadowDom ||
+    encapsulation === ViewEncapsulation.IsolatedShadowDom;
   const rootElement = renderer.selectRootElement(elementOrSelector, preserveContent);
   applyRootElementTransform(rootElement as HTMLElement);
   return rootElement;
@@ -236,8 +237,7 @@ export function enableApplyRootElementTransformImpl() {
  * object lookup) for performance reasons - the series of `if` checks seems to be the fastest way of
  * mapping property names. Do NOT change without benchmarking.
  *
- * Note: this mapping has to be kept in sync with the equally named mapping in the template
- * type-checking machinery of ngtsc.
+ * Note: this mapping has to be kept in sync with the equivalent mappings in the compiler.
  */
 function mapPropName(name: string): string {
   if (name === 'class') return 'className';
@@ -267,6 +267,11 @@ export function setPropertyAndInputs<T>(
     return; // Stop propcessing if we've matched at least one input.
   }
 
+  // If the property is going to a DOM node, we have to remap it.
+  if (tNode.type & TNodeType.AnyRNode) {
+    propName = mapPropName(propName);
+  }
+
   setDomProperty(tNode, lView, propName, value, renderer, sanitizer);
 }
 
@@ -289,7 +294,6 @@ export function setDomProperty<T>(
 ) {
   if (tNode.type & TNodeType.AnyRNode) {
     const element = getNativeByTNode(tNode, lView) as RElement | RComment;
-    propName = mapPropName(propName);
 
     if (ngDevMode) {
       validateAgainstEventProperties(propName);
@@ -343,7 +347,7 @@ function setNgReflectProperty(lView: LView, tNode: TNode, attrName: string, valu
   }
 }
 
-function setNgReflectProperties(
+export function setNgReflectProperties(
   lView: LView,
   tView: TView,
   tNode: TNode,
@@ -567,9 +571,9 @@ function setInputsFromAttrs<T>(
 
 /** Shared code between instructions that indicate the start of an element. */
 export function elementLikeStartShared(
+  tNode: TElementNode | TElementContainerNode,
   lView: LView,
   index: number,
-  type: TNodeType.Element | TNodeType.ElementContainer,
   name: string,
   locateOrCreateNativeNode: (
     tView: TView,
@@ -578,33 +582,15 @@ export function elementLikeStartShared(
     name: string,
     index: number,
   ) => RNode,
-  bindingsEnabled: boolean,
-  attrsIndex: number | null | undefined,
-  localRefsIndex: number | undefined,
 ) {
   const adjustedIndex = HEADER_OFFSET + index;
-
   const tView = lView[TVIEW];
-  const tNode = tView.firstCreatePass
-    ? elementLikeStartFirstCreatePass(
-        adjustedIndex,
-        tView,
-        lView,
-        type,
-        name,
-        findDirectiveDefMatches,
-        bindingsEnabled,
-        attrsIndex,
-        localRefsIndex,
-      )
-    : (tView.data[adjustedIndex] as TElementNode | TElementContainerNode);
-
   const native = locateOrCreateNativeNode(tView, lView, tNode, name, index);
   lView[adjustedIndex] = native;
   setCurrentTNode(tNode, true);
 
   // It's important that this runs before we've instantiated the directives.
-  const isElement = type === TNodeType.Element;
+  const isElement = tNode.type === TNodeType.Element;
   if (isElement) {
     setupStaticAttributes(lView[RENDERER], native as RElement, tNode);
 
@@ -625,20 +611,11 @@ export function elementLikeStartShared(
     appendChild(tView, lView, native, tNode);
   }
 
-  if (isDirectiveHost(tNode)) {
-    createDirectivesInstances(tView, lView, tNode);
-    executeContentQueries(tView, tNode, lView);
-  }
-
-  if (localRefsIndex != null) {
-    saveResolvedLocalsInData(lView, tNode);
-  }
-
   return tNode;
 }
 
 /** Shared code between instructions that indicate the end of an element. */
-export function elementLikeEndShared(tView: TView, tNode: TNode): TNode {
+export function elementLikeEndShared(tNode: TNode): TNode {
   let currentTNode = tNode;
 
   if (isCurrentTNodeParent()) {
@@ -647,10 +624,6 @@ export function elementLikeEndShared(tView: TView, tNode: TNode): TNode {
     ngDevMode && assertHasParent(getCurrentTNode());
     currentTNode = currentTNode.parent!;
     setCurrentTNode(currentTNode, false);
-  }
-
-  if (tView.firstCreatePass) {
-    elementLikeEndFirstCreatePass(tView, currentTNode);
   }
 
   return currentTNode;
@@ -732,7 +705,12 @@ export function handleUncaughtError(lView: LView, error: any): void {
   if (!injector) {
     return;
   }
-  const errorHandler = injector.get(INTERNAL_APPLICATION_ERROR_HANDLER, null);
+  let errorHandler: ((e: any) => void) | null;
+  try {
+    errorHandler = injector.get(INTERNAL_APPLICATION_ERROR_HANDLER, null);
+  } catch {
+    errorHandler = null;
+  }
   errorHandler?.(error);
 }
 

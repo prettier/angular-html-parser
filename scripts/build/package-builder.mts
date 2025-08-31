@@ -19,15 +19,15 @@ sh.set('-e');
 export const projectDir: string = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Command that runs Bazel. */
-export const bazelCmd = process.env.BAZEL || `yarn -s bazel`;
+export const bazelCmd = process.env.BAZEL || `pnpm --silent bazel`;
 
 /** Name of the Bazel tag that will be used to find release package targets. */
 const releaseTargetTag = 'release-with-framework';
 
 /** Command that queries Bazel for all release package targets. */
 const queryPackagesCmd =
-  `${bazelCmd} query --output=label "attr('tags', '\\[.*${releaseTargetTag}.*\\]', //packages/...) ` +
-  `intersect kind('ng_package|pkg_npm', //packages/...)"`;
+  `${bazelCmd} query --output=label "filter(':npm_package$', ` +
+  `attr('tags', '\\[.*${releaseTargetTag}.*\\]', //packages/...))"`;
 
 /** Path for the default distribution output directory. */
 const defaultDistPath = join(projectDir, 'dist/packages-dist');
@@ -42,11 +42,7 @@ export function performNpmReleaseBuild(): BuiltPackage[] {
  * Git HEAD SHA is included in the version (for easier debugging and back tracing).
  */
 export function performDefaultSnapshotBuild(): BuiltPackage[] {
-  return buildReleasePackages(defaultDistPath, /* isSnapshotBuild */ true, [
-    // For snapshot builds, the Bazel package is still built. We want to have
-    // GitHub snapshot builds for it.
-    '//packages/bazel:npm_package',
-  ]);
+  return buildReleasePackages(defaultDistPath, /* isSnapshotBuild */ true);
 }
 
 /**

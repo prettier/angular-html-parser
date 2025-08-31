@@ -14,7 +14,9 @@ import {
   Injectable,
   InjectionToken,
   runInInjectionContext,
+  signal,
   Type,
+  untracked,
 } from '@angular/core';
 import {BehaviorSubject, combineLatest, EMPTY, from, Observable, of, Subject} from 'rxjs';
 import {
@@ -84,9 +86,11 @@ import {
 } from './router_state';
 import type {Params} from './shared';
 import {UrlHandlingStrategy} from './url_handling_strategy';
-import {isUrlTree, UrlSerializer, UrlTree} from './url_tree';
+import {UrlSerializer, UrlTree} from './url_tree';
 import {Checks, getAllRouteGuards} from './utils/preactivation';
 import {CREATE_VIEW_TRANSITION} from './utils/view_transition';
+import {getClosestRouteInjector} from './utils/config';
+import {abortSignalToObservable} from './utils/abort_signal_to_observable';
 
 /**
  * @description
@@ -343,9 +347,11 @@ export const NAVIGATION_ERROR_HANDLER = new InjectionToken<
 
 @Injectable({providedIn: 'root'})
 export class NavigationTransitions {
-  currentNavigation: Navigation | null = null;
+  // Some G3 targets expect the navigation object to be mutated (and not getting a new reference on changes).
+  currentNavigation = signal<Navigation | null>(null, {equal: () => false});
+
   currentTransition: NavigationTransition | null = null;
-  lastSuccessfulNavigation: Navigation | null = null;
+  lastSuccessfulNavigation = signal<Navigation | null>(null);
   /**
    * These events are used to communicate back to the Router about the state of the transition. The
    * Router wants to respond to these events in various ways. Because the `NavigationTransition`
@@ -419,15 +425,21 @@ export class NavigationTransitions {
     >,
   ) {
     const id = ++this.navigationId;
-    this.transitions?.next({
-      ...request,
-      extractedUrl: this.urlHandlingStrategy.extract(request.rawUrl),
-      targetSnapshot: null,
-      targetRouterState: null,
-      guards: {canActivateChecks: [], canDeactivateChecks: []},
-      guardsResult: null,
-      abortController: new AbortController(),
-      id,
+
+    // Navigation can happen as a side effect of template execution, as such we need to untrack signal updates
+    // (Writing to signals is not allowed while Angular renders the template)
+    // TODO: We might want to reconsider allowing navigation as side effect of template execution.
+    untracked(() => {
+      this.transitions?.next({
+        ...request,
+        extractedUrl: this.urlHandlingStrategy.extract(request.rawUrl),
+        targetSnapshot: null,
+        targetRouterState: null,
+        guards: {canActivateChecks: [], canDeactivateChecks: []},
+        guardsResult: null,
+        abortController: new AbortController(),
+        id,
+      });
     });
   }
 
@@ -458,8 +470,9 @@ export class NavigationTransitions {
               return EMPTY;
             }
             this.currentTransition = overallTransitionState;
+            const lastSuccessfulNavigation = this.lastSuccessfulNavigation();
             // Store the Navigation object
-            this.currentNavigation = {
+            this.currentNavigation.set({
               id: t.id,
               initialUrl: t.rawUrl,
               extractedUrl: t.extractedUrl,
@@ -469,14 +482,14 @@ export class NavigationTransitions {
                   : t.extras.browserUrl,
               trigger: t.source,
               extras: t.extras,
-              previousNavigation: !this.lastSuccessfulNavigation
+              previousNavigation: !lastSuccessfulNavigation
                 ? null
                 : {
-                    ...this.lastSuccessfulNavigation,
+                    ...lastSuccessfulNavigation,
                     previousNavigation: null,
                   },
               abort: () => t.abortController.abort(),
-            };
+            });
             const urlTransition =
               !router.navigated || this.isUpdatingInternalState() || this.isUpdatedBrowserUrl();
 
@@ -527,16 +540,17 @@ export class NavigationTransitions {
                   router.config,
                   this.urlSerializer,
                   this.paramsInheritanceStrategy,
+                  overallTransitionState.abortController.signal,
                 ),
 
                 // Update URL if in `eager` update mode
                 tap((t) => {
                   overallTransitionState.targetSnapshot = t.targetSnapshot;
                   overallTransitionState.urlAfterRedirects = t.urlAfterRedirects;
-                  this.currentNavigation = {
-                    ...this.currentNavigation!,
-                    finalUrl: t.urlAfterRedirects,
-                  };
+                  this.currentNavigation.update((nav) => {
+                    nav!.finalUrl = t.urlAfterRedirects;
+                    return nav;
+                  });
 
                   // Fire RoutesRecognized
                   const routesRecognized = new RoutesRecognized(
@@ -571,7 +585,10 @@ export class NavigationTransitions {
                 urlAfterRedirects: extractedUrl,
                 extras: {...extras, skipLocationChange: false, replaceUrl: false},
               };
-              this.currentNavigation!.finalUrl = extractedUrl;
+              this.currentNavigation.update((nav) => {
+                nav!.finalUrl = extractedUrl;
+                return nav;
+              });
               return of(overallTransitionState);
             } else {
               /* When neither the current or previous URL can be processed, do
@@ -693,9 +710,10 @@ export class NavigationTransitions {
           switchTap((t: NavigationTransition) => {
             const loadComponents = (route: ActivatedRouteSnapshot): Array<Observable<void>> => {
               const loaders: Array<Observable<void>> = [];
-              if (route.routeConfig?.loadComponent && !route.routeConfig._loadedComponent) {
+              if (route.routeConfig?.loadComponent) {
+                const injector = getClosestRouteInjector(route) ?? this.environmentInjector;
                 loaders.push(
-                  this.configLoader.loadComponent(route.routeConfig).pipe(
+                  this.configLoader.loadComponent(injector, route.routeConfig).pipe(
                     tap((loadedComponent) => {
                       route.component = loadedComponent;
                     }),
@@ -738,7 +756,10 @@ export class NavigationTransitions {
               t.currentRouterState,
             );
             this.currentTransition = overallTransitionState = {...t, targetRouterState};
-            this.currentNavigation!.targetRouterState = targetRouterState;
+            this.currentNavigation.update((nav) => {
+              nav!.targetRouterState = targetRouterState;
+              return nav;
+            });
             return overallTransitionState;
           }),
 
@@ -759,12 +780,7 @@ export class NavigationTransitions {
           take(1),
 
           takeUntil(
-            new Observable<void>((subscriber) => {
-              const abortSignal = overallTransitionState.abortController.signal;
-              const handler = () => subscriber.next();
-              abortSignal.addEventListener('abort', handler);
-              return () => abortSignal.removeEventListener('abort', handler);
-            }).pipe(
+            abortSignalToObservable(overallTransitionState.abortController.signal).pipe(
               // Ignore aborts if we are already completed, canceled, or are in the activation stage (we have targetRouterState)
               filter(() => !completedOrAborted && !overallTransitionState.targetRouterState),
               tap(() => {
@@ -780,7 +796,7 @@ export class NavigationTransitions {
           tap({
             next: (t: NavigationTransition) => {
               completedOrAborted = true;
-              this.lastSuccessfulNavigation = this.currentNavigation;
+              this.lastSuccessfulNavigation.set(untracked(this.currentNavigation));
               this.events.next(
                 new NavigationEnd(
                   t.id,
@@ -812,6 +828,7 @@ export class NavigationTransitions {
           ),
 
           finalize(() => {
+            overallTransitionState.abortController.abort();
             /* When the navigation stream finishes either through error or success,
              * we set the `completed` or `errored` flag. However, there are some
              * situations where we could get here without either of those being set.
@@ -832,7 +849,7 @@ export class NavigationTransitions {
             // Only clear current navigation if it is still set to the one that
             // finalized.
             if (this.currentTransition?.id === overallTransitionState.id) {
-              this.currentNavigation = null;
+              this.currentNavigation.set(null);
               this.currentTransition = null;
             }
           }),
@@ -975,11 +992,12 @@ export class NavigationTransitions {
     const currentBrowserUrl = this.urlHandlingStrategy.extract(
       this.urlSerializer.parse(this.location.path(true)),
     );
-    const targetBrowserUrl =
-      this.currentNavigation?.targetBrowserUrl ?? this.currentNavigation?.extractedUrl;
+
+    const currentNavigation = untracked(this.currentNavigation);
+    const targetBrowserUrl = currentNavigation?.targetBrowserUrl ?? currentNavigation?.extractedUrl;
     return (
       currentBrowserUrl.toString() !== targetBrowserUrl?.toString() &&
-      !this.currentNavigation?.extras.skipLocationChange
+      !currentNavigation?.extras.skipLocationChange
     );
   }
 }

@@ -56,8 +56,8 @@
 
 version: 3
 
-# availability:
-#   users_unavailable: ['atscott']
+availability:
+  users_unavailable: ['devversion']
 
 # Meta field that goes unused by PullApprove to allow for defining aliases to be
 # used throughout the config.
@@ -126,14 +126,18 @@ groups:
         ])
     reviewers:
       users:
-        - alxhub
+        - ~alxhub
         - AndrewKushnir
         - atscott
         - crisbeto
         - devversion
+        - thePunderWoman
         - kirjs
         - JoostK
         - mmalerba
+        - ~amishne
+        - ~leonsenft
+        - ~mattrbeck
 
   # =========================================================
   #  Framework: General (most code in our packages)
@@ -166,7 +170,7 @@ groups:
         ])
     reviewers:
       users:
-        - alxhub
+        - ~alxhub
         - AndrewKushnir
         - atscott
         - crisbeto
@@ -174,8 +178,12 @@ groups:
         - kirjs
         - ~jelbourn
         - thePunderWoman
-        - pkozlowski-opensource
+        - ~pkozlowski-opensource
         - mmalerba
+        - JeanMeche
+        - ~amishne
+        - ~leonsenft
+        - ~mattrbeck
 
   # =========================================================
   #  Framework: Security-sensitive files which require extra review
@@ -197,29 +205,14 @@ groups:
           ])
     reviewers:
       users:
-        - alxhub
+        - ~alxhub
         - jelbourn
         - josephperrott
-        - pkozlowski-opensource
+        - ~pkozlowski-opensource
     reviews:
       request: -1 # request reviews from everyone
       required: 2 # require at least 2 approvals
       reviewed_for: required
-
-  # =========================================================
-  #  Bazel
-  # =========================================================
-  bazel:
-    <<: *defaults
-    conditions:
-      - >
-        contains_any_globs(files, [
-          'packages/bazel/**/{*,.*}',
-          ])
-    reviewers:
-      users:
-        - devversion
-        - josephperrott
 
   # =========================================================
   #  zone.js
@@ -233,7 +226,20 @@ groups:
         ])
     reviewers:
       users:
-        - JiaLiPassion
+        - ~JiaLiPassion
+        - ~jelbourn
+        - ~alxhub
+        - AndrewKushnir
+        - atscott
+        - crisbeto
+        - devversion
+        - kirjs
+        - thePunderWoman
+        - ~pkozlowski-opensource
+        - mmalerba
+        - ~amishne
+        - ~leonsenft
+        - ~mattrbeck
 
   # =========================================================
   #  Tooling: Compiler API shared with Angular CLI
@@ -271,23 +277,25 @@ groups:
     reviewers:
       users:
         - alan-agius4
-        - alxhub
+        - ~alxhub
         - AndrewKushnir
         - atscott
         - bencodezen
         - crisbeto
         - kirjs
-        - ~JeanMeche
+        - JeanMeche
         - jelbourn
         - thePunderWoman
         - devversion
         - josephperrott
-        - pkozlowski-opensource
+        - ~pkozlowski-opensource
         - mgechev
         - MarkTechson
-        - kirjs
         - mmalerba
         - ~hawkgs
+        - ~amishne
+        - ~leonsenft
+        - ~mattrbeck
 
   # =========================================================
   #  Angular DevTools
@@ -302,12 +310,13 @@ groups:
     reviewers:
       users:
         - AleksanderBodurri
-        - devversion
+        - ~devversion
         - dgp1130
-        - josephperrott
-        - mgechev
-        - MarkTechson
-        - ~JeanMeche
+        - hawkgs
+        - jkrems
+        - ~josephperrott
+        - JeanMeche
+        - milomg
 
   # =========================================================
   #  Dev-infra
@@ -321,6 +330,7 @@ groups:
           '.devcontainer/**/{*,.*}',
           '.github/**/{*,.*}',
           '.husky/**/{*,.*}',
+          '.gemini/**/{*,.*}',
           '.ng-dev/**/{*,.*}',
           '.vscode/**/{*,.*}',
           '.yarn/**/{*,.*}',
@@ -335,13 +345,11 @@ groups:
           'packages/examples/{*,.*}',
           'scripts/**/{*,.*}',
           'third_party/**/{*,.*}',
-          'tools/bazel-repo-patches/**/{*,.*}',
           'tools/contributing-stats/**/{*,.*}',
-          'tools/esm-interop/**/{*,.*}',
           'tools/gulp-tasks/**/{*,.*}',
           'tools/legacy-saucelabs/**/{*,.*}',
           'tools/manual_api_docs/**/{*,.*}',
-          'tools/npm-patches/**/{*,.*}',
+          'tools/pnpm-patches/**/{*,.*}',
           'tools/rxjs/**/{*,.*}',
           'tools/saucelabs-daemon/**/{*,.*}',
           'tools/saucelabs/**/{*,.*}',
@@ -370,6 +378,7 @@ groups:
       users:
         - ~alan-agius4
       teams:
+        - angular-caretaker
         - framework-team
 
   # =========================================================
@@ -387,18 +396,23 @@ groups:
     reviewers:
       users:
         - AndrewKushnir
-        - alxhub
+        - ~alxhub
         - atscott
         - ~jelbourn
         - thePunderWoman
-        - pkozlowski-opensource
+        - ~pkozlowski-opensource
         - kirjs
         - mmalerba
         - crisbeto
         - devversion
+        - JeanMeche
+        - ~jkrems
         - ~iteriani
         - ~tbondwilkinson
         - ~rahatarmanahmed
+        - ~amishne
+        - ~leonsenft
+        - ~mattrbeck
     reviews:
       request: 3 # Request reviews from 3 people
       required: 2 # Require that 2 people approve
@@ -414,18 +428,21 @@ groups:
       - *no-groups-above-this-rejected
       - >
         contains_any_globs(files, [
-          'goldens/size-tracking/**/{*,.*}'
+          'integration/**/size.json'
           ])
     reviewers:
       users:
-        - alxhub
+        - ~alxhub
         - AndrewKushnir
         - atscott
         - kirjs
         - ~jelbourn
         - thePunderWoman
-        - pkozlowski-opensource
+        - ~pkozlowski-opensource
         - mmalerba
+        - ~amishne
+        - ~leonsenft
+        - ~mattrbeck
     reviews:
       request: 2 # Request reviews from 2 people
       required: 1 # Require that 1 person approve
@@ -447,7 +464,7 @@ groups:
         ])
     reviewers:
       users:
-        - alxhub
+        - ~alxhub
         - AndrewKushnir
         - andrewseguin
         - dgp1130
@@ -469,8 +486,8 @@ groups:
         ])
     reviewers:
       users:
-        - pkozlowski-opensource # Pawel Kozlowski
-        - alxhub # Alex Rickabaugh
+        - ~pkozlowski-opensource # Pawel Kozlowski
+        - ~alxhub # Alex Rickabaugh
         - thePunderWoman # Jessica Janiuk
         - AndrewKushnir # Andrew Kushnir
         - atscott # Andrew Scott

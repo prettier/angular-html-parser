@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "karma_web_test_suite", "nodejs_binary", "npm_package_bin")
-load("//tools:defaults2.bzl", "ng_project", "ts_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "js_binary", "js_run_binary", "ng_project", "ng_web_test_suite", "ts_project")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -8,15 +7,12 @@ TEST_FILES = glob(
     exclude = ["authoring_test_compiler.ts"],
 )
 
-TEST_INTEROP_DEPS = [
-    "//packages/core",
-    "//packages/core/rxjs-interop",
-    "//packages/core/testing",
-    "//packages/platform-browser",
-    "//packages/core/primitives/signals",
-]
-
 TEST_DEPS = [
+    "//packages/core:core",
+    "//packages/core/rxjs-interop:rxjs-interop",
+    "//packages/core/testing:testing",
+    "//packages/platform-browser:platform-browser",
+    "//packages/core/primitives/signals:signals",
     "//:node_modules/rxjs",
 ]
 
@@ -24,19 +20,16 @@ ts_project(
     name = "test_compiler_lib",
     testonly = True,
     srcs = ["authoring_test_compiler.ts"],
-    interop_deps = [
-        "//packages/compiler-cli",
+    deps = [
+        "//:node_modules/typescript",
         "//packages/compiler-cli/src/ngtsc/imports",
         "//packages/compiler-cli/src/ngtsc/partial_evaluator",
         "//packages/compiler-cli/src/ngtsc/reflection",
         "//packages/compiler-cli/src/ngtsc/transform/jit",
     ],
-    deps = [
-        "//:node_modules/typescript",
-    ],
 )
 
-nodejs_binary(
+js_binary(
     name = "test_compiler",
     testonly = True,
     data = [
@@ -46,12 +39,12 @@ nodejs_binary(
     entry_point = ":authoring_test_compiler.js",
 )
 
-npm_package_bin(
+js_run_binary(
     name = "processed_test_sources",
     testonly = True,
+    srcs = TEST_FILES,
     outs = ["transformed_%s" % file for file in TEST_FILES],
-    args = ["$(@D)"] + ["$(execpath %s)" % file for file in TEST_FILES],
-    data = TEST_FILES,
+    args = ["../../../$(@D)"] + ["$(rootpath %s)" % file for file in TEST_FILES],
     tool = ":test_compiler",
 )
 
@@ -59,7 +52,6 @@ ts_project(
     name = "test_jit_lib",
     testonly = True,
     srcs = ["transformed_%s" % file for file in TEST_FILES],
-    interop_deps = TEST_INTEROP_DEPS,
     deps = TEST_DEPS,
 )
 
@@ -67,34 +59,31 @@ ng_project(
     name = "test_lib",
     testonly = True,
     srcs = TEST_FILES,
-    interop_deps = TEST_INTEROP_DEPS,
     deps = TEST_DEPS,
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":test_lib",
     ],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "test_jit",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":test_jit_lib",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "test_web",
     deps = [
         ":test_lib",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "test_jit_web",
     deps = [
         ":test_jit_lib",

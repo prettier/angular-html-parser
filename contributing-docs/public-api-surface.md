@@ -14,7 +14,7 @@ Angular's SemVer, release schedule, and deprecation policy applies to these npm 
 - `@angular/service-worker`
 - `@angular/upgrade`
 
-The `@angular/compiler` package is explicitly excluded from this list. The compiler is a generally
+The `@angular/compiler` package is explicitly excluded from this list. The compiler is generally
 considered private/internal API and may change at any time. Only very specific use-cases, such as
 linters or IDE integration, require direct access to the compiler API. If you are
 working on this kind of integration, please reach out to us first.
@@ -68,11 +68,11 @@ If you modify any part of a public API in one of the supported public packages, 
 test in CI with an error message that instructs you to accept the golden file.
 
 The public API guard provides a Bazel target that updates the current status of a given package. If
-you add to or modify the public API in any way, you must use [yarn](https://yarnpkg.com/) to execute
+you add to or modify the public API in any way, you must use [pnpm](https://pnpm.io/) to execute
 the Bazel target in your terminal shell of choice (a recent version of `bash` is recommended).
 
 ```shell
-yarn bazel run //packages/<modified_package>:<modified_package>_api.accept
+pnpm bazel run //packages/<modified_package>:<modified_package>_api.accept
 ```
 
 Here is an example of a CI test failure that resulted from adding a new allowed type to a public
@@ -109,6 +109,6 @@ If you modify a public API, you must accept the new golden file.
 
 
 To do so, execute the following Bazel target:
-  yarn bazel run //packages/core:core_api.accept
+  pnpm bazel run //packages/core:core_api.accept
 
 ```

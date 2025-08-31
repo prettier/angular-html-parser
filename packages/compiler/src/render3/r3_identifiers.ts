@@ -31,6 +31,24 @@ export class Identifiers {
 
   static elementEnd: o.ExternalReference = {name: 'ɵɵelementEnd', moduleName: CORE};
 
+  static domElement: o.ExternalReference = {name: 'ɵɵdomElement', moduleName: CORE};
+  static domElementStart: o.ExternalReference = {name: 'ɵɵdomElementStart', moduleName: CORE};
+  static domElementEnd: o.ExternalReference = {name: 'ɵɵdomElementEnd', moduleName: CORE};
+  static domElementContainer: o.ExternalReference = {
+    name: 'ɵɵdomElementContainer',
+    moduleName: CORE,
+  };
+  static domElementContainerStart: o.ExternalReference = {
+    name: 'ɵɵdomElementContainerStart',
+    moduleName: CORE,
+  };
+  static domElementContainerEnd: o.ExternalReference = {
+    name: 'ɵɵdomElementContainerEnd',
+    moduleName: CORE,
+  };
+  static domTemplate: o.ExternalReference = {name: 'ɵɵdomTemplate', moduleName: CORE};
+  static domListener: o.ExternalReference = {name: 'ɵɵdomListener', moduleName: CORE};
+
   static advance: o.ExternalReference = {name: 'ɵɵadvance', moduleName: CORE};
 
   static syntheticHostProperty: o.ExternalReference = {
@@ -234,7 +252,19 @@ export class Identifiers {
 
   static domProperty: o.ExternalReference = {name: 'ɵɵdomProperty', moduleName: CORE};
 
+  static ariaProperty: o.ExternalReference = {name: 'ɵɵariaProperty', moduleName: CORE};
   static property: o.ExternalReference = {name: 'ɵɵproperty', moduleName: CORE};
+
+  static animationEnterListener: o.ExternalReference = {
+    name: 'ɵɵanimateEnterListener',
+    moduleName: CORE,
+  };
+  static animationLeaveListener: o.ExternalReference = {
+    name: 'ɵɵanimateLeaveListener',
+    moduleName: CORE,
+  };
+  static animationEnter: o.ExternalReference = {name: 'ɵɵanimateEnter', moduleName: CORE};
+  static animationLeave: o.ExternalReference = {name: 'ɵɵanimateLeave', moduleName: CORE};
 
   static i18n: o.ExternalReference = {name: 'ɵɵi18n', moduleName: CORE};
   static i18nAttributes: o.ExternalReference = {name: 'ɵɵi18nAttributes', moduleName: CORE};
@@ -417,6 +447,11 @@ export class Identifiers {
     moduleName: CORE,
   };
 
+  static AnimationsFeature: o.ExternalReference = {
+    name: 'ɵɵAnimationsFeature',
+    moduleName: CORE,
+  };
+
   static listener: o.ExternalReference = {name: 'ɵɵlistener', moduleName: CORE};
 
   static getInheritedFactory: o.ExternalReference = {
@@ -451,4 +486,5 @@ export class Identifiers {
   static InputSignalBrandWriteType = {name: 'ɵINPUT_SIGNAL_BRAND_WRITE_TYPE', moduleName: CORE};
   static UnwrapDirectiveSignalInputs = {name: 'ɵUnwrapDirectiveSignalInputs', moduleName: CORE};
   static unwrapWritableSignal = {name: 'ɵunwrapWritableSignal', moduleName: CORE};
+  static assertType = {name: 'ɵassertType', moduleName: CORE};
 }

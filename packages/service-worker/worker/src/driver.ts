@@ -62,6 +62,28 @@ interface LatestEntry {
   latest: string;
 }
 
+// This is a bug in TypeScript, where they removed `PushSubscriptionChangeEvent`
+// based on the incorrect assumption that browsers don't support it.
+interface PushSubscriptionChangeEvent extends ExtendableEvent {
+  // https://w3c.github.io/push-api/#pushsubscriptionchangeeventinit-interface
+  oldSubscription: PushSubscription | null;
+  newSubscription: PushSubscription | null;
+}
+
+/**
+ * Determines if a given URL scope corresponds to localhost.
+ *
+ * @param scope The service worker registration scope URL to test
+ * @returns true if the scope is considered localhost, false otherwise
+ */
+export function isLocalhost(scope: string): boolean {
+  // Use non-capturing groups and ensure localhost is at word boundary
+  // This prevents matching domains like "mylocalhost.com" while allowing valid localhost URLs
+  return /(?:^https?:\/\/)?(?:(?:^|[^\w.])localhost|\[::1\]|127(?:\.\d{1,3}){3})(?::\d+)?(?:\/.*)?$/.test(
+    scope,
+  );
+}
+
 export enum DriverReadyState {
   // The SW is operating in a normal mode, responding to all traffic.
   NORMAL,
@@ -181,11 +203,21 @@ export class Driver implements Debuggable, UpdateSource {
       }
     });
 
-    // Handle the fetch, message, and push events.
+    // Handle the fetch, message, push, notificationclick,
+    // notificationclose, pushsubscriptionchange, messageerror, rejectionhandled,
+    // and unhandledrejection events.
     this.scope.addEventListener('fetch', (event) => this.onFetch(event!));
     this.scope.addEventListener('message', (event) => this.onMessage(event!));
     this.scope.addEventListener('push', (event) => this.onPush(event!));
-    this.scope.addEventListener('notificationclick', (event) => this.onClick(event!));
+    this.scope.addEventListener('notificationclick', (event) => this.onClick(event));
+    this.scope.addEventListener('notificationclose', (event) => this.onClose(event));
+    this.scope.addEventListener('pushsubscriptionchange', (event) =>
+      // This is a bug in TypeScript, where they removed `PushSubscriptionChangeEvent`
+      // based on the incorrect assumption that browsers don't support it.
+      this.onPushSubscriptionChange(event as PushSubscriptionChangeEvent),
+    );
+    this.scope.addEventListener('messageerror', (event) => this.onMessageError(event));
+    this.scope.addEventListener('unhandledrejection', (event) => this.onUnhandledRejection(event));
 
     // The debugger generates debug pages in response to debugging requests.
     this.debugger = new DebugHandler(this, this.adapter);
@@ -313,6 +345,34 @@ export class Driver implements Debuggable, UpdateSource {
     event.waitUntil(this.handleClick(event.notification, event.action));
   }
 
+  private onClose(event: NotificationEvent): void {
+    // Handle the close event and keep the SW alive until it's handled.
+    event.waitUntil(this.handleClose(event.notification, event.action));
+  }
+
+  private onPushSubscriptionChange(event: PushSubscriptionChangeEvent): void {
+    // Handle the pushsubscriptionchange event and keep the SW alive until it's handled.
+    event.waitUntil(this.handlePushSubscriptionChange(event));
+  }
+
+  private onMessageError(event: MessageEvent): void {
+    // Handle message deserialization errors that occur when receiving messages
+    // that cannot be deserialized, typically due to corrupted data or unsupported formats.
+    this.debugger.log(
+      `Message error occurred - data could not be deserialized`,
+      `Driver.onMessageError(origin: ${event.origin})`,
+    );
+  }
+
+  private onUnhandledRejection(event: PromiseRejectionEvent): void {
+    // Handle unhandled promise rejections in the service worker.
+    // This is for debugging and preventing silent failures.
+    this.debugger.log(
+      `Unhandled promise rejection occurred`,
+      `Driver.onUnhandledRejection(reason: ${event.reason})`,
+    );
+  }
+
   private async ensureInitialized(event: ExtendableEvent): Promise<void> {
     // Since the SW may have just been started, it may or may not have been initialized already.
     // `this.initialized` will be `null` if initialization has not yet been attempted, or will be a
@@ -415,6 +475,49 @@ export class Driver implements Debuggable, UpdateSource {
     await this.broadcast({
       type: 'NOTIFICATION_CLICK',
       data: {action, notification: options},
+    });
+  }
+
+  /**
+   * Handles the closing of a notification by extracting its options and
+   * broadcasting a `NOTIFICATION_CLOSE` message.
+   *
+   * This is typically called when a notification is dismissed by the user
+   * or closed programmatically, and it relays that information to clients
+   * listening for service worker events.
+   *
+   * @param notification - The original `Notification` object that was closed.
+   * @param action - The action string associated with the close event, if any (usually an empty string).
+   */
+  private async handleClose(notification: Notification, action: string): Promise<void> {
+    const options: {-readonly [K in keyof Notification]?: Notification[K]} = {};
+    NOTIFICATION_OPTION_NAMES.filter((name) => name in notification).forEach(
+      (name) => (options[name] = notification[name]),
+    );
+
+    await this.broadcast({
+      type: 'NOTIFICATION_CLOSE',
+      data: {action, notification: options},
+    });
+  }
+
+  /**
+   * Handles changes to the push subscription by capturing the old and new
+   * subscription details and broadcasting a `PUSH_SUBSCRIPTION_CHANGE` message.
+   *
+   * This method is triggered when the browser invalidates an existing push
+   * subscription and creates a new one, which can happen without user interaction.
+   * It ensures that clients listening for service worker events are informed
+   * of the subscription update.
+   *
+   * @param event - The `PushSubscriptionChangeEvent` containing the old and new subscriptions.
+   */
+  private async handlePushSubscriptionChange(event: PushSubscriptionChangeEvent): Promise<void> {
+    const {oldSubscription, newSubscription} = event;
+
+    await this.broadcast({
+      type: 'PUSH_SUBSCRIPTION_CHANGE',
+      data: {oldSubscription, newSubscription},
     });
   }
 
@@ -863,10 +966,11 @@ export class Driver implements Debuggable, UpdateSource {
         await this.versionFailed(appVersion, err);
       }
     };
-    // TODO: better logic for detecting localhost.
-    if (this.scope.registration.scope.indexOf('://localhost') > -1) {
+
+    if (isLocalhost(this.scope.registration.scope)) {
       return initialize();
     }
+
     this.idle.schedule(`initialization(${appVersion.manifestHash})`, initialize);
   }
 
@@ -888,7 +992,8 @@ export class Driver implements Debuggable, UpdateSource {
     // Therefore, we keep clients on their current version (even if broken) and ensure that no new
     // clients will be assigned to it.
 
-    // TODO: notify affected apps.
+    // Notify clients that are using this broken version about the failure.
+    await this.notifyClientsAboutVersionFailure(brokenHash, err);
 
     // The action taken depends on whether the broken manifest is the active (latest) or not.
     // - If the broken version is not the latest, no further action is necessary, since new clients
@@ -1226,6 +1331,29 @@ export class Driver implements Debuggable, UpdateSource {
         };
 
         client.postMessage(notice);
+      }),
+    );
+  }
+
+  async notifyClientsAboutVersionFailure(brokenHash: string, error: Error): Promise<void> {
+    await this.initialized;
+
+    // Find all clients using the broken version
+    const affectedClients = Array.from(this.clientVersionMap.entries())
+      .filter(([clientId, hash]) => hash === brokenHash)
+      .map(([clientId]) => clientId);
+
+    await Promise.all(
+      affectedClients.map(async (clientId) => {
+        const client = await this.scope.clients.get(clientId);
+        if (client) {
+          const brokenVersion = this.versions.get(brokenHash);
+          client.postMessage({
+            type: 'VERSION_FAILED',
+            version: this.mergeHashWithAppData(brokenVersion!.manifest, brokenHash),
+            error: errorToString(error),
+          });
+        }
       }),
     );
   }

@@ -1,6 +1,6 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "js_library")
-load("//tools:defaults.bzl", "api_golden_test_npm_package", "esbuild", "generate_api_docs", "ng_package", "tsec_test")
-load("//tools:defaults2.bzl", "ng_project")
+load("@aspect_rules_js//js:defs.bzl", "js_library")
+load("@npm//:rollup/package_json.bzl", rollup = "bin")
+load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "ng_project", "tsec_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -13,28 +13,36 @@ ng_project(
         ],
         exclude = ["src/bundled-domino.d.ts"],
     ),
-    interop_deps = [
-        "//packages/common",
-        "//packages/common/http",
-        "//packages/compiler",
-        "//packages/platform-browser",
-        "//packages/zone.js/lib:zone_d_ts",
-        ":bundled_domino_lib",
-    ],
     deps = [
+        ":bundled_domino_lib",
         "//:node_modules/@types/node",
         "//:node_modules/rxjs",
         "//:node_modules/xhr2",
-        "//packages/core:core_rjs",
+        "//packages/common",
+        "//packages/common/http",
+        "//packages/core",
+        "//packages/platform-browser",
     ],
 )
 
-esbuild(
+rollup.rollup(
     name = "bundled_domino",
-    entry_point = "@npm//:node_modules/domino/lib/index.js",
-    format = "esm",
-    output = "src/bundled-domino.mjs",
-    deps = ["@npm//domino"],
+    srcs = [
+        "//:node_modules/@rollup/plugin-commonjs",
+        "//:node_modules/domino",
+    ],
+    outs = [
+        "src/bundled-domino.mjs",
+    ],
+    args = [
+        "--format=esm",
+        "--plugin=@rollup/plugin-commonjs",
+        "--input=node_modules/domino/lib/index.js",
+        "--sourcemap=false",
+        "--file=packages/platform-server/src/bundled-domino.mjs",
+    ],
+    progress_message = "Bundling domino",
+    silent_on_success = True,
 )
 
 js_library(
@@ -47,18 +55,18 @@ js_library(
 
 tsec_test(
     name = "tsec_test",
-    target = "platform-server",
-    tsconfig = "//packages:tsec_config",
+    target = ":platform-server",
+    tsconfig = "//packages:tsconfig_build",
 )
 
 ng_package(
-    name = "npm_package",
     srcs = [
         "package.json",
     ],
     externals = [
         "xhr2",
     ],
+    package = "@angular/platform-server",
     side_effect_entry_points = [
         "@angular/platform-server/init",
     ],
@@ -86,8 +94,8 @@ api_golden_test_npm_package(
         ":npm_package",
         "//goldens:public-api",
     ],
-    golden_dir = "angular/goldens/public-api/platform-server",
-    npm_package = "angular/packages/platform-server/npm_package",
+    golden_dir = "goldens/public-api/platform-server",
+    npm_package = "packages/platform-server/npm_package",
 )
 
 filegroup(

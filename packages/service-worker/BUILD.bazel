@@ -1,10 +1,8 @@
-load("@aspect_rules_ts//ts:defs.bzl", rules_js_tsconfig = "ts_config")
-load("//tools:defaults.bzl", "api_golden_test", "api_golden_test_npm_package", "generate_api_docs", "ng_package")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "api_golden_test", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "ng_project", "ts_config")
 
 package(default_visibility = ["//visibility:public"])
 
-rules_js_tsconfig(
+ts_config(
     name = "tsconfig_build",
     src = "tsconfig.json",
     deps = [
@@ -21,11 +19,9 @@ ng_project(
             "src/**/*.ts",
         ],
     ),
-    interop_deps = [
-        "//packages/core",
-    ],
     deps = [
         "//:node_modules/rxjs",
+        "//packages/core",
     ],
 )
 
@@ -46,8 +42,6 @@ genrule(
 )
 
 ng_package(
-    name = "npm_package",
-    package_name = "@angular/service-worker",
     srcs = [
         "package.json",
         "safety-worker.js",
@@ -55,6 +49,7 @@ ng_package(
         ":ngsw_worker_renamed",
         "//packages/service-worker/config:schema.json",
     ],
+    package = "@angular/service-worker",
     tags = [
         "release-with-framework",
     ],
@@ -76,8 +71,8 @@ api_golden_test_npm_package(
         ":npm_package",
         "//goldens:public-api",
     ],
-    golden_dir = "angular/goldens/public-api/service-worker",
-    npm_package = "angular/packages/service-worker/npm_package",
+    golden_dir = "goldens/public-api/service-worker",
+    npm_package = "packages/service-worker/npm_package",
 )
 
 filegroup(
@@ -94,8 +89,8 @@ api_golden_test(
         "//goldens:public-api",
         "//packages/service-worker",
     ],
-    entry_point = "angular/packages/service-worker/src/errors.d.ts",
-    golden = "angular/goldens/public-api/service-worker/errors.api.md",
+    entry_point = "src/errors.d.ts",
+    golden = "goldens/public-api/service-worker/errors.api.md",
 )
 
 generate_api_docs(

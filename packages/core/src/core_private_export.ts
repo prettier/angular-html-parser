@@ -93,6 +93,7 @@ export {
   IS_HYDRATION_DOM_REUSE_ENABLED as ɵIS_HYDRATION_DOM_REUSE_ENABLED,
   IS_INCREMENTAL_HYDRATION_ENABLED as ɵIS_INCREMENTAL_HYDRATION_ENABLED,
   JSACTION_BLOCK_ELEMENT_MAP as ɵJSACTION_BLOCK_ELEMENT_MAP,
+  IS_ENABLED_BLOCKING_INITIAL_NAVIGATION as ɵIS_ENABLED_BLOCKING_INITIAL_NAVIGATION,
 } from './hydration/tokens';
 export {
   HydrationStatus as ɵHydrationStatus,
@@ -171,3 +172,9 @@ export {getClosestComponentName as ɵgetClosestComponentName} from './internal/g
 export {getComponentDef as ɵgetComponentDef} from './render3/def_getters';
 export {DEHYDRATED_BLOCK_REGISTRY as ɵDEHYDRATED_BLOCK_REGISTRY} from './defer/registry';
 export {TimerScheduler as ɵTimerScheduler} from './defer/timer_scheduler';
+export {ɵassertType} from './type_checking';
+export {
+  ElementRegistry as ɵElementRegistry,
+  AnimationRemovalRegistry as ɵAnimationRemovalRegistry,
+} from './animation/element_removal_registry';
+export {ANIMATIONS_DISABLED as ɵANIMATIONS_DISABLED} from './animation/interfaces';

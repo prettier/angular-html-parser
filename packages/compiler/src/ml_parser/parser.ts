@@ -125,10 +125,7 @@ export class Parser {
         isTagNameCaseSensitive
     );
     parser.build();
-    return new ParseTreeResult(
-      parser.rootNodes,
-      (tokenizeResult.errors as ParseError[]).concat(parser.errors),
-    );
+    return new ParseTreeResult(parser.rootNodes, [...tokenizeResult.errors, ...parser.errors]);
   }
 }
 
@@ -481,6 +478,7 @@ class _TreeBuilder {
     this._consumeAttributesAndDirectives(attrs, directives);
 
     const fullName = this._getElementFullName(startTagToken, this._getClosestElementLikeParent());
+    const tagDef = this._getTagDefinition(fullName);
     let selfClosing = false;
     // Note: There could have been a tokenizer error
     // so that we don't get a token for the end tag...
@@ -526,7 +524,8 @@ class _TreeBuilder {
       span,
       startSpan,
       undefined,
-      nameSpan
+      nameSpan,
+      tagDef?.isVoid ?? false,
     );
     const parent = this._getContainer();
     const isClosedByChild =

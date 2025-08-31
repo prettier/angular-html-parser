@@ -101,7 +101,11 @@ export function ngswAppInitializer(): void {
       }
 
       navigator.serviceWorker
-        .register(script, {scope: options.scope})
+        .register(script, {
+          scope: options.scope,
+          updateViaCache: options.updateViaCache,
+          type: options.type,
+        })
         .catch((err) =>
           console.error(
             formatRuntimeError(
@@ -151,6 +155,23 @@ export abstract class SwRegistrationOptions {
    * Default: true
    */
   enabled?: boolean;
+
+  /**
+   * The value of the setting used to determine the circumstances in which the browser
+   * will consult the HTTP cache when it tries to update the service worker or any scripts that are imported via importScripts().
+   * [ServiceWorkerRegistration.updateViaCache](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/updateViaCache)
+   */
+  updateViaCache?: ServiceWorkerUpdateViaCache;
+
+  /**
+   * The type of the ServiceWorker script to register.
+   * [ServiceWorkerRegistration#type](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/register#type)
+   * - `classic`: Registers the script as a classic worker. ES module features such as `import` and `export` are NOT allowed in the script.
+   * - `module`: Registers the script as an ES module. Allows use of `import`/`export` syntax and module features.
+   *
+   * @default 'classic'
+   */
+  type?: WorkerType;
 
   /**
    * A URL that defines the ServiceWorker's registration scope; that is, what range of URLs it can

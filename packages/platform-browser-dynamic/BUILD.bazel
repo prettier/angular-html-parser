@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -11,22 +10,20 @@ ng_project(
             "src/**/*.ts",
         ],
     ),
-    interop_deps = [
-        "//packages:types",
-        "//packages/compiler",
-    ],
     deps = [
-        "//packages/common:common_rjs",
-        "//packages/core:core_rjs",
-        "//packages/platform-browser:platform-browser_rjs",
+        "//packages:types",
+        "//packages/common",
+        "//packages/compiler",
+        "//packages/core",
+        "//packages/platform-browser",
     ],
 )
 
 ng_package(
-    name = "npm_package",
     srcs = [
         "package.json",
     ],
+    package = "@angular/platform-browser-dynamic",
     side_effect_entry_points = [
         "@angular/platform-browser-dynamic",
         "@angular/platform-browser-dynamic/testing",
@@ -54,8 +51,8 @@ api_golden_test_npm_package(
         ":npm_package",
         "//goldens:public-api",
     ],
-    golden_dir = "angular/goldens/public-api/platform-browser-dynamic",
-    npm_package = "angular/packages/platform-browser-dynamic/npm_package",
+    golden_dir = "goldens/public-api/platform-browser-dynamic",
+    npm_package = "packages/platform-browser-dynamic/npm_package",
 )
 
 filegroup(

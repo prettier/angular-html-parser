@@ -1,6 +1,5 @@
-load("@npm//@bazel/esbuild:index.bzl", "esbuild", "esbuild_config")
-load("//tools:defaults.bzl", "extract_types", "pkg_npm")
-load("//tools:defaults2.bzl", "ts_config", "ts_project")
+load("@aspect_rules_esbuild//esbuild:defs.bzl", "esbuild")
+load("//tools:defaults.bzl", "npm_package", "ts_config", "ts_project")
 
 ts_config(
     name = "tsconfig_build",
@@ -18,10 +17,6 @@ ts_project(
             "**/*.ts",
         ],
     ),
-    interop_deps = [
-        "//packages/compiler",
-        "//packages/compiler-cli/private",
-    ],
     visibility = ["//packages/localize/tools:__subpackages__"],
     deps = [
         "//:node_modules/@babel/core",
@@ -29,18 +24,15 @@ ts_project(
         "//:node_modules/@types/node",
         "//:node_modules/@types/yargs",
         "//:node_modules/tinyglobby",
-        "//packages/localize:localize_rjs",
+        "//packages/compiler",
+        "//packages/compiler-cli/private",
+        "//packages/localize",
     ],
-)
-
-esbuild_config(
-    name = "esbuild_config",
-    config_file = "esbuild.config.js",
 )
 
 esbuild(
     name = "bundles",
-    config = ":esbuild_config",
+    config = "esbuild.config.js",
     entry_points = [
         ":index.ts",
         ":src/extract/cli.ts",
@@ -65,17 +57,11 @@ esbuild(
     ],
 )
 
-extract_types(
-    name = "api_type_definitions",
-    deps = [":tools"],
-)
-
-pkg_npm(
-    name = "npm_package",
-    srcs = ["README.md"],
-    visibility = ["//packages/localize:__pkg__"],
-    deps = [
-        ":api_type_definitions",
+npm_package(
+    srcs = [
+        "README.md",
         ":bundles",
+        ":tools_types",
     ],
+    visibility = ["//packages/localize:__pkg__"],
 )

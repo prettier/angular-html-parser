@@ -21,6 +21,14 @@ describe('type check blocks', () => {
     expect(tcb('{{hello}} {{world}}')).toContain('"" + (((this).hello)) + (((this).world));');
   });
 
+  it('should generate an animation leave function call', () => {
+    const TEMPLATE = '<p (animate.leave)="animateFn($event)"></p>';
+    const results = tcb(TEMPLATE);
+    expect(results).toContain(
+      '($event: i1.AnimationCallbackEvent): any => { (this).animateFn($event); };',
+    );
+  });
+
   it('should generate literal map expressions', () => {
     const TEMPLATE = '{{ method({foo: a, bar: b}) }}';
     expect(tcb(TEMPLATE)).toContain('(this).method({ "foo": ((this).a), "bar": ((this).b) })');
@@ -39,6 +47,12 @@ describe('type check blocks', () => {
   it('should handle unary - operator', () => {
     const TEMPLATE = `{{-1}}`;
     expect(tcb(TEMPLATE)).toContain('(-1)');
+  });
+
+  it('should assert the type for DOM events bound on void elements', () => {
+    const result = tcb(`<input (input)="handleInput($event.target.value)">`);
+    expect(result).toContain('i1.ɵassertType<typeof _t1>($event.target);');
+    expect(result).toContain('(this).handleInput((((($event).target)).value));');
   });
 
   it('should handle keyed property access', () => {
@@ -73,6 +87,19 @@ describe('type check blocks', () => {
     expect(tcb('{{void a}}')).toContain('void (((this).a))');
     expect(tcb('{{!(void a)}}')).toContain('!((void (((this).a))))');
     expect(tcb('{{!(void a === "object")}}')).toContain('!(((void (((this).a))) === ("object")))');
+  });
+
+  it('should handle assignment expressions', () => {
+    expect(tcb('<b (click)="a = b"></b>')).toContain('(((this).a)) = (((this).b));');
+    expect(tcb('<b (click)="a += b"></b>')).toContain('(((this).a)) += (((this).b));');
+    expect(tcb('<b (click)="a -= b"></b>')).toContain('(((this).a)) -= (((this).b));');
+    expect(tcb('<b (click)="a *= b"></b>')).toContain('(((this).a)) *= (((this).b));');
+    expect(tcb('<b (click)="a /= b"></b>')).toContain('(((this).a)) /= (((this).b));');
+    expect(tcb('<b (click)="a %= b"></b>')).toContain('(((this).a)) %= (((this).b));');
+    expect(tcb('<b (click)="a **= b"></b>')).toContain('(((this).a)) **= (((this).b));');
+    expect(tcb('<b (click)="a &&= b"></b>')).toContain('(((this).a)) &&= (((this).b));');
+    expect(tcb('<b (click)="a ||= b"></b>')).toContain('(((this).a)) ||= (((this).b));');
+    expect(tcb('<b (click)="a ??= b"></b>')).toContain('(((this).a)) ??= (((this).b));');
   });
 
   it('should handle exponentiation expressions', () => {
@@ -358,7 +385,7 @@ describe('type check blocks', () => {
     const block = tcb(TEMPLATE);
     expect(block).not.toContain('"div"');
     expect(block).toContain(
-      'var _t2 = document.createElement("button"); ' + 'var _t1 = _t2; ' + '_t2.addEventListener',
+      'var _t1 = document.createElement("button"); ' + 'var _t2 = _t1; ' + '_t1.addEventListener',
     );
   });
 
@@ -1050,6 +1077,7 @@ describe('type check blocks', () => {
       unusedStandaloneImports: 'warning',
       allowSignalsInTwoWayBindings: true,
       checkTwoWayBoundEvents: true,
+      allowDomEventAssertion: true,
     };
 
     describe('config.applyTemplateContextGuards', () => {
@@ -1426,6 +1454,14 @@ describe('type check blocks', () => {
         const block = tcb(TEMPLATE, DIRECTIVES, enableChecks);
         expect(block).toContain('var _t1 = null! as i0.Dir; ' + '_t1.fieldA = (((this).foo)); ');
       });
+    });
+
+    it('should _not_ assert the type for DOM events bound on void elements when disabled', () => {
+      const result = tcb(`<input (input)="handleInput($event.target.value)">`, undefined, {
+        ...BASE_CONFIG,
+        allowDomEventAssertion: false,
+      });
+      expect(result).not.toContain('ɵassertType');
     });
 
     describe('config.allowSignalsInTwoWayBindings', () => {
@@ -1829,6 +1865,33 @@ describe('type check blocks', () => {
 
       expect(tcb(TEMPLATE)).toContain(
         'var _t1 = ((((this).expr)) === (1)); if (((((this).expr)) === (1)) && _t1) { "" + (_t1); } } }',
+      );
+    });
+
+    it('should generate an else if block with an `as` expression', () => {
+      const TEMPLATE = `@if (expr === 1) {
+        {{expr}}
+      } @else if (expr === 2; as alias) {
+        {{alias}}
+      }`;
+
+      expect(tcb(TEMPLATE)).toContain(
+        'var _t1 = ((((this).expr)) === (2)); if ((((this).expr)) === (1)) { "" + (((this).expr)); } ' +
+          'else if (((((this).expr)) === (2)) && _t1) { "" + (_t1); }',
+      );
+    });
+
+    it('should generate block where `@if` and `@else if` have the same alias name', () => {
+      const TEMPLATE = `@if (expr === 1; as alias) {
+        {{alias}}
+      } @else if (expr === 2; as alias) {
+        {{alias}}
+      }`;
+
+      expect(tcb(TEMPLATE)).toContain(
+        'var _t1 = ((((this).expr)) === (1)); var _t2 = ((((this).expr)) === (2)); ' +
+          'if (((((this).expr)) === (1)) && _t1) { "" + (_t1); } ' +
+          'else if (((((this).expr)) === (2)) && _t2) { "" + (_t2); }',
       );
     });
 

@@ -6,9 +6,15 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {animate, style, transition, trigger} from '@angular/animations';
-import {Component, computed, inject, OnDestroy, OnInit, signal} from '@angular/core';
-import {Events, MessageBus, SupportedApis} from '../../../protocol';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnDestroy,
+  signal,
+} from '@angular/core';
+import {Events, MessageBus} from '../../../protocol';
 import {interval} from 'rxjs';
 
 import {FrameManager} from './application-services/frame_manager';
@@ -18,8 +24,8 @@ import {DevToolsTabsComponent} from './devtools-tabs/devtools-tabs.component';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {Frame} from './application-environment';
 import {BrowserStylesService} from './application-services/browser_styles_service';
-import {WINDOW_PROVIDER} from './application-providers/window_provider';
 import {MatIconRegistry} from '@angular/material/icon';
+import {SUPPORTED_APIS} from './application-providers/supported_apis';
 
 const DETECT_ANGULAR_ATTEMPTS = 10;
 
@@ -47,26 +53,17 @@ const LAST_SUPPORTED_VERSION = 9;
   selector: 'ng-devtools',
   templateUrl: './devtools.component.html',
   styleUrls: ['./devtools.component.scss'],
-  animations: [
-    trigger('enterAnimation', [
-      transition(':enter', [style({opacity: 0}), animate('200ms', style({opacity: 1}))]),
-      transition(':leave', [style({opacity: 1}), animate('200ms', style({opacity: 0}))]),
-    ]),
-  ],
   imports: [DevToolsTabsComponent, MatTooltip, MatProgressSpinnerModule, MatTooltipModule],
-  providers: [WINDOW_PROVIDER, ThemeService],
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DevToolsComponent implements OnDestroy {
+  protected readonly supportedApis = inject(SUPPORTED_APIS);
+
   readonly AngularStatus = AngularStatus;
   readonly angularStatus = signal(AngularStatus.UNKNOWN);
   readonly angularVersion = signal<string | undefined>(undefined);
   readonly angularIsInDevMode = signal(true);
   readonly hydration = signal(false);
-  readonly supportedApis = signal<SupportedApis>({
-    profiler: false,
-    dependencyInjection: false,
-    routes: false,
-  });
   readonly ivy = signal<boolean | undefined>(undefined);
 
   readonly supportedVersion = computed(() => {
@@ -103,7 +100,7 @@ export class DevToolsComponent implements OnDestroy {
       this.ivy.set(ivy);
       this._interval$.unsubscribe();
       this.hydration.set(hydration);
-      this.supportedApis.set(supportedApis);
+      this.supportedApis.init(supportedApis);
     });
   }
 

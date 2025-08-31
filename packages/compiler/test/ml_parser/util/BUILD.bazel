@@ -1,6 +1,6 @@
-load("//tools:defaults.bzl", "ts_library")
+load("//tools:defaults.bzl", "ts_project")
 
-ts_library(
+ts_project(
     name = "util",
     testonly = True,
     srcs = glob(["**/*.ts"]),

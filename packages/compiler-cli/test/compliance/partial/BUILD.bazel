@@ -1,6 +1,6 @@
-load("//tools:defaults.bzl", "ts_library")
+load("//tools:defaults.bzl", "ts_project")
 
-ts_library(
+ts_project(
     name = "generate_golden_partial_lib",
     testonly = True,
     srcs = [

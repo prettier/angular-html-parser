@@ -107,6 +107,7 @@ import {
   DtsTransformRegistry,
   ivyTransformFactory,
   TraitCompiler,
+  signalMetadataTransform,
 } from '../../transform';
 import {TemplateTypeCheckerImpl} from '../../typecheck';
 import {OptimizeFor, TemplateTypeChecker, TypeCheckingConfig} from '../../typecheck/api';
@@ -479,6 +480,7 @@ export class NgCompiler {
     this.constructionDiagnostics.push(
       ...this.adapter.constructionDiagnostics,
       ...verifyCompatibleTypeCheckOptions(this.options),
+      ...verifyEmitDeclarationOnly(this.options),
     );
 
     this.currentProgram = inputProgram;
@@ -819,7 +821,7 @@ export class NgCompiler {
 
     const defaultImportTracker = new DefaultImportTracker();
 
-    const before = [
+    const before: ts.TransformerFactory<ts.SourceFile>[] = [
       ivyTransformFactory(
         compilation.traitCompiler,
         compilation.reflector,
@@ -859,7 +861,7 @@ export class NgCompiler {
           },
         )(ctx);
 
-        return (sourceFile) => {
+        return (sourceFile: ts.SourceFile) => {
           if (!sourceFilesWithJit.has(sourceFile.fileName)) {
             return sourceFile;
           }
@@ -867,6 +869,9 @@ export class NgCompiler {
         };
       });
     }
+
+    // Typescript transformer to add debugName metadata to signal functions.
+    before.push(signalMetadataTransform(this.inputProgram));
 
     const afterDeclarations: ts.TransformerFactory<ts.SourceFile>[] = [];
 
@@ -1053,6 +1058,9 @@ export class NgCompiler {
     const allowSignalsInTwoWayBindings =
       this.angularCoreVersion === null ||
       coreVersionSupportsFeature(this.angularCoreVersion, '>= 17.2.0-0');
+    const allowDomEventAssertion =
+      this.angularCoreVersion === null ||
+      coreVersionSupportsFeature(this.angularCoreVersion, '>= 20.2.0');
 
     // First select a type-checking configuration, based on whether full template type-checking is
     // requested.
@@ -1097,6 +1105,7 @@ export class NgCompiler {
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         allowSignalsInTwoWayBindings,
         checkTwoWayBoundEvents,
+        allowDomEventAssertion,
       };
     } else {
       typeCheckingConfig = {
@@ -1132,6 +1141,7 @@ export class NgCompiler {
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         allowSignalsInTwoWayBindings,
         checkTwoWayBoundEvents,
+        allowDomEventAssertion,
       };
     }
 
@@ -1827,6 +1837,19 @@ ${allowedCategoryLabels.join('\n')}
       });
     }
   }
+}
+
+function verifyEmitDeclarationOnly(options: NgCompilerOptions): ts.Diagnostic[] {
+  if (!options.emitDeclarationOnly || !!options._experimentalAllowEmitDeclarationOnly) {
+    return [];
+  }
+  return [
+    makeConfigDiagnostic({
+      category: ts.DiagnosticCategory.Error,
+      code: ErrorCode.CONFIG_EMIT_DECLARATION_ONLY_UNSUPPORTED,
+      messageText: 'TS compiler option "emitDeclarationOnly" is not supported.',
+    }),
+  ];
 }
 
 function makeConfigDiagnostic({

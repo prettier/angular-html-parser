@@ -16,6 +16,7 @@ import {
   BaseResourceOptions,
   ɵRuntimeError,
   ɵRuntimeErrorCode,
+  ResourceStreamItem,
 } from '../../src/core';
 import {Observable, Subscription} from 'rxjs';
 import {encapsulateResourceError} from '../../src/resource/resource';
@@ -54,19 +55,19 @@ export function rxResource<T, R>(opts: RxResourceOptions<T, R>): ResourceRef<T |
     ...opts,
     loader: undefined,
     stream: (params) => {
-      let sub: Subscription;
+      let sub: Subscription | undefined;
 
       // Track the abort listener so it can be removed if the Observable completes (as a memory
       // optimization).
-      const onAbort = () => sub.unsubscribe();
+      const onAbort = () => sub?.unsubscribe();
       params.abortSignal.addEventListener('abort', onAbort);
 
       // Start off stream as undefined.
-      const stream = signal<{value: T} | {error: Error}>({value: undefined as T});
-      let resolve: ((value: Signal<{value: T} | {error: Error}>) => void) | undefined;
-      const promise = new Promise<Signal<{value: T} | {error: Error}>>((r) => (resolve = r));
+      const stream = signal<ResourceStreamItem<T>>({value: undefined as T});
+      let resolve: ((value: Signal<ResourceStreamItem<T>>) => void) | undefined;
+      const promise = new Promise<Signal<ResourceStreamItem<T>>>((r) => (resolve = r));
 
-      function send(value: {value: T} | {error: Error}): void {
+      function send(value: ResourceStreamItem<T>): void {
         stream.set(value);
         resolve?.(stream);
         resolve = undefined;

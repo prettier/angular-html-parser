@@ -1,33 +1,36 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "karma_web_test_suite")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "ng_project", "ng_web_test_suite", "ts_config")
 
 package(default_visibility = ["//visibility:private"])
+
+ts_config(
+    name = "tsconfig",
+    src = "tsconfig.json",
+    deps = [
+        "//packages/core:tsconfig_test",
+    ],
+)
 
 ng_project(
     name = "selectorless_test_lib",
     testonly = True,
     srcs = glob(["**/*.ts"]),
-    extends = "//packages/core:tsconfig_test",
-    interop_deps = [
+    tsconfig = ":tsconfig",
+    visibility = ["//:__pkg__"],
+    deps = [
         "//packages/core",
         "//packages/core/testing",
-        "//packages/zone.js/lib:zone_d_ts",
     ],
-    tsconfig = ":tsconfig.json",
-    visibility = ["//:__pkg__"],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "selectorless",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":selectorless_test_lib",
-        "//packages/zone.js/lib:zone_d_ts",
-        "@npm//source-map",
+        "//:node_modules/source-map",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "selectorless_web",
     deps = [
         ":selectorless_test_lib",

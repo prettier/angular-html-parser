@@ -1,28 +1,24 @@
-load("//tools:defaults.bzl", "jasmine_node_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "ts_project")
 
 ts_project(
     name = "test_lib",
     testonly = True,
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
-        "//packages:types",
-    ],
     deps = [
         "//:node_modules/protractor",
-        "//packages/benchpress:benchpress_rjs",
-        "//packages/core:core_rjs",
-        "//packages/core/testing:testing_rjs",
+        "//packages:types",
+        "//packages/benchpress",
+        "//packages/core",
+        "//packages/core/testing",
     ],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":test_lib",
+        "//:node_modules/protractor",
         "//packages/benchpress",
         "//packages/core/testing",
-        "@npm//protractor",
     ],
 )

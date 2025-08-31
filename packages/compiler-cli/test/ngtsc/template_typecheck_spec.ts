@@ -5178,7 +5178,7 @@ suppress
         expect(diags.length).toBe(0);
       });
 
-      it('should not expose the aliased expression outside of the main block', () => {
+      it('should not expose the aliased expression outside of the current block', () => {
         env.write(
           'test.ts',
           `
@@ -5722,6 +5722,74 @@ suppress
         const diags = env.driveDiagnostics();
         expect(diags.map((d) => ts.flattenDiagnosticMessageText(d.messageText, ''))).toEqual([
           `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+        ]);
+      });
+
+      it('should narrow the type of the `@else if` alias', () => {
+        env.write(
+          'test.ts',
+          `
+          import {Component} from '@angular/core';
+
+          @Component({
+            template: \`
+              @if (typeof value === 'number') {
+                {{acceptsNumber(value)}}
+              } @else if (typeof value === 'string'; as alias) {
+                {{acceptsNumber(alias)}}
+              }
+            \`,
+          })
+          export class Main {
+            value: string | number;
+
+            acceptsNumber(value: number) {
+              return value;
+            }
+          }
+        `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(1);
+        expect(diags[0].messageText).toBe(
+          `Argument of type 'boolean' is not assignable to parameter of type 'number'.`,
+        );
+      });
+
+      it('should handle same alias name for `@if` and `@else if`', () => {
+        env.write(
+          'test.ts',
+          `
+          import {Component} from '@angular/core';
+
+          @Component({
+            template: \`
+              @if (value; as alias) {
+                {{acceptsNumber(value)}}
+              } @else if (value; as alias) {
+                {{acceptsBoolean(alias)}}
+              }
+            \`,
+          })
+          export class Main {
+            value: boolean | string;
+
+            acceptsNumber(value: number) {
+              return value;
+            }
+
+            acceptsBoolean(value: boolean) {
+              return value;
+            }
+          }
+        `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.map((d) => ts.flattenDiagnosticMessageText(d.messageText, ''))).toEqual([
+          `Argument of type 'string | true' is not assignable to parameter of type 'number'.  Type 'string' is not assignable to type 'number'.`,
+          `Argument of type 'string | true' is not assignable to parameter of type 'boolean'.  Type 'string' is not assignable to type 'boolean'.`,
         ]);
       });
     });
@@ -8490,6 +8558,52 @@ suppress
 
         const diags = env.driveDiagnostics();
         expect(diags.length).toBe(0);
+      });
+    });
+
+    describe('DOM event target type inference', () => {
+      beforeEach(() => {
+        env.tsconfig({strictTemplates: true});
+      });
+
+      it('should infer the type of the event target when bound on a void element', () => {
+        env.write(
+          'test.ts',
+          `
+          import {Component} from '@angular/core';
+
+          @Component({template: '<input (input)="handleEvent($event.target)">'})
+          export class TestCmp {
+            handleEvent(value: string) {}
+          }
+        `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(1);
+        expect(diags[0].messageText).toBe(
+          `Argument of type 'HTMLInputElement' is not assignable to parameter of type 'string'.`,
+        );
+      });
+
+      it('should not infer the type of the event target when bound on a non-void element', () => {
+        env.write(
+          'test.ts',
+          `
+          import {Component} from '@angular/core';
+
+          @Component({template: '<div (click)="handleEvent($event.target)"></div>'})
+          export class TestCmp {
+            handleEvent(value: string) {}
+          }
+        `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(1);
+        expect((diags[0].messageText as ts.DiagnosticMessageChain).messageText).toBe(
+          `Argument of type 'EventTarget | null' is not assignable to parameter of type 'string'.`,
+        );
       });
     });
   });

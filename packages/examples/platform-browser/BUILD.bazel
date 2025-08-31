@@ -1,16 +1,13 @@
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "ng_project")
 
 package(default_visibility = ["//visibility:public"])
 
 ng_project(
     name = "platform_browser_examples",
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
-        "//packages/compiler",
-        "//packages/platform-browser",
-    ],
     deps = [
-        "//packages/core:core_rjs",
+        "//packages/core",
+        "//packages/platform-browser",
     ],
 )
 

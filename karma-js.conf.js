@@ -42,8 +42,6 @@ module.exports = function (config) {
       {pattern: 'node_modules/angular-1.8/angular?(.min).js', included: false, watched: false},
       {pattern: 'node_modules/angular-mocks-1.8/angular-mocks.js', included: false, watched: false},
 
-      'node_modules/jasmine-ajax/lib/mock-ajax.js',
-
       // Static test assets.
       {pattern: 'packages/platform-browser/test/static_assets/**/*', included: false},
       {pattern: 'packages/platform-browser/test/browser/static_assets/**/*', included: false},
@@ -64,7 +62,7 @@ module.exports = function (config) {
     // Bazel inter-op: Allow tests to request resources from either
     //   /base/node_modules/path/to/thing
     // or
-    //   /base/angular/node_modules/path/to/thing
+    //   /base/_main/node_modules/path/to/thing
     // This can be removed when all karma tests are run under Bazel, then we
     // don't need this entire config file.
     proxies: {

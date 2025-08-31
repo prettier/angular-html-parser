@@ -40,7 +40,7 @@ export const missingImportMeta: CodeActionMeta = {
   },
 };
 
-function getCodeActions({typeCheckInfo, start, compiler}: CodeActionContext) {
+function getCodeActions({typeCheckInfo, start, compiler, tsLs, preferences}: CodeActionContext) {
   if (typeCheckInfo === null) {
     return [];
   }
@@ -57,7 +57,13 @@ function getCodeActions({typeCheckInfo, start, compiler}: CodeActionContext) {
     target.context.kind === TargetNodeKind.ElementInTagContext &&
     target.context.node instanceof TmplAstElement
   ) {
-    const allPossibleDirectives = checker.getPotentialTemplateDirectives(typeCheckInfo.declaration);
+    const allPossibleDirectives = checker.getPotentialTemplateDirectives(
+      typeCheckInfo.declaration,
+      tsLs,
+      {
+        includeExternalModule: preferences.includeCompletionsForModuleExports ?? false,
+      },
+    );
     matches = getDirectiveMatchesForElementTag(target.context.node, allPossibleDirectives);
   } else if (
     target.context.kind === TargetNodeKind.RawExpression &&
@@ -77,7 +83,14 @@ function getCodeActions({typeCheckInfo, start, compiler}: CodeActionContext) {
   }
   for (const currMatch of matches.values()) {
     const currentMatchCodeAction =
-      getCodeActionToImportTheDirectiveDeclaration(compiler, importOn, currMatch) ?? [];
+      getCodeActionToImportTheDirectiveDeclaration(
+        compiler,
+        typeCheckInfo.declaration,
+        importOn,
+        currMatch,
+        tsLs,
+        preferences.includeCompletionsForModuleExports,
+      ) ?? [];
 
     codeActions.push(
       ...currentMatchCodeAction.map<ts.CodeFixAction>((action) => {

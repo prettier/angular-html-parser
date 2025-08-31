@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "karma_web_test_suite", "nodejs_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "js_test", "ng_web_test_suite", "ts_project")
 
 ts_project(
     name = "signal_authoring_signature_test_lib",
@@ -11,7 +10,9 @@ ts_project(
         "signal_queries_signature_test.ts",
         "unwrap_writable_signal_signature_test.ts",
     ],
-    interop_deps = ["//packages/core"],
+    deps = [
+        "//packages/core",
+    ],
 )
 
 ts_project(
@@ -27,13 +28,13 @@ filegroup(
     name = "types",
     testonly = True,
     srcs = [
-        ":signal_authoring_signature_test_lib_rjs",
-        ":type_tester_lib_rjs",
+        ":signal_authoring_signature_test_lib",
+        ":type_tester_lib",
     ],
     output_group = "types",
 )
 
-nodejs_test(
+js_test(
     name = "type_test",
     data = [
         ":type_tester_lib",
@@ -50,22 +51,21 @@ ts_project(
         "input_signal_spec.ts",
         "model_input_spec.ts",
     ],
-    interop_deps = [
+    deps = [
         "//packages/core",
         "//packages/core/primitives/signals",
         "//packages/core/testing",
     ],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":test_lib",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "test_web",
     deps = [":test_lib"],
 )

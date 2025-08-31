@@ -10,6 +10,20 @@
   "deprecated": false,
   "options": [
     {
+      "name": "ai-config",
+      "type": "array",
+      "enum": [
+        "claude",
+        "copilot",
+        "cursor",
+        "gemini",
+        "jetbrains",
+        "none",
+        "windsurf"
+      ],
+      "description": "Specifies which AI tools to generate configuration files for. These file are used to improve the outputs of AI tools by following the best practices."
+    },
+    {
       "name": "collection",
       "type": "string",
       "aliases": [
@@ -104,11 +118,10 @@
       "name": "package-manager",
       "type": "string",
       "enum": [
+        "bun",
         "npm",
-        "yarn",
         "pnpm",
-        "cnpm",
-        "bun"
+        "yarn"
       ],
       "description": "The package manager used to install dependencies."
     },
@@ -172,9 +185,10 @@
       "type": "string",
       "enum": [
         "css",
-        "scss",
+        "less",
         "sass",
-        "less"
+        "scss",
+        "tailwind"
       ],
       "description": "The type of stylesheet files to be created for components in the initial project."
     },
@@ -191,7 +205,6 @@
     {
       "name": "zoneless",
       "type": "boolean",
-      "default": false,
       "description": "Create an initial application that does not utilize `zone.js`."
     }
   ]

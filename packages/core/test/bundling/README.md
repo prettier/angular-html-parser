@@ -6,21 +6,24 @@ This is asserted by keeping gold files of all symbols which are expected to be r
 When doing renaming it is often necessary to update the gold files; to do so use these scripts:
 
 ```
-yarn run symbol-extractor:check
-yarn run symbol-extractor:update
+pnpm run symbol-extractor:check
+pnpm run symbol-extractor:update
 ```
 
-## Debugging 
+## Debugging
 
-You can inspect the build output of each project by using the `bundle.debug` target. 
+You can inspect the build output of each project by building the `:bundles` target.
 
-```
-yarn bazel build  //packages/core/test/bundling/standalone_bootstrap:bundle.debug
+```bash
+pnpm bazel build //packages/core/test/bundling/standalone_bootstrap:bundles
 ```
 
-This target mostly tree shakes while keeping the symbols. To have a look at the minimal output (with inlining etc.) use the 
-`bundle.debug.min` target.
+This output is always unmangled and can be easily used for debugging. Alternatively, you
+can also serve the output by running:
 
+```bash
+pnpm bazel run //packages/core/test/bundling/standalone_bootstrap:bundles.serve
 ```
-yarn bazel build  //packages/core/test/bundling/standalone_bootstrap:bundle.debug.min
-```
+
+If needed, you can also control the Angular CLI optimizations via environment variables that
+you can set via the `env` attribute in `BUILD.bazel` of each test.

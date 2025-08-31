@@ -8,14 +8,7 @@
 
 import {CdkMenu, CdkMenuItem, CdkMenuTrigger} from '@angular/cdk/menu';
 import {DOCUMENT, Location, isPlatformBrowser} from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  OnInit,
-  PLATFORM_ID,
-  inject,
-} from '@angular/core';
+import {ChangeDetectionStrategy, Component, DestroyRef, PLATFORM_ID, inject} from '@angular/core';
 import {takeUntilDestroyed, toObservable} from '@angular/core/rxjs-interop';
 import {
   ClickOutside,
@@ -28,13 +21,13 @@ import {
 import {NavigationEnd, Router, RouterLink} from '@angular/router';
 import {filter, map, startWith} from 'rxjs/operators';
 import {DOCS_ROUTES, REFERENCE_ROUTES, TUTORIALS_ROUTES} from '../../../routes';
-import {GITHUB, MEDIUM, X, YOUTUBE, DISCORD, BLUESKY} from '../../constants/links';
-import {PagePrefix} from '../../enums/pages';
 import {Theme, ThemeManager} from '../../services/theme-manager.service';
 import {VersionManager} from '../../services/version-manager.service';
-import {PRIMARY_NAV_ID, SECONDARY_NAV_ID} from '../../constants/element-ids';
 import {ConnectionPositionPair} from '@angular/cdk/overlay';
+import {ANGULAR_LINKS} from '../../constants/links';
+import {PRIMARY_NAV_ID, SECONDARY_NAV_ID} from '../../constants/element-ids';
 import {COMMAND, CONTROL, SEARCH_TRIGGER_KEY} from '../../constants/keys';
+import {PAGE_PREFIX} from '../../constants/pages';
 
 type MenuType = 'social' | 'theme-picker' | 'version-picker';
 
@@ -45,7 +38,7 @@ type MenuType = 'social' | 'theme-picker' | 'version-picker';
   styleUrls: ['./navigation.component.scss', './mini-menu.scss', './nav-item.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class Navigation implements OnInit {
+export class Navigation {
   private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
@@ -56,19 +49,8 @@ export class Navigation implements OnInit {
   private readonly isSearchDialogOpen = inject(IS_SEARCH_DIALOG_OPEN);
   private readonly versionManager = inject(VersionManager);
 
-  readonly DOCS_ROUTE = PagePrefix.DOCS;
-  readonly HOME_ROUTE = PagePrefix.HOME;
-  readonly PLAYGROUND_ROUTE = PagePrefix.PLAYGROUND;
-  readonly REFERENCE_ROUTE = PagePrefix.REFERENCE;
-  readonly TUTORIALS_ROUTE = PagePrefix.TUTORIALS;
-
-  readonly GITHUB = GITHUB;
-  readonly X = X;
-  readonly MEDIUM = MEDIUM;
-  readonly YOUTUBE = YOUTUBE;
-  readonly DISCORD = DISCORD;
-  readonly BLUESKY = BLUESKY;
-
+  protected PAGE_PREFIX = PAGE_PREFIX;
+  protected ngLinks = ANGULAR_LINKS;
   readonly PRIMARY_NAV_ID = PRIMARY_NAV_ID;
   readonly SECONDARY_NAV_ID = SECONDARY_NAV_ID;
 
@@ -113,7 +95,7 @@ export class Navigation implements OnInit {
   isMobileNavigationOpened$ = toObservable(this.isMobileNavigationOpened);
   primaryRouteChanged$ = toObservable(this.activeRouteItem);
 
-  ngOnInit(): void {
+  constructor() {
     this.listenToRouteChange();
     this.preventToScrollContentWhenSecondaryNavIsOpened();
     this.closeMobileNavOnPrimaryRouteChange();
@@ -182,25 +164,25 @@ export class Navigation implements OnInit {
   // (*) Reference navigation tree contains items which are not start with prefix like /migrations or /errors.
   private setActivePrimaryRoute(urlAfterRedirects: string): void {
     if (urlAfterRedirects === '') {
-      this.activeRouteItem.set(PagePrefix.HOME);
-    } else if (urlAfterRedirects.startsWith(PagePrefix.DOCS)) {
-      this.activeRouteItem.set(PagePrefix.DOCS);
+      this.activeRouteItem.set(PAGE_PREFIX.HOME);
+    } else if (urlAfterRedirects.startsWith(PAGE_PREFIX.DOCS)) {
+      this.activeRouteItem.set(PAGE_PREFIX.DOCS);
     } else if (
-      urlAfterRedirects.startsWith(PagePrefix.REFERENCE) ||
-      urlAfterRedirects.startsWith(PagePrefix.API) ||
-      urlAfterRedirects.startsWith(PagePrefix.UPDATE)
+      urlAfterRedirects.startsWith(PAGE_PREFIX.REFERENCE) ||
+      urlAfterRedirects.startsWith(PAGE_PREFIX.API) ||
+      urlAfterRedirects.startsWith(PAGE_PREFIX.UPDATE)
     ) {
-      this.activeRouteItem.set(PagePrefix.REFERENCE);
-    } else if (urlAfterRedirects === PagePrefix.PLAYGROUND) {
-      this.activeRouteItem.set(PagePrefix.PLAYGROUND);
-    } else if (urlAfterRedirects.startsWith(PagePrefix.TUTORIALS)) {
-      this.activeRouteItem.set(PagePrefix.TUTORIALS);
+      this.activeRouteItem.set(PAGE_PREFIX.REFERENCE);
+    } else if (urlAfterRedirects === PAGE_PREFIX.PLAYGROUND) {
+      this.activeRouteItem.set(PAGE_PREFIX.PLAYGROUND);
+    } else if (urlAfterRedirects.startsWith(PAGE_PREFIX.TUTORIALS)) {
+      this.activeRouteItem.set(PAGE_PREFIX.TUTORIALS);
     } else if (DOCS_ROUTES.some((route) => route.path === urlAfterRedirects)) {
-      this.activeRouteItem.set(PagePrefix.DOCS);
+      this.activeRouteItem.set(PAGE_PREFIX.DOCS);
     } else if (REFERENCE_ROUTES.some((route) => route.path === urlAfterRedirects)) {
-      this.activeRouteItem.set(PagePrefix.REFERENCE);
+      this.activeRouteItem.set(PAGE_PREFIX.REFERENCE);
     } else if (TUTORIALS_ROUTES.some((route) => route.path === urlAfterRedirects)) {
-      this.activeRouteItem.set(PagePrefix.TUTORIALS);
+      this.activeRouteItem.set(PAGE_PREFIX.TUTORIALS);
     } else {
       // Reset if no active route item could be found
       this.activeRouteItem.set(null);

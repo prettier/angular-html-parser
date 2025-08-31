@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "karma_web_test_suite")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "jasmine_test", "ng_web_test_suite", "ts_project")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -9,22 +8,21 @@ ts_project(
     srcs = glob(
         ["**/*.ts"],
     ),
-    interop_deps = [
+    deps = [
         "//packages/core",
         "//packages/core/primitives/signals",
         "//packages/core/src/util",
     ],
 )
 
-jasmine_node_test(
+jasmine_test(
     name = "signals",
-    bootstrap = ["//tools/testing:node_no_angular"],
-    deps = [
+    data = [
         ":signals_lib",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "signals_web",
     deps = [
         ":signals_lib",

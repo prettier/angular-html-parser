@@ -7,29 +7,15 @@
  */
 
 /// <reference types="chrome"/>
+/// <reference types="firefox-webext-browser" />
 
 import {Platform} from '@angular/cdk/platform';
 import {inject} from '@angular/core';
 import {ApplicationOperations, Frame, TOP_LEVEL_FRAME_ID} from '../../../ng-devtools';
-import {DirectivePosition, ElementPosition} from '../../../protocol';
+import {DirectivePosition, ElementPosition, SignalNodePosition} from '../../../protocol';
 
 export class ChromeApplicationOperations extends ApplicationOperations {
   platform = inject(Platform);
-
-  private runInInspectedWindow(script: string, target: Frame) {
-    if (this.platform.FIREFOX && target.id !== TOP_LEVEL_FRAME_ID) {
-      console.error(
-        '[Angular DevTools]: This browser does not support targeting a specific frame for eval by URL.',
-      );
-      return;
-    } else if (this.platform.FIREFOX) {
-      chrome.devtools.inspectedWindow.eval(script);
-      return;
-    }
-
-    const frameURL = target.url;
-    chrome.devtools.inspectedWindow.eval(script, {frameURL: frameURL?.toString?.()});
-  }
 
   override viewSource(position: ElementPosition, target: Frame, directiveIndex?: number): void {
     const viewSource = `inspect(inspectedApplication.findConstructorByPosition('${position}', ${directiveIndex}))`;
@@ -54,5 +40,51 @@ export class ChromeApplicationOperations extends ApplicationOperations {
       args,
     )}'))`;
     this.runInInspectedWindow(inspect, target);
+  }
+
+  override inspectSignal(position: SignalNodePosition, target: Frame): void {
+    const inspectSignal = `inspect(inspectedApplication.findSignalNodeByPosition('${JSON.stringify(
+      position,
+    )}'))`;
+    this.runInInspectedWindow(inspectSignal, target);
+  }
+
+  override viewSourceFromRouter(name: string, type: string, target: Frame): void {
+    const viewSource = `inspect(inspectedApplication.findConstructorByNameForRouter('${name}', '${type}'))`;
+    this.runInInspectedWindow(viewSource, target);
+  }
+
+  override setStorageItems(items: {[key: string]: unknown}): Promise<void> {
+    return this.storage.set(items);
+  }
+
+  override getStorageItems(items: string[]): Promise<{[key: string]: unknown}> {
+    return this.storage.get(items);
+  }
+
+  override removeStorageItems(items: string[]): Promise<void> {
+    return this.storage.remove(items);
+  }
+
+  private runInInspectedWindow(script: string, target: Frame) {
+    if (this.platform.FIREFOX && target.id !== TOP_LEVEL_FRAME_ID) {
+      console.error(
+        '[Angular DevTools]: This browser does not support targeting a specific frame for eval by URL.',
+      );
+      return;
+    } else if (this.platform.FIREFOX) {
+      chrome.devtools.inspectedWindow.eval(script);
+      return;
+    }
+
+    const frameURL = target.url;
+    chrome.devtools.inspectedWindow.eval(script, {frameURL: frameURL?.toString?.()});
+  }
+
+  private get storage(): typeof browser.storage.local {
+    if (!this.platform.FIREFOX) {
+      return chrome.storage.local;
+    }
+    return browser.storage.local;
   }
 }

@@ -53,12 +53,14 @@ export class PriorityAwareMessageBus extends MessageBus<Events> {
 
   constructor(
     private _bus: MessageBus<Events>,
-    private _setTimeout: typeof setTimeout = setTimeout,
+    // Binding is necessary to ensure that `setTimeout` is called in the global context.
+    // an doesn't throw "Illegal invocation" error.
+    private _setTimeout: typeof setTimeout = setTimeout.bind(globalThis),
   ) {
     super();
   }
 
-  override on<E extends Topic>(topic: E, cb: Events[E]): void {
+  override on<E extends Topic>(topic: E, cb: Events[E]): () => void {
     return this._bus.on(topic, (...args: any) => {
       (cb as any)(...args);
       this._afterMessage(topic);

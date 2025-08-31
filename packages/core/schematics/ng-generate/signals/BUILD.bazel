@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "copy_to_bin", "ts_project")
 
 package(
     default_visibility = [
@@ -7,7 +7,7 @@ package(
     ],
 )
 
-filegroup(
+copy_to_bin(
     name = "static_files",
     srcs = ["schema.json"],
 )
@@ -15,13 +15,11 @@ filegroup(
 ts_project(
     name = "signals",
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
+    deps = [
+        "//:node_modules/@angular-devkit/schematics",
         "//packages/core/schematics/ng-generate/output-migration",
         "//packages/core/schematics/ng-generate/signal-input-migration",
         "//packages/core/schematics/ng-generate/signal-queries-migration",
         "//packages/core/schematics/utils/tsurge/helpers/angular_devkit",
-    ],
-    deps = [
-        "//:node_modules/@angular-devkit/schematics",
     ],
 )

@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "jasmine_test", "ts_project")
 
 ts_project(
     name = "test_lib",
@@ -7,31 +6,29 @@ ts_project(
     srcs = glob(
         ["**/*.ts"],
     ),
-    interop_deps = [
+    visibility = ["//packages/localize/tools/test:__subpackages__"],
+    deps = [
+        "//:node_modules/@babel/generator",
+        "//:node_modules/@types/babel__core",
+        "//:node_modules/@types/babel__generator",
+        "//:node_modules/tinyglobby",
         "//packages:types",
         "//packages/compiler",
         "//packages/compiler-cli/private",
         "//packages/compiler-cli/src/ngtsc/file_system",
         "//packages/compiler-cli/src/ngtsc/file_system/testing",
         "//packages/compiler-cli/src/ngtsc/logging/testing",
-    ],
-    visibility = ["//packages/localize/tools/test:__subpackages__"],
-    deps = [
-        "//:node_modules/@babel/generator",
-        "//:node_modules/@types/babel__generator",
-        "//:node_modules/tinyglobby",
-        "//packages/localize:localize_rjs",
-        "//packages/localize/src/utils:utils_rjs",
-        "//packages/localize/tools:tools_rjs",
-        "//packages/localize/tools/test/helpers:helpers_rjs",
+        "//packages/localize",
+        "//packages/localize/src/utils",
+        "//packages/localize/tools",
+        "//packages/localize/tools/test/helpers",
     ],
 )
 
-jasmine_node_test(
+jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node_no_angular"],
-    deps = [
+    data = [
         ":test_lib",
-        "@npm//tinyglobby",
+        "//:node_modules/tinyglobby",
     ],
 )

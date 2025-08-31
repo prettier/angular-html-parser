@@ -160,15 +160,15 @@ Note:
 The simplest way to run all the compliance tests is:
 
 ```sh
-yarn test //packages/compiler-cli/test/compliance/...
+pnpm test //packages/compiler-cli/test/compliance/...
 ```
 
 If you only want to run one of the three types of test you can be more specific:
 
 ```sh
-yarn test //packages/compiler-cli/test/compliance/full
-yarn test //packages/compiler-cli/test/compliance/linked
-yarn test //packages/compiler-cli/test/compliance/test_cases/...
+pnpm test //packages/compiler-cli/test/compliance/full
+pnpm test //packages/compiler-cli/test/compliance/linked
+pnpm test //packages/compiler-cli/test/compliance/test_cases/...
 ```
 
 (The last command runs the partial compilation tests.)
@@ -186,7 +186,7 @@ the generated partial output, we must update the `GOLDEN_PARTIAL.js` file.
 This is done by running a specific bazel rule of the form:
 
 ```sh
-bazel run //packages/compiler-cli/test/compliance/test_cases:<path/to/test_case>.golden.update
+bazel run //packages/compiler-cli/test/compliance/test_cases:<path/to/test_case>.golden
 ```
 
 where to replace `<path/to/test_case>` with the path (relative to `test_cases`) of the directory
@@ -200,21 +200,21 @@ node packages/compiler-cli/test/compliance/update_all_goldens.js
 
 ## Debugging test-cases
 
-The full and linked compliance tests are basically `jasmine_node_test` rules. As such, they can be
-debugged just like any other `jasmine_node_test`.  The standard approach is to add `--config=debug`
+The full and linked compliance tests are basically `jasmine_test` rules. As such, they can be
+debugged just like any other `jasmine_test`.  The standard approach is to add `--config=debug`
 to the Bazel test command.
 
 For example:
 
 ```sg
-yarn test //packages/compiler-cli/test/compliance/full --config=debug
-yarn test //packages/compiler-cli/test/compliance/linked --config=debug
+pnpm test //packages/compiler-cli/test/compliance/full --config=debug
+pnpm test //packages/compiler-cli/test/compliance/linked --config=debug
 ```
 
 To debug generating the partial golden output use the following form of Bazel command:
 
 ```sh
-yarn bazel run //packages/compiler-cli/test/compliance/test_cases:partial_<path/to/test_case>.debug
+pnpm bazel run //packages/compiler-cli/test/compliance/test_cases:partial_<path/to/test_case>.debug
 ```
 
 The `path/to/test_case` is relative to the `test_cases` directory. So for this `TEST_CASES.json` file at:
@@ -226,7 +226,7 @@ packages/compiler-cli/test/compliance/test_cases/r3_view_compiler_directives/mat
 The command to debug the test-cases would be:
 
 ```
-yarn bazel run //packages/compiler-cli/test/compliance/test_cases:partial_r3_view_compiler_directives/matching.debug
+pnpm bazel run //packages/compiler-cli/test/compliance/test_cases:partial_r3_view_compiler_directives/matching.debug
 ```
 
 

@@ -37,7 +37,7 @@ import {DestroyRef} from '../linker/destroy_ref';
  *
  * This internal flag is being used to gradually roll out this behavior.
  */
-const RESOURCE_VALUE_THROWS_ERRORS_DEFAULT = true;
+let RESOURCE_VALUE_THROWS_ERRORS_DEFAULT = true;
 
 /**
  * Constructs a `Resource` that projects a reactive request to an asynchronous operation defined by
@@ -130,15 +130,19 @@ abstract class BaseWritableResource<T> implements WritableResource<T> {
 
   readonly isLoading = computed(() => this.status() === 'loading' || this.status() === 'reloading');
 
-  hasValue(): this is ResourceRef<Exclude<T, undefined>> {
-    // Note: we specifically read `isError()` instead of `status()` here to avoid triggering
-    // reactive consumers which read `hasValue()`. This way, if `hasValue()` is used inside of an
-    // effect, it doesn't cause the effect to rerun on every status change.
+  // Use a computed here to avoid triggering reactive consumers if the value changes while staying
+  // either defined or undefined.
+  private readonly isValueDefined = computed(() => {
+    // Check if it's in an error state first to prevent the error from bubbling up.
     if (this.isError()) {
       return false;
     }
 
     return this.value() !== undefined;
+  });
+
+  hasValue(): this is ResourceRef<Exclude<T, undefined>> {
+    return this.isValueDefined();
   }
 
   asReadonly(): Resource<T> {
@@ -167,6 +171,7 @@ export class ResourceImpl<T, R> extends BaseWritableResource<T> implements Resou
   private pendingController: AbortController | undefined;
   private resolvePendingTask: (() => void) | undefined = undefined;
   private destroyed = false;
+  private unregisterOnDestroy: () => void;
 
   constructor(
     request: () => R,
@@ -250,7 +255,7 @@ export class ResourceImpl<T, R> extends BaseWritableResource<T> implements Resou
     this.pendingTasks = injector.get(PendingTasks);
 
     // Cancel any pending request when the resource itself is destroyed.
-    injector.get(DestroyRef).onDestroy(() => this.destroy());
+    this.unregisterOnDestroy = injector.get(DestroyRef).onDestroy(() => this.destroy());
   }
 
   override readonly status = computed(() => projectStatusOfState(this.state()));
@@ -268,11 +273,17 @@ export class ResourceImpl<T, R> extends BaseWritableResource<T> implements Resou
       return;
     }
 
-    const current = untracked(this.value);
+    const error = untracked(this.error);
     const state = untracked(this.state);
 
-    if (state.status === 'local' && (this.equal ? this.equal(current, value) : current === value)) {
-      return;
+    if (!error) {
+      const current = untracked(this.value);
+      if (
+        state.status === 'local' &&
+        (this.equal ? this.equal(current, value) : current === value)
+      ) {
+        return;
+      }
     }
 
     // Enter Local state with the user-defined value.
@@ -302,6 +313,7 @@ export class ResourceImpl<T, R> extends BaseWritableResource<T> implements Resou
 
   destroy(): void {
     this.destroyed = true;
+    this.unregisterOnDestroy();
     this.effectRef.destroy();
     this.abortInProgressLoad();
 

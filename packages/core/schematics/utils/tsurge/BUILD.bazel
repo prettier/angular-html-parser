@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ts_project")
 
 package_group(
     name = "users",
@@ -11,7 +11,13 @@ package_group(
 ts_project(
     name = "tsurge",
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
+    visibility = [":users"],
+    deps = [
+        "//:node_modules/@types/jasmine",
+        "//:node_modules/chalk",
+        "//:node_modules/diff",
+        "//:node_modules/magic-string",
+        "//:node_modules/typescript",
         "//packages/compiler-cli",
         "//packages/compiler-cli/src/ngtsc/core",
         "//packages/compiler-cli/src/ngtsc/core:api",
@@ -20,13 +26,5 @@ ts_project(
         "//packages/compiler-cli/src/ngtsc/shims",
         "//packages/compiler-cli/src/ngtsc/translator",
         "//packages/compiler-cli/src/ngtsc/util",
-    ],
-    visibility = [":users"],
-    deps = [
-        "//:node_modules/@types/jasmine",
-        "//:node_modules/chalk",
-        "//:node_modules/diff",
-        "//:node_modules/magic-string",
-        "//:node_modules/typescript",
     ],
 )

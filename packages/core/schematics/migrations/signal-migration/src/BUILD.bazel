@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "nodejs_binary")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "js_binary", "ts_project")
 
 ts_project(
     name = "src",
@@ -7,7 +6,17 @@ ts_project(
         ["**/*.ts"],
         exclude = ["test/**"],
     ),
-    interop_deps = [
+    visibility = [
+        "//packages/core/schematics/migrations/output-migration:__pkg__",
+        "//packages/core/schematics/migrations/signal-migration/test:__pkg__",
+        "//packages/core/schematics/migrations/signal-queries-migration:__pkg__",
+        "//packages/core/schematics/ng-generate/signal-input-migration:__pkg__",
+        "//packages/language-service:__subpackages__",
+    ],
+    deps = [
+        "//:node_modules/@types/node",
+        "//:node_modules/magic-string",
+        "//:node_modules/typescript",
         "//packages/compiler",
         "//packages/compiler-cli",
         "//packages/compiler-cli/src/ngtsc/annotations",
@@ -29,32 +38,19 @@ ts_project(
         "//packages/compiler-cli/src/ngtsc/translator",
         "//packages/compiler-cli/src/ngtsc/typecheck",
         "//packages/compiler-cli/src/ngtsc/typecheck/api",
-        "//packages/core/schematics/utils",
         "//packages/core/schematics/utils/tsurge",
         "//packages/core/schematics/utils/tsurge/helpers/ast",
     ],
-    visibility = [
-        "//packages/core/schematics/migrations/output-migration:__pkg__",
-        "//packages/core/schematics/migrations/signal-migration/test:__pkg__",
-        "//packages/core/schematics/migrations/signal-queries-migration:__pkg__",
-        "//packages/core/schematics/ng-generate/signal-input-migration:__pkg__",
-        "//packages/language-service:__subpackages__",
-    ],
-    deps = [
-        "//:node_modules/@types/node",
-        "//:node_modules/magic-string",
-        "//:node_modules/typescript",
-    ],
 )
 
-nodejs_binary(
+js_binary(
     name = "bin",
     data = [":src"],
     entry_point = ":cli.js",
     visibility = ["//packages/core/schematics/migrations/signal-migration/test:__pkg__"],
 )
 
-nodejs_binary(
+js_binary(
     name = "batch_test_bin",
     data = [":src"],
     entry_point = ":batch/test_bin.js",

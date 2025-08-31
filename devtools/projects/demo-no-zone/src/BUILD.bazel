@@ -1,26 +1,26 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "pkg_web")
-load("//devtools/tools:ng_project.bzl", "ng_project")
-load("//tools:defaults.bzl", "esbuild", "http_server")
+load("//devtools/tools:defaults.bzl", "esbuild", "http_server", "ng_project")
 
 package(default_visibility = ["//:__subpackages__"])
 
 ng_project(
     name = "src",
     srcs = ["main.ts"],
-    interop_deps = [
-        "//packages/common",
-        "//packages/core",
-        "//packages/platform-browser",
-    ],
     deps = [
+        "//:node_modules/@angular/common",
+        "//:node_modules/@angular/core",
+        "//:node_modules/@angular/platform-browser",
         "//:node_modules/rxjs",
-        "//devtools/projects/demo-no-zone/src/app:app_rjs",
+        "//devtools/projects/demo-no-zone/src/app",
     ],
 )
 
 esbuild(
     name = "bundle",
-    config = "//devtools/tools/esbuild:esbuild_config_esm",
+    srcs = [
+        "//devtools/tools/esbuild:esbuild_base",
+        "//devtools/tools/esbuild:esbuild_config_esm",
+    ],
+    config = "//devtools/tools/esbuild:esbuild-esm.config.mjs",
     entry_points = [":main.ts"],
     platform = "browser",
     splitting = False,
@@ -38,24 +38,14 @@ filegroup(
     srcs = [
         ":index.html",
         ":styles.css",
-        "//packages/zone.js/bundles:zone.umd.js",
-    ],
-)
-
-pkg_web(
-    name = "devapp",
-    srcs = [
-        ":bundle",
-        ":dev_app_static_files",
     ],
 )
 
 http_server(
     name = "devserver",
     srcs = [":dev_app_static_files"],
-    additional_root_paths = ["angular/devtools/projects/demo-no-zone/src/devapp"],
     tags = ["manual"],
     deps = [
-        ":devapp",
+        ":bundle",
     ],
 )

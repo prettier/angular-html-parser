@@ -1,30 +1,26 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "karma_web_test_suite")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "ng_web_test_suite", "ts_project")
 
 ts_project(
     name = "test_lib",
     testonly = True,
     srcs = glob(["**/*.ts"]),
-    interop_deps = [
-        "//packages/private/testing",
-    ],
     deps = [
         "//:node_modules/rxjs",
-        "//packages/core:core_rjs",
-        "//packages/core/rxjs-interop:rxjs-interop_rjs",
-        "//packages/core/testing:testing_rjs",
+        "//packages/core",
+        "//packages/core/rxjs-interop",
+        "//packages/core/testing",
+        "//packages/private/testing",
     ],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "test",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":test_lib",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "test_web",
     deps = [
         ":test_lib",

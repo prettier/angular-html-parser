@@ -1,6 +1,5 @@
 load("//adev/shared-docs/pipeline/api-gen:generate_api_docs.bzl", "generate_api_docs")
-load("//tools:defaults.bzl", "tsec_test")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "ng_project", "tsec_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -14,21 +13,19 @@ ng_project(
             "src/**/*.ts",
         ],
     ),
-    interop_deps = [
-        "//packages/common",
-    ],
     deps = [
-        "//packages/animations:animations_rjs",
-        "//packages/animations/browser:browser_rjs",
-        "//packages/core:core_rjs",
-        "//packages/platform-browser:platform-browser_rjs",
+        "//packages/animations",
+        "//packages/animations/browser",
+        "//packages/common",
+        "//packages/core",
+        "//packages/platform-browser",
     ],
 )
 
 tsec_test(
     name = "tsec_test",
-    target = "async",
-    tsconfig = "//packages:tsec_config",
+    target = ":async",
+    tsconfig = "//packages:tsconfig_build",
 )
 
 filegroup(

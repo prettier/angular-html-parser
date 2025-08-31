@@ -1,4 +1,4 @@
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -7,11 +7,8 @@ ts_project(
     srcs = ["index.ts"] + glob([
         "src/**/*.ts",
     ]),
-    interop_deps = [
-        "//packages/compiler-cli/src/ngtsc/perf",
-    ],
-    module_name = "@angular/compiler-cli/src/ngtsc/cycles",
     deps = [
         "//:node_modules/typescript",
+        "//packages/compiler-cli/src/ngtsc/perf",
     ],
 )

@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "jasmine_node_test", "karma_web_test_suite")
-load("//tools:defaults2.bzl", "ng_project", "ts_project")
+load("//tools:defaults.bzl", "angular_jasmine_test", "ng_project", "ng_web_test_suite", "ts_project")
 
 package(default_visibility = ["//visibility:private"])
 
@@ -14,7 +13,10 @@ ts_project(
         ["**/*.ts"],
         exclude = SPEC_FILES_WITH_FORWARD_REFS,
     ),
-    interop_deps = [
+    # Visible to //:saucelabs_unit_tests
+    visibility = ["//:__pkg__"],
+    deps = [
+        "//:node_modules/rxjs",
         "//packages/animations",
         "//packages/animations/browser",
         "//packages/animations/browser/testing",
@@ -35,12 +37,6 @@ ts_project(
         "//packages/platform-server",
         "//packages/private/testing",
         "//packages/router",
-        "//packages/zone.js/lib:zone_d_ts",
-    ],
-    # Visible to //:saucelabs_unit_tests
-    visibility = ["//:__pkg__"],
-    deps = [
-        "//:node_modules/rxjs",
     ],
 )
 
@@ -54,24 +50,21 @@ ng_project(
     name = "forward_ref_test_lib",
     testonly = True,
     srcs = SPEC_FILES_WITH_FORWARD_REFS,
-    interop_deps = [
+    deps = [
         "//packages/core",
         "//packages/core/testing",
     ],
 )
 
-jasmine_node_test(
+angular_jasmine_test(
     name = "acceptance",
-    bootstrap = ["//tools/testing:node"],
-    deps = [
+    data = [
         ":acceptance_lib",
         ":forward_ref_test_lib",
-        "//packages/zone.js/lib:zone_d_ts",
-        "@npm//source-map",
     ],
 )
 
-karma_web_test_suite(
+ng_web_test_suite(
     name = "acceptance_web",
     deps = [
         ":acceptance_lib",

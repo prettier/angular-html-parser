@@ -227,7 +227,7 @@ runInEachFileSystem(() => {
       const diags = env.driveDiagnostics();
       expect(diags.length).toBe(1);
       expect((diags[0].messageText as ts.DiagnosticMessageChain).messageText).toBe(
-        `Argument of type 'MouseEvent' is not assignable to parameter of type 'KeyboardEvent'.`,
+        `Argument of type 'PointerEvent' is not assignable to parameter of type 'KeyboardEvent'.`,
       );
       expect(getDiagnosticSourceCode(diags[0])).toBe('$event');
     });
@@ -252,7 +252,7 @@ runInEachFileSystem(() => {
       const diags = env.driveDiagnostics();
       expect(diags.length).toBe(1);
       expect((diags[0].messageText as ts.DiagnosticMessageChain).messageText).toBe(
-        `Argument of type 'MouseEvent' is not assignable to parameter of type 'KeyboardEvent'.`,
+        `Argument of type 'PointerEvent' is not assignable to parameter of type 'KeyboardEvent'.`,
       );
       expect(getDiagnosticSourceCode(diags[0])).toBe('$event');
     });
@@ -276,7 +276,7 @@ runInEachFileSystem(() => {
       const diags = env.driveDiagnostics();
       expect(diags.length).toBe(1);
       expect((diags[0].messageText as ts.DiagnosticMessageChain).messageText).toBe(
-        `Argument of type 'MouseEvent' is not assignable to parameter of type 'KeyboardEvent'.`,
+        `Argument of type 'PointerEvent' is not assignable to parameter of type 'KeyboardEvent'.`,
       );
       expect(getDiagnosticSourceCode(diags[0])).toBe('$event');
     });
@@ -530,7 +530,7 @@ runInEachFileSystem(() => {
       const diags = env.driveDiagnostics();
       expect(diags.length).toBe(1);
       expect(diags[0].messageText).toBe(
-        `Argument of type 'MouseEvent' is not assignable to parameter of type 'string'.`,
+        `Argument of type 'PointerEvent' is not assignable to parameter of type 'string'.`,
       );
       expect(getDiagnosticSourceCode(diags[0])).toBe('$event');
     });
@@ -739,6 +739,203 @@ runInEachFileSystem(() => {
       );
       const diags = env.driveDiagnostics();
       expect(diags.length).toBe(0);
+    });
+
+    it('should check component listening to own output', () => {
+      env.write(
+        'test.ts',
+        `
+          import {Component, Output, EventEmitter} from '@angular/core';
+
+          @Component({
+            template: '',
+            host: {'(customEvent)': 'expectsNumber($event)'},
+          })
+          export class Comp {
+            @Output() customEvent = new EventEmitter<string>();
+
+            expectsNumber(value: number) {}
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(1);
+      expect(diags[0].messageText).toBe(
+        `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+      );
+    });
+
+    it('should check component listening to output from host directive', () => {
+      env.write(
+        'test.ts',
+        `
+          import {Component, Directive, Output, EventEmitter} from '@angular/core';
+
+          @Directive()
+          export class HostDir {
+            @Output() customEvent = new EventEmitter<string>();
+          }
+
+          @Component({
+            template: '',
+            host: {'(alias)': 'expectsNumber($event)'},
+            hostDirectives: [{directive: HostDir, outputs: ['customEvent: alias']}]
+          })
+          export class Comp {
+            expectsNumber(value: number) {}
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(1);
+      expect(diags[0].messageText).toBe(
+        `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+      );
+    });
+
+    it('should check component listening to own output and from host directive', () => {
+      env.write(
+        'test.ts',
+        `
+          import {Component, Directive, Output, EventEmitter} from '@angular/core';
+
+          @Directive()
+          export class HostDir {
+            @Output() customEvent = new EventEmitter<string>();
+          }
+
+          @Component({
+            template: '',
+            host: {'(customEvent)': 'expectsNumber($event)'},
+            hostDirectives: [{directive: HostDir, outputs: ['customEvent']}]
+          })
+          export class Comp {
+            @Output() customEvent = new EventEmitter<boolean>();
+
+            expectsNumber(value: number) {}
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(2);
+      expect(diags[0].messageText).toBe(
+        `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+      );
+      expect(diags[1].messageText).toBe(
+        `Argument of type 'boolean' is not assignable to parameter of type 'number'.`,
+      );
+    });
+
+    it('should check directive listening to own output', () => {
+      env.write(
+        'test.ts',
+        `
+          import {Directive, Output, EventEmitter} from '@angular/core';
+
+          @Directive({
+            host: {'(customEvent)': 'expectsNumber($event)'},
+          })
+          export class Dir {
+            @Output() customEvent = new EventEmitter<string>();
+
+            expectsNumber(value: number) {}
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(1);
+      expect(diags[0].messageText).toBe(
+        `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+      );
+    });
+
+    it('should check directive listening to output from host directive', () => {
+      env.write(
+        'test.ts',
+        `
+          import {Directive, Output, EventEmitter} from '@angular/core';
+
+          @Directive()
+          export class HostDir {
+            @Output() customEvent = new EventEmitter<string>();
+          }
+
+          @Directive({
+            host: {'(alias)': 'expectsNumber($event)'},
+            hostDirectives: [{directive: HostDir, outputs: ['customEvent: alias']}]
+          })
+          export class Dir {
+            expectsNumber(value: number) {}
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(1);
+      expect(diags[0].messageText).toBe(
+        `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+      );
+    });
+
+    it('should check directive listening to own output and from host directive', () => {
+      env.write(
+        'test.ts',
+        `
+          import {Directive, Output, EventEmitter} from '@angular/core';
+
+          @Directive()
+          export class HostDir {
+            @Output() customEvent = new EventEmitter<string>();
+          }
+
+          @Directive({
+            host: {'(customEvent)': 'expectsNumber($event)'},
+            hostDirectives: [{directive: HostDir, outputs: ['customEvent']}]
+          })
+          export class Dir {
+            @Output() customEvent = new EventEmitter<boolean>();
+
+            expectsNumber(value: number) {}
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(2);
+      expect(diags[0].messageText).toBe(
+        `Argument of type 'string' is not assignable to parameter of type 'number'.`,
+      );
+      expect(diags[1].messageText).toBe(
+        `Argument of type 'boolean' is not assignable to parameter of type 'number'.`,
+      );
+    });
+
+    it('should check generic component', () => {
+      env.write(
+        'test.ts',
+        `
+          import { Component, output } from '@angular/core';
+
+          @Component({
+            host: {
+              '(customEvent)': 'doesNotExist()',
+            },
+            template: ''
+          })
+          export class App<T> {
+            customEvent = output<T>();
+          }
+      `,
+      );
+
+      const diags = env.driveDiagnostics();
+      expect(diags.length).toBe(1);
+      expect(diags[0].messageText).toBe(`Property 'doesNotExist' does not exist on type 'App<T>'.`);
+      expect(getDiagnosticSourceCode(diags[0])).toBe('doesNotExist');
     });
   });
 });

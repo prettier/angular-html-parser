@@ -144,7 +144,8 @@ export type HttpEvent<T> =
   | HttpSentEvent
   | HttpHeaderResponse
   | HttpResponse<T>
-  | HttpProgressEvent
+  | HttpDownloadProgressEvent
+  | HttpUploadProgressEvent
   | HttpUserEvent<T>;
 
 /**
@@ -186,6 +187,28 @@ export abstract class HttpResponseBase {
   readonly type!: HttpEventType.Response | HttpEventType.ResponseHeader;
 
   /**
+   * Indicates whether the HTTP response was redirected during the request.
+   * This property is only available when using the Fetch API using `withFetch()`
+   * When using the default XHR Request this property will be `undefined`
+   */
+  readonly redirected?: boolean;
+
+  /**
+   * Indicates the type of the HTTP response, based on how the request was made and how the browser handles the response.
+   *
+   * This corresponds to the `type` property of the Fetch API's `Response` object, which can indicate values such as:
+   * - `'basic'`: A same-origin response, allowing full access to the body and headers.
+   * - `'cors'`: A cross-origin response with CORS enabled, exposing only safe response headers.
+   * - `'opaque'`: A cross-origin response made with `no-cors`, where the response body and headers are inaccessible.
+   * - `'opaqueredirect'`: A response resulting from a redirect followed in `no-cors` mode.
+   * - `'error'`: A response representing a network error or similar failure.
+   *
+   * This property is only available when using the Fetch-based backend (via `withFetch()`).
+   * When using Angular's (XHR) backend, this value will be `undefined`.
+   */
+  readonly responseType?: ResponseType;
+
+  /**
    * Super-constructor for all responses.
    *
    * The single parameter accepted is an initialization hash. Any properties
@@ -197,6 +220,8 @@ export abstract class HttpResponseBase {
       status?: number;
       statusText?: string;
       url?: string;
+      redirected?: boolean;
+      responseType?: ResponseType;
     },
     defaultStatus: number = 200,
     defaultStatusText: string = 'OK',
@@ -207,7 +232,8 @@ export abstract class HttpResponseBase {
     this.status = init.status !== undefined ? init.status : defaultStatus;
     this.statusText = init.statusText || defaultStatusText;
     this.url = init.url || null;
-
+    this.redirected = init.redirected;
+    this.responseType = init.responseType;
     // Cache the ok value to avoid defining a getter.
     this.ok = this.status >= 200 && this.status < 300;
   }
@@ -244,7 +270,12 @@ export class HttpHeaderResponse extends HttpResponseBase {
    * given parameter hash.
    */
   clone(
-    update: {headers?: HttpHeaders; status?: number; statusText?: string; url?: string} = {},
+    update: {
+      headers?: HttpHeaders;
+      status?: number;
+      statusText?: string;
+      url?: string;
+    } = {},
   ): HttpHeaderResponse {
     // Perform a straightforward initialization of the new HttpHeaderResponse,
     // overriding the current parameters with new ones if given.
@@ -282,6 +313,8 @@ export class HttpResponse<T> extends HttpResponseBase {
       status?: number;
       statusText?: string;
       url?: string;
+      redirected?: boolean;
+      responseType?: ResponseType;
     } = {},
   ) {
     super(init);
@@ -296,6 +329,8 @@ export class HttpResponse<T> extends HttpResponseBase {
     status?: number;
     statusText?: string;
     url?: string;
+    redirected?: boolean;
+    responseType?: ResponseType;
   }): HttpResponse<T>;
   clone<V>(update: {
     body?: V | null;
@@ -303,6 +338,8 @@ export class HttpResponse<T> extends HttpResponseBase {
     status?: number;
     statusText?: string;
     url?: string;
+    redirected?: boolean;
+    responseType?: ResponseType;
   }): HttpResponse<V>;
   clone(
     update: {
@@ -311,6 +348,8 @@ export class HttpResponse<T> extends HttpResponseBase {
       status?: number;
       statusText?: string;
       url?: string;
+      redirected?: boolean;
+      responseType?: ResponseType;
     } = {},
   ): HttpResponse<any> {
     return new HttpResponse<any>({
@@ -319,6 +358,8 @@ export class HttpResponse<T> extends HttpResponseBase {
       status: update.status !== undefined ? update.status : this.status,
       statusText: update.statusText || this.statusText,
       url: update.url || this.url || undefined,
+      redirected: update.redirected ?? this.redirected,
+      responseType: update.responseType ?? this.responseType,
     });
   }
 }
@@ -352,6 +393,8 @@ export class HttpErrorResponse extends HttpResponseBase implements Error {
     status?: number;
     statusText?: string;
     url?: string;
+    redirected?: boolean;
+    responseType?: ResponseType;
   }) {
     // Initialize with a default status of 0 / Unknown Error.
     super(init, 0, 'Unknown Error');

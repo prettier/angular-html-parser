@@ -1,5 +1,4 @@
-load("//tools:defaults.bzl", "api_golden_test", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "tsec_test")
-load("//tools:defaults2.bzl", "ng_project")
+load("//tools:defaults.bzl", "api_golden_test", "api_golden_test_npm_package", "generate_api_docs", "ng_package", "ng_project", "tsec_test")
 
 package(default_visibility = ["//visibility:public"])
 
@@ -11,30 +10,27 @@ ng_project(
             "src/**/*.ts",
         ],
     ),
-    interop_deps = [
-        "//packages:types",
-        "//packages/zone.js/lib:zone_d_ts",
-    ],
     deps = [
         "//:node_modules/@types/hammerjs",
-        "//packages:goog_types_rjs",
-        "//packages/common:common_rjs",
-        "//packages/common/http:http_rjs",
-        "//packages/core:core_rjs",
+        "//packages:goog_types",
+        "//packages:types",
+        "//packages/common",
+        "//packages/common/http",
+        "//packages/core",
     ],
 )
 
 tsec_test(
     name = "tsec_test",
-    target = "platform-browser",
-    tsconfig = "//packages:tsec_config",
+    target = ":platform-browser",
+    tsconfig = "//packages:tsconfig_build",
 )
 
 ng_package(
-    name = "npm_package",
     srcs = [
         "package.json",
     ],
+    package = "@angular/platform-browser",
     tags = [
         "release-with-framework",
     ],
@@ -61,8 +57,8 @@ api_golden_test_npm_package(
         ":npm_package",
         "//goldens:public-api",
     ],
-    golden_dir = "angular/goldens/public-api/platform-browser",
-    npm_package = "angular/packages/platform-browser/npm_package",
+    golden_dir = "goldens/public-api/platform-browser",
+    npm_package = "packages/platform-browser/npm_package",
 )
 
 api_golden_test(
@@ -71,8 +67,8 @@ api_golden_test(
         "//goldens:public-api",
         "//packages/platform-browser",
     ],
-    entry_point = "angular/packages/platform-browser/src/errors.d.ts",
-    golden = "angular/goldens/public-api/platform-browser/errors.api.md",
+    entry_point = "src/errors.d.ts",
+    golden = "goldens/public-api/platform-browser/errors.api.md",
 )
 
 filegroup(

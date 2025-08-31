@@ -7,7 +7,7 @@
  */
 
 import {HttpHeaders} from '../src/headers';
-import {HttpResponse, HttpStatusCode} from '../src/response';
+import {HttpEvent, HttpEventType, HttpResponse, HttpStatusCode} from '../src/response';
 
 describe('HttpResponse', () => {
   describe('constructor()', () => {
@@ -20,6 +20,8 @@ describe('HttpResponse', () => {
         status: HttpStatusCode.Created,
         statusText: 'Created',
         url: '/test',
+        redirected: true,
+        responseType: 'cors',
       });
       expect(resp.body).toBe('test body');
       expect(resp.headers instanceof HttpHeaders).toBeTruthy();
@@ -27,6 +29,8 @@ describe('HttpResponse', () => {
       expect(resp.status).toBe(HttpStatusCode.Created);
       expect(resp.statusText).toBe('Created');
       expect(resp.url).toBe('/test');
+      expect(resp.redirected).toBe(true);
+      expect(resp.responseType).toBe('cors');
     });
     it('uses defaults if no args passed', () => {
       const resp = new HttpResponse({});
@@ -36,6 +40,8 @@ describe('HttpResponse', () => {
       expect(resp.body).toBeNull();
       expect(resp.ok).toBeTruthy();
       expect(resp.url).toBeNull();
+      expect(resp.redirected).toBeUndefined();
+      expect(resp.responseType).toBeUndefined();
     });
     it('accepts a falsy body', () => {
       expect(new HttpResponse({body: false}).body).toEqual(false);
@@ -59,12 +65,16 @@ describe('HttpResponse', () => {
         status: HttpStatusCode.Created,
         statusText: 'created',
         url: '/test',
+        redirected: false,
+        responseType: 'cors',
       }).clone();
       expect(clone.body).toBe('test');
       expect(clone.status).toBe(HttpStatusCode.Created);
       expect(clone.statusText).toBe('created');
       expect(clone.url).toBe('/test');
       expect(clone.headers).not.toBeNull();
+      expect(clone.redirected).toBe(false);
+      expect(clone.responseType).toBe('cors');
     });
     it('overrides the original', () => {
       const orig = new HttpResponse({
@@ -72,18 +82,38 @@ describe('HttpResponse', () => {
         status: HttpStatusCode.Created,
         statusText: 'created',
         url: '/test',
+        redirected: true,
+        responseType: 'cors',
       });
       const clone = orig.clone({
         body: {data: 'test'},
         status: HttpStatusCode.Ok,
         statusText: 'Okay',
         url: '/bar',
+        redirected: false,
+        responseType: 'opaque',
       });
       expect(clone.body).toEqual({data: 'test'});
       expect(clone.status).toBe(HttpStatusCode.Ok);
       expect(clone.statusText).toBe('Okay');
       expect(clone.url).toBe('/bar');
       expect(clone.headers).toBe(orig.headers);
+      expect(clone.redirected).toBe(false);
+      expect(clone.responseType).toBe('opaque');
+    });
+  });
+
+  describe('typings', () => {
+    it('should correctly narrow based on the type', () => {
+      const httpEvent: HttpEvent<any> = {
+        type: HttpEventType.DownloadProgress,
+        loaded: 100,
+        total: 200,
+      };
+
+      if (httpEvent.type === HttpEventType.DownloadProgress) {
+        const partialText: string | undefined = httpEvent.partialText;
+      }
     });
   });
 });

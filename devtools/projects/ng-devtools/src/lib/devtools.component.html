@@ -3,12 +3,11 @@
     @case (AngularStatus.EXISTS) {
       @if (angularIsInDevMode()) {
         @if (supportedVersion()) {
-          <div class="devtools-wrapper noselect" [@enterAnimation]>
+          <div class="devtools-wrapper noselect">
             <ng-devtools-tabs
               (frameSelected)="inspectFrame($event)"
               [isHydrationEnabled]="hydration()"
               [angularVersion]="angularVersion()"
-              [supportedApis]="supportedApis()"
             ></ng-devtools-tabs>
           </div>
         } @else {

@@ -1,6 +1,4 @@
-load("@build_bazel_rules_nodejs//:index.bzl", "copy_to_bin")
-load("//tools:defaults.bzl", "jasmine_node_test")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "copy_to_bin", "jasmine_test", "ts_project")
 
 ts_project(
     name = "test_lib",
@@ -8,18 +6,16 @@ ts_project(
     srcs = glob(
         ["**/*_spec.ts"],
     ),
-    interop_deps = [
+    deps = [
         "//packages:types",
         "//packages/compiler-cli/src/ngtsc/file_system",
         "//packages/compiler-cli/src/ngtsc/file_system/testing",
         "//packages/compiler-cli/src/ngtsc/logging",
         "//packages/compiler-cli/src/ngtsc/logging/testing",
         "//packages/compiler-cli/src/ngtsc/testing",
-    ],
-    deps = [
-        "//packages/localize/tools:tools_rjs",
-        "//packages/localize/tools/test:test_lib_rjs",
-        "//packages/localize/tools/test/helpers:helpers_rjs",
+        "//packages/localize/tools",
+        "//packages/localize/tools/test:test_lib",
+        "//packages/localize/tools/test/helpers",
     ],
 )
 
@@ -29,15 +25,12 @@ copy_to_bin(
     srcs = glob(["test_files/**/*"]),
 )
 
-jasmine_node_test(
+jasmine_test(
     name = "integration",
-    bootstrap = ["//tools/testing:node_no_angular"],
     data = [
         ":test_files",
-    ],
-    deps = [
         ":test_lib",
-        "@npm//tinyglobby",
-        "@npm//yargs",
+        "//:node_modules/tinyglobby",
+        "//:node_modules/yargs",
     ],
 )

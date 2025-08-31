@@ -5,9 +5,9 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import {DOCUMENT} from '@angular/common';
 import {
   ANIMATION_MODULE_TYPE,
+  DOCUMENT,
   Inject,
   inject,
   Injectable,
@@ -68,6 +68,8 @@ import {AnimationPlayer} from './players/animation_player';
  * ```
  *
  * @publicApi
+ *
+ * @deprecated 20.2 Use `animate.enter` or `animate.leave` instead. Intent to remove in v23
  */
 @Injectable({providedIn: 'root', useFactory: () => inject(BrowserAnimationBuilder)})
 export abstract class AnimationBuilder {
@@ -86,6 +88,8 @@ export abstract class AnimationBuilder {
  * method.
  *
  * @publicApi
+ *
+ * @deprecated 20.2 Use `animate.enter` or `animate.leave` instead. Intent to remove in v23
  */
 export abstract class AnimationFactory {
   /**

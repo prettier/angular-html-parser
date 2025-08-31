@@ -1,10 +1,8 @@
-load("@aspect_rules_ts//ts:defs.bzl", rules_js_tsconfig = "ts_config")
-load("//tools:defaults.bzl", "ng_package")
-load("//tools:defaults2.bzl", "ts_project")
+load("//tools:defaults.bzl", "ng_package", "ts_config", "ts_project")
 
 package(default_visibility = ["//visibility:public"])
 
-rules_js_tsconfig(
+ts_config(
     name = "tsconfig_build",
     src = "tsconfig.json",
     deps = [
@@ -21,18 +19,14 @@ ts_project(
             "src/**/*.ts",
         ],
     ),
-    interop_deps = [
-        "//packages:types",
-    ],
     deps = [
         "//:node_modules/reflect-metadata",
-        "//packages/core:core_rjs",
+        "//packages:types",
+        "//packages/core",
     ],
 )
 
 ng_package(
-    name = "npm_package",
-    package_name = "@angular/benchpress",
     srcs = [
         "README.md",
         "package.json",
@@ -41,6 +35,7 @@ ng_package(
         "@angular/core",
         "reflect-metadata",
     ],
+    package = "@angular/benchpress",
     # Do not add more to this list.
     # Dependencies on the full npm_package cause long re-builds.
     visibility = [
