@@ -92,11 +92,13 @@ export interface TokenizeOptions {
    * If true, do not convert CRLF to LF.
    */
   preserveLineEndings?: boolean;
+
   /**
    * Whether to tokenize @ block syntax. Otherwise considered text,
    * or ICU tokens if `tokenizeExpansionForms` is enabled.
    */
   tokenizeBlocks?: boolean;
+
   /**
    * Whether to tokenize the `@let` syntax. Otherwise will be considered either
    * text or an incomplete block, depending on whether `tokenizeBlocks` is enabled.
@@ -1385,7 +1387,7 @@ class _Tokenizer {
       this._tokenizeBlocks &&
       !this._inInterpolation &&
       !this._isInExpansion() &&
-      (this._isBlockStart() || this._cursor.peek() === chars.$AT || this._isLetStart() || this._cursor.peek() === chars.$RBRACE)
+      (this._isBlockStart() || this._isLetStart() || this._cursor.peek() === chars.$RBRACE)
     ) {
       return true;
     }
