@@ -41,7 +41,8 @@ export {
   internalProvideZoneChangeDetection as ɵinternalProvideZoneChangeDetection,
   PROVIDED_NG_ZONE as ɵPROVIDED_NG_ZONE,
 } from './change_detection/scheduling/ng_zone_scheduling';
-export {ChangeDetectionSchedulerImpl as ɵChangeDetectionSchedulerImpl} from './change_detection/scheduling/zoneless_scheduling_impl';
+export {PROVIDED_ZONELESS as ɵPROVIDED_ZONELESS} from './change_detection/scheduling/zoneless_scheduling';
+export {provideZonelessChangeDetectionInternal as ɵprovideZonelessChangeDetectionInternal} from './change_detection/scheduling/zoneless_scheduling_impl';
 export {
   ChangeDetectionScheduler as ɵChangeDetectionScheduler,
   NotificationSource as ɵNotificationSource,
@@ -121,8 +122,7 @@ export {
   resolveComponentResources as ɵresolveComponentResources,
   restoreComponentResolutionQueue as ɵrestoreComponentResolutionQueue,
 } from './metadata/resource_loading';
-export {PendingTasksInternal as ɵPendingTasksInternal} from './pending_tasks';
-export {ALLOW_MULTIPLE_PLATFORMS as ɵALLOW_MULTIPLE_PLATFORMS} from './platform/platform';
+export {PendingTasksInternal as ɵPendingTasksInternal} from './pending_tasks_internal';
 export {ENABLE_ROOT_COMPONENT_BOOTSTRAP as ɵENABLE_ROOT_COMPONENT_BOOTSTRAP} from './platform/bootstrap';
 export {ReflectionCapabilities as ɵReflectionCapabilities} from './reflection/reflection_capabilities';
 export {AnimationRendererType as ɵAnimationRendererType} from './render/api';
@@ -173,8 +173,6 @@ export {getComponentDef as ɵgetComponentDef} from './render3/def_getters';
 export {DEHYDRATED_BLOCK_REGISTRY as ɵDEHYDRATED_BLOCK_REGISTRY} from './defer/registry';
 export {TimerScheduler as ɵTimerScheduler} from './defer/timer_scheduler';
 export {ɵassertType} from './type_checking';
-export {
-  ElementRegistry as ɵElementRegistry,
-  AnimationRemovalRegistry as ɵAnimationRemovalRegistry,
-} from './animation/element_removal_registry';
 export {ANIMATIONS_DISABLED as ɵANIMATIONS_DISABLED} from './animation/interfaces';
+export {allLeavingAnimations as ɵallLeavingAnimations} from './animation/longest_animation';
+export {setZoneProvidersForNextBootstrap as ɵsetZoneProvidersForNextBootstrap} from './platform/platform_ref';

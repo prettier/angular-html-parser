@@ -185,3 +185,11 @@ a,
     white-space: pre;
   }
 }
+
+.docs-navigation-group {
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  background: var(--septenary-contrast);
+  &:not(:first-child) {
+    margin-top: 2rem;
+  }
+}

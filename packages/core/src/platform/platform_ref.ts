@@ -8,22 +8,31 @@
 
 import {compileNgModuleFactory} from '../application/application_ngmodule_factory_compiler';
 import {BootstrapOptions, optionsReducer} from '../application/application_ref';
-import {
-  getNgZoneOptions,
-  internalProvideZoneChangeDetection,
-} from '../change_detection/scheduling/ng_zone_scheduling';
-import {ChangeDetectionScheduler} from '../change_detection/scheduling/zoneless_scheduling';
-import {ChangeDetectionSchedulerImpl} from '../change_detection/scheduling/zoneless_scheduling_impl';
-import {Injectable, Injector} from '../di';
+import {validAppIdInitializer} from '../application/application_tokens';
+import {provideZonelessChangeDetectionInternal} from '../change_detection/scheduling/zoneless_scheduling_impl';
+import {Injectable, Injector, StaticProvider} from '../di';
 import {errorHandlerEnvironmentInitializer} from '../error_handler';
 import {RuntimeError, RuntimeErrorCode} from '../errors';
 import {Type} from '../interface/type';
 import {CompilerOptions} from '../linker';
 import {NgModuleFactory, NgModuleRef} from '../linker/ng_module_factory';
 import {createNgModuleRefWithProviders} from '../render3/ng_module_ref';
-import {getNgZone} from '../zone/ng_zone';
 import {bootstrap, setModuleBootstrapImpl} from './bootstrap';
 import {PLATFORM_DESTROY_LISTENERS} from './platform_destroy_listeners';
+import {
+  getNgZoneOptions,
+  internalProvideZoneChangeDetection,
+} from '../change_detection/scheduling/ng_zone_scheduling';
+import {getNgZone} from '../zone/ng_zone';
+
+const ZONELESS_BY_DEFAULT = true;
+
+// Holds the set of providers to be used for the *next* application to be bootstrapped.
+// Used only for providing the zone related providers by default with `downgradeModule`.
+let _additionalApplicationProviders: StaticProvider[] | undefined = undefined;
+export function setZoneProvidersForNextBootstrap(): void {
+  _additionalApplicationProviders = internalProvideZoneChangeDetection({});
+}
 
 /**
  * The Angular platform is the entry point for Angular on a web page.
@@ -53,24 +62,25 @@ export class PlatformRef {
     moduleFactory: NgModuleFactory<M>,
     options?: BootstrapOptions,
   ): Promise<NgModuleRef<M>> {
-    const scheduleInRootZone = (options as any)?.scheduleInRootZone;
-    const ngZoneFactory = () =>
-      getNgZone(options?.ngZone, {
-        ...getNgZoneOptions({
-          eventCoalescing: options?.ngZoneEventCoalescing,
-          runCoalescing: options?.ngZoneRunCoalescing,
-        }),
-        scheduleInRootZone,
-      });
-    const ignoreChangesOutsideZone = options?.ignoreChangesOutsideZone;
+    const defaultZoneCdProviders = [];
+    if (!ZONELESS_BY_DEFAULT) {
+      const ngZoneFactory = () =>
+        getNgZone(options?.ngZone, {
+          ...getNgZoneOptions({
+            eventCoalescing: options?.ngZoneEventCoalescing,
+            runCoalescing: options?.ngZoneRunCoalescing,
+          }),
+        });
+      defaultZoneCdProviders.push(internalProvideZoneChangeDetection({ngZoneFactory}));
+    }
     const allAppProviders = [
-      internalProvideZoneChangeDetection({
-        ngZoneFactory,
-        ignoreChangesOutsideZone,
-      }),
-      {provide: ChangeDetectionScheduler, useExisting: ChangeDetectionSchedulerImpl},
+      provideZonelessChangeDetectionInternal(),
+      ...defaultZoneCdProviders,
+      ...(_additionalApplicationProviders ?? []),
       errorHandlerEnvironmentInitializer,
+      ...(ngDevMode ? [validAppIdInitializer] : []),
     ];
+    _additionalApplicationProviders = undefined;
     const moduleRef = createNgModuleRefWithProviders(
       moduleFactory.moduleType,
       this.injector,

@@ -36,6 +36,8 @@ export interface CodeToken extends Tokens.Generic {
   visibleRegion?: string;
   /* Whether we should display preview */
   preview?: boolean;
+  /** Whether to hide code example by default. */
+  hideCode?: boolean;
   /* The lines to display highlighting on */
   highlight?: string;
 
@@ -63,7 +65,7 @@ export function formatCode(token: CodeToken, context: RendererContext): string {
   `).firstElementChild!;
 
   applyContainerAttributesAndClasses(containerEl, token);
-  processForApiLinks(containerEl, context.apiEntries);
+  processForApiLinks(containerEl, context.apiEntries ?? {});
 
   return containerEl.outerHTML;
 }
@@ -120,6 +122,9 @@ function applyContainerAttributesAndClasses(el: Element, token: CodeToken) {
   // Boolean value attributes
   if (token.preview) {
     el.setAttribute('preview', 'true');
+  }
+  if (token.hideCode) {
+    el.setAttribute('hideCode', 'true');
   }
   if (token.language === 'mermaid') {
     el.setAttribute('mermaid', 'true');

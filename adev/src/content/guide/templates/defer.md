@@ -177,6 +177,24 @@ Alternatively, you can specify a [template reference variable](/guide/templates/
 }
 ```
 
+If you want to customize the options of the `IntersectionObserver`, the `viewport` trigger supports passing in an object literal. The literal supports all properties from the second parameter of `IntersectionObserver`, except for `root`. When using the object literal notation, you have to pass your trigger using the `trigger` property.
+
+```angular-html
+<div #greeting>Hello!</div>
+
+<!-- With options and a trigger -->
+@defer (on viewport({trigger: greeting, rootMargin: '100px', threshold: 0.5})) {
+  <greetings-cmp />
+}
+
+<!-- With options and an implied trigger -->
+@defer (on viewport({rootMargin: '100px', threshold: 0.5})) {
+  <greetings-cmp />
+} @placeholder {
+  <div>Implied trigger</div>
+}
+```
+
 #### `interaction`
 
 The `interaction` trigger loads the deferred content when the user interacts with the specified element through `click` or `keydown` events.
@@ -320,6 +338,10 @@ it('should render a defer block in different states', async () => {
 ## Does `@defer` work with `NgModule`?
 
 `@defer` blocks are compatible with both standalone and NgModule-based components, directives and pipes. However, **only standalone components, directives and pipes can be deferred**. NgModule-based dependencies are not deferred and are included in the eagerly loaded bundle.
+
+## Compatibility between `@defer` blocks and Hot Module Reload (HMR)
+
+When Hot Module Replacement (HMR) is active, all `@defer` block chunks are fetched eagerly, overriding any configured triggers. To restore the standard trigger behavior, you must disable HMR by serving your application with the `--no-hmr` flag.
 
 ## How does `@defer` work with server-side rendering (SSR) and static-site generation (SSG)?
 

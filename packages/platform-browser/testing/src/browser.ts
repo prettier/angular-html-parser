@@ -11,14 +11,15 @@ import {
   createPlatformFactory,
   NgModule,
   StaticProvider,
+  ɵprovideZonelessChangeDetectionInternal as provideZonelessChangeDetectionInternal,
   ɵinternalProvideZoneChangeDetection as internalProvideZoneChangeDetection,
-  ɵChangeDetectionScheduler as ChangeDetectionScheduler,
-  ɵChangeDetectionSchedulerImpl as ChangeDetectionSchedulerImpl,
   PlatformRef,
 } from '@angular/core';
 import {TestComponentRenderer} from '@angular/core/testing';
 import {BrowserModule, platformBrowser} from '../../index';
 import {DOMTestComponentRenderer} from './dom_test_component_renderer';
+
+const ZONELESS_BY_DEFAULT = true;
 
 /**
  * Platform for testing
@@ -37,8 +38,6 @@ export const platformBrowserTesting: (extraProviders?: StaticProvider[]) => Plat
   exports: [BrowserModule],
   providers: [
     {provide: APP_ID, useValue: 'a'},
-    internalProvideZoneChangeDetection({}),
-    {provide: ChangeDetectionScheduler, useExisting: ChangeDetectionSchedulerImpl},
     ɵprovideFakePlatformNavigation(),
     {provide: TestComponentRenderer, useClass: DOMTestComponentRenderer},
   ],

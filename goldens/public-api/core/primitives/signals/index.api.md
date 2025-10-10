@@ -16,8 +16,6 @@ export interface BaseEffectNode extends ReactiveNode {
     // (undocumented)
     fn: () => void;
     // (undocumented)
-    hasRun: boolean;
-    // (undocumented)
     run(): void;
 }
 
@@ -66,8 +64,14 @@ export function createWatch(fn: (onCleanup: WatchCleanupRegisterFn) => void, sch
 // @public
 export function defaultEquals<T>(a: T, b: T): boolean;
 
+// @public
+export function finalizeConsumerAfterComputation(node: ReactiveNode): void;
+
 // @public (undocumented)
 export function getActiveConsumer(): ReactiveNode | null;
+
+// @public
+export function installDevToolsSignalFormatter(): void;
 
 // @public (undocumented)
 export function isInNotificationPhase(): boolean;
@@ -150,6 +154,9 @@ export interface ReactiveNode {
     recomputing: boolean;
     version: Version;
 }
+
+// @public
+export function resetConsumerBeforeComputation(node: ReactiveNode): void;
 
 // @public (undocumented)
 export function runEffect(node: BaseEffectNode): void;

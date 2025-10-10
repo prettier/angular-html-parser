@@ -550,16 +550,6 @@ export interface Component extends Directive {
   viewProviders?: Provider[];
 
   /**
-   * The module ID of the module that contains the component.
-   * The component must be able to resolve relative URLs for templates and styles.
-   * SystemJS exposes the `__moduleName` variable within each module.
-   * In CommonJS, this can  be set to `module.id`.
-   *
-   * @deprecated This option does not have any effect. Will be removed in Angular v17.
-   */
-  moduleId?: string;
-
-  /**
    * The relative path or absolute URL of a template file for an Angular component.
    * If provided, do not supply an inline template using `template`.
    *
@@ -615,13 +605,6 @@ export interface Component extends Directive {
    * the policy is automatically switched to `ViewEncapsulation.None`.
    */
   encapsulation?: ViewEncapsulation;
-
-  /**
-   * Overrides the default interpolation start and end delimiters (`{{` and `}}`).
-   *
-   * @deprecated use Angular's default interpolation delimiters instead.
-   */
-  interpolation?: [string, string];
 
   /**
    * True to preserve or false to remove potentially superfluous whitespace characters
@@ -941,6 +924,9 @@ export interface HostBindingDecorator {
    * change detection, and if a binding changes it updates the host element of the directive.
    *
    * @usageNotes
+   *
+   * NOTE:  **Always** prefer using the `host` property over `@HostBinding`.
+   * This decorator exist exclusively for backwards compatibility.
    *
    * The following example creates a directive that sets the `valid` and `invalid`
    * class, a style color, and an id on the DOM element that has an `ngModel` directive on it.

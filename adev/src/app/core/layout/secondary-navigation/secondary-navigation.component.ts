@@ -28,7 +28,7 @@ import {
   shouldReduceMotion,
 } from '@angular/docs';
 import {distinctUntilChanged, filter, map, skip, startWith} from 'rxjs/operators';
-import {SUB_NAVIGATION_DATA} from '../../../sub-navigation-data';
+import {SUB_NAVIGATION_DATA} from '../../../routing/sub-navigation-data';
 import {ActivatedRouteSnapshot, NavigationEnd, Router, RouterStateSnapshot} from '@angular/router';
 import {isPlatformBrowser} from '@angular/common';
 import {PRIMARY_NAV_ID, SECONDARY_NAV_ID} from '../../constants/element-ids';
@@ -49,23 +49,23 @@ export class SecondaryNavigation {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly router = inject(Router);
 
-  readonly isSecondaryNavVisible = this.navigationState.isMobileNavVisible;
+  protected readonly isSecondaryNavVisible = this.navigationState.isMobileNavVisible;
   readonly primaryActiveRouteItem = this.navigationState.primaryActiveRouteItem;
-  readonly maxVisibleLevelsOnSecondaryNav = computed(() =>
+  protected readonly maxVisibleLevelsOnSecondaryNav = computed(() =>
     this.primaryActiveRouteItem() === PAGE_PREFIX.REFERENCE ? 1 : 2,
   );
-  readonly navigationItemsSlides = this.navigationState.expandedItems;
+  protected readonly navigationItemsSlides = this.navigationState.expandedItems;
 
-  navigationItems: NavigationItem[] | undefined;
+  protected navigationItems: NavigationItem[] | undefined;
 
-  readonly translateX = computed(() => {
+  protected readonly translateX = computed(() => {
     const level = this.navigationState.level();
     return `translateX(${-level * 100}%)`;
   });
-  transition = signal('0ms');
+  protected readonly transition = signal('0ms');
 
-  readonly PRIMARY_NAV_ID = PRIMARY_NAV_ID;
-  readonly SECONDARY_NAV_ID = SECONDARY_NAV_ID;
+  protected readonly PRIMARY_NAV_ID = PRIMARY_NAV_ID;
+  protected readonly SECONDARY_NAV_ID = SECONDARY_NAV_ID;
 
   private readonly routeMap: Record<string, NavigationItem[]> = {
     [PAGE_PREFIX.REFERENCE]: getNavigationItemsTree(SUB_NAVIGATION_DATA.reference, (tree) =>
@@ -99,7 +99,7 @@ export class SecondaryNavigation {
     }
   }
 
-  close(): void {
+  protected close(): void {
     this.navigationState.setMobileNavigationListVisibility(false);
   }
 

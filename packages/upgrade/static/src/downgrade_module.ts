@@ -13,6 +13,7 @@ import {
   PlatformRef,
   StaticProvider,
   Type,
+  ɵsetZoneProvidersForNextBootstrap,
 } from '@angular/core';
 import {platformBrowser} from '@angular/platform-browser';
 
@@ -393,6 +394,11 @@ export function downgradeModule<T>(
     bootstrapFn = moduleOrBootstrapFn;
   }
 
+  const wrappedBootstrapFn = (extraProviders: StaticProvider[]) => {
+    ɵsetZoneProvidersForNextBootstrap();
+    return bootstrapFn(extraProviders);
+  };
+
   let injector: Injector;
 
   // Create an ng1 module to bootstrap.
@@ -415,7 +421,7 @@ export function downgradeModule<T>(
       ($injector: ɵangular1.IInjectorService) => {
         setTempInjectorRef($injector);
         const result: ɵutil.LazyModuleRef = {
-          promise: bootstrapFn(angular1Providers).then((ref) => {
+          promise: wrappedBootstrapFn(angular1Providers).then((ref) => {
             injector = result.injector = new NgAdapterInjector(ref.injector);
             injector.get(ɵconstants.$INJECTOR);
 

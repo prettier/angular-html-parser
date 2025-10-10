@@ -72,7 +72,11 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     INJECTOR_ALREADY_DESTROYED = 205,
     // (undocumented)
+    INVALID_APP_ID = 211,
+    // (undocumented)
     INVALID_BINDING_TARGET = 316,
+    // (undocumented)
+    INVALID_CONTROL_HOST = 318,
     // (undocumented)
     INVALID_DIFFER_INPUT = 900,
     // (undocumented)
@@ -140,7 +144,7 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     PLATFORM_ALREADY_DESTROYED = 404,
     // (undocumented)
-    PLATFORM_NOT_FOUND = 401,
+    PLATFORM_NOT_FOUND = -401,
     // (undocumented)
     PROVIDED_BOTH_ZONE_AND_ZONELESS = 408,
     // (undocumented)

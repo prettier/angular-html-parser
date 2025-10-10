@@ -25,6 +25,7 @@ import {
   ɵJSACTION_EVENT_CONTRACT as JSACTION_EVENT_CONTRACT,
   ɵgetDocument as getDocument,
   ɵTimerScheduler as TimerScheduler,
+  provideZoneChangeDetection,
 } from '@angular/core';
 
 import {getAppContents, prepareEnvironmentAndHydrate, resetTViewsFor} from './dom_utils';
@@ -681,10 +682,134 @@ describe('platform-server partial hydration integration', () => {
       });
     });
 
-    /* TODO: tests to add
+    describe('transfer state for nested defer blocks', () => {
+      it('should have correct transfer state data for 2-level nested defer blocks', async () => {
+        @Component({
+          selector: 'app',
+          template: `
+            @defer (on viewport; hydrate on interaction) {
+              <div>
+                Level 1
+                @defer (on viewport; hydrate on interaction) {
+                  <div>Level 2</div>
+                } @placeholder {
+                  <span>Level 2 placeholder</span>
+                }
+              </div>
+            } @placeholder {
+              <span>Level 1 placeholder</span>
+            }
+          `,
+        })
+        class SimpleComponent {}
 
-      3. transfer state data is correct for parent / child defer blocks
-    */
+        const appId = 'custom-app-id';
+        const providers = [{provide: APP_ID, useValue: appId}];
+        const hydrationFeatures = () => [withIncrementalHydration()];
+
+        const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
+        const ssrContents = getAppContents(html);
+
+        // Check that levels are rendered
+        expect(ssrContents).toContain('Level 1');
+        expect(ssrContents).toContain('Level 2');
+
+        // Check the transfer state data
+        expect(ssrContents).toContain(
+          '"__nghDeferData__":{"d0":{"r":1,"s":2},"d1":{"r":1,"s":2,"p":"d0"}}',
+        );
+      });
+
+      it('should have correct transfer state data for 4-level nested defer blocks', async () => {
+        @Component({
+          selector: 'app',
+          template: `
+            @defer (on viewport; hydrate on interaction) {
+              <div>
+                Level 1
+                @defer (on viewport; hydrate on interaction) {
+                  <div>
+                    Level 2
+                    @defer (on viewport; hydrate on interaction) {
+                      <div>
+                        Level 3
+                        @defer (on viewport; hydrate on interaction) {
+                          <div>Level 4</div>
+                        } @placeholder {
+                          <span>Level 4 placeholder</span>
+                        }
+                      </div>
+                    } @placeholder {
+                      <span>Level 3 placeholder</span>
+                    }
+                  </div>
+                } @placeholder {
+                  <span>Level 2 placeholder</span>
+                }
+              </div>
+            } @placeholder {
+              <span>Level 1 placeholder</span>
+            }
+          `,
+        })
+        class SimpleComponent {}
+
+        const appId = 'custom-app-id';
+        const providers = [{provide: APP_ID, useValue: appId}];
+        const hydrationFeatures = () => [withIncrementalHydration()];
+
+        const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
+        const ssrContents = getAppContents(html);
+
+        // Check that all levels are rendered
+        expect(ssrContents).toContain('Level 1');
+        expect(ssrContents).toContain('Level 2');
+        expect(ssrContents).toContain('Level 3');
+        expect(ssrContents).toContain('Level 4');
+
+        // Check the transfer state data
+        expect(ssrContents).toContain(
+          '"__nghDeferData__":{"d0":{"r":1,"s":2},"d1":{"r":1,"s":2,"p":"d0"},"d2":{"r":1,"s":2,"p":"d1"},"d3":{"r":1,"s":2,"p":"d2"}}',
+        );
+      });
+
+      it('should have correct transfer state data for nested defer blocks with different triggers', async () => {
+        @Component({
+          selector: 'app',
+          template: `
+            @defer (on viewport; hydrate on interaction) {
+              <div>
+                Level 1
+                @defer (on viewport; hydrate on viewport) {
+                  <div>Level 2</div>
+                } @placeholder {
+                  <span>Level 2 placeholder</span>
+                }
+              </div>
+            } @placeholder {
+              <span>Level 1 placeholder</span>
+            }
+          `,
+        })
+        class SimpleComponent {}
+
+        const appId = 'custom-app-id';
+        const providers = [{provide: APP_ID, useValue: appId}];
+        const hydrationFeatures = () => [withIncrementalHydration()];
+
+        const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
+        const ssrContents = getAppContents(html);
+
+        // Check that levels are rendered
+        expect(ssrContents).toContain('Level 1');
+        expect(ssrContents).toContain('Level 2');
+
+        // Check the transfer state data with trigger array
+        expect(ssrContents).toContain(
+          '"__nghDeferData__":{"d0":{"r":1,"s":2},"d1":{"r":1,"s":2,"t":[2],"p":"d0"}}',
+        );
+      });
+    });
 
     describe('triggers', () => {
       describe('hydrate on interaction', () => {
@@ -997,7 +1122,10 @@ describe('platform-server partial hydration integration', () => {
           observedElements = new Set<Element>();
           private elementsInView = new Set<Element>();
 
-          constructor(private callback: IntersectionObserverCallback) {
+          constructor(
+            private callback: IntersectionObserverCallback,
+            readonly options: IntersectionObserverInit | null = null,
+          ) {
             activeObservers.push(this);
           }
 
@@ -1063,6 +1191,7 @@ describe('platform-server partial hydration integration', () => {
             throw new Error('Not supported');
           }
         }
+
         it('viewport', async () => {
           @Component({
             selector: 'app',
@@ -1144,6 +1273,50 @@ describe('platform-server partial hydration integration', () => {
           appRef.tick();
 
           expect(appHostNode.outerHTML).toContain('<span id="test">end</span>');
+        });
+
+        it('should create IntersectionObserver with the options from the `hydrate on viewport` trigger', async () => {
+          @Component({
+            selector: 'app',
+            template: `
+              <main>
+                @defer (hydrate on viewport({rootMargin: '123px', threshold: 0.5})) {
+                  <article>
+                    defer block rendered!
+                  </article>
+                } @placeholder {
+                  <span>Outer block placeholder</span>
+                }
+              </main>
+          `,
+          })
+          class SimpleComponent {}
+
+          const appId = 'custom-app-id';
+          const providers = [{provide: APP_ID, useValue: appId}];
+          const hydrationFeatures = () => [withIncrementalHydration()];
+
+          const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
+          const ssrContents = getAppContents(html);
+
+          expect(ssrContents).toContain(
+            '"__nghDeferData__":{"d0":{"r":1,"s":2,"t":[{"trigger":2,"intersectionObserverOptions":{"rootMargin":"123px","threshold":0.5}}]}}',
+          );
+
+          // Internal cleanup before we do server->client transition in this test.
+          resetTViewsFor(SimpleComponent);
+
+          ////////////////////////////////
+          const doc = getDocument();
+          const appRef = await prepareEnvironmentAndHydrate(doc, html, SimpleComponent, {
+            envProviders: [...providers, {provide: PLATFORM_ID, useValue: 'browser'}],
+            hydrationFeatures,
+          });
+          appRef.tick();
+          await appRef.whenStable();
+
+          expect(activeObservers.length).toBe(1);
+          expect(activeObservers[0].options).toEqual({rootMargin: '123px', threshold: 0.5});
         });
       });
 
@@ -1299,7 +1472,10 @@ describe('platform-server partial hydration integration', () => {
           }
 
           const appId = 'custom-app-id';
-          const providers = [{provide: APP_ID, useValue: appId}];
+          const providers = [
+            {provide: APP_ID, useValue: appId},
+            provideZoneChangeDetection() as any,
+          ];
           const hydrationFeatures = () => [withIncrementalHydration()];
 
           const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
@@ -1894,7 +2070,7 @@ describe('platform-server partial hydration integration', () => {
       }
 
       const appId = 'custom-app-id';
-      const providers = [{provide: APP_ID, useValue: appId}];
+      const providers = [{provide: APP_ID, useValue: appId}, provideZoneChangeDetection() as any];
       const hydrationFeatures = () => [withIncrementalHydration()];
 
       const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
@@ -2021,7 +2197,6 @@ describe('platform-server partial hydration integration', () => {
     it('should render an error block when loading fails and cleanup the original content', async () => {
       @Component({
         selector: 'nested-cmp',
-        standalone: true,
         template: 'Rendering {{ block }} block.',
       })
       class NestedCmp {
@@ -2029,7 +2204,6 @@ describe('platform-server partial hydration integration', () => {
       }
 
       @Component({
-        standalone: true,
         selector: 'app',
         imports: [NestedCmp],
         template: `

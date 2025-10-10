@@ -4,25 +4,22 @@
 
 ```ts
 
-import { AbstractControl } from '@angular/forms';
-import { ControlValueAccessor } from '@angular/forms';
 import { DestroyableInjector } from '@angular/core';
-import { ElementRef } from '@angular/core';
-import { FormControlStatus } from '@angular/forms';
 import { HttpResourceOptions } from '@angular/common/http';
 import { HttpResourceRequest } from '@angular/common/http';
 import * as i0 from '@angular/core';
+import { InjectionToken } from '@angular/core';
 import { Injector } from '@angular/core';
 import { InputSignal } from '@angular/core';
 import { ModelSignal } from '@angular/core';
-import { NgControl } from '@angular/forms';
 import { OutputRef } from '@angular/core';
 import { ResourceRef } from '@angular/core';
 import { Signal } from '@angular/core';
 import { StandardSchemaV1 } from '@standard-schema/spec';
-import { ValidationErrors } from '@angular/forms';
-import { ValidatorFn } from '@angular/forms';
 import { WritableSignal } from '@angular/core';
+import { ɵCONTROL } from '@angular/core';
+import { ɵControl } from '@angular/core';
+import { ɵFieldState } from '@angular/core';
 
 // @public
 export class AggregateProperty<TAcc, TItem> {
@@ -69,17 +66,20 @@ export interface ChildFieldContext<TValue> extends RootFieldContext<TValue> {
 }
 
 // @public
-export class Control<T> {
-    get cva(): ControlValueAccessor | undefined;
-    readonly cvaArray: ControlValueAccessor[] | null;
-    readonly el: ElementRef<HTMLElement>;
-    readonly field: i0.WritableSignal<Field<T>>;
+export const CONTROL: InjectionToken<Control<unknown>>;
+
+// @public
+export class Control<T> implements ɵControl<T> {
     // (undocumented)
-    set _field(value: Field<T>);
-    get ngControl(): NgControl;
+    readonly [ɵCONTROL]: undefined;
+    // (undocumented)
+    readonly field: i0.InputSignal<FieldTree<T>>;
+    // (undocumented)
+    register(): void;
+    // (undocumented)
     readonly state: i0.Signal<FieldState<T, string | number>>;
     // (undocumented)
-    static ɵdir: i0.ɵɵDirectiveDeclaration<Control<any>, "[control]", never, { "_field": { "alias": "control"; "required": true; }; }, {}, never, never, true, never>;
+    static ɵdir: i0.ɵɵDirectiveDeclaration<Control<any>, "[control]", never, { "field": { "alias": "control"; "required": true; "isSignal": true; }; }, {}, never, never, true, never>;
     // (undocumented)
     static ɵfac: i0.ɵɵFactoryDeclaration<Control<any>, never>;
 }
@@ -97,7 +97,7 @@ export function customError<E extends Partial<ValidationError>>(obj?: E): Withou
 export class CustomValidationError implements ValidationError {
     constructor(options?: ValidationErrorOptions);
     [key: PropertyKey]: unknown;
-    readonly field: Field<unknown>;
+    readonly field: FieldTree<unknown>;
     readonly kind: string;
     readonly message?: string;
 }
@@ -107,7 +107,7 @@ export function disabled<TValue, TPathKind extends PathKind = PathKind.Root>(pat
 
 // @public
 export interface DisabledReason {
-    readonly field: Field<unknown>;
+    readonly field: FieldTree<unknown>;
     readonly message?: string;
 }
 
@@ -127,9 +127,6 @@ export class EmailValidationError extends _NgValidationError {
 }
 
 // @public
-export type Field<TValue, TKey extends string | number = string | number> = (() => FieldState<TValue, TKey>) & (TValue extends Array<infer U> ? ReadonlyArrayLike<MaybeField<U, number>> : TValue extends Record<string, any> ? Subfields<TValue> : unknown);
-
-// @public
 export type FieldContext<TValue, TPathKind extends PathKind = PathKind.Root> = TPathKind extends PathKind.Item ? ItemFieldContext<TValue> : TPathKind extends PathKind.Child ? ChildFieldContext<TValue> : RootFieldContext<TValue>;
 
 // @public
@@ -140,30 +137,28 @@ export type FieldPath<TValue, TPathKind extends PathKind = PathKind.Root> = {
 } : unknown);
 
 // @public
-export interface FieldState<TValue, TKey extends string | number = string | number> {
+export interface FieldState<TValue, TKey extends string | number = string | number> extends ɵFieldState<TValue> {
     readonly controls: Signal<readonly Control<unknown>[]>;
     readonly dirty: Signal<boolean>;
-    readonly disabled: Signal<boolean>;
+    // (undocumented)
     readonly disabledReasons: Signal<readonly DisabledReason[]>;
+    // (undocumented)
     readonly errors: Signal<ValidationError[]>;
     readonly errorSummary: Signal<ValidationError[]>;
     hasProperty(key: Property<any> | AggregateProperty<any, any>): boolean;
     readonly hidden: Signal<boolean>;
     readonly invalid: Signal<boolean>;
     readonly keyInParent: Signal<TKey>;
-    markAsDirty(): void;
-    markAsTouched(): void;
-    readonly name: Signal<string>;
     readonly pending: Signal<boolean>;
     property<M>(prop: AggregateProperty<M, any>): Signal<M>;
     property<M>(prop: Property<M>): M | undefined;
-    readonly readonly: Signal<boolean>;
     reset(): void;
     readonly submitting: Signal<boolean>;
-    readonly touched: Signal<boolean>;
     readonly valid: Signal<boolean>;
-    readonly value: WritableSignal<TValue>;
 }
+
+// @public
+export type FieldTree<TValue, TKey extends string | number = string | number> = (() => FieldState<TValue, TKey>) & (TValue extends Array<infer U> ? ReadonlyArrayLike<MaybeFieldTree<U, number>> : TValue extends Record<string, any> ? Subfields<TValue> : unknown);
 
 // @public
 export type FieldValidationResult<E extends ValidationError = ValidationError> = ValidationSuccess | OneOrMany<WithoutField<E>>;
@@ -172,13 +167,13 @@ export type FieldValidationResult<E extends ValidationError = ValidationError> =
 export type FieldValidator<TValue, TPathKind extends PathKind = PathKind.Root> = LogicFn<TValue, FieldValidationResult, TPathKind>;
 
 // @public
-export function form<TValue>(model: WritableSignal<TValue>): Field<TValue>;
+export function form<TValue>(model: WritableSignal<TValue>): FieldTree<TValue>;
 
 // @public
-export function form<TValue>(model: WritableSignal<TValue>, schemaOrOptions: SchemaOrSchemaFn<TValue> | FormOptions): Field<TValue>;
+export function form<TValue>(model: WritableSignal<TValue>, schemaOrOptions: SchemaOrSchemaFn<TValue> | FormOptions): FieldTree<TValue>;
 
 // @public
-export function form<TValue>(model: WritableSignal<TValue>, schema: SchemaOrSchemaFn<TValue>, options: FormOptions): Field<TValue>;
+export function form<TValue>(model: WritableSignal<TValue>, schema: SchemaOrSchemaFn<TValue>, options: FormOptions): FieldTree<TValue>;
 
 // @public
 export interface FormCheckboxControl extends FormUiControl {
@@ -231,46 +226,9 @@ export interface HttpValidatorOptions<TValue, TResult, TPathKind extends PathKin
 }
 
 // @public
-export class InteropNgControl implements Pick<NgControl, InteropSharedKeys | 'control' | 'valueAccessor'>, Pick<AbstractControl<unknown>, InteropSharedKeys | 'hasValidator'> {
-    constructor(field: () => FieldState<unknown>);
-    // (undocumented)
-    readonly control: AbstractControl<any, any>;
-    // (undocumented)
-    get dirty(): boolean;
-    // (undocumented)
-    get disabled(): boolean;
-    // (undocumented)
-    get enabled(): boolean;
-    // (undocumented)
-    get errors(): ValidationErrors | null;
-    // (undocumented)
-    protected field: () => FieldState<unknown>;
-    // (undocumented)
-    hasValidator(validator: ValidatorFn): boolean;
-    // (undocumented)
-    get invalid(): boolean;
-    // (undocumented)
-    get pending(): boolean | null;
-    // (undocumented)
-    get pristine(): boolean;
-    // (undocumented)
-    get status(): FormControlStatus;
-    // (undocumented)
-    get touched(): boolean;
-    // (undocumented)
-    get untouched(): boolean;
-    // (undocumented)
-    updateValueAndValidity(): void;
-    // (undocumented)
-    get valid(): boolean;
-    // (undocumented)
-    get value(): any;
-    // (undocumented)
-    valueAccessor: ControlValueAccessor | null;
-}
-
-// @public
-export type InteropSharedKeys = 'value' | 'valid' | 'invalid' | 'touched' | 'untouched' | 'disabled' | 'enabled' | 'errors' | 'pristine' | 'dirty' | 'status';
+export type IgnoreUnknownProperties<T> = T extends Record<PropertyKey, unknown> ? {
+    [K in keyof T as RemoveStringIndexUnknownKey<K, T[K]>]: IgnoreUnknownProperties<T[K]>;
+} : T;
 
 // @public
 export interface ItemFieldContext<TValue> extends ChildFieldContext<TValue> {
@@ -332,10 +290,10 @@ export class MaxValidationError extends _NgValidationError {
 }
 
 // @public
-export type MaybeField<TValue, TKey extends string | number = string | number> = (TValue & undefined) | Field<Exclude<TValue, undefined>, TKey>;
+export type MaybeFieldPath<TValue, TPathKind extends PathKind = PathKind.Root> = (TValue & undefined) | FieldPath<Exclude<TValue, undefined>, TPathKind>;
 
 // @public
-export type MaybeFieldPath<TValue, TPathKind extends PathKind = PathKind.Root> = (TValue & undefined) | FieldPath<Exclude<TValue, undefined>, TPathKind>;
+export type MaybeFieldTree<TValue, TKey extends string | number = string | number> = (TValue & undefined) | FieldTree<Exclude<TValue, undefined>, TKey>;
 
 // @public
 export const MIN: AggregateProperty<number | undefined, number | undefined>;
@@ -458,6 +416,9 @@ export type ReadonlyArrayLike<T> = Pick<ReadonlyArray<T>, number | 'length' | ty
 export function reducedProperty<TAcc, TItem>(reduce: (acc: TAcc, item: TItem) => TAcc, getInitial: () => TAcc): AggregateProperty<TAcc, TItem>;
 
 // @public
+export type RemoveStringIndexUnknownKey<K, V> = string extends K ? unknown extends V ? never : K : K;
+
+// @public
 export const REQUIRED: AggregateProperty<boolean, boolean>;
 
 // @public
@@ -479,8 +440,8 @@ export class RequiredValidationError extends _NgValidationError {
 
 // @public
 export interface RootFieldContext<TValue> {
-    readonly field: Field<TValue>;
-    readonly fieldOf: <P>(p: FieldPath<P>) => Field<P>;
+    readonly field: FieldTree<TValue>;
+    readonly fieldOf: <P>(p: FieldPath<P>) => FieldTree<P>;
     readonly state: FieldState<TValue>;
     readonly stateOf: <P>(p: FieldPath<P>) => FieldState<P>;
     readonly value: Signal<TValue>;
@@ -518,11 +479,11 @@ export class StandardSchemaValidationError extends _NgValidationError {
 
 // @public
 export type Subfields<TValue> = {
-    readonly [K in keyof TValue as TValue[K] extends Function ? never : K]: MaybeField<TValue[K], string>;
+    readonly [K in keyof TValue as TValue[K] extends Function ? never : K]: MaybeFieldTree<TValue[K], string>;
 };
 
 // @public
-export function submit<TValue>(form: Field<TValue>, action: (form: Field<TValue>) => Promise<TreeValidationResult>): Promise<void>;
+export function submit<TValue>(form: FieldTree<TValue>, action: (form: FieldTree<TValue>) => Promise<TreeValidationResult>): Promise<void>;
 
 // @public
 export type SubmittedStatus = 'unsubmitted' | 'submitted' | 'submitting';
@@ -543,11 +504,14 @@ export function validateAsync<TValue, TParams, TResult, TPathKind extends PathKi
 export function validateHttp<TValue, TResult = unknown, TPathKind extends PathKind = PathKind.Root>(path: FieldPath<TValue, TPathKind>, opts: HttpValidatorOptions<TValue, TResult, TPathKind>): void;
 
 // @public
+export function validateStandardSchema<TSchema, TValue extends IgnoreUnknownProperties<TSchema>>(path: FieldPath<TValue>, schema: StandardSchemaV1<TSchema>): void;
+
+// @public
 export function validateTree<TValue, TPathKind extends PathKind = PathKind.Root>(path: FieldPath<TValue, TPathKind>, logic: NoInfer<TreeValidator<TValue, TPathKind>>): void;
 
 // @public
 export interface ValidationError {
-    readonly field: Field<unknown>;
+    readonly field: FieldTree<unknown>;
     readonly kind: string;
     readonly message?: string;
 }
@@ -563,12 +527,12 @@ export type Validator<TValue, TPathKind extends PathKind = PathKind.Root> = Logi
 
 // @public
 export type WithField<T> = T & {
-    field: Field<unknown>;
+    field: FieldTree<unknown>;
 };
 
 // @public
 export type WithOptionalField<T> = Omit<T, 'field'> & {
-    field?: Field<unknown>;
+    field?: FieldTree<unknown>;
 };
 
 // @public

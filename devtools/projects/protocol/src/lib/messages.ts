@@ -150,6 +150,9 @@ export enum PropType {
   Set,
   Map,
   Unknown,
+
+  // Special Type when an error occurs during property access
+  Error,
 }
 
 export interface Descriptor {
@@ -318,6 +321,7 @@ export interface Route {
   isActive: boolean;
   isAux: boolean;
   isLazy: boolean;
+  isRedirect: boolean;
 }
 
 export interface AngularDetection {
@@ -387,6 +391,7 @@ export interface Events {
   latestComponentExplorerView: (view: ComponentExplorerView) => void;
 
   updateState: (value: UpdatedStateData) => void;
+  logValue: (value: {directiveId: DirectivePosition; keyPath: string[] | null}) => void;
 
   startProfiling: () => void;
   stopProfiling: () => void;

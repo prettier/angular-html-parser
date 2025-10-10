@@ -24,6 +24,9 @@ import {BaseValidatorConfig, getOption, isEmpty} from './util';
  *  - `error`: Custom validation error(s) to be used instead of the default `ValidationError.pattern(pattern)`
  *    or a function that receives the `FieldContext` and returns custom validation error(s).
  * @template TPathKind The kind of path the logic is bound to (a root path, child path, or item of an array)
+ *
+ * @category validation
+ * @experimental 21.0.0
  */
 export function pattern<TPathKind extends PathKind = PathKind.Root>(
   path: FieldPath<string, TPathKind>,

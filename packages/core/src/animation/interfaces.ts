@@ -18,6 +18,27 @@ export const ANIMATIONS_DISABLED = new InjectionToken<boolean>(
   },
 );
 
+export interface AnimationQueue {
+  queue: Set<Function>;
+  isScheduled: boolean;
+}
+
+/**
+ * A [DI token](api/core/InjectionToken) for the queue of all animations.
+ */
+export const ANIMATION_QUEUE = new InjectionToken<AnimationQueue>(
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'AnimationQueue' : '',
+  {
+    providedIn: 'root',
+    factory: () => {
+      return {
+        queue: new Set(),
+        isScheduled: false,
+      };
+    },
+  },
+);
+
 /**
  * The event type for when `animate.enter` and `animate.leave` are used with function
  * callbacks.
@@ -68,4 +89,35 @@ export interface AnimationDetails {
   classFns?: Function[];
   animateFn: AnimationRemoveFunction;
   isEventBinding: boolean;
+}
+
+export interface LongestAnimation {
+  animationName: string | undefined;
+  propertyName: string | undefined;
+  duration: number;
+}
+
+export interface NodeAnimations {
+  animateFns: Function[];
+  resolvers?: VoidFunction[];
+}
+
+export interface AnimationLViewData {
+  // Enter animations that apply to nodes in this view
+  enter?: Map<number, NodeAnimations>;
+
+  // Leave animations that apply to nodes in this view
+  leave?: Map<number, NodeAnimations>;
+
+  // Leave animations that apply to nodes in this view
+  // We chose to use unknown instead of PromiseSettledResult<void> to avoid requiring the type
+  running?: Promise<unknown>;
+
+  // Skip leave animations
+  // This flag is solely used when move operations occur. DOM Node move
+  // operations occur in lists, like `@for` loops, and use the same code
+  // path during move that detaching or removing does. So to prevent
+  // unexpected disappearing of moving nodes, we use this flag to skip
+  // the animations in that case.
+  skipLeaveAnimations?: boolean;
 }

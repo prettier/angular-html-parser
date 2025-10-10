@@ -849,6 +849,9 @@ function ingestDeferTriggers(
         targetSlot: null,
         targetView: null,
         targetSlotViewSteps: null,
+        options: triggers.viewport.options
+          ? convertAst(triggers.viewport.options, unit.job, triggers.viewport.sourceSpan)
+          : null,
       },
       modifier,
       triggers.viewport.sourceSpan,
@@ -1198,6 +1201,8 @@ function convertAst(
       undefined,
       convertSourceSpan(ast.span, baseSourceSpan),
     );
+  } else if (ast instanceof e.RegularExpressionLiteral) {
+    return new o.RegularExpressionLiteral(ast.body, ast.flags, baseSourceSpan);
   } else {
     throw new Error(
       `Unhandled expression type "${ast.constructor.name}" in file "${baseSourceSpan?.start.file.url}"`,
@@ -1342,6 +1347,12 @@ function ingestElementBindings(
         input.sourceSpan,
       ),
     );
+
+    // If the input name is 'control', this could be a form control binding which requires a
+    // `ControlCreateOp` to properly initialize.
+    if (input.type === e.BindingType.Property && input.name === 'control') {
+      unit.create.push(ir.createControlCreateOp(input.sourceSpan));
+    }
   }
 
   unit.create.push(

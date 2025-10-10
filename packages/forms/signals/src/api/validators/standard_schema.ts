@@ -11,13 +11,15 @@ import type {StandardSchemaV1} from '@standard-schema/spec';
 import {addDefaultField} from '../../field/validation';
 import {validateAsync} from '../async';
 import {property, validateTree} from '../logic';
-import {Field, FieldPath} from '../types';
+import {FieldPath, FieldTree} from '../types';
 import {standardSchemaError, StandardSchemaValidationError} from '../validation_errors';
 
 /**
  * Utility type that removes a string index key when its value is `unknown`,
  * i.e. `{[key: string]: unknown}`. It allows specific string keys to pass through, even if their
  * value is `unknown`, e.g. `{key: unknown}`.
+ *
+ * @experimental 21.0.0
  */
 export type RemoveStringIndexUnknownKey<K, V> = string extends K
   ? unknown extends V
@@ -29,6 +31,8 @@ export type RemoveStringIndexUnknownKey<K, V> = string extends K
  * Utility type that recursively ignores unknown string index properties on the given object.
  * We use this on the `TSchema` type in `validateStandardSchema` in order to accommodate Zod's
  * `looseObject` which includes `{[key: string]: unknown}` as part of the type.
+ *
+ * @experimental 21.0.0
  */
 export type IgnoreUnknownProperties<T> =
   T extends Record<PropertyKey, unknown>
@@ -47,6 +51,9 @@ export type IgnoreUnknownProperties<T> =
  * @template TSchema The type validated by the schema. This may be either the full `TValue` type,
  *   or a partial of it.
  * @template TValue The type of value stored in the field being validated.
+ *
+ * @category validation
+ * @experimental 21.0.0
  */
 export function validateStandardSchema<TSchema, TValue extends IgnoreUnknownProperties<TSchema>>(
   path: FieldPath<TValue>,
@@ -94,13 +101,13 @@ export function validateStandardSchema<TSchema, TValue extends IgnoreUnknownProp
  * @returns A `ValidationError` representing the issue.
  */
 function standardIssueToFormTreeError(
-  field: Field<unknown>,
+  field: FieldTree<unknown>,
   issue: StandardSchemaV1.Issue,
 ): StandardSchemaValidationError {
-  let target = field as Field<Record<PropertyKey, unknown>>;
+  let target = field as FieldTree<Record<PropertyKey, unknown>>;
   for (const pathPart of issue.path ?? []) {
     const pathKey = typeof pathPart === 'object' ? pathPart.key : pathPart;
-    target = target[pathKey] as Field<Record<PropertyKey, unknown>>;
+    target = target[pathKey] as FieldTree<Record<PropertyKey, unknown>>;
   }
   return addDefaultField(standardSchemaError(issue), target);
 }

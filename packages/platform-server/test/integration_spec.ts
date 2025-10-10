@@ -46,10 +46,12 @@ import {
   getPlatform,
   provideNgReflectAttributes,
   ɵSSR_CONTENT_INTEGRITY_MARKER as SSR_CONTENT_INTEGRITY_MARKER,
+  provideZoneChangeDetection,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {
   bootstrapApplication,
+  BootstrapContext,
   BrowserModule,
   provideClientHydration,
   Title,
@@ -76,11 +78,12 @@ const APP_CONFIG: ApplicationConfig = {
 function getStandaloneBootstrapFn(
   component: Type<unknown>,
   providers: Array<Provider | EnvironmentProviders> = [],
-): () => Promise<ApplicationRef> {
-  return () =>
+): (context: BootstrapContext) => Promise<ApplicationRef> {
+  return (context: BootstrapContext) =>
     bootstrapApplication(
       component,
       mergeApplicationConfig(APP_CONFIG, {providers: [...providers, provideNgReflectAttributes()]}),
+      context,
     );
 }
 
@@ -134,6 +137,7 @@ const PendingTasksAppStandalone = createAppWithPendingTask(true);
   exports: [PendingTasksApp],
   imports: [ServerModule],
   bootstrap: [PendingTasksApp],
+  providers: [provideZoneChangeDetection()],
 })
 export class PendingTasksAppModule {}
 
@@ -330,12 +334,15 @@ function createMyAsyncServerApp(standalone: boolean) {
 }
 
 const MyAsyncServerApp = createMyAsyncServerApp(false);
-const MyAsyncServerAppStandalone = getStandaloneBootstrapFn(createMyAsyncServerApp(true));
+const MyAsyncServerAppStandalone = getStandaloneBootstrapFn(createMyAsyncServerApp(true), [
+  provideZoneChangeDetection(),
+]);
 
 @NgModule({
   declarations: [MyAsyncServerApp],
   imports: [BrowserModule, ServerModule],
   bootstrap: [MyAsyncServerApp],
+  providers: [provideZoneChangeDetection()],
 })
 class AsyncServerModule {}
 
@@ -1053,7 +1060,6 @@ class HiddenModule {}
 
         it('appends SSR integrity marker comment when hydration is enabled', async () => {
           @Component({
-            standalone: true,
             selector: 'app',
             template: ``,
           })
@@ -1194,7 +1200,12 @@ class HiddenModule {}
           async () => {
             const options = {document: doc};
             const bootstrap = isStandalone
-              ? renderApplication(getStandaloneBootstrapFn(PendingTasksAppStandalone), options)
+              ? renderApplication(
+                  getStandaloneBootstrapFn(PendingTasksAppStandalone, [
+                    provideZoneChangeDetection(),
+                  ]),
+                  options,
+                )
               : renderModule(PendingTasksAppModule, options);
             const output = await bootstrap;
             expect(output).toBe(
@@ -1219,6 +1230,7 @@ class HiddenModule {}
             }
 
             const SuccessfulAppInitializerProviders = [
+              provideZoneChangeDetection(),
               {
                 provide: APP_INITIALIZER,
                 useFactory: () => {
@@ -1359,7 +1371,6 @@ class HiddenModule {}
         const ngZone = TestBed.inject(NgZone);
 
         @Component({
-          standalone: true,
           selector: 'lazy',
           template: `LazyCmp content`,
         })
@@ -1424,7 +1435,6 @@ class HiddenModule {}
           const http = ref.injector.get(HttpClient);
           ref.injector.get<NgZone>(NgZone).run(() => {
             http.get<string>('http://localhost/testing').subscribe((body: string) => {
-              NgZone.assertInAngularZone();
               expect(body).toEqual('success!');
             });
             mock.expectOne('http://localhost/testing').flush('success!');
@@ -1441,7 +1451,6 @@ class HiddenModule {}
           const http = ref.injector.get(HttpClient);
           ref.injector.get(NgZone).run(() => {
             http.get<string>('http://localhost/testing').subscribe((body: string) => {
-              NgZone.assertInAngularZone();
               expect(body).toEqual('success!');
             });
             mock.expectOne('http://localhost/testing').flush('success!');
@@ -1512,7 +1521,6 @@ class HiddenModule {}
         it('should resolve relative request URLs to absolute', async () => {
           ref.injector.get(NgZone).run(() => {
             http.get('/testing').subscribe((body) => {
-              NgZone.assertInAngularZone();
               expect(body).toEqual('success!');
             });
             mock.expectOne('http://localhost:4000/testing').flush('success!');
@@ -1522,7 +1530,6 @@ class HiddenModule {}
         it(`should not replace the baseUrl of a request when it's absolute`, async () => {
           ref.injector.get(NgZone).run(() => {
             http.get('http://localhost/testing').subscribe((body) => {
-              NgZone.assertInAngularZone();
               expect(body).toEqual('success!');
             });
             mock.expectOne('http://localhost/testing').flush('success!');

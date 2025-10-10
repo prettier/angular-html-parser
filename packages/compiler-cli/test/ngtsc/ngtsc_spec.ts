@@ -3229,7 +3229,7 @@ runInEachFileSystem((os: string) => {
 
           const NOT_A_FUNCTION: any = null!;
 
-          @Directive({selector: '[dir]', standalone: true})
+          @Directive({selector: '[dir]'})
           export class Dir {
             @Input({transform: NOT_A_FUNCTION}) value!: number;
           }
@@ -3249,7 +3249,6 @@ runInEachFileSystem((os: string) => {
 
           @Directive({
             selector: '[dir]',
-            standalone: true,
             inputs: [{
               name: 'value',
               transform: NOT_A_FUNCTION
@@ -3274,7 +3273,7 @@ runInEachFileSystem((os: string) => {
           `
               import {Directive, Input} from '@angular/core';
 
-              @Directive({selector: '[dir]', standalone: true})
+              @Directive({selector: '[dir]'})
               export class Dir {
                 @Input({transform: (val) => 1}) value!: number;
               }
@@ -3293,7 +3292,7 @@ runInEachFileSystem((os: string) => {
           `
           import {Directive, Input} from '@angular/core';
 
-          @Directive({selector: '[dir]', standalone: true})
+          @Directive({selector: '[dir]'})
           export class Dir {
             @Input({transform: <T>(val: T) => 1}) value!: number;
           }
@@ -3312,7 +3311,7 @@ runInEachFileSystem((os: string) => {
           `
           import {Directive, Input} from '@angular/core';
 
-          @Directive({selector: '[dir]', standalone: true})
+          @Directive({selector: '[dir]'})
           export class Dir {
             @Input({transform: (val: string) => 1}) value!: number;
 
@@ -3345,7 +3344,7 @@ runInEachFileSystem((os: string) => {
             import {Directive, Input} from '@angular/core';
             import {toNumber} from './util';
 
-            @Directive({selector: '[dir]', standalone: true})
+            @Directive({selector: '[dir]'})
             export class Dir {
               @Input({transform: toNumber}) value!: number;
             }
@@ -3376,7 +3375,7 @@ runInEachFileSystem((os: string) => {
               import {Directive, Input} from '@angular/core';
               import {toNumber} from './util';
 
-              @Directive({selector: '[dir]', standalone: true})
+              @Directive({selector: '[dir]'})
               export class Dir {
                 @Input({transform: toNumber}) value!: number;
               }
@@ -3411,7 +3410,7 @@ runInEachFileSystem((os: string) => {
               import {Directive, Input} from '@angular/core';
               import {toNumber} from './util';
 
-              @Directive({selector: '[dir]', standalone: true})
+              @Directive({selector: '[dir]'})
               export class Dir {
                 @Input({transform: toNumber}) value!: number;
               }
@@ -3434,7 +3433,7 @@ runInEachFileSystem((os: string) => {
             foo: boolean;
           }
 
-          @Directive({selector: '[dir]', standalone: true})
+          @Directive({selector: '[dir]'})
           export class Dir {
             @Input({transform: (val: InternalType) => 1}) val!: number;
           }
@@ -3457,7 +3456,7 @@ runInEachFileSystem((os: string) => {
             return (innerValue: string) => outerValue;
           }
 
-          @Directive({selector: '[dir]', standalone: true})
+          @Directive({selector: '[dir]'})
           export class Dir {
             @Input({transform: createTransform(1)}) value!: number;
           }
@@ -5340,13 +5339,13 @@ runInEachFileSystem((os: string) => {
         })
         class FooCmp {
           @HostListener('click')
-          onClick(event: any): void {}
+          onClick(): void {}
 
           @HostListener('document:click', ['$event.target'])
-          onDocumentClick(eventTarget: HTMLElement): void {}
+          onDocumentClick(eventTarget: EventTarget | null): void {}
 
           @HostListener('window:scroll')
-          onWindowScroll(event: any): void {}
+          onWindowScroll(): void {}
         }
     `,
       );
@@ -5375,7 +5374,7 @@ runInEachFileSystem((os: string) => {
         })
         class FooCmp {
           @HostListener('UnknownTarget:click')
-          onClick(event: any): void {}
+          onClick(): void {}
         }
     `,
       );
@@ -5466,17 +5465,24 @@ runInEachFileSystem((os: string) => {
             '[attr.hello]': 'foo',
             '(click)': 'onClick($event)',
             '(body:click)': 'onBodyClick($event)',
-            '[prop]': 'bar',
+            '[id]': 'bar',
           },
         })
         class FooCmp {
+          arg1: any;
+          arg2: any;
+          arg3: any;
+          foo: any;
+          bar: any;
+
           onClick(event: any): void {}
+          onBodyClick(event: any): void {}
 
           @HostBinding('class.someclass')
           get someClass(): boolean { return false; }
 
-          @HostListener('change', ['arg1', 'arg2', 'arg3'])
-          onChange(event: any, arg: any): void {}
+          @HostListener('change', ['$event', 'arg1', 'arg2', 'arg3'])
+          onChange(event: any, arg1: any, arg2: any, arg3: any): void {}
         }
     `,
       );
@@ -5487,10 +5493,10 @@ runInEachFileSystem((os: string) => {
       hostVars: 4,
       hostBindings: function FooCmp_HostBindings(rf, ctx) {
         if (rf & 1) {
-          i0.ɵɵlistener("click", function FooCmp_click_HostBindingHandler($event) { return ctx.onClick($event); })("click", function FooCmp_click_HostBindingHandler($event) { return ctx.onBodyClick($event); }, i0.ɵɵresolveBody)("change", function FooCmp_change_HostBindingHandler() { return ctx.onChange(ctx.arg1, ctx.arg2, ctx.arg3); });
+          i0.ɵɵlistener("click", function FooCmp_click_HostBindingHandler($event) { return ctx.onClick($event); })("click", function FooCmp_click_HostBindingHandler($event) { return ctx.onBodyClick($event); }, i0.ɵɵresolveBody)("change", function FooCmp_change_HostBindingHandler($event) { return ctx.onChange($event, ctx.arg1, ctx.arg2, ctx.arg3); });
         }
         if (rf & 2) {
-          i0.ɵɵdomProperty("prop", ctx.bar);
+          i0.ɵɵdomProperty("id", ctx.bar);
           i0.ɵɵattribute("hello", ctx.foo);
           i0.ɵɵclassProp("someclass", ctx.someClass);
         }
@@ -5608,6 +5614,8 @@ runInEachFileSystem((os: string) => {
           selector: '[test]',
         })
         class Dir {
+          arg: any;
+
           @HostListener('change', ['$event', 'arg'])
           onChange(event: any, arg: any): void {}
         }
@@ -5811,27 +5819,6 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toContain(
         ':@@custom\u241Fdcb6170595f5d548a3d00937e87d11858f51ad04\u241F7419139165339437596:Some text',
       );
-    });
-
-    it("@Component's `interpolation` should override default interpolation config", () => {
-      env.write(
-        `test.ts`,
-        `
-      import {Component} from '@angular/core';
-      @Component({
-        selector: 'cmp-with-custom-interpolation-a',
-        template: \`<div>{%text%}</div>\`,
-        interpolation: ['{%', '%}']
-      })
-      class ComponentWithCustomInterpolationA {
-        text = 'Custom Interpolation A';
-      }
-    `,
-      );
-
-      env.driveMain();
-      const jsContents = env.getContents('test.js');
-      expect(jsContents).toContain('ɵɵtextInterpolate(ctx.text)');
     });
 
     it('should handle `encapsulation` field', () => {
@@ -7851,9 +7838,7 @@ runInEachFileSystem((os: string) => {
           `
         import {Directive, NgModule} from '@angular/core';
 
-        @Directive({
-          standalone: true,
-        })
+        @Directive()
         class HostDir {}
 
         // The directive is not exported.
@@ -8471,28 +8456,18 @@ runInEachFileSystem((os: string) => {
         expect(trim(jsContents)).toContain(trim(hostBindingsFn));
       });
 
-      it('should generate sanitizers for unsafe properties in hostBindings fn in Directives', () => {
+      it('should generate sanitizers for unsafe properties in hostBindings function in Directives', () => {
         env.write(
           `test.ts`,
           `
-        import {Component, Directive, HostBinding, Input, NgModule} from '@angular/core';
+        import {Component, Directive, HostBinding, Input} from '@angular/core';
 
         @Directive({
-          selector: '[unsafeProps]',
-          standalone: false,
+          selector: 'a[unsafeProps]',
         })
         class UnsafePropsDirective {
           @HostBinding('href')
           propHref: string;
-
-          @HostBinding('src')
-          propSrc: string;
-
-          @HostBinding('action')
-          propAction: string;
-
-          @HostBinding('profile')
-          propProfile: string;
 
           @HostBinding('innerHTML')
           propInnerHTML: string;
@@ -8506,24 +8481,21 @@ runInEachFileSystem((os: string) => {
         @Component({
           selector: 'foo',
           template: '<a [unsafeProps]="ctxProp">Link Title</a>',
-          standalone: false,
+          imports: [UnsafePropsDirective]
         })
         class FooCmp {
           ctxProp = '';
         }
-
-        @NgModule({declarations: [FooCmp, UnsafePropsDirective]})
-        class MyModule {}
       `,
         );
 
         env.driveMain();
         const jsContents = env.getContents('test.js');
         const hostBindingsFn = `
-        hostVars: 6,
+        hostVars: 3,
         hostBindings: function UnsafePropsDirective_HostBindings(rf, ctx) {
           if (rf & 2) {
-            i0.ɵɵdomProperty("href", ctx.propHref, i0.ɵɵsanitizeUrlOrResourceUrl)("src", ctx.propSrc, i0.ɵɵsanitizeUrlOrResourceUrl)("action", ctx.propAction, i0.ɵɵsanitizeUrl)("profile", ctx.propProfile, i0.ɵɵsanitizeResourceUrl)("innerHTML", ctx.propInnerHTML, i0.ɵɵsanitizeHtml)("title", ctx.propSafeTitle);
+            i0.ɵɵdomProperty("href", ctx.propHref, i0.ɵɵsanitizeUrl)("innerHTML", ctx.propInnerHTML, i0.ɵɵsanitizeHtml)("title", ctx.propSafeTitle);
           }
         }
       `;
@@ -8537,10 +8509,9 @@ runInEachFileSystem((os: string) => {
         import {Component} from '@angular/core';
 
         @Component({
-          selector: 'foo',
+          selector: 'a[foo]',
           template: '<a href="example.com">Link Title</a>',
           host: {
-            '[src]': 'srcProp',
             '[href]': 'hrefProp',
             '[title]': 'titleProp',
             '[attr.src]': 'srcAttr',
@@ -8548,18 +8519,24 @@ runInEachFileSystem((os: string) => {
             '[attr.title]': 'titleAttr',
           }
         })
-        class FooCmp {}
+        class FooCmp {
+          hrefProp: any;
+          titleProp: any;
+          srcAttr: any;
+          hrefAttr: any;
+          titleAttr: any;
+        }
       `,
         );
 
         env.driveMain();
         const jsContents = env.getContents('test.js');
         const hostBindingsFn = `
-        hostVars: 6,
+        hostVars: 5,
         hostBindings: function FooCmp_HostBindings(rf, ctx) {
           if (rf & 2) {
-            i0.ɵɵdomProperty("src", ctx.srcProp)("href", ctx.hrefProp)("title", ctx.titleProp);
-            i0.ɵɵattribute("src", ctx.srcAttr)("href", ctx.hrefAttr)("title", ctx.titleAttr);
+            i0.ɵɵdomProperty("href", ctx.hrefProp, i0.ɵɵsanitizeUrl)("title", ctx.titleProp);
+            i0.ɵɵattribute("src", ctx.srcAttr)("href", ctx.hrefAttr, i0.ɵɵsanitizeUrl)("title", ctx.titleAttr);
           }
         }
       `;
@@ -9205,17 +9182,13 @@ runInEachFileSystem((os: string) => {
             @Input({required: true}) input: any;
           }
 
-          @Directive({
-            selector: '[dir]',
-            standalone: true
-          })
+          @Directive({selector: '[dir]'})
           export class Dir extends BaseDir {}
 
           @Component({
             selector: 'test-cmp',
             template: '<div dir></div>',
-            standalone: true,
-            imports: [Dir]
+                        imports: [Dir]
           })
           export class Cmp {}
         `,
@@ -9239,16 +9212,12 @@ runInEachFileSystem((os: string) => {
             @Input({required: true}) input: any;
           }
 
-          @Directive({
-            selector: '[dir]',
-            standalone: true
-          })
+          @Directive({selector: '[dir]'})
           export class Dir extends BaseDir {}
 
           @Component({
             selector: 'test-cmp',
             template: '<div dir [input]="value"></div>',
-            standalone: true,
             imports: [Dir]
           })
           export class Cmp {
@@ -9727,14 +9696,12 @@ runInEachFileSystem((os: string) => {
                 import {Component, Directive} from '@angular/core';
 
                 @Directive({
-                  standalone: true,
                   selector: '[sandbox]',
                   inputs: ['sandbox']
                 })
                 class Dir {}
 
                 @Component({
-                  standalone: true,
                   imports: [Dir],
                   template: \`
                     <div [sandbox]="''" [title]="'Hi!'"></div>
@@ -9759,6 +9726,7 @@ runInEachFileSystem((os: string) => {
               import {Directive} from '@angular/core';
 
               @Directive({
+                selector: 'iframe[someDir]',
                 host: {
                   '[sandbox]': "''",
                   '[attr.allow]': "''",
@@ -10048,7 +10016,7 @@ runInEachFileSystem((os: string) => {
 
       it('should not error when an undecorated class from a declaration file is provided', () => {
         env.write(
-          'node_modules/@angular/core/testing/index.d.ts',
+          'node_modules/@angular/core/types/testing.d.ts',
           `
           export declare class Testability {
           }
@@ -10073,7 +10041,7 @@ runInEachFileSystem((os: string) => {
 
       it('should not error when an undecorated class without a constructor from a declaration file is provided via useClass', () => {
         env.write(
-          'node_modules/@angular/core/testing/index.d.ts',
+          'node_modules/@angular/core/types/testing.d.ts',
           `
             export declare class Testability {
             }
@@ -10129,7 +10097,7 @@ runInEachFileSystem((os: string) => {
       // can be updated.
       xit('should error when an undecorated class with a non-trivial constructor in a declaration file is provided via useClass', () => {
         env.write(
-          'node_modules/@angular/core/testing/index.d.ts',
+          'node_modules/@angular/core/types/testing.d.ts',
           `
             export declare class NgZone {}
 
@@ -10161,7 +10129,7 @@ runInEachFileSystem((os: string) => {
 
       it('should not error when an class with a factory definition and a non-trivial constructor in a declaration file is provided via useClass', () => {
         env.write(
-          'node_modules/@angular/core/testing/index.d.ts',
+          'node_modules/@angular/core/types/testing.d.ts',
           `
             import * as i0 from '@angular/core';
 
@@ -10602,8 +10570,7 @@ runInEachFileSystem((os: string) => {
         import {Component, NgModule} from '@angular/core';
 
         @Component({
-          standalone: true,
-          selector: 'standalone-component',
+                    selector: 'standalone-component',
           template: '...',
         })
         class StandaloneComponent {}
@@ -10629,8 +10596,7 @@ runInEachFileSystem((os: string) => {
         import {Component, NgModule, forwardRef} from '@angular/core';
 
         @Component({
-          standalone: true,
-          selector: 'standalone-component',
+                    selector: 'standalone-component',
           template: '...',
         })
         class StandaloneComponent {}
@@ -10645,28 +10611,6 @@ runInEachFileSystem((os: string) => {
       const diagnostics = env.driveDiagnostics();
       const codes = diagnostics.map((diag) => diag.code);
       expect(codes).toEqual([ngErrorCode(ErrorCode.NGMODULE_BOOTSTRAP_IS_STANDALONE)]);
-    });
-
-    it('should be able to turn off control flow using a compiler flag', () => {
-      env.tsconfig({_enableBlockSyntax: false});
-      env.write(
-        '/test.ts',
-        `
-        import { Component } from '@angular/core';
-
-        @Component({
-          standalone: true,
-          template: 'My email is foo@bar.com',
-        })
-        export class TestCmp {}
-      `,
-      );
-
-      env.driveMain();
-
-      // If blocks are enabled, this test will fail since `@bar.com` is an incomplete block.
-      const jsContents = env.getContents('test.js');
-      expect(jsContents).toContain('text(0, "My email is foo@bar.com")');
     });
 
     describe('InjectorDef emit optimizations for standalone', () => {
@@ -10685,7 +10629,6 @@ runInEachFileSystem((os: string) => {
           export class DepModule {}
 
           @Component({
-            standalone: true,
             selector: 'standalone-cmp',
             imports: [DepModule],
             template: '',
@@ -11119,7 +11062,6 @@ runInEachFileSystem((os: string) => {
             import {Component} from '@angular/core';
 
             @Component({
-              standalone: true,
               template: '...',
             })
             export class Comp {}

@@ -23,7 +23,13 @@ packages:
   - packages/benchpress/
   - packages/service-worker/
   - packages/upgrade/
+  - packages/zone.js/
+  - packages/zone.js/test/typings/
   - tools/bazel/rules_angular_store/
+  - vscode-ng-language-service
+  - vscode-ng-language-service/server
+  - vscode-ng-language-service/integration/pre_standalone_project
+  - vscode-ng-language-service/integration/project
 
 allowedDeprecatedVersions:
   angular: '*'
@@ -48,3 +54,14 @@ overrides:
   '@angular/language-service': 'workspace: *'
   '@angular/localize': 'workspace: *'
   '@angular/upgrade': 'workspace: *'
+
+# The minimum age of a release to be considered for dependency installation.
+# The value is in minutes (1440 minutes = 1 day).
+minimumReleaseAge: 1440
+# List of packages to exclude from the minimum release age check.
+minimumReleaseAgeExclude:
+  - '@angular-devkit/*'
+  - '@angular/*'
+  - '@ngtools/webpack'
+  - '@schematics/*'
+  - 'ng-packagr'

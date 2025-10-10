@@ -11,25 +11,52 @@ import {ViewEncapsulation} from '@angular/compiler';
 import {
   AnimationCallbackEvent,
   Component,
+  computed,
   Directive,
   ElementRef,
+  NgModule,
+  provideZonelessChangeDetection,
   signal,
   ViewChild,
 } from '@angular/core';
 import {fakeAsync, TestBed, tick} from '@angular/core/testing';
 import {By} from '@angular/platform-browser';
 import {isNode} from '@angular/private/testing';
+import {tickAnimationFrames} from '../animation_utils/tick_animation_frames';
+import {BrowserTestingModule, platformBrowserTesting} from '@angular/platform-browser/testing';
+import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 
-/** Ticks the specified amount of `requestAnimationFrame`-s. */
-export function tickAnimationFrames(amount: number) {
-  tick(16.6 * amount); // Angular turns rAF calls into 16.6ms timeouts in tests.
-}
+@NgModule({
+  providers: [provideZonelessChangeDetection()],
+})
+export class TestModule {}
 
 describe('Animation', () => {
   if (isNode) {
     it('should pass', () => expect(true).toBe(true));
     return;
   }
+
+  beforeEach(() => {
+    TestBed.resetTestEnvironment();
+    TestBed.initTestEnvironment([BrowserTestingModule, TestModule], platformBrowserTesting());
+  });
+
+  afterEach(() => {
+    TestBed.resetTestEnvironment();
+    TestBed.initTestEnvironment(
+      [BrowserTestingModule, NoopAnimationsModule, TestModule],
+      platformBrowserTesting(),
+    );
+  });
+
+  afterAll(() => {
+    TestBed.resetTestEnvironment();
+    TestBed.initTestEnvironment(
+      [BrowserTestingModule, NoopAnimationsModule, TestModule],
+      platformBrowserTesting(),
+    );
+  });
 
   describe('animate.leave', () => {
     const styles = `
@@ -47,14 +74,20 @@ describe('Animation', () => {
     `;
 
     it('should delay element removal when an animation is specified', fakeAsync(() => {
+      const logSpy = jasmine.createSpy('logSpy');
       @Component({
         selector: 'test-cmp',
         styles: styles,
-        template: '<div>@if (show()) {<p animate.leave="fade">I should fade</p>}</div>',
+        template:
+          '<div>@if (show()) {<p animate.leave="fade" (animationend)="logMe($event)">I should fade</p>}</div>',
         encapsulation: ViewEncapsulation.None,
       })
       class TestComponent {
         show = signal(true);
+
+        logMe(event: AnimationEvent) {
+          logSpy();
+        }
       }
 
       TestBed.configureTestingModule({animationsEnabled: true});
@@ -75,7 +108,9 @@ describe('Animation', () => {
       paragragh.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'fade-out'}),
       );
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('class="fade"');
+      expect(logSpy).toHaveBeenCalled();
     }));
 
     it('should remove right away when animations are disabled', fakeAsync(() => {
@@ -182,6 +217,7 @@ describe('Animation', () => {
       paragragh.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'slide-out'}),
       );
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('class="slide-out fade"');
     }));
 
@@ -242,6 +278,7 @@ describe('Animation', () => {
       paragragh.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'slide-out'}),
       );
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('class="slide-out fade"');
     }));
 
@@ -303,6 +340,7 @@ describe('Animation', () => {
       paragragh.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'slide-out'}),
       );
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('class="slide-out fade"');
     }));
 
@@ -336,7 +374,6 @@ describe('Animation', () => {
     it('should be host bindable', fakeAsync(() => {
       @Component({
         selector: 'fade-cmp',
-        styles: styles,
         host: {'animate.leave': 'fade'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
@@ -345,6 +382,7 @@ describe('Animation', () => {
 
       @Component({
         selector: 'test-cmp',
+        styles: styles,
         imports: [FadeComponent],
         template: '@if (show()) { <fade-cmp /> }',
         encapsulation: ViewEncapsulation.None,
@@ -364,19 +402,18 @@ describe('Animation', () => {
       fixture.detectChanges();
       tickAnimationFrames(1);
       expect(cmp.show()).toBeFalsy();
-      fixture.detectChanges();
       expect(fixture.nativeElement.outerHTML).toContain('class="fade"');
       fixture.detectChanges();
       fadeCmp.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'fade-out'}),
       );
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('class="fade"');
     }));
 
     it('should be host bindable with brackets', fakeAsync(() => {
       @Component({
         selector: 'fade-cmp',
-        styles: styles,
         host: {'[animate.leave]': 'fade()'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
@@ -387,6 +424,7 @@ describe('Animation', () => {
 
       @Component({
         selector: 'test-cmp',
+        styles: styles,
         imports: [FadeComponent],
         template: '@if (show()) { <fade-cmp /> }',
         encapsulation: ViewEncapsulation.None,
@@ -406,12 +444,12 @@ describe('Animation', () => {
       fixture.detectChanges();
       tickAnimationFrames(1);
       expect(cmp.show()).toBeFalsy();
-      fixture.detectChanges();
       expect(fixture.nativeElement.outerHTML).toContain('class="fade"');
       fixture.detectChanges();
       fadeCmp.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'fade-out'}),
       );
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('class="fade"');
     }));
 
@@ -483,13 +521,12 @@ describe('Animation', () => {
       `;
       @Component({
         selector: 'child-cmp',
-        styles: multiple,
-        host: {'[animate.leave]': 'clazz'},
+        host: {'[animate.leave]': 'slide()'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
       })
       class ChildComponent {
-        clazz = 'slide-out';
+        slide = signal('slide-out');
       }
 
       @Component({
@@ -516,10 +553,8 @@ describe('Animation', () => {
       fixture.detectChanges();
       tickAnimationFrames(1);
       expect(cmp.show()).toBeFalsy();
-      fixture.detectChanges();
       expect(childCmp.nativeElement.className).toContain('fade');
       expect(childCmp.nativeElement.className).toContain('slide-out');
-      fixture.detectChanges();
 
       childCmp.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'fade-out'}),
@@ -527,6 +562,7 @@ describe('Animation', () => {
       childCmp.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'slide-out'}),
       );
+      tick();
 
       expect(fixture.nativeElement.outerHTML).not.toContain('fade');
       expect(fixture.nativeElement.outerHTML).not.toContain('slide-out');
@@ -603,7 +639,7 @@ describe('Animation', () => {
       childCmp.nativeElement.dispatchEvent(
         new AnimationEvent('animationend', {animationName: 'slide-out'}),
       );
-
+      tick();
       expect(fixture.nativeElement.outerHTML).not.toContain('slide-out');
       expect(fixture.debugElement.query(By.css('child-cmp'))).toBeNull();
     }));
@@ -635,7 +671,6 @@ describe('Animation', () => {
       `;
       @Component({
         selector: 'child-cmp',
-        styles: multiple,
         host: {'animate.leave': 'slide-out'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
@@ -678,6 +713,127 @@ describe('Animation', () => {
       expect(fixture.nativeElement.outerHTML).not.toContain('slide-out fade ');
       expect(fixture.debugElement.query(By.css('child-cmp'))).toBeNull();
     }));
+
+    it('should await the longest animation when multiple transitions are present', fakeAsync(() => {
+      const multiple = `
+        .slide-out {
+          grid-template-rows: 0fr;
+          overflow: hidden;
+          opacity: 0;
+          translate: 0 -60px;
+          margin-top: -16px;
+          transition: grid-template-rows 1s ease 400ms, margin-top 1s ease 400ms,
+            opacity 400ms ease, translate 400ms ease;
+        }
+      `;
+      @Component({
+        selector: 'test-cmp',
+        styles: multiple,
+        template: '@if (show()) { <div animate.leave="slide-out"><p>Element with text</p></div> }',
+        encapsulation: ViewEncapsulation.None,
+      })
+      class TestComponent {
+        show = signal(true);
+      }
+      TestBed.configureTestingModule({animationsEnabled: true});
+
+      const fixture = TestBed.createComponent(TestComponent);
+      const cmp = fixture.componentInstance;
+      fixture.detectChanges();
+      const div = fixture.debugElement.query(By.css('div'));
+
+      expect(div.nativeElement.className).not.toContain('slide-out');
+      cmp.show.set(false);
+      fixture.detectChanges();
+      tickAnimationFrames(1);
+      expect(cmp.show()).toBeFalsy();
+      fixture.detectChanges();
+      expect(div.nativeElement.className).toContain('slide-out');
+      fixture.detectChanges();
+
+      div.nativeElement.dispatchEvent(
+        new TransitionEvent('transitionend', {propertyName: 'opacity'}),
+      );
+      div.nativeElement.dispatchEvent(
+        new TransitionEvent('transitionend', {propertyName: 'translate'}),
+      );
+
+      expect(fixture.nativeElement.outerHTML).toContain('slide-out');
+
+      div.nativeElement.dispatchEvent(
+        new TransitionEvent('transitionend', {propertyName: 'margin-top'}),
+      );
+      div.nativeElement.dispatchEvent(
+        new TransitionEvent('transitionend', {propertyName: 'grid-template-rows'}),
+      );
+      tick();
+      expect(fixture.nativeElement.outerHTML).not.toContain('slide-out');
+      expect(fixture.debugElement.query(By.css('div'))).toBeNull();
+    }));
+
+    describe('legacy animations compatibility', () => {
+      beforeAll(() => {
+        TestBed.resetTestEnvironment();
+        TestBed.initTestEnvironment(
+          [BrowserTestingModule, NoopAnimationsModule, TestModule],
+          platformBrowserTesting(),
+        );
+      });
+
+      const styles = `
+      .fade {
+        animation: fade-out 1ms;
+      }
+      @keyframes fade-out {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
+      }
+      `;
+
+      it('should have the same exact timing when AnimationsModule is present', fakeAsync(() => {
+        const logSpy = jasmine.createSpy('logSpy');
+        @Component({
+          selector: 'test-cmp',
+          styles: styles,
+          template:
+            '<div>@if (show()) {<p animate.leave="fade" (animationend)="logMe($event)">I should fade</p>}</div>',
+          encapsulation: ViewEncapsulation.None,
+        })
+        class TestComponent {
+          show = signal(true);
+
+          logMe(event: AnimationEvent) {
+            logSpy();
+          }
+        }
+
+        TestBed.configureTestingModule({animationsEnabled: true});
+
+        const fixture = TestBed.createComponent(TestComponent);
+        const cmp = fixture.componentInstance;
+        fixture.detectChanges();
+        const paragragh = fixture.debugElement.query(By.css('p'));
+
+        expect(fixture.nativeElement.outerHTML).not.toContain('class="fade"');
+        cmp.show.set(false);
+        fixture.detectChanges();
+        tickAnimationFrames(1);
+        expect(cmp.show()).toBeFalsy();
+        fixture.detectChanges();
+        expect(fixture.nativeElement.outerHTML).toContain('class="fade"');
+        fixture.detectChanges();
+        paragragh.nativeElement.dispatchEvent(
+          new AnimationEvent('animationend', {animationName: 'fade-out'}),
+        );
+        tick();
+        expect(fixture.nativeElement.outerHTML).not.toContain('class="fade"');
+        expect(logSpy).toHaveBeenCalled();
+      }));
+    });
   });
 
   describe('animate.enter', () => {
@@ -705,6 +861,25 @@ describe('Animation', () => {
       }
     }
     `;
+
+    it('should apply classes on entry when animation is specified with no control flow', fakeAsync(() => {
+      @Component({
+        selector: 'test-cmp',
+        styles: styles,
+        template: '<div><p animate.enter="slide-in" #el>I should slide in</p></div>',
+        encapsulation: ViewEncapsulation.None,
+      })
+      class TestComponent {
+        @ViewChild('el', {read: ElementRef}) el!: ElementRef<HTMLParagraphElement>;
+      }
+      TestBed.configureTestingModule({animationsEnabled: true});
+
+      const fixture = TestBed.createComponent(TestComponent);
+      const cmp = fixture.componentInstance;
+      fixture.detectChanges();
+      tickAnimationFrames(1);
+      expect(cmp.el.nativeElement.outerHTML).toContain('class="slide-in"');
+    }));
 
     it('should apply classes on entry when animation is specified', fakeAsync(() => {
       @Component({
@@ -926,7 +1101,7 @@ describe('Animation', () => {
       expect(cmp.el.nativeElement.outerHTML).not.toContain('class="slide-in fade-in"');
     }));
 
-    it('should support multple classes as a single string separated by a space', fakeAsync(() => {
+    it('should support multiple classes as a single string separated by a space', fakeAsync(() => {
       const multiple = `
       .slide-in {
         animation: slide-in 1ms;
@@ -981,7 +1156,7 @@ describe('Animation', () => {
       expect(cmp.el.nativeElement.outerHTML).not.toContain('class="slide-in fade-in"');
     }));
 
-    it('should support multple classes as a single string separated by a space', fakeAsync(() => {
+    it('should support multiple classes as a single string separated by a space', fakeAsync(() => {
       const multiple = `
       .slide-in {
         animation: slide-in 1ms;
@@ -1085,10 +1260,19 @@ describe('Animation', () => {
 
     it('should be host bindable', fakeAsync(() => {
       @Component({
-        selector: 'test-cmp',
-        styles: styles,
+        selector: 'child-cmp',
         host: {'animate.enter': 'slide-in'},
         template: '<p>I should fade</p>',
+        encapsulation: ViewEncapsulation.None,
+      })
+      class ChildComponent {}
+
+      @Component({
+        selector: 'test-cmp',
+        styles: styles,
+        imports: [ChildComponent],
+        host: {'animate.enter': 'slide-in'},
+        template: '<child-cmp />',
         encapsulation: ViewEncapsulation.None,
       })
       class TestComponent {}
@@ -1109,15 +1293,23 @@ describe('Animation', () => {
 
     it('should be host bindable with brackets', fakeAsync(() => {
       @Component({
-        selector: 'test-cmp',
-        styles: styles,
+        selector: 'child-cmp',
         host: {'[animate.enter]': 'slideIn()'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
       })
-      class TestComponent {
+      class ChildComponent {
         slideIn = signal('slide-in');
       }
+
+      @Component({
+        selector: 'test-cmp',
+        styles: styles,
+        imports: [ChildComponent],
+        template: '<child-cmp />',
+        encapsulation: ViewEncapsulation.None,
+      })
+      class TestComponent {}
       TestBed.configureTestingModule({animationsEnabled: true});
 
       const fixture = TestBed.createComponent(TestComponent);
@@ -1136,10 +1328,24 @@ describe('Animation', () => {
     it('should be host bindable with events', fakeAsync(() => {
       const slideInCalled = jasmine.createSpy('slideInCalled');
       @Component({
-        selector: 'test-cmp',
-        styles: styles,
+        selector: 'child-cmp',
         host: {'(animate.enter)': 'slideIn($event)'},
         template: '<p>I should fade</p>',
+        encapsulation: ViewEncapsulation.None,
+      })
+      class ChildComponent {
+        slideIn(event: AnimationCallbackEvent) {
+          slideInCalled();
+          event.target.classList.add('slide-in');
+          event.animationComplete();
+        }
+      }
+
+      @Component({
+        selector: 'test-cmp',
+        styles: styles,
+        imports: [ChildComponent],
+        template: '<child-cmp />',
         encapsulation: ViewEncapsulation.None,
       })
       class TestComponent {
@@ -1159,7 +1365,6 @@ describe('Animation', () => {
     it('should compose class list when host binding and regular binding', fakeAsync(() => {
       @Component({
         selector: 'child-cmp',
-        styles: styles,
         host: {'[animate.enter]': 'clazz'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
@@ -1202,7 +1407,6 @@ describe('Animation', () => {
     it('should compose class list when host binding a string and regular class strings', fakeAsync(() => {
       @Component({
         selector: 'child-cmp',
-        styles: styles,
         host: {'animate.enter': 'slide-in'},
         template: '<p>I should fade</p>',
         encapsulation: ViewEncapsulation.None,
@@ -1290,6 +1494,8 @@ describe('Animation', () => {
       fixture.detectChanges();
       tickAnimationFrames(1);
       expect(cmp.show()).toBeTruthy();
+      fixture.detectChanges();
+      tickAnimationFrames(1);
       const paragraphs = fixture.debugElement.queryAll(By.css('p'));
       expect(paragraphs.length).toBe(1);
     }));
@@ -1426,6 +1632,7 @@ describe('Animation', () => {
         );
       });
       cmp.addremove();
+      fixture.changeDetectorRef.markForCheck();
       fixture.detectChanges();
       tickAnimationFrames(1);
 
@@ -1498,12 +1705,148 @@ describe('Animation', () => {
         );
       });
       cmp.addremove();
+      fixture.changeDetectorRef.markForCheck();
       fixture.detectChanges();
       tickAnimationFrames(1);
 
       expect(fixture.debugElement.queryAll(By.css('p.fade')).length).toBe(1);
       expect(fixture.debugElement.queryAll(By.css('p.slide-in')).length).toBe(1);
       expect(fixture.debugElement.queryAll(By.css('p')).length).toBe(4);
+    }));
+
+    it('should only remove one element in reactive `@for` loops when removing the second to last item', fakeAsync(() => {
+      const animateStyles = `
+        .fade {
+          animation: fade-out 500ms;
+        }
+        @keyframes fade-out {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
+      `;
+
+      @Component({
+        selector: 'test-cmp',
+        styles: animateStyles,
+        template: `
+          <div>
+            @for (item of shown(); track item) {
+              <p animate.leave="fade" #el>I should slide in {{item}}.</p>
+            }
+          </div>
+        `,
+        encapsulation: ViewEncapsulation.None,
+      })
+      class TestComponent {
+        items = signal([1, 2, 3, 4, 5, 6]);
+        shown = computed(() => this.items().slice(0, 3));
+        @ViewChild('el', {read: ElementRef}) el!: ElementRef<HTMLParagraphElement>;
+        max = 6;
+
+        removeSecondToLast() {
+          this.items.update((old) => {
+            const newList = [...old];
+            newList.splice(1, 1);
+            return newList;
+          });
+        }
+      }
+      TestBed.configureTestingModule({animationsEnabled: true});
+
+      const fixture = TestBed.createComponent(TestComponent);
+      const cmp = fixture.componentInstance;
+      fixture.detectChanges();
+      cmp.removeSecondToLast();
+      fixture.detectChanges();
+      tickAnimationFrames(1);
+
+      expect(fixture.debugElement.queryAll(By.css('p.fade')).length).toBe(1);
+      expect(fixture.debugElement.queryAll(By.css('p')).length).toBe(4);
+      fixture.debugElement
+        .query(By.css('p.fade'))
+        .nativeElement.dispatchEvent(
+          new AnimationEvent('animationend', {animationName: 'fade-out'}),
+        );
+      tick();
+      expect(fixture.debugElement.queryAll(By.css('p')).length).toBe(3);
+    }));
+
+    it('should not remove elements when child element animations finish', fakeAsync(() => {
+      const animateStyles = `
+        .fade {
+          animation: fade-out 500ms;
+        }
+        .flash {
+          animation: flash 200ms;
+        }
+        @keyframes flash {
+          from {
+            background-color: rgba(255, 255, 255, 1);
+          }
+          to {
+            background-color: rgba(255, 255, 255, 0);;
+          }
+        }
+        @keyframes fade-out {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
+      `;
+
+      @Component({
+        selector: 'test-cmp',
+        styles: animateStyles,
+        template: `
+          <div>
+            @if (show()) {
+              <p animate.leave="fade" #el>
+                I should slide in.
+                <button [class]="buttonClass()" (click)="flash()">click me</button>
+              </p>
+            }
+          </div>
+        `,
+        encapsulation: ViewEncapsulation.None,
+      })
+      class TestComponent {
+        show = signal(true);
+        buttonClass = signal('');
+        flash() {
+          this.show.update((val) => !val);
+          this.buttonClass.set('flash');
+        }
+      }
+      TestBed.configureTestingModule({animationsEnabled: true});
+
+      const fixture = TestBed.createComponent(TestComponent);
+      const cmp = fixture.componentInstance;
+      fixture.detectChanges();
+      cmp.flash();
+      fixture.detectChanges();
+      tickAnimationFrames(1);
+
+      fixture.debugElement
+        .query(By.css('button'))
+        .nativeElement.dispatchEvent(
+          new AnimationEvent('animationend', {animationName: 'flash', bubbles: true}),
+        );
+      tick();
+      expect(fixture.debugElement.queryAll(By.css('p')).length).toBe(1);
+      fixture.debugElement
+        .query(By.css('p'))
+        .nativeElement.dispatchEvent(
+          new AnimationEvent('animationend', {animationName: 'fade-out', bubbles: true}),
+        );
+      tick();
+      expect(fixture.debugElement.queryAll(By.css('p')).length).toBe(0);
     }));
   });
 });

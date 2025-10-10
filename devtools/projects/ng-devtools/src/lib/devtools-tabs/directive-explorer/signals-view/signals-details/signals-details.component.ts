@@ -24,6 +24,7 @@ const TYPE_CLASS_MAP: {[key: string]: string} = {
   'computed': 'type-computed',
   'effect': 'type-effect',
   'template': 'type-template',
+  'linkedSignal': 'type-linked-signal',
 };
 
 @Component({
@@ -39,6 +40,7 @@ export class SignalsDetailsComponent {
   protected readonly treeControl = input.required<FlatTreeControl<FlatNode>>();
 
   protected readonly gotoSource = output<DebugSignalGraphNode>();
+  protected readonly close = output<void>();
 
   protected readonly TYPE_CLASS_MAP = TYPE_CLASS_MAP;
 }

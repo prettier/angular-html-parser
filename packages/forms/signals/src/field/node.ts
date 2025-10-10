@@ -7,13 +7,23 @@
  */
 
 import type {Signal, WritableSignal} from '@angular/core';
-import {AggregateProperty, Property} from '../api/property';
-import type {DisabledReason, Field, FieldContext, FieldState} from '../api/types';
+import type {Control} from '../api/control_directive';
+import {
+  AggregateProperty,
+  MAX,
+  MAX_LENGTH,
+  MIN,
+  MIN_LENGTH,
+  Property,
+  REQUIRED,
+  PATTERN,
+} from '../api/property';
+import type {DisabledReason, FieldContext, FieldState, FieldTree} from '../api/types';
 import type {ValidationError} from '../api/validation_errors';
-import type {Control} from '../controls/control';
 import {LogicNode} from '../schema/logic_node';
 import {FieldPathNode} from '../schema/path_node';
 import {FieldNodeContext} from './context';
+import type {FieldAdapter} from './field_adapter';
 import type {FormFieldManager} from './manager';
 import {FieldPropertyState} from './property';
 import {FIELD_PROXY_HANDLER} from './proxy';
@@ -27,7 +37,6 @@ import {
 } from './structure';
 import {FieldSubmitState} from './submit';
 import {ValidationState} from './validation';
-import type {FieldAdapter} from './field_adapter';
 /**
  * Internal node in the form tree for a given field.
  *
@@ -58,7 +67,7 @@ export class FieldNode implements FieldState<unknown> {
   /**
    * Proxy to this node which allows navigation of the form graph below it.
    */
-  readonly fieldProxy = new Proxy(() => this, FIELD_PROXY_HANDLER) as unknown as Field<any>;
+  readonly fieldProxy = new Proxy(() => this, FIELD_PROXY_HANDLER) as unknown as FieldTree<any>;
 
   constructor(options: FieldNodeOptions) {
     this.fieldAdapter = options.fieldAdapter;
@@ -135,6 +144,30 @@ export class FieldNode implements FieldState<unknown> {
 
   get name(): Signal<string> {
     return this.nodeState.name;
+  }
+
+  get max(): Signal<number | undefined> {
+    return this.property(MAX);
+  }
+
+  get maxLength(): Signal<number | undefined> {
+    return this.property(MAX_LENGTH);
+  }
+
+  get min(): Signal<number | undefined> {
+    return this.property(MIN);
+  }
+
+  get minLength(): Signal<number | undefined> {
+    return this.property(MIN_LENGTH);
+  }
+
+  get pattern(): Signal<readonly RegExp[]> {
+    return this.property(PATTERN);
+  }
+
+  get required(): Signal<boolean> {
+    return this.property(REQUIRED);
   }
 
   property<M>(prop: AggregateProperty<M, any>): Signal<M>;

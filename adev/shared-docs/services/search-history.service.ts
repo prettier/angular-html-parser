@@ -19,9 +19,14 @@ export const MAX_RECENT_HISTORY_SIZE = 10;
 export interface HistoryItem {
   id: string;
   labelHtml: string;
+  subLabelHtml?: string;
   url: string;
   isFavorite: boolean;
   createdAt: number;
+}
+
+function cleanUpHtml(label: string | null): string {
+  return (label || '').replace(/<\/?mark>/g, '');
 }
 
 @Injectable({providedIn: 'root'})
@@ -45,12 +50,16 @@ export class SearchHistory {
   }
 
   addItem(item: SearchResultItem | HistoryItem): void {
-    this.updateHistory((map) => {
-      const labelHtml = (item.labelHtml || '').replace(/<\/?mark>/g, '');
+    // We don't want to reset nor update the creation date of favorites
+    if (this.history().get(item.id)?.isFavorite) {
+      return;
+    }
 
+    this.updateHistory((map) => {
       map.set(item.id, {
         id: item.id,
-        labelHtml,
+        labelHtml: cleanUpHtml(item.labelHtml),
+        subLabelHtml: item.subLabelHtml ? cleanUpHtml(item.subLabelHtml) : undefined,
         url: item.url,
         isFavorite: false,
         createdAt: Date.now(),

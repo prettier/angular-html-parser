@@ -56,8 +56,8 @@
 
 version: 3
 
-availability:
-  users_unavailable: ['devversion']
+#availability:
+#  users_unavailable: []
 
 # Meta field that goes unused by PullApprove to allow for defining aliases to be
 # used throughout the config.
@@ -167,6 +167,7 @@ groups:
           'packages/router/**/{*,.*}',
           'packages/service-worker/**/{*,.*}',
           'packages/upgrade/**/{*,.*}',
+          'vscode-ng-language-service/**/{*,.*}',
         ])
     reviewers:
       users:
@@ -333,7 +334,6 @@ groups:
           '.gemini/**/{*,.*}',
           '.ng-dev/**/{*,.*}',
           '.vscode/**/{*,.*}',
-          '.yarn/**/{*,.*}',
           'contributing-docs/*.md',
           'contributing-docs/images/**/{*,.*}',
           'goldens/{*,.*}',
@@ -414,8 +414,8 @@ groups:
         - ~leonsenft
         - ~mattrbeck
     reviews:
-      request: 3 # Request reviews from 3 people
-      required: 2 # Require that 2 people approve
+      request: 2
+      required: 1
       reviewed_for: required
 
   # ================================================

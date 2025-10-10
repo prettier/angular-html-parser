@@ -11,7 +11,7 @@ import {TempScopedNodeJsSyncHost} from '@angular-devkit/core/node/testing';
 import {HostTree} from '@angular-devkit/schematics';
 import {SchematicTestRunner, UnitTestTree} from '@angular-devkit/schematics/testing/index.js';
 import {resolve} from 'node:path';
-import shx from 'shelljs';
+import {rmSync} from 'node:fs';
 
 describe('signal input migration', () => {
   let runner: SchematicTestRunner;
@@ -43,14 +43,14 @@ describe('signal input migration', () => {
       }),
     );
 
-    previousWorkingDir = shx.pwd();
+    previousWorkingDir = process.cwd();
     tmpDirPath = getSystemPath(host.root);
-    shx.cd(tmpDirPath);
+    process.chdir(tmpDirPath);
   });
 
   afterEach(() => {
-    shx.cd(previousWorkingDir);
-    shx.rm('-r', tmpDirPath);
+    process.chdir(previousWorkingDir);
+    rmSync(tmpDirPath, {recursive: true});
   });
 
   it('should work', async () => {
@@ -126,6 +126,30 @@ describe('signal input migration', () => {
     await runMigration();
 
     expect(messages).toContain(`  -> Migrated 1/2 inputs.`);
+  });
+
+  it('should not migrate input functions that reference this', async () => {
+    const source = `
+      import {Component, Input} from '@angular/core';
+
+      @Component({})
+      export class TestComponent {
+
+        @Input() fnDisplay = (item: any) => item;
+        @Input() fnEquals = (a: any, b: any) => this.fnDisplay(a) === this.fnDisplay(b);
+
+      }
+    `;
+
+    writeFile('/index.ts', source);
+    await runMigration();
+    const content = tree.readContent('/index.ts');
+
+    // Verify the simple function was migrated
+    expect(content).toContain('readonly fnDisplay = input((item: any) => item);');
+    expect(content).toContain(
+      '@Input() fnEquals = (a: any, b: any) => this.fnDisplay()(a) === this.fnDisplay()(b);',
+    );
   });
 
   it('should report correct statistics with best effort mode', async () => {
