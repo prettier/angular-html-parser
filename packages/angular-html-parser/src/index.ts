@@ -97,3 +97,6 @@ export {
   ParseSourceFile,
 } from "../../compiler/src/parse_util.js";
 export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.js";
+
+// Types
+export type * as Ast from "../../compiler/src/ml_parser/ast.js";

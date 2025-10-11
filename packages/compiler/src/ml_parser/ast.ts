@@ -51,7 +51,7 @@ export class Text extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitText(this, context);
   }
-  readonly type = 'text';
+  readonly kind = 'text';
 }
 
 export class CDATA extends NodeWithI18n {
@@ -66,7 +66,7 @@ export class CDATA extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitCdata(this, context);
   }
-  readonly type = 'cdata';
+  readonly kind = 'cdata';
 }
 
 export class Expansion extends NodeWithI18n {
@@ -83,8 +83,7 @@ export class Expansion extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitExpansion(this, context);
   }
-
-  readonly type = 'expansion';
+  readonly kind = 'expansion';
 }
 
 export class ExpansionCase implements BaseNode {
@@ -100,7 +99,7 @@ export class ExpansionCase implements BaseNode {
     return visitor.visitExpansionCase(this, context);
   }
 
-  readonly type = 'expansionCase';
+  readonly kind = 'expansionCase';
 }
 
 export class Attribute extends NodeWithI18n {
@@ -118,7 +117,7 @@ export class Attribute extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitAttribute(this, context);
   }
-  readonly type = 'attribute';
+  readonly kind = 'attribute';
   // angular-html-parser: backwards compatibility for Prettier
   get nameSpan() {
     return this.keySpan;
@@ -144,7 +143,7 @@ export class Element extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitElement(this, context);
   }
-  readonly type = 'element';
+  readonly kind = 'element';
 }
 
 export class Comment implements BaseNode {
@@ -155,7 +154,7 @@ export class Comment implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitComment(this, context);
   }
-  readonly type = 'comment';
+  readonly kind = 'comment';
 }
 
 export class DocType implements BaseNode {
@@ -163,7 +162,7 @@ export class DocType implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitDocType(this, context);
   }
-  readonly type = 'docType';
+  readonly kind = 'docType';
 }
 
 export class Block extends NodeWithI18n {
@@ -184,7 +183,7 @@ export class Block extends NodeWithI18n {
     return visitor.visitBlock(this, context);
   }
 
-  readonly type = 'block';
+  readonly kind = 'block';
 }
 
 export class Component extends NodeWithI18n {
@@ -208,7 +207,7 @@ export class Component extends NodeWithI18n {
     return visitor.visitComponent(this, context);
   }
 
-  readonly type = 'component';
+  readonly kind = 'component';
 }
 
 export class Directive implements BaseNode {
@@ -224,7 +223,7 @@ export class Directive implements BaseNode {
     return visitor.visitDirective(this, context);
   }
 
-  readonly type = 'directive';
+  readonly kind = 'directive';
 }
 
 export class BlockParameter implements BaseNode {
@@ -237,7 +236,7 @@ export class BlockParameter implements BaseNode {
     return visitor.visitBlockParameter(this, context);
   }
 
-  readonly type = 'blockParameter';
+  readonly kind = 'blockParameter';
   readonly startSourceSpan: null = null;
   readonly endSourceSpan: null = null;
 }
@@ -255,7 +254,7 @@ export class LetDeclaration implements BaseNode {
     return visitor.visitLetDeclaration(this, context);
   }
 
-  readonly type = 'letDeclaration';
+  readonly kind = 'letDeclaration';
   readonly startSourceSpan: null = null;
   readonly endSourceSpan: null = null;
 }
