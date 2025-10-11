@@ -51,7 +51,7 @@ describe("options", () => {
 
     it("should be able to parse MJML", () => {
       const MJML_RAW_TAGS = new Set(["mj-style", "mj-raw"]);
-      const result = parse('<mj-raw></p></mj-raw>', {
+      const result = parse("<mj-raw></p></mj-raw>", {
         getTagContentType: (tagName) =>
           MJML_RAW_TAGS.has(tagName) ? TagContentType.RAW_TEXT : undefined,
       });
@@ -68,15 +68,15 @@ describe("AST format", () => {
     const input = `<!DOCTYPE html> <el attr></el>txt<!--  --><![CDATA[foo]]>`;
     const ast = parse(input);
     expect(ast.rootNodes).toEqual([
-      expect.objectContaining({ type: "docType" }),
-      expect.objectContaining({ type: "text" }),
+      expect.objectContaining({ kind: "docType" }),
+      expect.objectContaining({ kind: "text" }),
       expect.objectContaining({
-        type: "element",
-        attrs: [expect.objectContaining({ type: "attribute" })],
+        kind: "element",
+        attrs: [expect.objectContaining({ kind: "attribute" })],
       }),
-      expect.objectContaining({ type: "text" }),
-      expect.objectContaining({ type: "comment" }),
-      expect.objectContaining({ type: "cdata" }),
+      expect.objectContaining({ kind: "text" }),
+      expect.objectContaining({ kind: "comment" }),
+      expect.objectContaining({ kind: "cdata" }),
     ]);
   });
 
@@ -86,23 +86,23 @@ describe("AST format", () => {
     expect(ast.rootNodes).toEqual([
       expect.objectContaining({
         name: "if",
-        type: "block",
+        kind: "block",
         parameters: [
           expect.objectContaining({
-            type: "blockParameter",
+            kind: "blockParameter",
             expression: "user.isHuman",
           }),
         ],
         children: [
-          expect.objectContaining({ type: "text", value: " " }),
+          expect.objectContaining({ kind: "text", value: " " }),
           expect.objectContaining({
-            type: "element",
+            kind: "element",
             name: "p",
             children: [
-              expect.objectContaining({ type: "text", value: "Hello human" }),
+              expect.objectContaining({ kind: "text", value: "Hello human" }),
             ],
           }),
-          expect.objectContaining({ type: "text", value: " " }),
+          expect.objectContaining({ kind: "text", value: " " }),
         ],
       }),
     ]);
@@ -114,7 +114,7 @@ describe("AST format", () => {
     expect(ast.rootNodes).toEqual([
       expect.objectContaining({
         name: "foo",
-        type: "letDeclaration",
+        kind: "letDeclaration",
         value: "'bar'",
       }),
     ]);
@@ -129,11 +129,11 @@ describe("AST format", () => {
       expect(ast.rootNodes).toEqual([
         expect.objectContaining({
           name: "div",
-          type: "element",
+          kind: "element",
           directives: [
             expect.objectContaining({
               name: "Dir",
-              type: "directive",
+              kind: "directive",
             }),
           ],
         }),
@@ -149,7 +149,7 @@ describe("AST format", () => {
         expect.objectContaining({
           fullName: "MyComp",
           componentName: "MyComp",
-          type: "component",
+          kind: "component",
         }),
       ]);
     }
@@ -160,7 +160,7 @@ describe("AST format", () => {
         expect.objectContaining({
           fullName: "MyComp",
           componentName: "MyComp",
-          type: "component",
+          kind: "component",
         }),
       ]);
     }
@@ -173,7 +173,7 @@ describe("AST format", () => {
         expect.objectContaining({
           fullName: "MyComp:button",
           componentName: "MyComp",
-          type: "component",
+          kind: "component",
         }),
       ]);
     }
@@ -186,7 +186,7 @@ describe("AST format", () => {
         expect.objectContaining({
           fullName: "MyComp:svg:title",
           componentName: "MyComp",
-          type: "component",
+          kind: "component",
         }),
       ]);
     }
