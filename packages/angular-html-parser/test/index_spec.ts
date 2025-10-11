@@ -51,7 +51,7 @@ describe("options", () => {
 
     it("should be able to parse MJML", () => {
       const MJML_RAW_TAGS = new Set(["mj-style", "mj-raw"]);
-      const result = parse('<mj-raw></p></mj-raw>', {
+      const result = parse("<mj-raw></p></mj-raw>", {
         getTagContentType: (tagName) =>
           MJML_RAW_TAGS.has(tagName) ? TagContentType.RAW_TEXT : undefined,
       });
