@@ -83,6 +83,8 @@ export class Expansion extends NodeWithI18n {
   override visit(visitor: Visitor, context: any): any {
     return visitor.visitExpansion(this, context);
   }
+
+  readonly type = 'expansion';
 }
 
 export class ExpansionCase implements BaseNode {
