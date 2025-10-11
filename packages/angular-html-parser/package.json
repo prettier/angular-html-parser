@@ -11,42 +11,35 @@
   },
   "exports": {
     ".": {
-      "types": "./lib/angular-html-parser/src/index.d.ts",
-      "default": "./lib/angular-html-parser/src/index.js"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./*": "./*"
   },
   "license": "MIT",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "yarn clean && yarn build-lib && yarn codemod",
-    "clean": "del-cli ./lib",
-    "build-lib": "tsc -p tsconfig.build.json",
-    "codemod": "node ./node_modules/jscodeshift/bin/jscodeshift.js -t postbuild-codemod.ts lib --extensions=js,ts --parser=ts",
+    "build": "tsdown",
     "test": "vitest",
     "release": "release-it",
     "fix": "prettier . --write",
     "lint": "prettier . --check"
   },
   "devDependencies": {
-    "@types/node": "24.3.0",
+    "@types/node": "24.7.1",
     "@vitest/coverage-v8": "3.2.4",
-    "del-cli": "6.0.0",
-    "jasmine": "5.10.0",
-    "jscodeshift": "17.3.0",
     "prettier": "3.6.2",
-    "release-it": "19.0.4",
-    "standard-version": "9.5.0",
-    "ts-node": "10.9.2",
+    "release-it": "19.0.5",
     "tsconfig-paths": "4.2.0",
-    "typescript": "5.9.2",
+    "tsdown": "0.15.6",
+    "typescript": "5.9.3",
     "vitest": "3.2.4"
   },
   "engines": {
     "node": ">= 14"
   },
   "files": [
-    "lib",
+    "dist",
     "ThirdPartyNoticeText.txt"
   ],
   "type": "module",
