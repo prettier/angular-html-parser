@@ -48,6 +48,18 @@ describe("options", () => {
         [html.Text, 'const foo = "</";', 1, ['const foo = "</";']],
       ]);
     });
+
+    it("should be able to parse MJML", () => {
+      const MJML_RAW_TAGS = new Set(["mj-style", "mj-raw"]);
+      const result = parse('<mj-raw></p></mj-raw>', {
+        getTagContentType: (tagName) =>
+          MJML_RAW_TAGS.has(tagName) ? TagContentType.RAW_TEXT : undefined,
+      });
+      expect(humanizeDom(result)).toEqual([
+        [html.Element, "mj-raw", 0],
+        [html.Text, "</p>", 1, ["</p>"]],
+      ]);
+    });
   });
 });
 
