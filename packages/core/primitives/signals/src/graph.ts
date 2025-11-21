@@ -18,7 +18,7 @@ declare const ngDevMode: boolean | undefined;
 let activeConsumer: ReactiveNode | null = null;
 let inNotificationPhase = false;
 
-type Version = number & {__brand: 'Version'};
+export type Version = number & {__brand: 'Version'};
 
 /**
  * Global epoch counter. Incremented whenever a source signal is set.
@@ -87,6 +87,15 @@ interface ReactiveLink {
   nextConsumer: ReactiveLink | undefined;
   nextProducer: ReactiveLink | undefined;
 }
+
+export type ReactiveNodeKind =
+  | 'signal'
+  | 'computed'
+  | 'effect'
+  | 'template'
+  | 'linkedSignal'
+  | 'afterRenderEffectPhase'
+  | 'unknown';
 
 /**
  * A producer and/or consumer which participates in the reactive graph.
@@ -186,7 +195,7 @@ export interface ReactiveNode {
    *
    * Used in Angular DevTools to identify the kind of signal.
    */
-  kind: string;
+  kind: ReactiveNodeKind;
 }
 
 /**

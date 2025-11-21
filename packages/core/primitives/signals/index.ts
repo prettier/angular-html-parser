@@ -13,6 +13,7 @@ export {
   ComputationFn,
   LinkedSignalNode,
   LinkedSignalGetter,
+  PreviousValue,
   createLinkedSignal,
   linkedSignalSetFn,
   linkedSignalUpdateFn,
@@ -24,6 +25,7 @@ export {
   Reactive,
   ReactiveHookFn,
   ReactiveNode,
+  ReactiveNodeKind,
   SIGNAL,
   consumerAfterComputation,
   consumerBeforeComputation,
@@ -44,6 +46,7 @@ export {
   runPostProducerCreatedFn,
   setActiveConsumer,
   setPostProducerCreatedFn,
+  Version,
 } from './src/graph';
 export {
   SIGNAL_NODE,
@@ -67,7 +70,9 @@ export {installDevToolsSignalFormatter} from './src/formatter';
 declare const ngDevMode: boolean | undefined;
 
 // We're using a top-level access to enable signal formatting whenever the signals package is loaded.
-if (typeof ngDevMode !== 'undefined' && ngDevMode) {
+// ngDevMode might not have been init correctly yet, checking for `undefined` ensures that in case
+// it is not defined yet, we still install the formatter.
+if (typeof ngDevMode === 'undefined' || ngDevMode) {
   // tslint:disable-next-line: no-toplevel-property-access
   installDevToolsSignalFormatter();
 }

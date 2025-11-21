@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
         with:
           token: '${{secrets.GITHUB_TOKEN}}'
 
@@ -40,7 +40,7 @@ jobs:
           npx -y firebase-tools@latest target:clear --config adev/firebase.json --project ${{env.PREVIEW_PROJECT}} hosting angular-docs
           npx -y firebase-tools@latest target:apply --config adev/firebase.json --project ${{env.PREVIEW_PROJECT}} hosting angular-docs ${{env.PREVIEW_SITE}}
 
-      - uses: angular/dev-infra/github-actions/previews/upload-artifacts-to-firebase@56543b10ddb9941c76b4413cc24ec3fa7a43cf5c
+      - uses: angular/dev-infra/github-actions/previews/upload-artifacts-to-firebase@f47684669736e28fd77eab64e65b2952c8a948ee
         with:
           github-token: '${{secrets.GITHUB_TOKEN}}'
           workflow-artifact-name: 'adev-preview'

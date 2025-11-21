@@ -15,7 +15,7 @@ import {
   applyEach,
   customError,
   form,
-  property,
+  metadata,
   required,
   schema,
   SchemaOrSchemaFn,
@@ -56,7 +56,7 @@ describe('resources', () => {
 
   it('Takes a simple resource which reacts to data changes', async () => {
     const s: SchemaOrSchemaFn<Cat> = function (p) {
-      const RES = property(p.name, ({value}) => {
+      const RES = metadata(p.name, ({value}) => {
         return resource({
           params: () => ({x: value()}),
           loader: async ({params}) => `got: ${params.x}`,
@@ -64,7 +64,7 @@ describe('resources', () => {
       });
 
       validate(p.name, ({state}) => {
-        const remote = state.property(RES)!;
+        const remote = state.metadata(RES)!;
         if (remote.hasValue()) {
           return customError({message: remote.value()});
         } else {
@@ -98,7 +98,7 @@ describe('resources', () => {
   it('should create a resource per entry in an array', async () => {
     const s: SchemaOrSchemaFn<Cat[]> = function (p) {
       applyEach(p, (p) => {
-        const RES = property(p.name, ({value}) => {
+        const RES = metadata(p.name, ({value}) => {
           return resource({
             params: () => ({x: value()}),
             loader: async ({params}) => `got: ${params.x}`,
@@ -106,7 +106,7 @@ describe('resources', () => {
         });
 
         validate(p.name, ({state}) => {
-          const remote = state.property(RES)!;
+          const remote = state.metadata(RES)!;
           if (remote.hasValue()) {
             return customError({message: remote.value()});
           } else {
@@ -161,15 +161,16 @@ describe('resources', () => {
               return params as Cat[];
             },
           }),
-        errors: (cats, {fieldOf}) => {
+        onSuccess: (cats, {fieldTreeOf}) => {
           return cats.map((cat, index) =>
             customError({
               kind: 'meows_too_much',
               name: cat.name,
-              field: fieldOf(p)[index],
+              field: fieldTreeOf(p)[index],
             }),
           );
         },
+        onError: () => null,
       });
     };
 
@@ -196,13 +197,14 @@ describe('resources', () => {
               return params as Cat[];
             },
           }),
-        errors: (cats, {fieldOf}) => {
+        onSuccess: (cats, {fieldTreeOf}) => {
           return customError({
             kind: 'meows_too_much',
             name: cats[0].name,
-            field: fieldOf(p)[0],
+            field: fieldTreeOf(p)[0],
           });
         },
+        onError: () => null,
       });
     };
 
@@ -222,8 +224,9 @@ describe('resources', () => {
       (p) => {
         validateHttp(p, {
           request: ({value}) => `/api/check?username=${value()}`,
-          errors: (available: boolean) =>
+          onSuccess: (available: boolean) =>
             available ? undefined : customError({kind: 'username-taken'}),
+          onError: () => null,
         });
       },
       {injector},
@@ -266,8 +269,9 @@ describe('resources', () => {
       required(address.street);
       validateHttp(address, {
         request: ({value}) => ({url: '/checkaddress', params: {...value()}}),
-        errors: (message: string, {fieldOf}) =>
-          customError({message, field: fieldOf(address.street)}),
+        onSuccess: (message: string, {fieldTreeOf}) =>
+          customError({message, field: fieldTreeOf(address.street)}),
+        onError: () => null,
       });
     });
     const addressForm = form(addressModel, addressSchema, {injector});
@@ -284,6 +288,38 @@ describe('resources', () => {
 
     expect(addressForm.street().errors()).toEqual([
       customError({message: 'Invalid!', field: addressForm.street}),
+    ]);
+  });
+  it('should call onError handler when http validation fails', async () => {
+    const addressModel = signal<Address>({street: '123 Main St', city: '', zip: ''});
+    const addressSchema = schema<Address>((address) => {
+      required(address.street);
+      validateHttp(address, {
+        request: ({value}) => ({url: '/checkaddress', params: {...value()}}),
+        onSuccess: () => undefined,
+        onError: () => [
+          customError({kind: 'address-api-failed', message: 'API is down', field: addressForm}),
+        ],
+      });
+    });
+
+    const addressForm = form(addressModel, addressSchema, {injector});
+
+    TestBed.tick();
+
+    const req = backend.expectOne('/checkaddress?street=123%20Main%20St&city=&zip=');
+    req.flush(null, {status: 500, statusText: 'Server Error'});
+
+    await appRef.whenStable();
+
+    expect(addressForm().pending()).toBe(false);
+    expect(addressForm().invalid()).toBe(true);
+    expect(addressForm().errors()).toEqual([
+      customError({
+        kind: 'address-api-failed',
+        message: 'API is down',
+        field: addressForm,
+      }),
     ]);
   });
 });

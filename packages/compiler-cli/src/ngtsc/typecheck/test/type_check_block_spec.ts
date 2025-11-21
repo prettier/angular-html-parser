@@ -2574,4 +2574,231 @@ describe('type check blocks', () => {
       expect(block).toContain('_t1.input = (((this).value));');
     });
   });
+
+  describe('signal forms', () => {
+    let FieldMock: TestDirective;
+
+    beforeEach(() => {
+      setup([]);
+
+      FieldMock = {
+        type: 'directive',
+        name: 'Field',
+        selector: '[field]',
+        bestGuessOwningModule: {
+          specifier: '@angular/forms/signals',
+          resolutionContext: '',
+        },
+        inputs: {
+          field: 'field',
+        },
+      };
+    });
+
+    it('should generate a string field for an input without a type', () => {
+      const block = tcb('<input [field]="f"/>', [FieldMock]);
+      expect(block).toContain('var _t1 = null! as string;');
+      expect(block).toContain('_t1 = ((this).f)().value();');
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+
+    [
+      {inputType: 'text', expectedType: 'string'},
+      {inputType: 'radio', expectedType: 'string'},
+      {inputType: 'checkbox', expectedType: 'boolean'},
+      {inputType: 'number', expectedType: 'string | number'},
+      {inputType: 'range', expectedType: 'string | number'},
+      {inputType: 'datetime-local', expectedType: 'string | number'},
+      {inputType: 'date', expectedType: 'string | number | Date | null'},
+      {inputType: 'month', expectedType: 'string | number | Date | null'},
+      {inputType: 'time', expectedType: 'string | number | Date | null'},
+      {inputType: 'week', expectedType: 'string | number | Date | null'},
+      {inputType: 'unknown', expectedType: 'string'},
+    ].forEach(({inputType, expectedType}) => {
+      it(`should generate a '${expectedType}' field for an input with a '${inputType}' type`, () => {
+        const block = tcb(`<input type="${inputType}" [field]="f"/>`, [FieldMock]);
+        expect(block).toContain(`var _t1 = null! as ${expectedType};`);
+        expect(block).toContain('_t1 = ((this).f)().value();');
+        expect(block).toContain('var _t2 = null! as i0.Field;');
+        expect(block).toContain('_t2.field = (((this).f));');
+      });
+    });
+
+    it('should generate a string field for a textarea', () => {
+      const block = tcb('<textarea [field]="f"></textarea>', [FieldMock]);
+      expect(block).toContain('var _t1 = null! as string;');
+      expect(block).toContain('_t1 = ((this).f)().value();');
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+
+    it('should generate a string field for a select', () => {
+      const block = tcb('<select [field]="f"></select>', [FieldMock]);
+      expect(block).toContain('var _t1 = null! as string;');
+      expect(block).toContain('_t1 = ((this).f)().value();');
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+
+    it('should generate a custom value control', () => {
+      const block = tcb('<custom-control [field]="f"/>', [
+        FieldMock,
+        {
+          type: 'directive',
+          name: 'CustomControl',
+          selector: 'custom-control',
+          inputs: {
+            value: {
+              classPropertyName: 'value',
+              bindingPropertyName: 'value',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+          },
+          outputs: {
+            valueChange: 'valueChange',
+          },
+        },
+      ]);
+
+      expect(block).toContain('var _t1 = null! as i0.CustomControl;');
+      expect(block).toContain(
+        '_t1.value[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = i1.ɵunwrapWritableSignal((((((this).f)()).value)));',
+      );
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+
+    it('should generate a custom checkbox control', () => {
+      const block = tcb('<custom-control [field]="f"/>', [
+        FieldMock,
+        {
+          type: 'directive',
+          name: 'CustomControl',
+          selector: 'custom-control',
+          inputs: {
+            checked: {
+              classPropertyName: 'checked',
+              bindingPropertyName: 'checked',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+          },
+          outputs: {
+            checkedChange: 'checkedChange',
+          },
+        },
+      ]);
+
+      expect(block).toContain('var _t1 = null! as i0.CustomControl;');
+      expect(block).toContain(
+        '_t1.checked[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = i1.ɵunwrapWritableSignal((((((this).f)()).value)));',
+      );
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+
+    it('should add implicit bindings to other field-related inputs on a custom control', () => {
+      const block = tcb('<custom-control [field]="f"/>', [
+        FieldMock,
+        {
+          type: 'directive',
+          name: 'CustomControl',
+          selector: 'custom-control',
+          inputs: {
+            value: {
+              classPropertyName: 'value',
+              bindingPropertyName: 'value',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+            required: {
+              classPropertyName: 'required',
+              bindingPropertyName: 'required',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+            disabled: {
+              classPropertyName: 'disabled',
+              bindingPropertyName: 'disabled',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+            name: {
+              classPropertyName: 'name',
+              bindingPropertyName: 'name',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+          },
+          outputs: {
+            valueChange: 'valueChange',
+          },
+        },
+      ]);
+
+      expect(block).toContain('var _t1 = null! as i0.CustomControl;');
+      expect(block).toContain(
+        '_t1.value[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = i1.ɵunwrapWritableSignal((((((this).f)()).value)));',
+      );
+      expect(block).toContain(
+        '_t1.required[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = ((((this).f)()).required());',
+      );
+      expect(block).toContain(
+        '_t1.disabled[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = ((((this).f)()).disabled());',
+      );
+      expect(block).toContain(
+        '_t1.name[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = ((((this).f)()).name());',
+      );
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+
+    it('should produce safe reads for the fields that are optional', () => {
+      const block = tcb('<custom-control [field]="f"/>', [
+        FieldMock,
+        {
+          type: 'directive',
+          name: 'CustomControl',
+          selector: 'custom-control',
+          inputs: {
+            value: {
+              classPropertyName: 'value',
+              bindingPropertyName: 'value',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+            max: {
+              classPropertyName: 'max',
+              bindingPropertyName: 'max',
+              required: false,
+              isSignal: true,
+              transform: null,
+            },
+          },
+          outputs: {
+            valueChange: 'valueChange',
+          },
+        },
+      ]);
+
+      expect(block).toContain('var _t1 = null! as i0.CustomControl;');
+      expect(block).toContain(
+        '_t1.value[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = i1.ɵunwrapWritableSignal((((((this).f)()).value)));',
+      );
+      expect(block).toContain(
+        '_t1.max[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = ((0 as any ? (((((this).f)()).max))!() : undefined));',
+      );
+      expect(block).toContain('var _t2 = null! as i0.Field;');
+      expect(block).toContain('_t2.field = (((this).f));');
+    });
+  });
 });

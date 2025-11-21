@@ -17,14 +17,10 @@ import {
   APP_BOOTSTRAP_LISTENER,
   ComponentRef,
   inject,
-  Inject,
   InjectionToken,
   ModuleWithProviders,
   NgModule,
-  NgZone,
-  Optional,
   Provider,
-  SkipSelf,
   ɵRuntimeError as RuntimeError,
 } from '@angular/core';
 
@@ -34,7 +30,7 @@ import {RouterLinkActive} from './directives/router_link_active';
 import {RouterOutlet} from './directives/router_outlet';
 import {RuntimeErrorCode} from './errors';
 import {Routes} from './models';
-import {NAVIGATION_ERROR_HANDLER, NavigationTransitions} from './navigation_transition';
+import {NAVIGATION_ERROR_HANDLER} from './navigation_transition';
 import {
   getBootstrapListener,
   rootRoute,
@@ -202,14 +198,11 @@ export function provideRouterScroller(): Provider {
     provide: ROUTER_SCROLLER,
     useFactory: () => {
       const viewportScroller = inject(ViewportScroller);
-      const zone = inject(NgZone);
       const config: ExtraOptions = inject(ROUTER_CONFIGURATION);
-      const transitions = inject(NavigationTransitions);
-      const urlSerializer = inject(UrlSerializer);
       if (config.scrollOffset) {
         viewportScroller.setOffset(config.scrollOffset);
       }
-      return new RouterScroller(urlSerializer, transitions, viewportScroller, zone, config);
+      return new RouterScroller(config);
     },
   };
 }

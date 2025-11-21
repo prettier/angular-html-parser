@@ -51,47 +51,72 @@ describe('max validator', () => {
     expect(f.age().errors()).toEqual([]);
   });
 
-  it('returns custom errors when provided', () => {
-    const cat = signal({name: 'pirojok-the-cat', age: 6});
-    const f = form(
-      cat,
-      (p) => {
-        max(p.age, 5, {
-          error: ({value}) => {
-            return customError({kind: 'special-max', message: value().toString()});
-          },
-        });
-      },
-      {injector: TestBed.inject(Injector)},
-    );
+  describe('custom errors', () => {
+    it('returns custom errors when provided', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 6});
+      const f = form(
+        cat,
+        (p) => {
+          max(p.age, 5, {
+            error: ({value}) => {
+              return customError({kind: 'special-max', message: value()?.toString()});
+            },
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
 
-    expect(f.age().errors()).toEqual([
-      customError({
-        kind: 'special-max',
-        message: '6',
-        field: f.age,
-      }),
-    ]);
-  });
+      expect(f.age().errors()).toEqual([
+        customError({
+          kind: 'special-max',
+          message: '6',
+          field: f.age,
+        }),
+      ]);
+    });
 
-  it('supports custom error messgaes', () => {
-    const cat = signal({name: 'pirojok-the-cat', age: 6});
-    const f = form(
-      cat,
-      (p) => {
-        max(p.age, 5, {
+    it('supports custom error messages', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 6});
+      const f = form(
+        cat,
+        (p) => {
+          max(p.age, 5, {
+            message: 'max error',
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
+
+      expect(f.age().errors()).toEqual([
+        maxError(5, {
           message: 'max error',
-        });
-      },
-      {injector: TestBed.inject(Injector)},
-    );
+          field: f.age,
+        }),
+      ]);
+    });
 
-    expect(f.age().errors()).toEqual([
-      maxError(5, {
-        message: 'max error',
-        field: f.age,
-      }),
-    ]);
+    it('Supports not returning nothing from error function', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 6});
+      const f = form(
+        cat,
+        (p) => {
+          max(p.age, 5, {
+            error: ({value, valueOf}) => {
+              return valueOf(p.name) === 'disabled'
+                ? []
+                : customError({kind: 'special-max', message: value()?.toString()});
+            },
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
+
+      expect(f.age().errors()).toEqual([
+        customError({kind: 'special-max', message: '6', field: f.age}),
+      ]);
+      f.name().value.set('disabled');
+      expect(f.age().errors()).toEqual([]);
+    });
   });
 
   it('treats NaN as no maximum', () => {
@@ -130,14 +155,14 @@ describe('max validator', () => {
         (p) => {
           max(p.age, 5, {
             error: ({value}) => {
-              return customError({kind: 'special-max', message: value().toString()});
+              return customError({kind: 'special-max', message: value()?.toString()});
             },
           });
         },
         {injector: TestBed.inject(Injector)},
       );
 
-      expect(f.age().property(MAX)()).toBe(5);
+      expect(f.age().metadata(MAX)()).toBe(5);
     });
 
     it('merges two maxes preferring the smaller option', () => {
@@ -158,7 +183,7 @@ describe('max validator', () => {
       f.age().value.set(3);
       expect(f.age().errors()).toEqual([]);
 
-      expect(f.age().property(MAX)()).toBe(5);
+      expect(f.age().metadata(MAX)()).toBe(5);
     });
 
     it('merges two maxes _dynamically_ preferring the smaller option', () => {
@@ -180,12 +205,12 @@ describe('max validator', () => {
       f.age().value.set(3);
       expect(f.age().errors()).toEqual([]);
 
-      expect(f.age().property(MAX)()).toBe(5);
+      expect(f.age().metadata(MAX)()).toBe(5);
 
       maxSignal.set(2);
       f.age().value.set(3);
       expect(f.age().errors()).toEqual([maxError(2, {field: f.age})]);
-      expect(f.age().property(MAX)()).toBe(2);
+      expect(f.age().metadata(MAX)()).toBe(2);
     });
 
     it('merges two maxes _dynamically_ ignores undefined', () => {
@@ -273,5 +298,31 @@ describe('max validator', () => {
 
       expect(f.age().errors()).toEqual([]);
     });
+  });
+
+  it('should validate properly formatted strings', () => {
+    const f = form(
+      signal<number | string | null>('4'),
+      (p) => {
+        max(p, -10);
+      },
+      {injector: TestBed.inject(Injector)},
+    );
+    expect(f().errors()).toEqual([jasmine.objectContaining({kind: 'max'})]);
+  });
+
+  it('should not validate improperly formatted strings or null', () => {
+    const f = form(
+      signal<number | string | null>('4f'),
+      (p) => {
+        max(p, -10);
+      },
+      {injector: TestBed.inject(Injector)},
+    );
+    expect(f().errors()).toEqual([]);
+    f().value.set(null);
+    expect(f().errors()).toEqual([]);
+    f().value.set(4);
+    expect(f().errors()).toEqual([jasmine.objectContaining({kind: 'max'})]);
   });
 });

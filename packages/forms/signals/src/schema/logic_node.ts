@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {AggregateProperty, Property} from '../api/property';
+import {AggregateMetadataKey, MetadataKey} from '../api/metadata';
 import type {
   AsyncValidationResult,
   DisabledReason,
@@ -14,8 +14,9 @@ import type {
   LogicFn,
   ValidationResult,
 } from '../api/types';
+import type {ValidationError} from '../api/validation_errors';
 import {setBoundPathDepthForResolution} from '../field/resolution';
-import {BoundPredicate, LogicContainer, Predicate} from './logic';
+import {BoundPredicate, DYNAMIC, LogicContainer, Predicate} from './logic';
 
 /**
  * Abstract base class for building a `LogicNode`.
@@ -31,23 +32,30 @@ export abstract class AbstractLogicNodeBuilder {
 
   /** Adds a rule to determine if a field should be hidden. */
   abstract addHiddenRule(logic: LogicFn<any, boolean>): void;
+
   /** Adds a rule to determine if a field should be disabled, and for what reason. */
   abstract addDisabledReasonRule(logic: LogicFn<any, DisabledReason | undefined>): void;
+
   /** Adds a rule to determine if a field should be read-only. */
   abstract addReadonlyRule(logic: LogicFn<any, boolean>): void;
+
   /** Adds a rule for synchronous validation errors for a field. */
   abstract addSyncErrorRule(logic: LogicFn<any, ValidationResult>): void;
+
   /** Adds a rule for synchronous validation errors that apply to a subtree. */
   abstract addSyncTreeErrorRule(logic: LogicFn<any, ValidationResult>): void;
+
   /** Adds a rule for asynchronous validation errors for a field. */
   abstract addAsyncErrorRule(logic: LogicFn<any, AsyncValidationResult>): void;
-  /** Adds a rule to compute an aggregate property for a field. */
-  abstract addAggregatePropertyRule<M>(
-    key: AggregateProperty<unknown, M>,
+
+  /** Adds a rule to compute aggregate metadata for a field. */
+  abstract addAggregateMetadataRule<M>(
+    key: AggregateMetadataKey<unknown, M>,
     logic: LogicFn<any, M>,
   ): void;
+
   /** Adds a factory function to produce a data value associated with a field. */
-  abstract addPropertyFactory<D>(key: Property<D>, factory: (ctx: FieldContext<any>) => D): void;
+  abstract addMetadataFactory<D>(key: MetadataKey<D>, factory: (ctx: FieldContext<any>) => D): void;
   /**
    * Gets a builder for a child node associated with the given property key.
    * @param key The property key of the child.
@@ -105,30 +113,57 @@ export class LogicNodeBuilder extends AbstractLogicNodeBuilder {
     this.getCurrent().addReadonlyRule(logic);
   }
 
-  override addSyncErrorRule(logic: LogicFn<any, ValidationResult>): void {
+  override addSyncErrorRule(
+    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+  ): void {
     this.getCurrent().addSyncErrorRule(logic);
   }
 
-  override addSyncTreeErrorRule(logic: LogicFn<any, ValidationResult>): void {
+  override addSyncTreeErrorRule(
+    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+  ): void {
     this.getCurrent().addSyncTreeErrorRule(logic);
   }
 
-  override addAsyncErrorRule(logic: LogicFn<any, AsyncValidationResult>): void {
+  override addAsyncErrorRule(
+    logic: LogicFn<any, AsyncValidationResult<ValidationError.WithField>>,
+  ): void {
     this.getCurrent().addAsyncErrorRule(logic);
   }
 
-  override addAggregatePropertyRule<T>(
-    key: AggregateProperty<unknown, T>,
+  override addAggregateMetadataRule<T>(
+    key: AggregateMetadataKey<any, T>,
     logic: LogicFn<any, T>,
   ): void {
-    this.getCurrent().addAggregatePropertyRule(key, logic);
+    this.getCurrent().addAggregateMetadataRule(key, logic);
   }
 
-  override addPropertyFactory<D>(key: Property<D>, factory: (ctx: FieldContext<any>) => D): void {
-    this.getCurrent().addPropertyFactory(key, factory);
+  override addMetadataFactory<D>(
+    key: MetadataKey<D>,
+    factory: (ctx: FieldContext<any>) => D,
+  ): void {
+    this.getCurrent().addMetadataFactory(key, factory);
   }
 
   override getChild(key: PropertyKey): LogicNodeBuilder {
+    // Close off the current builder if the key is DYNAMIC and the current builder already has logic
+    // for some non-DYNAMIC key. This guarantees that all of the DYNAMIC logic always comes before
+    // all of the specific-key logic for any given instance of `NonMergeableLogicNodeBuilder`.
+    // We rely on this fact in `getAllChildBuilder` to know that we can return the DYNAMIC logic,
+    // followed by the property-specific logic, in that order.
+    if (key === DYNAMIC) {
+      const children = this.getCurrent().children;
+      // Use the children size to determine if there is logic registered for a property other than
+      // the DYNAMIC property.
+      // - If the children map doesn't have DYNAMIC logic, but the size is still >0 then we know it
+      //   has logic for some other property.
+      // - If the children map does have DYNAMIC logic then its size is going to be at least 1,
+      //   because it has the DYNAMIC key. However if it is >1, then we again know it contains other
+      //   keys.
+      if (children.size > (children.has(DYNAMIC) ? 1 : 0)) {
+        this.current = undefined;
+      }
+    }
     return this.getCurrent().getChild(key);
   }
 
@@ -218,27 +253,36 @@ class NonMergeableLogicNodeBuilder extends AbstractLogicNodeBuilder {
     this.logic.readonly.push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
-  override addSyncErrorRule(logic: LogicFn<any, ValidationResult>): void {
+  override addSyncErrorRule(
+    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+  ): void {
     this.logic.syncErrors.push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
-  override addSyncTreeErrorRule(logic: LogicFn<any, ValidationResult>): void {
+  override addSyncTreeErrorRule(
+    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+  ): void {
     this.logic.syncTreeErrors.push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
-  override addAsyncErrorRule(logic: LogicFn<any, AsyncValidationResult>): void {
+  override addAsyncErrorRule(
+    logic: LogicFn<any, AsyncValidationResult<ValidationError.WithField>>,
+  ): void {
     this.logic.asyncErrors.push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
-  override addAggregatePropertyRule<T>(
-    key: AggregateProperty<unknown, T>,
+  override addAggregateMetadataRule<T>(
+    key: AggregateMetadataKey<unknown, T>,
     logic: LogicFn<any, T>,
   ): void {
-    this.logic.getAggregateProperty(key).push(setBoundPathDepthForResolution(logic, this.depth));
+    this.logic.getAggregateMetadata(key).push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
-  override addPropertyFactory<D>(key: Property<D>, factory: (ctx: FieldContext<any>) => D): void {
-    this.logic.addPropertyFactory(key, setBoundPathDepthForResolution(factory, this.depth));
+  override addMetadataFactory<D>(
+    key: MetadataKey<D>,
+    factory: (ctx: FieldContext<any>) => D,
+  ): void {
+    this.logic.addMetadataFactory(key, setBoundPathDepthForResolution(factory, this.depth));
   }
 
   override getChild(key: PropertyKey): LogicNodeBuilder {
@@ -409,13 +453,19 @@ function getAllChildBuilders(
       return children;
     });
   } else if (builder instanceof NonMergeableLogicNodeBuilder) {
-    if (builder.children.has(key)) {
-      return [{builder: builder.children.get(key)!, predicates: []}];
-    }
+    return [
+      // DYNAMIC logic always comes first for any individual `NonMergeableLogicNodeBuilder`.
+      // This assumption is guaranteed by the behavior of `LogicNodeBuilder.getChild`.
+      // Therefore we can return all of the DYNAMIC logic, followed by all of the property-specific
+      // logic.
+      ...(key !== DYNAMIC && builder.children.has(DYNAMIC)
+        ? [{builder: builder.getChild(DYNAMIC), predicates: []}]
+        : []),
+      ...(builder.children.has(key) ? [{builder: builder.getChild(key), predicates: []}] : []),
+    ];
   } else {
     throw new Error('Unknown LogicNodeBuilder type');
   }
-  return [];
 }
 
 /**

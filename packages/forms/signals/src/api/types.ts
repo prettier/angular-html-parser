@@ -7,24 +7,15 @@
  */
 
 import {Signal, ɵFieldState} from '@angular/core';
-import type {Control} from './control_directive';
-import {AggregateProperty, Property} from './property';
-import type {ValidationError, WithOptionalField, WithoutField} from './validation_errors';
+import {AbstractControl} from '@angular/forms';
+import type {Field} from './field_directive';
+import {AggregateMetadataKey, MetadataKey} from './metadata';
+import type {ValidationError} from './validation_errors';
 
 /**
  * Symbol used to retain generic type information when it would otherwise be lost.
  */
 declare const ɵɵTYPE: unique symbol;
-
-/**
- * Creates a type based on the given type T, but with all readonly properties made writable.
- * @template T The type to create a mutable version of.
- *
- * @experimental 21.0.0
- */
-export type Mutable<T> = {
-  -readonly [P in keyof T]: T[P];
-};
 
 /**
  * A type that represents either a single value of type `T` or a readonly array of `T`.
@@ -39,6 +30,7 @@ export type OneOrMany<T> = T | readonly T[];
  *
  * @experimental 21.0.0
  */
+export type PathKind = PathKind.Root | PathKind.Child | PathKind.Item;
 export declare namespace PathKind {
   /**
    * The `PathKind` for a `FieldPath` that is at the root of its field tree.
@@ -66,7 +58,7 @@ export declare namespace PathKind {
     [ɵɵTYPE]: 'item';
   }
 }
-export type PathKind = PathKind.Root | PathKind.Child | PathKind.Item;
+
 /**
  * A status indicating whether a field is unsubmitted, submitted, or currently submitting.
  *
@@ -97,24 +89,6 @@ export interface DisabledReason {
 export type ValidationSuccess = null | undefined | void;
 
 /**
- * The result of running a field validation function.
- *
- * The result may be one of the following:
- * 1. A {@link ValidationSuccess} to indicate no errors.
- * 2. A {@link ValidationError} without a field to indicate an error on the field being validated.
- * 3. A list of {@link ValidationError} without fields to indicate multiple errors on the field
- *    being validated.
- *
- * @template E the type of error (defaults to {@link ValidationError}).
- *
- * @category types
- * @experimental 21.0.0
- */
-export type FieldValidationResult<E extends ValidationError = ValidationError> =
-  | ValidationSuccess
-  | OneOrMany<WithoutField<E>>;
-
-/**
  * The result of running a tree validation function.
  *
  * The result may be one of the following:
@@ -128,9 +102,9 @@ export type FieldValidationResult<E extends ValidationError = ValidationError> =
  * @category types
  * @experimental 21.0.0
  */
-export type TreeValidationResult<E extends ValidationError = ValidationError> =
-  | ValidationSuccess
-  | OneOrMany<WithOptionalField<E>>;
+export type TreeValidationResult<
+  E extends ValidationError.WithOptionalField = ValidationError.WithOptionalField,
+> = ValidationSuccess | OneOrMany<E>;
 
 /**
  * A validation result where all errors explicitly define their target field.
@@ -178,28 +152,43 @@ export type AsyncValidationResult<E extends ValidationError = ValidationError> =
  * @category types
  * @experimental 21.0.0
  */
-export type FieldTree<TValue, TKey extends string | number = string | number> = (() => FieldState<
-  TValue,
-  TKey
->) &
-  (TValue extends Array<infer U>
-    ? ReadonlyArrayLike<MaybeFieldTree<U, number>>
-    : TValue extends Record<string, any>
-      ? Subfields<TValue>
-      : unknown);
+export type FieldTree<TModel, TKey extends string | number = string | number> =
+  // Note: We use `[TModel]` in several places below to avoid the condition from being distributed
+  // over a recursive union type, which seems to result in infinite type recursion. By adding the
+  // tuple we're not testing a naked type parameter, and thus the condition is not distributed.
+  // (See https://typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types)
+  // The example below demonstrates the problematic situation we want to avoid:
+  //
+  // ```
+  // type RecursiveType = (number | RecursiveType)[]
+  // type Test = FieldTree<RecursiveType> // Infinite type recursion if condition distributes.
+  // ```
+  (() => [TModel] extends [AbstractControl]
+    ? CompatFieldState<TModel, TKey>
+    : FieldState<TModel, TKey>) &
+    // Children:
+    ([TModel] extends [AbstractControl]
+      ? object
+      : [TModel] extends [Array<infer U>]
+        ? ReadonlyArrayLike<MaybeFieldTree<U, number>>
+        : TModel extends Record<string, any>
+          ? Subfields<TModel>
+          : object);
 
 /**
- * The sub-fields that a user can navigate to from a `FieldTree<TValue>`.
+ * The sub-fields that a user can navigate to from a `FieldTree<TModel>`.
  *
- * @template TValue The type of the data which the parent field is wrapped around.
+ * @template TModel The type of the data which the parent field is wrapped around.
  *
  * @experimental 21.0.0
  */
-export type Subfields<TValue> = {
-  readonly [K in keyof TValue as TValue[K] extends Function ? never : K]: MaybeFieldTree<
-    TValue[K],
+export type Subfields<TModel> = {
+  readonly [K in keyof TModel as TModel[K] extends Function ? never : K]: MaybeFieldTree<
+    TModel[K],
     string
   >;
+} & {
+  [Symbol.iterator](): Iterator<[string, MaybeFieldTree<TModel[keyof TModel], string>]>;
 };
 
 /**
@@ -221,14 +210,14 @@ export type ReadonlyArrayLike<T> = Pick<
  * For example `MaybeField<{a: number} | undefined, TKey>` would be equivalent to
  * `undefined | FieldTree<{a: number}, TKey>`.
  *
- * @template TValue The type of the data which the field is wrapped around.
+ * @template TModel The type of the data which the field is wrapped around.
  * @template TKey The type of the property key which this field resides under in its parent.
  *
  * @experimental 21.0.0
  */
-export type MaybeFieldTree<TValue, TKey extends string | number = string | number> =
-  | (TValue & undefined)
-  | FieldTree<Exclude<TValue, undefined>, TKey>;
+export type MaybeFieldTree<TModel, TKey extends string | number = string | number> =
+  | (TModel & undefined)
+  | FieldTree<Exclude<TModel, undefined>, TKey>;
 
 /**
  * Contains all of the state (e.g. value, statuses, etc.) associated with a `FieldTree`, exposed as
@@ -258,12 +247,12 @@ export interface FieldState<TValue, TKey extends string | number = string | numb
    */
   readonly hidden: Signal<boolean>;
   readonly disabledReasons: Signal<readonly DisabledReason[]>;
-  readonly errors: Signal<ValidationError[]>;
+  readonly errors: Signal<ValidationError.WithField[]>;
 
   /**
    * A signal containing the {@link errors} of the field and its descendants.
    */
-  readonly errorSummary: Signal<ValidationError[]>;
+  readonly errorSummary: Signal<ValidationError.WithField[]>;
 
   /**
    * A signal indicating whether the field's value is currently valid.
@@ -304,26 +293,26 @@ export interface FieldState<TValue, TKey extends string | number = string | numb
    */
   readonly keyInParent: Signal<TKey>;
   /**
-   * A signal containing the `Control` directives this field is currently bound to.
+   * The {@link Field} directives that bind this field to a UI control.
    */
-  readonly controls: Signal<readonly Control<unknown>[]>;
+  readonly fieldBindings: Signal<readonly Field<unknown>[]>;
 
   /**
-   * Reads an aggregate property value from the field.
-   * @param prop The property to read.
+   * Reads an aggregate metadata value from the field.
+   * @param key The metadata key to read.
    */
-  property<M>(prop: AggregateProperty<M, any>): Signal<M>;
+  metadata<M>(key: AggregateMetadataKey<M, any>): Signal<M>;
 
   /**
-   * Reads a property value from the field.
-   * @param prop The property key to read.
+   * Reads a metadata value from the field.
+   * @param key The metadata key to read.
    */
-  property<M>(prop: Property<M>): M | undefined;
+  metadata<M>(key: MetadataKey<M>): M | undefined;
 
   /**
    * Checks whether the given metadata key has been defined for this field.
    */
-  hasProperty(key: Property<any> | AggregateProperty<any, any>): boolean;
+  hasMetadata(key: MetadataKey<any> | AggregateMetadataKey<any, any>): boolean;
 
   /**
    * Resets the {@link touched} and {@link dirty} state of the field and its descendants.
@@ -331,6 +320,38 @@ export interface FieldState<TValue, TKey extends string | number = string | numb
    * Note this does not change the data model, which can be reset directly if desired.
    */
   reset(): void;
+}
+
+/**
+ * This is FieldState also providing access to the wrapped FormControl.
+ *
+ * @category interop
+ * @experimental 21.0.0
+ */
+export type CompatFieldState<
+  TControl extends AbstractControl,
+  TKey extends string | number = string | number,
+> = FieldState<TControl extends AbstractControl<unknown, infer TValue> ? TValue : never, TKey> & {
+  control: Signal<TControl>;
+};
+
+/**
+ * Allows declaring whether the Rules are supported for a given path.
+ *
+ * @experimental 21.0.0
+ **/
+export type SchemaPathRules = SchemaPathRules.Supported | SchemaPathRules.Unsupported;
+
+export declare namespace SchemaPathRules {
+  /**
+   * Used for paths that support settings rules.
+   */
+  type Supported = 1;
+
+  /**
+   * Used for paths that do not support settings rules, e.g., compatPath.
+   */
+  type Unsupported = 2;
 }
 
 /**
@@ -344,13 +365,65 @@ export interface FieldState<TValue, TKey extends string | number = string | numb
  * @category types
  * @experimental 21.0.0
  */
-export type FieldPath<TValue, TPathKind extends PathKind = PathKind.Root> = {
-  [ɵɵTYPE]: [TValue, TPathKind];
-} & (TValue extends Array<unknown>
-  ? unknown
-  : TValue extends Record<string, any>
-    ? {[K in keyof TValue]: MaybeFieldPath<TValue[K], PathKind.Child>}
-    : unknown);
+export type SchemaPath<
+  TValue,
+  TSupportsRules extends SchemaPathRules = SchemaPathRules.Supported,
+  TPathKind extends PathKind = PathKind.Root,
+> = {
+  [ɵɵTYPE]: {
+    value: () => TValue;
+    supportsRules: TSupportsRules;
+    pathKind: TPathKind;
+  };
+};
+
+/**
+ * Schema path used if the value is an AbstractControl.
+ *
+ * @category interop
+ * @experimental 21.0.0
+ */
+export type CompatSchemaPath<
+  TControl extends AbstractControl,
+  TPathKind extends PathKind = PathKind.Root,
+> = SchemaPath<
+  TControl extends AbstractControl<unknown, infer TValue> ? TValue : never,
+  SchemaPathRules.Unsupported,
+  TPathKind
+> &
+  // & also we capture the control type, so that `stateOf(p)` can unwrap
+  // to a correctly typed `CompatFieldState`.
+  {
+    [ɵɵTYPE]: {control: TControl};
+  };
+
+/**
+ * Nested schema path.
+ *
+ * It mirrors the structure of a given data structure, and allows applying rules to the appropriate
+ * fields.
+ *
+ * @experimental 21.0.0
+ */
+export type SchemaPathTree<TModel, TPathKind extends PathKind = PathKind.Root> =
+  // Note: We use `[TModel]` here to avoid distributing over a union type model.
+  // (e.g. if we have a model of `number | string`, we want a `SchemaPath<number | string>`,
+  // not a `SchemaPath<number> | SchemaPath<string>`.
+  // See https://typescriptlang.org/docs/handbook/2/conditional-types.html#distributive-conditional-types)
+  ([TModel] extends [AbstractControl]
+    ? CompatSchemaPath<TModel, TPathKind>
+    : SchemaPath<TModel, SchemaPathRules.Supported, TPathKind>) &
+    // Subpaths
+    (TModel extends AbstractControl
+      ? unknown
+      : // Array paths have no subpaths
+        TModel extends Array<any>
+        ? unknown
+        : // Object subfields
+          TModel extends Record<string, any>
+          ? {[K in keyof TModel]: MaybeSchemaPathTree<TModel[K], PathKind.Child>}
+          : // Primitive or other type - no subpaths
+            unknown);
 
 /**
  * Helper type for defining `FieldPath`. Given a type `TValue` that may include `undefined`, it
@@ -364,9 +437,9 @@ export type FieldPath<TValue, TPathKind extends PathKind = PathKind.Root> = {
  *
  * @experimental 21.0.0
  */
-export type MaybeFieldPath<TValue, TPathKind extends PathKind = PathKind.Root> =
-  | (TValue & undefined)
-  | FieldPath<Exclude<TValue, undefined>, TPathKind>;
+export type MaybeSchemaPathTree<TModel, TPathKind extends PathKind = PathKind.Root> =
+  | (TModel & undefined)
+  | SchemaPathTree<Exclude<TModel, undefined>, TPathKind>;
 
 /**
  * Defines logic for a form.
@@ -376,35 +449,35 @@ export type MaybeFieldPath<TValue, TPathKind extends PathKind = PathKind.Root> =
  * @category types
  * @experimental 21.0.0
  */
-export type Schema<in TValue> = {
-  [ɵɵTYPE]: SchemaFn<TValue, PathKind.Root>;
+export type Schema<in TModel> = {
+  [ɵɵTYPE]: SchemaFn<TModel, PathKind.Root>;
 };
 
 /**
  * Function that defines rules for a schema.
  *
- * @template TValue The type of data stored in the form that this schema function is attached to.
+ * @template TModel The type of data stored in the form that this schema function is attached to.
  * @template TPathKind The kind of path this schema function can be bound to.
  *
  * @category types
  * @experimental 21.0.0
  */
-export type SchemaFn<TValue, TPathKind extends PathKind = PathKind.Root> = (
-  p: FieldPath<TValue, TPathKind>,
+export type SchemaFn<TModel, TPathKind extends PathKind = PathKind.Root> = (
+  p: SchemaPathTree<TModel, TPathKind>,
 ) => void;
 
 /**
  * A schema or schema definition function.
  *
- * @template TValue The type of data stored in the form that this schema function is attached to.
+ * @template TModel The type of data stored in the form that this schema function is attached to.
  * @template TPathKind The kind of path this schema function can be bound to.
  *
  * @category types
  * @experimental 21.0.0
  */
-export type SchemaOrSchemaFn<TValue, TPathKind extends PathKind = PathKind.Root> =
-  | Schema<TValue>
-  | SchemaFn<TValue, TPathKind>;
+export type SchemaOrSchemaFn<TModel, TPathKind extends PathKind = PathKind.Root> =
+  | Schema<TModel>
+  | SchemaFn<TModel, TPathKind>;
 
 /**
  * A function that receives the `FieldContext` for the field the logic is bound to and returns
@@ -433,7 +506,7 @@ export type LogicFn<TValue, TReturn, TPathKind extends PathKind = PathKind.Root>
  */
 export type FieldValidator<TValue, TPathKind extends PathKind = PathKind.Root> = LogicFn<
   TValue,
-  FieldValidationResult,
+  ValidationResult<ValidationError.WithoutField>,
   TPathKind
 >;
 
@@ -498,12 +571,19 @@ export interface RootFieldContext<TValue> {
   readonly state: FieldState<TValue>;
   /** The current field. */
   readonly field: FieldTree<TValue>;
+
   /** Gets the value of the field represented by the given path. */
-  readonly valueOf: <P>(p: FieldPath<P>) => P;
+  valueOf<PValue>(p: SchemaPath<PValue, SchemaPathRules>): PValue;
+
   /** Gets the state of the field represented by the given path. */
-  readonly stateOf: <P>(p: FieldPath<P>) => FieldState<P>;
+  stateOf<PControl extends AbstractControl>(
+    p: CompatSchemaPath<PControl>,
+  ): CompatFieldState<PControl>;
+  stateOf<PValue>(p: SchemaPath<PValue, SchemaPathRules>): FieldState<PValue>;
   /** Gets the field represented by the given path. */
-  readonly fieldOf: <P>(p: FieldPath<P>) => FieldTree<P>;
+  fieldTreeOf<PModel>(p: SchemaPathTree<PModel>): FieldTree<PModel>;
+  /** The list of keys that lead from the root field to the current field. */
+  readonly pathKeys: Signal<readonly string[]>;
 }
 
 /**
@@ -526,3 +606,26 @@ export interface ItemFieldContext<TValue> extends ChildFieldContext<TValue> {
   /** The index of the current field in its parent field. */
   readonly index: Signal<number>;
 }
+
+/**
+ * Gets the item type of an object that is possibly an array.
+ *
+ * @experimental 21.0.0
+ */
+export type ItemType<T extends Object> = T extends ReadonlyArray<any> ? T[number] : T[keyof T];
+
+/**
+ * A function that defines custom debounce logic for a field.
+ *
+ * @param context The field context.
+ * @param abortSignal An `AbortSignal` used to communicate that the debounced operation was aborted.
+ * @returns A `Promise<void>` to debounce an update, or `void` to apply an update immediately.
+ * @template TValue The type of value stored in the field.
+ * @template TPathKind The kind of path the debouncer is applied to (root field, child field, or item of an array).
+ *
+ * @experimental 21.0.0
+ */
+export type Debouncer<TValue, TPathKind extends PathKind = PathKind.Root> = (
+  context: FieldContext<TValue, TPathKind>,
+  abortSignal: AbortSignal,
+) => Promise<void> | void;

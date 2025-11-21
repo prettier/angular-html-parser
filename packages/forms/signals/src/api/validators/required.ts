@@ -7,9 +7,9 @@
  */
 
 import {computed} from '@angular/core';
-import {aggregateProperty, property, validate} from '../logic';
-import {REQUIRED} from '../property';
-import {FieldPath, LogicFn, PathKind} from '../types';
+import {aggregateMetadata, metadata, validate} from '../logic';
+import {REQUIRED} from '../metadata';
+import {SchemaPath, LogicFn, PathKind, SchemaPathRules} from '../types';
 import {requiredError} from '../validation_errors';
 import {BaseValidatorConfig, getOption, isEmpty} from './util';
 
@@ -31,17 +31,17 @@ import {BaseValidatorConfig, getOption, isEmpty} from './util';
  * @experimental 21.0.0
  */
 export function required<TValue, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   config?: BaseValidatorConfig<TValue, TPathKind> & {
     when?: NoInfer<LogicFn<TValue, boolean, TPathKind>>;
   },
 ): void {
-  const REQUIRED_MEMO = property(path, (ctx) =>
+  const REQUIRED_MEMO = metadata(path, (ctx) =>
     computed(() => (config?.when ? config.when(ctx) : true)),
   );
-  aggregateProperty(path, REQUIRED, ({state}) => state.property(REQUIRED_MEMO)!());
+  aggregateMetadata(path, REQUIRED, ({state}) => state.metadata(REQUIRED_MEMO)!());
   validate(path, (ctx) => {
-    if (ctx.state.property(REQUIRED_MEMO)!() && isEmpty(ctx.value())) {
+    if (ctx.state.metadata(REQUIRED_MEMO)!() && isEmpty(ctx.value())) {
       if (config?.error) {
         return getOption(config.error, ctx);
       } else {

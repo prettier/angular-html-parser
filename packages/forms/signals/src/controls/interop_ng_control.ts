@@ -15,7 +15,7 @@ import {
   type ValidationErrors,
   type ValidatorFn,
 } from '@angular/forms';
-import {REQUIRED} from '../api/property';
+import {REQUIRED} from '../api/metadata';
 import type {FieldState} from '../api/types';
 
 // TODO: Also consider supporting (if possible):
@@ -43,7 +43,7 @@ export type InteropSharedKeys =
   | 'status';
 
 /**
- * A fake version of `NgControl` provided by the `Control` directive. This allows interoperability
+ * A fake version of `NgControl` provided by the `Field` directive. This allows interoperability
  * with a wider range of components designed to work with reactive forms, in particular ones that
  * inject the `NgControl`. The interop control does not implement *all* properties and methods of
  * the real `NgControl`, but does implement some of the most commonly used ones that have a clear
@@ -132,7 +132,7 @@ export class InteropNgControl
     // This addresses a common case where users look for the presence of `Validators.required` to
     // determine whether or not to show a required "*" indicator in the UI.
     if (validator === Validators.required) {
-      return this.field().property(REQUIRED)();
+      return this.field().metadata(REQUIRED)();
     }
     return false;
   }

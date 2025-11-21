@@ -1007,7 +1007,7 @@ export interface InputFunction {
     };
 }
 
-// @public
+// @public (undocumented)
 export interface InputOptions<T, TransformT> {
     alias?: string;
     debugName?: string;
@@ -1044,6 +1044,9 @@ export function isSignal(value: unknown): value is Signal<unknown>;
 
 // @public
 export function isStandalone(type: Type<unknown>): boolean;
+
+// @public
+export function isWritableSignal(value: unknown): value is WritableSignal<unknown>;
 
 // @public
 export interface IterableChangeRecord<V> {
@@ -1421,9 +1424,15 @@ export const platformCore: (extraProviders?: StaticProvider[] | undefined) => Pl
 
 // @public
 export class PlatformRef {
-    bootstrapModule<M>(moduleType: Type<M>, compilerOptions?: (CompilerOptions & BootstrapOptions) | Array<CompilerOptions & BootstrapOptions>): Promise<NgModuleRef<M>>;
+    bootstrapModule<M>(moduleType: Type<M>, compilerOptions?: (CompilerOptions & BootstrapOptions & {
+        applicationProviders?: Array<Provider | EnvironmentProviders>;
+    }) | Array<CompilerOptions & BootstrapOptions & {
+        applicationProviders?: Array<Provider | EnvironmentProviders>;
+    }>): Promise<NgModuleRef<M>>;
     // @deprecated
-    bootstrapModuleFactory<M>(moduleFactory: NgModuleFactory<M>, options?: BootstrapOptions): Promise<NgModuleRef<M>>;
+    bootstrapModuleFactory<M>(moduleFactory: NgModuleFactory<M>, options?: BootstrapOptions & {
+        applicationProviders?: Array<Provider | EnvironmentProviders>;
+    }): Promise<NgModuleRef<M>>;
     destroy(): void;
     get destroyed(): boolean;
     get injector(): Injector;
@@ -1720,22 +1729,25 @@ export type Signal<T> = (() => T) & {
 export function signal<T>(initialValue: T, options?: CreateSignalOptions<T>): WritableSignal<T>;
 
 // @public
-export class SimpleChange {
-    constructor(previousValue: any, currentValue: any, firstChange: boolean);
+export class SimpleChange<T = any> {
+    constructor(previousValue: T, currentValue: T, firstChange: boolean);
     // (undocumented)
-    currentValue: any;
+    currentValue: T;
     // (undocumented)
     firstChange: boolean;
     isFirstChange(): boolean;
     // (undocumented)
-    previousValue: any;
+    previousValue: T;
 }
 
 // @public
-export interface SimpleChanges {
-    // (undocumented)
+export type SimpleChanges<T = unknown> = T extends object ? {
+    [Key in keyof T]?: SimpleChange<T[Key] extends {
+        [ɵINPUT_SIGNAL_BRAND_READ_TYPE]: infer V;
+    } ? V : T[Key]>;
+} : {
     [propName: string]: SimpleChange;
-}
+};
 
 // @public
 export interface SkipSelf {
@@ -2002,7 +2014,7 @@ export abstract class ViewContainerRef {
 // @public
 export enum ViewEncapsulation {
     Emulated = 0,
-    IsolatedShadowDom = 4,
+    ExperimentalIsolatedShadowDom = 4,
     None = 2,
     ShadowDom = 3
 }

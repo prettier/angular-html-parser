@@ -13,10 +13,10 @@ import {
   Directive,
   ElementRef,
   EventEmitter,
+  inject,
   Input,
   OnChanges,
   OnDestroy,
-  Optional,
   Output,
   QueryList,
   Renderer2,
@@ -101,6 +101,8 @@ import {RouterLink} from './router_link';
  *
  * @ngModule RouterModule
  *
+ * @see [Detect active current route with RouterLinkActive](guide/routing/read-route-state#detect-active-current-route-with-routerlinkactive)
+ *
  * @publicApi
  */
 @Directive({
@@ -155,12 +157,13 @@ export class RouterLinkActive implements OnChanges, OnDestroy, AfterContentInit 
    */
   @Output() readonly isActiveChange: EventEmitter<boolean> = new EventEmitter();
 
+  private link = inject(RouterLink, {optional: true});
+
   constructor(
     private router: Router,
     private element: ElementRef,
     private renderer: Renderer2,
     private readonly cdr: ChangeDetectorRef,
-    @Optional() private link?: RouterLink,
   ) {
     this.routerEventsSubscription = router.events.subscribe((s: Event) => {
       if (s instanceof NavigationEnd) {

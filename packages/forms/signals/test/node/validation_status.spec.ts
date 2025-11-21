@@ -19,17 +19,16 @@ import {
   validateAsync,
   validateTree,
   ValidationError,
-  type WithoutField,
 } from '../../public_api';
 
-function validateValue(value: string): WithoutField<ValidationError>[] {
+function validateValue(value: string): ValidationError[] {
   return value === 'INVALID' ? [customError()] : [];
 }
 
 function validateValueForChild(
   value: string,
   field: FieldTree<unknown> | undefined,
-): ValidationError[] {
+): ValidationError.WithField[] {
   return value === 'INVALID' ? [customError({field})] : [];
 }
 
@@ -117,8 +116,8 @@ describe('validation status', () => {
       const f = form(
         signal({child: 'VALID'}),
         (p) => {
-          validateTree(p, ({value, fieldOf}) =>
-            validateValueForChild(value().child, fieldOf(p.child)),
+          validateTree(p, ({value, fieldTreeOf}) =>
+            validateValueForChild(value().child, fieldTreeOf(p.child)),
           );
         },
         {injector},
@@ -136,8 +135,8 @@ describe('validation status', () => {
       const f = form(
         signal({child: 'VALID'}),
         (p) => {
-          validateTree(p, ({value, fieldOf}) =>
-            validateValueForChild(value().child, fieldOf(p.child)),
+          validateTree(p, ({value, fieldTreeOf}) =>
+            validateValueForChild(value().child, fieldTreeOf(p.child)),
           );
         },
         {injector},
@@ -155,8 +154,8 @@ describe('validation status', () => {
       const f = form(
         signal({child: 'VALID', sibling: ''}),
         (p) => {
-          validateTree(p, ({value, fieldOf}) =>
-            validateValueForChild(value().child, fieldOf(p.child)),
+          validateTree(p, ({value, fieldTreeOf}) =>
+            validateValueForChild(value().child, fieldTreeOf(p.child)),
           );
         },
         {injector},
@@ -188,7 +187,8 @@ describe('validation status', () => {
                     setTimeout(() => r(validateValueForChild(params, undefined))),
                   ),
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
         },
         {injector},
@@ -233,11 +233,12 @@ describe('validation status', () => {
                     setTimeout(() => r(validateValueForChild(params, undefined))),
                   ),
               })),
-            errors: (errs, {fieldOf}) =>
-              errs.map((e) => ({
+            onSuccess: (results, {fieldTreeOf}) =>
+              results.map((e) => ({
                 ...e,
-                field: fieldOf(p.child),
+                field: fieldTreeOf(p.child),
               })),
+            onError: () => null,
           });
         },
         {injector},
@@ -282,11 +283,12 @@ describe('validation status', () => {
                     setTimeout(() => r(validateValueForChild(params, undefined))),
                   ),
               })),
-            errors: (errs, {fieldOf}) =>
-              errs.map((e) => ({
+            onSuccess: (results, {fieldTreeOf}) =>
+              results.map((e) => ({
                 ...e,
-                field: fieldOf(p.child),
+                field: fieldTreeOf(p.child),
               })),
+            onError: () => null,
           });
         },
         {injector},
@@ -334,11 +336,12 @@ describe('validation status', () => {
                     setTimeout(() => r(validateValueForChild(params, undefined))),
                   ),
               })),
-            errors: (errs, {fieldOf}) =>
-              errs.map((e) => ({
+            onSuccess: (results, {fieldTreeOf}) =>
+              results.map((e) => ({
                 ...e,
-                field: fieldOf(p.child),
+                field: fieldTreeOf(p.child),
               })),
+            onError: () => null,
           });
         },
         {injector},
@@ -383,7 +386,8 @@ describe('validation status', () => {
                     setTimeout(() => r(validateValueForChild(params, undefined))),
                   ),
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
         },
         {injector},
@@ -443,7 +447,8 @@ describe('validation status', () => {
                 params,
                 loader: () => new Promise<ValidationError[]>((r) => setTimeout(() => r([]))),
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
         },
         {injector},
@@ -470,7 +475,8 @@ describe('validation status', () => {
                 params,
                 loader: () => promise,
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
           validateAsync(p, {
             params: () => [],
@@ -479,7 +485,8 @@ describe('validation status', () => {
                 params,
                 loader: () => promise2,
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
         },
         {injector},
@@ -514,7 +521,8 @@ describe('validation status', () => {
                 params,
                 loader: () => invalidPromise,
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
           validateAsync(p, {
             params: () => [],
@@ -523,7 +531,8 @@ describe('validation status', () => {
                 params,
                 loader: () => validPromise,
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
           validateAsync(p, {
             params: () => [],
@@ -532,7 +541,8 @@ describe('validation status', () => {
                 params,
                 loader: () => pendingPromise,
               })),
-            errors: (errs) => errs,
+            onSuccess: (results) => results,
+            onError: () => null,
           });
         },
         {injector},

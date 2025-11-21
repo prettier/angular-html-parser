@@ -124,26 +124,18 @@ export interface BootstrapContext {
  *
  * @publicApi
  */
-export function bootstrapApplication(
+export async function bootstrapApplication(
   rootComponent: Type<unknown>,
   options?: ApplicationConfig,
   context?: BootstrapContext,
 ): Promise<ApplicationRef> {
   const config = {
     rootComponent,
-    platformRef: context?.platformRef,
-    ...createProvidersConfig(options),
+    ...createProvidersConfig(options, context),
   };
 
-  // Attempt to resolve component resources before bootstrapping in JIT mode,
-  // however don't interrupt the bootstrapping process.
   if ((typeof ngJitMode === 'undefined' || ngJitMode) && typeof fetch === 'function') {
-    return resolveComponentResources(fetch)
-      .catch((error) => {
-        console.error(error);
-        return Promise.resolve();
-      })
-      .then(() => internalCreateApplication(config));
+    await resolveJitResources();
   }
 
   return internalCreateApplication(config);
@@ -157,19 +149,41 @@ export function bootstrapApplication(
  *
  * @param options Extra configuration for the application environment, see `ApplicationConfig` for
  *     additional info.
+ * @param context Optional context object that can be used to provide a pre-existing
+ *     platform injector. This is useful for advanced use-cases, for example, server-side
+ *     rendering, where the platform is created for each request.
  * @returns A promise that returns an `ApplicationRef` instance once resolved.
  *
  * @publicApi
  */
-export function createApplication(options?: ApplicationConfig): Promise<ApplicationRef> {
-  return internalCreateApplication(createProvidersConfig(options));
+export async function createApplication(
+  options?: ApplicationConfig,
+  context?: BootstrapContext,
+): Promise<ApplicationRef> {
+  if ((typeof ngJitMode === 'undefined' || ngJitMode) && typeof fetch === 'function') {
+    await resolveJitResources();
+  }
+
+  return internalCreateApplication(createProvidersConfig(options, context));
 }
 
-function createProvidersConfig(options?: ApplicationConfig) {
+function createProvidersConfig(options?: ApplicationConfig, context?: BootstrapContext) {
   return {
+    platformRef: context?.platformRef,
     appProviders: [...BROWSER_MODULE_PROVIDERS, ...(options?.providers ?? [])],
     platformProviders: INTERNAL_BROWSER_PLATFORM_PROVIDERS,
   };
+}
+
+/** Attempt to resolve component resources before bootstrapping in JIT mode. */
+async function resolveJitResources(): Promise<void> {
+  try {
+    return await resolveComponentResources(fetch);
+  } catch (error) {
+    // Log, but don't block bootstrapping on error.
+    // tslint:disable-next-line:no-console
+    console.error(error);
+  }
 }
 
 /**

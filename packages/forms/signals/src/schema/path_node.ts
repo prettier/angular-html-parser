@@ -5,8 +5,8 @@
  * Use of this source code is governed by an MIT-style license that can be
  * found in the LICENSE file at https://angular.dev/license
  */
-import {FieldPath} from '../api/types';
-import {DYNAMIC, Predicate} from './logic';
+import {SchemaPath, SchemaPathRules} from '../api/types';
+import {Predicate} from './logic';
 import {LogicNodeBuilder} from './logic_node';
 import type {SchemaImpl} from './schema';
 
@@ -32,26 +32,38 @@ export class FieldPathNode {
   /**
    * A proxy that wraps the path node, allowing navigation to its child paths via property access.
    */
-  readonly fieldPathProxy: FieldPath<any> = new Proxy(
+  readonly fieldPathProxy: SchemaPath<any> = new Proxy(
     this,
     FIELD_PATH_PROXY_HANDLER,
-  ) as unknown as FieldPath<any>;
+  ) as unknown as SchemaPath<any>;
+
+  /**
+   * For a root path node this will contain the root logic builder. For non-root nodes,
+   * they determine their logic builder from their parent so this is undefined.
+   */
+  private readonly logicBuilder: LogicNodeBuilder | undefined;
 
   protected constructor(
     /** The property keys used to navigate from the root path to this path. */
     readonly keys: PropertyKey[],
-    /** The logic builder used to accumulate logic on this path node. */
-    readonly logic: LogicNodeBuilder,
-    root: FieldPathNode,
+    root: FieldPathNode | undefined,
+    /** The parent of this path node. */
+    private readonly parent: FieldPathNode | undefined,
+    /** The key of this node in its parent. */
+    private readonly keyInParent: PropertyKey | undefined,
   ) {
     this.root = root ?? this;
+    if (!parent) {
+      this.logicBuilder = LogicNodeBuilder.newRoot();
+    }
   }
 
-  /**
-   * Gets the special path node containing the per-element logic that applies to *all* children paths.
-   */
-  get element(): FieldPathNode {
-    return this.getChild(DYNAMIC);
+  /** The logic builder used to accumulate logic on this path node. */
+  get builder(): LogicNodeBuilder {
+    if (this.logicBuilder) {
+      return this.logicBuilder;
+    }
+    return this.parent!.builder.getChild(this.keyInParent!);
   }
 
   /**
@@ -60,10 +72,7 @@ export class FieldPathNode {
    */
   getChild(key: PropertyKey): FieldPathNode {
     if (!this.children.has(key)) {
-      this.children.set(
-        key,
-        new FieldPathNode([...this.keys, key], this.logic.getChild(key), this.root),
-      );
+      this.children.set(key, new FieldPathNode([...this.keys, key], this.root, this, key));
     }
     return this.children.get(key)!;
   }
@@ -75,17 +84,17 @@ export class FieldPathNode {
    */
   mergeIn(other: SchemaImpl, predicate?: Predicate) {
     const path = other.compile();
-    this.logic.mergeIn(path.logic, predicate);
+    this.builder.mergeIn(path.builder, predicate);
   }
 
   /** Extracts the underlying path node from the given path proxy. */
-  static unwrapFieldPath(formPath: FieldPath<unknown>): FieldPathNode {
+  static unwrapFieldPath(formPath: SchemaPath<unknown, SchemaPathRules>): FieldPathNode {
     return (formPath as any)[PATH] as FieldPathNode;
   }
 
   /** Creates a new root path node to be passed in to a schema function. */
   static newRoot() {
-    return new FieldPathNode([], LogicNodeBuilder.newRoot(), undefined!);
+    return new FieldPathNode([], undefined, undefined, undefined);
   }
 }
 

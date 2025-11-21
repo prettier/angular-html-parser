@@ -7,28 +7,34 @@
  */
 
 import {Component, computed, input, output, ChangeDetectionStrategy} from '@angular/core';
+import {NgTemplateOutlet} from '@angular/common';
+import {MatIcon} from '@angular/material/icon';
 import {ButtonComponent} from '../../shared/button/button.component';
-import {JsonPipe} from '@angular/common';
 import {RouterTreeNode} from './router-tree-fns';
+import {MatTooltip} from '@angular/material/tooltip';
+import {RouteDataTreeComponent} from './route-data-tree/route-data-tree.component';
 
-export type RowType = 'text' | 'chip' | 'flag' | 'list';
+export type RowType = 'text' | 'flag' | 'list';
+export type ActionBtnType = 'none' | 'view-source' | 'navigate';
 
 @Component({
-  standalone: true,
   selector: '[ng-route-details-row]',
   templateUrl: './route-details-row.component.html',
   styleUrls: ['./route-details-row.component.scss'],
-  imports: [ButtonComponent, JsonPipe],
+  imports: [NgTemplateOutlet, ButtonComponent, MatIcon, MatTooltip, RouteDataTreeComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RouteDetailsRowComponent {
   readonly label = input.required<string>();
   readonly data = input.required<RouterTreeNode>();
   readonly dataKey = input.required<string>();
-  readonly renderValueAsJson = input<boolean>(false);
+  readonly renderValueAsJson = input(false);
   readonly type = input<RowType>('text');
+  readonly actionBtnType = input<ActionBtnType>('none');
+  readonly actionBtnTooltip = input<string>('');
+  readonly actionBtnDisabled = input(false);
 
-  readonly btnClick = output<string>();
+  readonly actionBtnClick = output<string>();
 
   readonly rowValue = computed(() => {
     return this.data()[this.dataKey() as keyof RouterTreeNode];

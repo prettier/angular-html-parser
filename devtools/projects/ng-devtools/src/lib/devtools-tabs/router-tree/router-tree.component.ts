@@ -20,15 +20,12 @@ import {
 } from '@angular/core';
 import {TreeVisualizerComponent} from '../../shared/tree-visualizer/tree-visualizer.component';
 import {MatIconModule} from '@angular/material/icon';
+import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {ApplicationOperations} from '../../application-operations/index';
 import {RouteDetailsRowComponent} from './route-details-row.component';
 import {FrameManager} from '../../application-services/frame_manager';
-import {Events, MessageBus, Route} from '../../../../../protocol';
-import {
-  SvgD3Node,
-  SvgD3Link,
-  TreeVisualizerConfig,
-} from '../../shared/tree-visualizer/tree-visualizer';
+import {Events, MessageBus, Route, RunGuardsAndResolvers} from '../../../../../protocol';
+import {SvgD3Node, TreeVisualizerConfig} from '../../shared/tree-visualizer/tree-visualizer';
 import {
   RouterTreeD3Node,
   transformRoutesIntoVisTree,
@@ -42,6 +39,13 @@ import {SplitAreaDirective} from '../../shared/split/splitArea.directive';
 import {Debouncer} from '../../shared/utils/debouncer';
 
 const SEARCH_DEBOUNCE = 250;
+const RUN_GUARDS_AND_RESOLVERS_OPTIONS: RunGuardsAndResolvers[] = [
+  'pathParamsChange',
+  'pathParamsOrQueryParamsChange',
+  'always',
+  'paramsChange',
+  'paramsOrQueryParamsChange',
+];
 
 @Component({
   selector: 'ng-router-tree',
@@ -52,6 +56,7 @@ const SEARCH_DEBOUNCE = 250;
     SplitComponent,
     SplitAreaDirective,
     MatIconModule,
+    MatSnackBarModule,
     RouteDetailsRowComponent,
     ButtonComponent,
   ],
@@ -64,11 +69,18 @@ export class RouterTreeComponent {
   private readonly messageBus = inject(MessageBus) as MessageBus<Events>;
   private readonly appOperations = inject(ApplicationOperations);
   private readonly frameManager = inject(FrameManager);
+  private readonly snackBar = inject(MatSnackBar);
 
   protected selectedRoute = signal<RouterTreeD3Node | null>(null);
   protected routeData = computed<RouterTreeNode | undefined>(() => {
     return this.selectedRoute()?.data;
   });
+
+  protected hasStaticOptionRunGuardsAndResolvers = computed(() =>
+    RUN_GUARDS_AND_RESOLVERS_OPTIONS.includes(
+      this.routeData()?.runGuardsAndResolvers as RunGuardsAndResolvers,
+    ),
+  );
 
   routes = input.required<Route[]>();
   routerDebugApiSupport = input<boolean>(false);
@@ -101,7 +113,6 @@ export class RouterTreeComponent {
   protected readonly routerTreeConfig: Partial<TreeVisualizerConfig<RouterTreeNode>> = {
     nodeSeparation: () => 1,
     d3NodeModifier: (n) => this.d3NodeModifier(n),
-    d3LinkModifier: (l) => this.d3LinkModifier(l),
   };
 
   constructor() {
@@ -120,9 +131,15 @@ export class RouterTreeComponent {
     const data = this.selectedRoute()?.data;
     // Check if the selected route is a lazy loaded route or a redirecting route.
     // These routes have no component associated with them.
-    if (data?.isLazy || data?.isRedirect) {
-      // todo: replace with UI notification.
-      console.warn('Cannot view source for lazy loaded routes or redirecting routes.');
+    if (data?.isLazy || data?.redirectTo) {
+      const message = 'Cannot view source for lazy loaded routes or redirecting routes.';
+      this.snackBar.open(message, 'Dismiss', {duration: 5000, horizontalPosition: 'left'});
+      return;
+    }
+
+    if (className === '[Function]') {
+      const message = 'Cannot view the source of functions defined inline (arrow or anonymous).';
+      this.snackBar.open(message, 'Dismiss', {duration: 5000, horizontalPosition: 'left'});
       return;
     }
 
@@ -133,9 +150,9 @@ export class RouterTreeComponent {
     const data = this.selectedRoute()?.data;
     // Check if the selected route is a lazy loaded route or a redirecting route.
     // These routes have no component associated with them.
-    if (data?.isLazy || data?.isRedirect) {
-      // todo: replace with UI notification.
-      console.warn('Cannot view source for lazy loaded routes or redirecting routes.');
+    if (data?.isLazy || data?.redirectTo) {
+      const message = 'Cannot view source for lazy loaded routes or redirecting routes.';
+      this.snackBar.open(message, 'Dismiss', {duration: 5000, horizontalPosition: 'left'});
       return;
     }
 
@@ -144,6 +161,20 @@ export class RouterTreeComponent {
       'component',
       this.frameManager.selectedFrame()!,
     );
+  }
+
+  viewFunctionSource(
+    functionName: string,
+    type: 'title' | 'redirectTo' | 'matcher' | 'runGuardsAndResolvers',
+  ): void {
+    if (functionName === '[Function]') {
+      const message =
+        'Cannot view the source of redirect functions defined inline (arrow or anonymous).';
+      this.snackBar.open(message, 'Dismiss', {duration: 5000, horizontalPosition: 'left'});
+      return;
+    }
+
+    this.appOperations.viewSourceFromRouter(functionName, type, this.frameManager.selectedFrame()!);
   }
 
   navigateRoute(route: any): void {
@@ -188,13 +219,6 @@ export class RouterTreeComponent {
       }
 
       return nodeClasses.join(' ');
-    });
-  }
-
-  private d3LinkModifier(d3Link: SvgD3Link<RouterTreeNode>) {
-    d3Link.attr('stroke-dasharray', (node: RouterTreeD3Node) => {
-      // Make edges to lazy loaded routes dashed
-      return node.data.isLazy ? '5,5' : 'none';
     });
   }
 }

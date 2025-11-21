@@ -147,6 +147,7 @@ export class Recognizer {
       this.rootComponentType,
       null,
       {},
+      this.injector,
     );
     return this.processSegmentGroup(
       this.injector,
@@ -385,6 +386,7 @@ export class Recognizer {
       route.component ?? route._loadedComponent ?? null,
       route,
       getResolve(route),
+      injector,
     );
     const inherited = getInherited(currentSnapshot, parentRoute, this.paramsInheritanceStrategy);
     currentSnapshot.params = Object.freeze(inherited.params);
@@ -452,6 +454,7 @@ export class Recognizer {
               route.component ?? route._loadedComponent ?? null,
               route,
               getResolve(route),
+              injector,
             );
             const inherited = getInherited(snapshot, parentRoute, this.paramsInheritanceStrategy);
             snapshot.params = Object.freeze(inherited.params);
@@ -522,7 +525,7 @@ export class Recognizer {
       return runCanLoadGuards(injector, route, segments, this.urlSerializer).pipe(
         mergeMap((shouldLoadResult: boolean) => {
           if (shouldLoadResult) {
-            return this.configLoader.loadChildren(injector, route).pipe(
+            return from(this.configLoader.loadChildren(injector, route)).pipe(
               tap((cfg: LoadedRouterConfig) => {
                 route._loadedRoutes = cfg.routes;
                 route._loadedInjector = cfg.injector;

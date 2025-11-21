@@ -20,9 +20,9 @@ import {LogicNode} from '../schema/logic_node';
 import type {FieldPathNode} from '../schema/path_node';
 import {deepSignal} from '../util/deep_signal';
 import {isArray, isObject} from '../util/type_guards';
+import type {FieldAdapter} from './field_adapter';
 import type {FormFieldManager} from './manager';
 import type {FieldNode, ParentFieldNode} from './node';
-import type {FieldAdapter} from './field_adapter';
 
 /**
  * Key by which a parent `FieldNode` tracks its children.
@@ -53,7 +53,7 @@ export abstract class FieldNodeStructure {
   abstract readonly root: FieldNode;
 
   /** The list of property keys to follow to get from the `root` to this field. */
-  abstract readonly pathKeys: Signal<readonly PropertyKey[]>;
+  abstract readonly pathKeys: Signal<readonly string[]>;
 
   /** The parent field of this field. */
   abstract readonly parent: FieldNode | undefined;
@@ -121,7 +121,7 @@ export class RootFieldNodeStructure extends FieldNodeStructure {
     return this.node;
   }
 
-  override get pathKeys(): Signal<readonly PropertyKey[]> {
+  override get pathKeys(): Signal<readonly string[]> {
     return ROOT_PATH_KEYS;
   }
 
@@ -168,7 +168,7 @@ export class RootFieldNodeStructure extends FieldNodeStructure {
 /** The structural component of a child `FieldNode` within a field tree. */
 export class ChildFieldNodeStructure extends FieldNodeStructure {
   override readonly root: FieldNode;
-  override readonly pathKeys: Signal<readonly PropertyKey[]>;
+  override readonly pathKeys: Signal<readonly string[]>;
   override readonly keyInParent: Signal<string>;
   override readonly value: WritableSignal<unknown>;
 
@@ -319,7 +319,7 @@ export interface ChildFieldNodeOptions {
 export type FieldNodeOptions = RootFieldNodeOptions | ChildFieldNodeOptions;
 
 /** A signal representing an empty list of path keys, used for root fields. */
-const ROOT_PATH_KEYS = computed<readonly PropertyKey[]>(() => []);
+const ROOT_PATH_KEYS = computed<readonly string[]>(() => []);
 
 /**
  * A signal representing a non-existent key of the field in its parent, used for root fields which
@@ -406,7 +406,7 @@ function makeChildrenMapSignal(
           continue;
         }
 
-        if (isValueArray && isObject(childValue)) {
+        if (isValueArray && isObject(childValue) && !isArray(childValue)) {
           // For object values in arrays, assign a synthetic identity instead.
           trackingId = (childValue[identitySymbol] as TrackingKey) ??= Symbol(
             ngDevMode ? `id:${globalId++}` : '',

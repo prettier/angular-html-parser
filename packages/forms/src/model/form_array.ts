@@ -113,6 +113,9 @@ export type ɵFormArrayRawValue<T extends AbstractControl<any>> = ɵTypedOrUntyp
  * the `FormArray` directly, as that result in strange and unexpected behavior such
  * as broken change detection.
  *
+ * @see [FormArray: Dynamic, Homogenous Collections](guide/forms/typed-forms#formcontrol-getting-started)
+ * @see [Creating dynamic forms](guide/forms/reactive-forms#creating-dynamic-forms)
+ *
  * @publicApi
  */
 export class FormArray<TControl extends AbstractControl<any> = any> extends AbstractControl<
@@ -430,10 +433,11 @@ export class FormArray<TControl extends AbstractControl<any> = any> extends Abst
     options: {
       onlySelf?: boolean;
       emitEvent?: boolean;
+      overwriteDefaultValue?: boolean;
     } = {},
   ): void {
     this._forEachChild((control: AbstractControl, index: number) => {
-      control.reset(value[index], {onlySelf: true, emitEvent: options.emitEvent});
+      control.reset(value[index], {...options, onlySelf: true});
     });
     this._updatePristine(options, this);
     this._updateTouched(options, this);
@@ -581,6 +585,8 @@ export const UntypedFormArray: UntypedFormArrayCtor = FormArray;
 /**
  * @description
  * Asserts that the given control is an instance of `FormArray`
+ *
+ * @see [Utility functions for narrowing form control types](guide/forms/reactive-forms#utility-functions-for-narrowing-form-control-types)
  *
  * @publicApi
  */

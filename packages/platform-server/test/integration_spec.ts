@@ -47,10 +47,12 @@ import {
   provideNgReflectAttributes,
   ɵSSR_CONTENT_INTEGRITY_MARKER as SSR_CONTENT_INTEGRITY_MARKER,
   provideZoneChangeDetection,
+  signal,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {
   bootstrapApplication,
+  createApplication,
   BootstrapContext,
   BrowserModule,
   provideClientHydration,
@@ -752,108 +754,6 @@ class HiddenModule {}
       expect(img.attributes['src'].value).toEqual('link');
     });
 
-    describe('PlatformLocation', () => {
-      it('is injectable', async () => {
-        const platform = platformServer([
-          {provide: INITIAL_CONFIG, useValue: {document: '<app></app>'}},
-        ]);
-        const appRef = await platform.bootstrapModule(ExampleModule);
-        const location = appRef.injector.get(PlatformLocation);
-        expect(location.pathname).toBe('/');
-        platform.destroy();
-      });
-      it('is configurable via INITIAL_CONFIG', async () => {
-        const platform = platformServer([
-          {
-            provide: INITIAL_CONFIG,
-            useValue: {
-              document: '<app></app>',
-              url: 'http://test.com/deep/path?query#hash',
-            },
-          },
-        ]);
-
-        const appRef = await platform.bootstrapModule(ExampleModule);
-
-        const location = appRef.injector.get(PlatformLocation);
-        expect(location.pathname).toBe('/deep/path');
-        expect(location.search).toBe('?query');
-        expect(location.hash).toBe('#hash');
-      });
-
-      it('parses component pieces of a URL', async () => {
-        const platform = platformServer([
-          {
-            provide: INITIAL_CONFIG,
-            useValue: {
-              document: '<app></app>',
-              url: 'http://test.com:80/deep/path?query#hash',
-            },
-          },
-        ]);
-
-        const appRef = await platform.bootstrapModule(ExampleModule);
-
-        const location = appRef.injector.get(PlatformLocation);
-        expect(location.hostname).toBe('test.com');
-        expect(location.protocol).toBe('http:');
-        expect(location.port).toBe('');
-        expect(location.pathname).toBe('/deep/path');
-        expect(location.search).toBe('?query');
-        expect(location.hash).toBe('#hash');
-      });
-
-      it('handles empty search and hash portions of the url', async () => {
-        const platform = platformServer([
-          {
-            provide: INITIAL_CONFIG,
-            useValue: {
-              document: '<app></app>',
-              url: 'http://test.com/deep/path',
-            },
-          },
-        ]);
-
-        const appRef = await platform.bootstrapModule(ExampleModule);
-
-        const location = appRef.injector.get(PlatformLocation);
-        expect(location.pathname).toBe('/deep/path');
-        expect(location.search).toBe('');
-        expect(location.hash).toBe('');
-      });
-
-      it('pushState causes the URL to update', async () => {
-        const platform = platformServer([
-          {provide: INITIAL_CONFIG, useValue: {document: '<app></app>'}},
-        ]);
-
-        const appRef = await platform.bootstrapModule(ExampleModule);
-        const location = appRef.injector.get(PlatformLocation);
-        location.pushState(null, 'Test', '/foo#bar');
-        expect(location.pathname).toBe('/foo');
-        expect(location.hash).toBe('#bar');
-        platform.destroy();
-      });
-
-      it('allows subscription to the hash state', (done) => {
-        const platform = platformServer([
-          {provide: INITIAL_CONFIG, useValue: {document: '<app></app>'}},
-        ]);
-        platform.bootstrapModule(ExampleModule).then((appRef) => {
-          const location: PlatformLocation = appRef.injector.get(PlatformLocation);
-          expect(location.pathname).toBe('/');
-          location.onHashChange((e: any) => {
-            expect(e.type).toBe('hashchange');
-            expect(e.oldUrl).toBe('/');
-            expect(e.newUrl).toBe('/foo#bar');
-            platform.destroy();
-            done();
-          });
-          location.pushState(null, 'Test', '/foo#bar');
-        });
-      });
-    });
-
     describe('render', () => {
       let doc: string;
       let expectedOutput =
@@ -867,6 +767,24 @@ class HiddenModule {}
       afterEach(() => {
         doc = '<html><head></head><body><app></app></body></html>';
         TestBed.resetTestingModule();
+      });
+
+      it('should render with `createApplication`', async () => {
+        const output = await renderApplication(
+          async (context) => {
+            const appRef = await createApplication(
+              {
+                providers: [provideZoneChangeDetection()],
+              },
+              context,
+            );
+            appRef.bootstrap(createMyAsyncServerApp(true));
+            return appRef;
+          },
+          {document: doc},
+        );
+
+        expect(output).toBe(expectedOutput);
       });
 
       it('using long form should work', async () => {

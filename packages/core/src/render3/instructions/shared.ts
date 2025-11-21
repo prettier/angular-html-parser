@@ -57,7 +57,7 @@ import {
 import {assertTNodeType} from '../node_assert';
 import {isNodeMatchingSelectorList} from '../node_selector_matcher';
 import {profiler} from '../profiler';
-import {ProfilerEvent} from '../profiler_types';
+import {ProfilerEvent} from '../../../primitives/devtools';
 import {
   getCurrentDirectiveIndex,
   getCurrentTNode,
@@ -180,7 +180,7 @@ export function locateHostElement(
   const preserveContent =
     preserveHostContent ||
     encapsulation === ViewEncapsulation.ShadowDom ||
-    encapsulation === ViewEncapsulation.IsolatedShadowDom;
+    encapsulation === ViewEncapsulation.ExperimentalIsolatedShadowDom;
   const rootElement = renderer.selectRootElement(elementOrSelector, preserveContent);
   applyRootElementTransform(rootElement as HTMLElement);
   return rootElement;

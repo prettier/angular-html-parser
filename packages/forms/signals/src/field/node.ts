@@ -6,18 +6,18 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import type {Signal, WritableSignal} from '@angular/core';
-import type {Control} from '../api/control_directive';
+import {computed, linkedSignal, type Signal, untracked, type WritableSignal} from '@angular/core';
+import type {Field} from '../api/field_directive';
 import {
-  AggregateProperty,
+  AggregateMetadataKey,
   MAX,
   MAX_LENGTH,
+  MetadataKey,
   MIN,
   MIN_LENGTH,
-  Property,
-  REQUIRED,
   PATTERN,
-} from '../api/property';
+  REQUIRED,
+} from '../api/metadata';
 import type {DisabledReason, FieldContext, FieldState, FieldTree} from '../api/types';
 import type {ValidationError} from '../api/validation_errors';
 import {LogicNode} from '../schema/logic_node';
@@ -25,7 +25,7 @@ import {FieldPathNode} from '../schema/path_node';
 import {FieldNodeContext} from './context';
 import type {FieldAdapter} from './field_adapter';
 import type {FormFieldManager} from './manager';
-import {FieldPropertyState} from './property';
+import {FieldMetadataState} from './metadata';
 import {FIELD_PROXY_HANDLER} from './proxy';
 import {FieldNodeState} from './state';
 import {
@@ -37,6 +37,7 @@ import {
 } from './structure';
 import {FieldSubmitState} from './submit';
 import {ValidationState} from './validation';
+
 /**
  * Internal node in the form tree for a given field.
  *
@@ -53,13 +54,12 @@ import {ValidationState} from './validation';
 export class FieldNode implements FieldState<unknown> {
   readonly structure: FieldNodeStructure;
   readonly validationState: ValidationState;
-  readonly propertyState: FieldPropertyState;
+  readonly metadataState: FieldMetadataState;
   readonly nodeState: FieldNodeState;
   readonly submitState: FieldSubmitState;
-
-  private _context: FieldContext<unknown> | undefined = undefined;
   readonly fieldAdapter: FieldAdapter;
 
+  private _context: FieldContext<unknown> | undefined = undefined;
   get context(): FieldContext<unknown> {
     return (this._context ??= new FieldNodeContext(this));
   }
@@ -74,9 +74,24 @@ export class FieldNode implements FieldState<unknown> {
     this.structure = this.fieldAdapter.createStructure(this, options);
     this.validationState = this.fieldAdapter.createValidationState(this, options);
     this.nodeState = this.fieldAdapter.createNodeState(this, options);
-    this.propertyState = new FieldPropertyState(this);
+    this.metadataState = new FieldMetadataState(this);
     this.submitState = new FieldSubmitState(this);
   }
+
+  /**
+   * The `AbortController` for the currently debounced sync, or `undefined` if there is none.
+   *
+   * This is used to cancel a pending debounced sync when {@link setControlValue} is called again
+   * before the pending debounced sync resolves. It will also cancel any pending debounced sync
+   * automatically when recomputed due to `value` being set directly from others sources.
+   */
+  private readonly pendingSync: WritableSignal<AbortController | undefined> = linkedSignal({
+    source: () => this.value(),
+    computation: (_source, previous) => {
+      previous?.value?.abort();
+      return undefined;
+    },
+  });
 
   get logicNode(): LogicNode {
     return this.structure.logic;
@@ -86,15 +101,20 @@ export class FieldNode implements FieldState<unknown> {
     return this.structure.value;
   }
 
+  private _controlValue = linkedSignal(() => this.value());
+  get controlValue(): Signal<unknown> {
+    return this._controlValue.asReadonly();
+  }
+
   get keyInParent(): Signal<string | number> {
     return this.structure.keyInParent;
   }
 
-  get errors(): Signal<ValidationError[]> {
+  get errors(): Signal<ValidationError.WithField[]> {
     return this.validationState.errors;
   }
 
-  get errorSummary(): Signal<ValidationError[]> {
+  get errorSummary(): Signal<ValidationError.WithField[]> {
     return this.validationState.errorSummary;
   }
 
@@ -134,8 +154,8 @@ export class FieldNode implements FieldState<unknown> {
     return this.nodeState.readonly;
   }
 
-  get controls(): Signal<readonly Control<unknown>[]> {
-    return this.nodeState.controls;
+  get fieldBindings(): Signal<readonly Field<unknown>[]> {
+    return this.nodeState.fieldBindings;
   }
 
   get submitting(): Signal<boolean> {
@@ -146,37 +166,41 @@ export class FieldNode implements FieldState<unknown> {
     return this.nodeState.name;
   }
 
-  get max(): Signal<number | undefined> {
-    return this.property(MAX);
+  private metadataOrUndefined<M>(key: AggregateMetadataKey<M, any>): Signal<M> | undefined {
+    return this.hasMetadata(key) ? this.metadata(key) : undefined;
   }
 
-  get maxLength(): Signal<number | undefined> {
-    return this.property(MAX_LENGTH);
+  get max(): Signal<number | undefined> | undefined {
+    return this.metadataOrUndefined(MAX);
   }
 
-  get min(): Signal<number | undefined> {
-    return this.property(MIN);
+  get maxLength(): Signal<number | undefined> | undefined {
+    return this.metadataOrUndefined(MAX_LENGTH);
   }
 
-  get minLength(): Signal<number | undefined> {
-    return this.property(MIN_LENGTH);
+  get min(): Signal<number | undefined> | undefined {
+    return this.metadataOrUndefined(MIN);
+  }
+
+  get minLength(): Signal<number | undefined> | undefined {
+    return this.metadataOrUndefined(MIN_LENGTH);
   }
 
   get pattern(): Signal<readonly RegExp[]> {
-    return this.property(PATTERN);
+    return this.metadataOrUndefined(PATTERN) ?? EMPTY;
   }
 
   get required(): Signal<boolean> {
-    return this.property(REQUIRED);
+    return this.metadataOrUndefined(REQUIRED) ?? FALSE;
   }
 
-  property<M>(prop: AggregateProperty<M, any>): Signal<M>;
-  property<M>(prop: Property<M>): M | undefined;
-  property<M>(prop: Property<M> | AggregateProperty<M, any>): Signal<M> | M | undefined {
-    return this.propertyState.get(prop);
+  metadata<M>(key: AggregateMetadataKey<M, any>): Signal<M>;
+  metadata<M>(key: MetadataKey<M>): M | undefined;
+  metadata<M>(key: MetadataKey<M> | AggregateMetadataKey<M, any>): Signal<M> | M | undefined {
+    return this.metadataState.get(key);
   }
-  hasProperty(prop: Property<unknown> | AggregateProperty<unknown, any>): boolean {
-    return this.propertyState.has(prop);
+  hasMetadata(key: MetadataKey<any> | AggregateMetadataKey<any, any>): boolean {
+    return this.metadataState.has(key);
   }
 
   /**
@@ -184,6 +208,8 @@ export class FieldNode implements FieldState<unknown> {
    */
   markAsTouched(): void {
     this.nodeState.markAsTouched();
+    this.pendingSync()?.abort();
+    this.sync();
   }
 
   /**
@@ -199,12 +225,60 @@ export class FieldNode implements FieldState<unknown> {
    * Note this does not change the data model, which can be reset directly if desired.
    */
   reset(): void {
+    untracked(() => this._reset());
+  }
+
+  private _reset() {
     this.nodeState.markAsUntouched();
     this.nodeState.markAsPristine();
 
     for (const child of this.structure.children()) {
-      child.reset();
+      child._reset();
     }
+  }
+
+  /**
+   * Sets the control value of the field. This value may be debounced before it is synchronized with
+   * the field's {@link value} signal, depending on the debounce configuration.
+   */
+  setControlValue(newValue: unknown): void {
+    this._controlValue.set(newValue);
+    this.markAsDirty();
+    this.debounceSync();
+  }
+
+  /**
+   * Synchronizes the {@link controlValue} with the {@link value} signal immediately.
+   */
+  private sync() {
+    this.value.set(this.controlValue());
+  }
+
+  /**
+   * Initiates a debounced {@link sync}.
+   *
+   * If a debouncer is configured, the synchronization will occur after the debouncer resolves. If
+   * no debouncer is configured, the synchronization happens immediately. If {@link setControlValue}
+   * is called again while a debounce is pending, the previous debounce operation is aborted in
+   * favor of the new one.
+   */
+  private async debounceSync() {
+    this.pendingSync()?.abort();
+
+    const debouncer = this.nodeState.debouncer();
+    if (debouncer) {
+      const controller = new AbortController();
+      const promise = debouncer(controller.signal);
+      if (promise) {
+        this.pendingSync.set(controller);
+        await promise;
+        if (controller.signal.aborted) {
+          return; // Do not sync if the debounce was aborted.
+        }
+      }
+    }
+
+    this.sync();
   }
 
   /**
@@ -249,6 +323,9 @@ export class FieldNode implements FieldState<unknown> {
         );
   }
 }
+
+const EMPTY = computed(() => []);
+const FALSE = computed(() => false);
 
 /**
  * Field node of a field that has children.

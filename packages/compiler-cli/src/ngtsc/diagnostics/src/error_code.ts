@@ -178,6 +178,12 @@ export enum ErrorCode {
    */
   UNSUPPORTED_SELECTORLESS_COMPONENT_FIELD = 2026,
 
+  /**
+   * A component is using both the `animations` property and `animate.enter` or `animate.leave`
+   * in the template.
+   */
+  COMPONENT_ANIMATIONS_CONFLICT = 2027,
+
   SYMBOL_NOT_EXPORTED = 3001,
   /**
    * Raised when a relationship between directives and/or pipes would cause a cyclic import to be
@@ -422,6 +428,16 @@ export enum ErrorCode {
    * ```
    */
   DEFER_IMPLICIT_TRIGGER_INVALID_PLACEHOLDER = 8020,
+
+  /**
+   * Raised when an `@defer` block defines unreachable or redundant triggers.
+   * Examples: multiple main triggers, 'on immediate' together with other mains or any prefetch,
+   * prefetch timer delay that is not earlier than the main timer, or an identical prefetch
+   */
+  DEFER_TRIGGER_MISCONFIGURATION = 8021,
+
+  /** Raised when the user has an unsupported binding on a `Field` directive. */
+  FORM_FIELD_UNSUPPORTED_BINDING = 8022,
 
   /**
    * A two way binding in a template has an incorrect syntax,

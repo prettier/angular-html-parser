@@ -159,7 +159,7 @@ describe('DefaultDomRendererV2', () => {
     expect(window.getComputedStyle(none).backgroundColor).toEqual('rgba(0, 0, 0, 0)');
   });
 
-  it('shadow components should not be polluted by child components styles when using IsolatedShadowDom', () => {
+  it('shadow components should not be polluted by child components styles when using ExperimentalIsolatedShadowDom', () => {
     const fixture = TestBed.createComponent(IsolatedShadowComponentParentApp);
     fixture.detectChanges();
 
@@ -502,7 +502,7 @@ class CmpEncapsulationShadow {}
       color: red;
     }`,
   ],
-  encapsulation: ViewEncapsulation.IsolatedShadowDom,
+  encapsulation: ViewEncapsulation.ExperimentalIsolatedShadowDom,
   standalone: false,
 })
 class CmpEncapsulationIsolatedShadowWithChildren {}

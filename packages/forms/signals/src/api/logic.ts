@@ -9,15 +9,17 @@
 import {addDefaultField} from '../field/validation';
 import {FieldPathNode} from '../schema/path_node';
 import {assertPathIsCurrent} from '../schema/schema';
-import {AggregateProperty, createProperty, Property} from './property';
+import {AggregateMetadataKey, createMetadataKey, MetadataKey} from './metadata';
 import type {
   FieldContext,
-  FieldPath,
+  SchemaPath,
   FieldValidator,
   LogicFn,
   PathKind,
   TreeValidator,
+  SchemaPathRules,
 } from './types';
+import {ensureCustomValidationResult} from './validators/util';
 
 /**
  * Adds logic to a field to conditionally disable it. A disabled field does not contribute to the
@@ -33,13 +35,13 @@ import type {
  * @experimental 21.0.0
  */
 export function disabled<TValue, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   logic?: string | NoInfer<LogicFn<TValue, boolean | string, TPathKind>>,
 ): void {
   assertPathIsCurrent(path);
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addDisabledReasonRule((ctx) => {
+  pathNode.builder.addDisabledReasonRule((ctx) => {
     let result: boolean | string = true;
     if (typeof logic === 'string') {
       result = logic;
@@ -66,13 +68,13 @@ export function disabled<TValue, TPathKind extends PathKind = PathKind.Root>(
  * @experimental 21.0.0
  */
 export function readonly<TValue, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   logic: NoInfer<LogicFn<TValue, boolean, TPathKind>> = () => true,
 ) {
   assertPathIsCurrent(path);
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addReadonlyRule(logic);
+  pathNode.builder.addReadonlyRule(logic);
 }
 
 /**
@@ -96,13 +98,13 @@ export function readonly<TValue, TPathKind extends PathKind = PathKind.Root>(
  * @experimental 21.0.0
  */
 export function hidden<TValue, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   logic: NoInfer<LogicFn<TValue, boolean, TPathKind>>,
 ): void {
   assertPathIsCurrent(path);
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addHiddenRule(logic);
+  pathNode.builder.addHiddenRule(logic);
 }
 
 /**
@@ -117,15 +119,17 @@ export function hidden<TValue, TPathKind extends PathKind = PathKind.Root>(
  * @experimental 21.0.0
  */
 export function validate<TValue, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   logic: NoInfer<FieldValidator<TValue, TPathKind>>,
 ): void {
   assertPathIsCurrent(path);
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addSyncErrorRule((ctx) =>
-    addDefaultField(logic(ctx as FieldContext<TValue, TPathKind>), ctx.field),
-  );
+  pathNode.builder.addSyncErrorRule((ctx) => {
+    return ensureCustomValidationResult(
+      addDefaultField(logic(ctx as FieldContext<TValue, TPathKind>), ctx.field),
+    );
+  });
 }
 
 /**
@@ -141,93 +145,97 @@ export function validate<TValue, TPathKind extends PathKind = PathKind.Root>(
  * @experimental 21.0.0
  */
 export function validateTree<TValue, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   logic: NoInfer<TreeValidator<TValue, TPathKind>>,
 ): void {
   assertPathIsCurrent(path);
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addSyncTreeErrorRule((ctx) =>
+  pathNode.builder.addSyncTreeErrorRule((ctx) =>
     addDefaultField(logic(ctx as FieldContext<TValue, TPathKind>), ctx.field),
   );
 }
 
 /**
- * Adds a value to an `AggregateProperty` of a field.
+ * Adds a value to an {@link AggregateMetadataKey} of a field.
  *
- * @param path The target path to set the aggregate property on.
- * @param prop The aggregate property
- * @param logic A function that receives the `FieldContext` and returns a value to add to the aggregate property.
+ * @param path The target path to set the aggregate metadata on.
+ * @param key The aggregate metadata key
+ * @param logic A function that receives the `FieldContext` and returns a value to add to the aggregate metadata.
  * @template TValue The type of value stored in the field the logic is bound to.
- * @template TPropItem The type of value the property aggregates over.
+ * @template TMetadataItem The type of value the metadata aggregates over.
  * @template TPathKind The kind of path the logic is bound to (a root path, child path, or item of an array)
  *
  * @category logic
  * @experimental 21.0.0
  */
-export function aggregateProperty<TValue, TPropItem, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
-  prop: AggregateProperty<any, TPropItem>,
-  logic: NoInfer<LogicFn<TValue, TPropItem, TPathKind>>,
+export function aggregateMetadata<
+  TValue,
+  TMetadataItem,
+  TPathKind extends PathKind = PathKind.Root,
+>(
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
+  key: AggregateMetadataKey<any, TMetadataItem>,
+  logic: NoInfer<LogicFn<TValue, TMetadataItem, TPathKind>>,
 ): void {
   assertPathIsCurrent(path);
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addAggregatePropertyRule(prop, logic);
+  pathNode.builder.addAggregateMetadataRule(key, logic);
 }
 
 /**
- * Creates a new `Property` and defines the value of the new property for the given field.
+ * Creates a new {@link MetadataKey} and defines the value of the new metadata key for the given field.
  *
- * @param path The path to define the property for.
- * @param factory A factory function that creates the value for the property.
+ * @param path The path to define the metadata for.
+ * @param factory A factory function that creates the value for the metadata.
  *   This function is **not** reactive. It is run once when the field is created.
- * @returns The newly created property
+ * @returns The newly created metadata key
  *
  * @category logic
  * @experimental 21.0.0
  */
-export function property<TValue, TData, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+export function metadata<TValue, TData, TPathKind extends PathKind = PathKind.Root>(
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   factory: (ctx: FieldContext<TValue, TPathKind>) => TData,
-): Property<TData>;
+): MetadataKey<TData>;
 
 /**
- * Defines the value of a `Property` for a given field.
+ * Defines the value of a {@link MetadataKey} for a given field.
  *
- * @param path The path to define the property for.
- * @param prop  The property to define.
- * @param factory A factory function that creates the value for the property.
+ * @param path The path to define the metadata for.
+ * @param key  The metadata key to define.
+ * @param factory A factory function that creates the value for the metadata.
  *   This function is **not** reactive. It is run once when the field is created.
- * @returns The given property
+ * @returns The given metadata key
  *
  * @category logic
  * @experimental 21.0.0
  */
-export function property<TValue, TData, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
-  prop: Property<TData>,
+export function metadata<TValue, TData, TPathKind extends PathKind = PathKind.Root>(
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
+  key: MetadataKey<TData>,
   factory: (ctx: FieldContext<TValue, TPathKind>) => TData,
-): Property<TData>;
+): MetadataKey<TData>;
 
-export function property<TValue, TData, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+export function metadata<TValue, TData, TPathKind extends PathKind = PathKind.Root>(
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   ...rest:
     | [(ctx: FieldContext<TValue, TPathKind>) => TData]
-    | [Property<TData>, (ctx: FieldContext<TValue, TPathKind>) => TData]
-): Property<TData> {
+    | [MetadataKey<TData>, (ctx: FieldContext<TValue, TPathKind>) => TData]
+): MetadataKey<TData> {
   assertPathIsCurrent(path);
 
-  let key: Property<TData>;
+  let key: MetadataKey<TData>;
   let factory: (ctx: FieldContext<TValue, TPathKind>) => TData;
   if (rest.length === 2) {
     [key, factory] = rest;
   } else {
     [factory] = rest;
   }
-  key ??= createProperty();
+  key ??= createMetadataKey();
 
   const pathNode = FieldPathNode.unwrapFieldPath(path);
-  pathNode.logic.addPropertyFactory(key, factory as (ctx: FieldContext<unknown>) => unknown);
+  pathNode.builder.addMetadataFactory(key, factory as (ctx: FieldContext<unknown>) => unknown);
   return key;
 }

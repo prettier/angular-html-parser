@@ -8,17 +8,27 @@
 
 import {Injector, signal, WritableSignal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
-import {applyEach, FieldContext, FieldPath, form, PathKind, validate} from '../../public_api';
+import {
+  aggregateMetadata,
+  applyEach,
+  FieldContext,
+  form,
+  PathKind,
+  reducedMetadataKey,
+  SchemaPath,
+  SchemaPathTree,
+  validate,
+} from '../../public_api';
 
 function testContext<T>(
   s: WritableSignal<T>,
-  callback: (ctx: FieldContext<T>, p: FieldPath<T>) => void,
+  callback: (ctx: FieldContext<T>, p: SchemaPathTree<T>) => void,
 ) {
   const isCalled = jasmine.createSpy();
 
   TestBed.runInInjectionContext(() => {
-    const f = form(s, (p) => {
-      validate(p, (ctx) => {
+    const f = form<T>(s, (p) => {
+      validate(p as SchemaPath<T>, (ctx) => {
         callback(ctx, p);
         isCalled();
         return undefined;
@@ -122,6 +132,27 @@ describe('Field Context', () => {
     ]);
   });
 
+  it('pathKeys', () => {
+    const KEYS = reducedMetadataKey(
+      (_: readonly string[], n: readonly string[]) => n,
+      () => [],
+    );
+    const f = form(
+      signal({x: [1]}),
+      (p) => {
+        aggregateMetadata(p, KEYS, ({pathKeys}) => pathKeys());
+        aggregateMetadata(p.x, KEYS, ({pathKeys}) => pathKeys());
+        applyEach(p.x, (it) => {
+          aggregateMetadata(it, KEYS, ({pathKeys}) => pathKeys());
+        });
+      },
+      {injector: TestBed.inject(Injector)},
+    );
+    expect(f().metadata(KEYS)()).toEqual([]);
+    expect(f.x().metadata(KEYS)()).toEqual(['x']);
+    expect(f.x[0]().metadata(KEYS)()).toEqual(['x', '0']);
+  });
+
   it('valueOf', () => {
     const cat = signal({name: 'pirojok-the-cat', age: 5});
     testContext(cat, (ctx, p) => {
@@ -138,11 +169,11 @@ describe('Field Context', () => {
     });
   });
 
-  it('fieldOf', () => {
+  it('fieldTreeOf', () => {
     const cat = signal({name: 'pirojok-the-cat', age: 5});
     testContext(cat, (ctx, p) => {
-      expect(ctx.fieldOf(p.name)().value()).toEqual('pirojok-the-cat');
-      expect(ctx.fieldOf(p.age)().value()).toEqual(5);
+      expect(ctx.fieldTreeOf(p.name)().value()).toEqual('pirojok-the-cat');
+      expect(ctx.fieldTreeOf(p.age)().value()).toEqual(5);
     });
   });
 });

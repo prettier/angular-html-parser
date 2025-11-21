@@ -6,22 +6,23 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {signal} from '@angular/core';
-import {FieldContext, FieldState, customError} from '../../public_api';
+import {computed, signal} from '@angular/core';
+import {customError, FieldContext} from '../../public_api';
 import {DYNAMIC} from '../../src/schema/logic';
 import {LogicNodeBuilder} from '../../src/schema/logic_node';
 
 const fakeFieldContext: FieldContext<unknown> = {
-  fieldOf: () => undefined!,
-  stateOf: <P>() =>
+  fieldTreeOf: () => undefined!,
+  stateOf: () =>
     ({
       context: undefined,
       structure: {pathKeys: () => [], parent: undefined},
-    }) as unknown as FieldState<P>,
+    }) as any,
   valueOf: () => undefined!,
   field: undefined!,
   state: undefined!,
   value: undefined!,
+  pathKeys: computed(() => []),
 };
 
 describe('LogicNodeBuilder', () => {

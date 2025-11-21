@@ -3,6 +3,7 @@ packages:
   - adev
   - adev/shared-docs
   - adev/shared-docs/pipeline/api-gen
+  - dev-app/
   - modules
   - integration
   - packages/animations/
@@ -38,23 +39,6 @@ allowedDeprecatedVersions:
   protractor: '7'
   '@babel/plugin-proposal-async-generator-functions': '7'
 
-overrides:
-  '@angular/compiler': 'workspace:*'
-  '@angular/compiler-cli': 'workspace:*'
-  '@angular/core': 'workspace:*'
-  '@angular/common': 'workspace:*'
-  '@angular/router': 'workspace:*'
-  '@angular/platform-browser': 'workspace:*'
-  '@angular/platform-browser-dynamic': 'workspace:*'
-  '@angular/platform-server': 'workspace:*'
-  '@angular/forms': 'workspace:*'
-  '@angular/elements': 'workspace:*'
-  '@angular/animations': 'workspace:*'
-  '@angular/benchpress': 'workspace: *'
-  '@angular/language-service': 'workspace: *'
-  '@angular/localize': 'workspace: *'
-  '@angular/upgrade': 'workspace: *'
-
 # The minimum age of a release to be considered for dependency installation.
 # The value is in minutes (1440 minutes = 1 day).
 minimumReleaseAge: 1440
@@ -65,3 +49,8 @@ minimumReleaseAgeExclude:
   - '@ngtools/webpack'
   - '@schematics/*'
   - 'ng-packagr'
+
+# Allow any version of @angular/* packages to satisfy peer dependencies, as these are managed within the monorepo.
+peerDependencyRules:
+  allowAny:
+    - '@angular/*'

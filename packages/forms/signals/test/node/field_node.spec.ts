@@ -6,14 +6,13 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {computed, Injector, signal} from '@angular/core';
+import {computed, effect, Injector, signal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {
   apply,
   applyEach,
   customError,
   disabled,
-  FieldPath,
   form,
   hidden,
   readonly,
@@ -23,6 +22,8 @@ import {
   Schema,
   schema,
   SchemaOrSchemaFn,
+  SchemaPath,
+  SchemaPathTree,
   validate,
   validateTree,
   ValidationError,
@@ -388,6 +389,26 @@ describe('FieldNode', () => {
       expect(f().touched()).toBe(false);
     });
 
+    it('reset should not track model changes', () => {
+      const f = form(signal(''), {injector: TestBed.inject(Injector)});
+      const spy = jasmine.createSpy();
+      effect(
+        () => {
+          spy();
+          f().reset();
+        },
+        {injector: TestBed.inject(Injector)},
+      );
+
+      TestBed.tick();
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      f().value.set('hi');
+
+      TestBed.tick();
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
     it('should not be marked as touched when is readonly', () => {
       const f = form(
         signal({
@@ -534,10 +555,10 @@ describe('FieldNode', () => {
         signal({names: [{name: 'Alex'}, {name: 'Miles'}]}),
         (p) => {
           applyEach(p.names, (a) => {
-            disabled(a.name, ({value, fieldOf}) => {
-              const el = fieldOf(a);
+            disabled(a.name, ({value, fieldTreeOf}) => {
+              const el = fieldTreeOf(a);
               expect(el().value().name).toBe(value());
-              expect([...fieldOf(p).names].findIndex((e: any) => e === el)).not.toBe(-1);
+              expect([...fieldTreeOf(p).names].findIndex((e: any) => e === el)).not.toBe(-1);
               return true;
             });
           });
@@ -613,6 +634,30 @@ describe('FieldNode', () => {
 
         expect(f[0] === kirill).toBeTrue();
         expect(f[1] === alex).toBeTrue();
+      });
+
+      it('uses index as identity for primitive values', () => {
+        const value = signal([1, 'two']);
+        const f = form(value, {injector: TestBed.inject(Injector)});
+        const first = f[0];
+        const second = f[1];
+
+        value.update((old) => [old[1], old[0]]);
+
+        expect(f[0] === first).toBeTrue();
+        expect(f[1] === second).toBeTrue();
+      });
+
+      it('uses index as identity for array values', () => {
+        const value = signal([[1], ['two']]);
+        const f = form(value, {injector: TestBed.inject(Injector)});
+        const first = f[0];
+        const second = f[1];
+
+        value.update((old) => [old[1], old[0]]);
+
+        expect(f[0] === first).toBeTrue();
+        expect(f[1] === second).toBeTrue();
       });
     });
   });
@@ -802,12 +847,12 @@ describe('FieldNode', () => {
         {injector: TestBed.inject(Injector)},
       );
 
-      expect(f().property(REQUIRED)()).toBe(true);
+      expect(f().metadata(REQUIRED)()).toBe(true);
       expect(f().valid()).toBe(false);
       expect(f().readonly()).toBe(false);
 
       isReadonly.set(true);
-      expect(f().property(REQUIRED)()).toBe(true);
+      expect(f().metadata(REQUIRED)()).toBe(true);
       expect(f().valid()).toBe(true);
       expect(f().readonly()).toBe(true);
     });
@@ -877,13 +922,13 @@ describe('FieldNode', () => {
 
       expect(f.first().errors()).toEqual([requiredError({field: f.first})]);
       expect(f.first().valid()).toBe(false);
-      expect(f.first().property(REQUIRED)()).toBe(true);
+      expect(f.first().metadata(REQUIRED)()).toBe(true);
 
       f.first().value.set('Bob');
 
       expect(f.first().errors()).toEqual([]);
       expect(f.first().valid()).toBe(true);
-      expect(f.first().property(REQUIRED)()).toBe(true);
+      expect(f.first().metadata(REQUIRED)()).toBe(true);
     });
 
     it('should validate conditionally required field', () => {
@@ -899,19 +944,19 @@ describe('FieldNode', () => {
 
       expect(f.first().errors()).toEqual([]);
       expect(f.first().valid()).toBe(true);
-      expect(f.first().property(REQUIRED)()).toBe(false);
+      expect(f.first().metadata(REQUIRED)()).toBe(false);
 
       f.last().value.set('Loblaw');
 
       expect(f.first().errors()).toEqual([requiredError({field: f.first})]);
       expect(f.first().valid()).toBe(false);
-      expect(f.first().property(REQUIRED)()).toBe(true);
+      expect(f.first().metadata(REQUIRED)()).toBe(true);
 
       f.first().value.set('Bob');
 
       expect(f.first().errors()).toEqual([]);
       expect(f.first().valid()).toBe(true);
-      expect(f.first().property(REQUIRED)()).toBe(true);
+      expect(f.first().metadata(REQUIRED)()).toBe(true);
     });
 
     it('should link required error messages to their predicate', () => {
@@ -990,13 +1035,13 @@ describe('FieldNode', () => {
         const f = form(
           cat,
           (p) => {
-            validateTree(p, ({value, fieldOf}) => {
+            validateTree(p, ({value, fieldTreeOf}) => {
               const errors: ValidationError[] = [];
               if (value().name.length > 8) {
-                errors.push(customError({kind: 'long_name', field: fieldOf(p.name)}));
+                errors.push(customError({kind: 'long_name', field: fieldTreeOf(p.name)}));
               }
               if (value().age < 0) {
-                errors.push(customError({kind: 'temporal_anomaly', field: fieldOf(p.age)}));
+                errors.push(customError({kind: 'temporal_anomaly', field: fieldTreeOf(p.age)}));
               }
               return errors;
             });
@@ -1022,13 +1067,13 @@ describe('FieldNode', () => {
         const f = form(
           cat,
           (p) => {
-            validateTree(p, ({value, fieldOf}) => {
+            validateTree(p, ({value, fieldTreeOf}) => {
               const errors: ValidationError[] = [];
               if (value().name.length > 8) {
-                errors.push(customError({kind: 'long_name', field: fieldOf(p.name)}));
+                errors.push(customError({kind: 'long_name', field: fieldTreeOf(p.name)}));
               }
               if (value().age < 0) {
-                errors.push(customError({kind: 'temporal_anomaly', field: fieldOf(p.age)}));
+                errors.push(customError({kind: 'temporal_anomaly', field: fieldTreeOf(p.age)}));
               }
               return errors;
             });
@@ -1153,7 +1198,7 @@ describe('FieldNode', () => {
       const opts = {injector: TestBed.inject(Injector)};
       const subFn = jasmine.createSpy('schemaFn');
       const sub: Schema<string> = schema(subFn);
-      const s = schema((p: FieldPath<{a: string; b: string}>) => {
+      const s = schema((p: SchemaPathTree<{a: string; b: string}>) => {
         apply(p.a, sub);
         apply(p.b, sub);
       });
@@ -1203,15 +1248,15 @@ describe('FieldNode', () => {
     });
 
     it('should error on resolving predefined schema path that is not part of the form', () => {
-      let otherP: FieldPath<any>;
+      let otherP: SchemaPath<string>;
       const s = schema<string>((p) => (otherP = p));
       SchemaImpl.rootCompile(s);
 
       const f = form(
         signal(''),
         (p) => {
-          disabled(p, ({fieldOf}) => {
-            fieldOf(otherP);
+          disabled(p, ({fieldTreeOf}) => {
+            fieldTreeOf(otherP);
             return true;
           });
         },

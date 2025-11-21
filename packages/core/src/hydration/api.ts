@@ -16,7 +16,7 @@ import {
   Provider,
 } from '../di';
 import {inject} from '../di/injector_compatibility';
-import {formatRuntimeError, RuntimeError, RuntimeErrorCode} from '../errors';
+import {formatRuntimeError, RuntimeErrorCode} from '../errors';
 import {enableLocateOrCreateContainerRefImpl} from '../linker/view_container_ref';
 import {enableLocateOrCreateI18nNodeImpl} from '../render3/i18n/i18n_apply';
 import {enableLocateOrCreateElementNodeImpl} from '../render3/instructions/element';
@@ -315,6 +315,7 @@ export function withDomHydration(): EnvironmentProviders {
 /**
  * Returns a set of providers required to setup support for i18n hydration.
  * Requires hydration to be enabled separately.
+ * @see [I18N](guide/hydration#i18n)
  */
 export function withI18nSupport(): Provider[] {
   return [
@@ -340,6 +341,7 @@ export function withI18nSupport(): Provider[] {
  * Returns a set of providers required to setup support for incremental hydration.
  * Requires hydration to be enabled separately.
  * Enabling incremental hydration also enables event replay for the entire app.
+ * @see [Incremental Hydration](guide/incremental-hydration#how-do-you-enable-incremental-hydration-in-angular)
  */
 export function withIncrementalHydration(): Provider[] {
   const providers: Provider[] = [

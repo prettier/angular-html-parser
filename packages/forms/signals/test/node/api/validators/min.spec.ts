@@ -51,47 +51,98 @@ describe('min validator', () => {
     expect(f.age().errors()).toEqual([]);
   });
 
-  it('returns custom errors when provided', () => {
-    const cat = signal({name: 'pirojok-the-cat', age: 3});
-    const f = form(
-      cat,
-      (p) => {
-        min(p.age, 5, {
-          error: ({value}) => {
-            return customError({kind: 'special-min', message: value().toString()});
-          },
-        });
-      },
-      {injector: TestBed.inject(Injector)},
-    );
+  describe('custom errors', () => {
+    it('returns custom errors when provided', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 3});
+      const f = form(
+        cat,
+        (p) => {
+          min(p.age, 5, {
+            error: ({value}) => {
+              return customError({kind: 'special-min', message: value().toString()});
+            },
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
 
-    expect(f.age().errors()).toEqual([
-      customError({
-        kind: 'special-min',
-        message: '3',
-        field: f.age,
-      }),
-    ]);
-  });
+      expect(f.age().errors()).toEqual([
+        customError({
+          kind: 'special-min',
+          message: '3',
+          field: f.age,
+        }),
+      ]);
+    });
 
-  it('supports custom error messages', () => {
-    const cat = signal({name: 'pirojok-the-cat', age: 3});
-    const f = form(
-      cat,
-      (p) => {
-        min(p.age, 5, {
+    it('supports returning custom plain error, and wraps it as custom', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 3});
+      const f = form(
+        cat,
+        (p) => {
+          min(p.age, 5, {
+            error: ({value}) => {
+              return {
+                kind: 'special-min',
+                message: value().toString(),
+              };
+            },
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
+
+      expect(f.age().errors()).toEqual([
+        customError({
+          kind: 'special-min',
+          message: '3',
+          field: f.age,
+        }),
+      ]);
+    });
+
+    it('supports custom error messages', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 3});
+      const f = form(
+        cat,
+        (p) => {
+          min(p.age, 5, {
+            message: 'min error!!',
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
+
+      expect(f.age().errors()).toEqual([
+        minError(5, {
           message: 'min error!!',
-        });
-      },
-      {injector: TestBed.inject(Injector)},
-    );
+          field: f.age,
+        }),
+      ]);
+    });
 
-    expect(f.age().errors()).toEqual([
-      minError(5, {
-        message: 'min error!!',
-        field: f.age,
-      }),
-    ]);
+    it('Supports not returning nothing from error function', () => {
+      const cat = signal({name: 'pirojok-the-cat', age: 3});
+      const f = form(
+        cat,
+        (p) => {
+          min(p.age, 5, {
+            error: ({value, valueOf}) => {
+              return valueOf(p.name) === 'disabled'
+                ? []
+                : customError({kind: 'special-min', message: value().toString()});
+            },
+          });
+        },
+        {injector: TestBed.inject(Injector)},
+      );
+
+      expect(f.age().errors()).toEqual([
+        customError({kind: 'special-min', message: '3', field: f.age}),
+      ]);
+      f.name().value.set('disabled');
+      expect(f.age().errors()).toEqual([]);
+    });
   });
 
   it('treats NaN as no minimum', () => {
@@ -128,16 +179,12 @@ describe('min validator', () => {
       const f = form(
         cat,
         (p) => {
-          min(p.age, 5, {
-            error: ({value}) => {
-              return customError({kind: 'special-min', message: value().toString()});
-            },
-          });
+          min(p.age, 5);
         },
         {injector: TestBed.inject(Injector)},
       );
 
-      expect(f.age().property(MIN)()).toBe(5);
+      expect(f.age().metadata(MIN)()).toBe(5);
     });
 
     it('merges two mins preferring the larger option', () => {
@@ -158,7 +205,7 @@ describe('min validator', () => {
       f.age().value.set(15);
       expect(f.age().errors()).toEqual([]);
 
-      expect(f.age().property(MIN)()).toBe(10);
+      expect(f.age().metadata(MIN)()).toBe(10);
     });
 
     it('merges two mins _dynamically_ preferring the larger option', () => {
@@ -181,7 +228,7 @@ describe('min validator', () => {
       expect(f.age().errors()).toEqual([]);
       minSignal.set(30);
       expect(f.age().errors()).toEqual([minError(30, {field: f.age})]);
-      expect(f.age().property(MIN)()).toBe(30);
+      expect(f.age().metadata(MIN)()).toBe(30);
     });
 
     it('merges two mins _dynamically_ ignores undefined', () => {
@@ -260,5 +307,31 @@ describe('min validator', () => {
       f.name().value.set('other cat');
       expect(f.age().errors()).toEqual([]);
     });
+  });
+
+  it('should validate properly formatted strings', () => {
+    const f = form(
+      signal<number | string | null>('4'),
+      (p) => {
+        min(p, 10);
+      },
+      {injector: TestBed.inject(Injector)},
+    );
+    expect(f().errors()).toEqual([jasmine.objectContaining({kind: 'min'})]);
+  });
+
+  it('should not validate improperly formatted strings or null', () => {
+    const f = form(
+      signal<number | string | null>('4f'),
+      (p) => {
+        min(p, 10);
+      },
+      {injector: TestBed.inject(Injector)},
+    );
+    expect(f().errors()).toEqual([]);
+    f().value.set(null);
+    expect(f().errors()).toEqual([]);
+    f().value.set(4);
+    expect(f().errors()).toEqual([jasmine.objectContaining({kind: 'min'})]);
   });
 });

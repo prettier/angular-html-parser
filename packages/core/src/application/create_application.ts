@@ -17,14 +17,11 @@ import {ApplicationRef} from './application_ref';
 import {provideZonelessChangeDetectionInternal} from '../change_detection/scheduling/zoneless_scheduling_impl';
 import {bootstrap} from '../platform/bootstrap';
 import {profiler} from '../render3/profiler';
-import {ProfilerEvent} from '../render3/profiler_types';
+import {ProfilerEvent} from '../../primitives/devtools';
 import {errorHandlerEnvironmentInitializer} from '../error_handler';
 import {RuntimeError, RuntimeErrorCode} from '../errors';
 import {PlatformRef} from '../platform/platform_ref';
-import {internalProvideZoneChangeDetection} from '../change_detection/scheduling/ng_zone_scheduling';
 import {validAppIdInitializer} from './application_tokens';
-
-const ZONELESS_BY_DEFAULT = true;
 
 /**
  * Internal create application API that implements the core application creation logic and optional
@@ -68,7 +65,6 @@ export function internalCreateApplication(config: {
     // bootstrap level as well as providers passed to the bootstrap call by a user.
     const allAppProviders = [
       provideZonelessChangeDetectionInternal(),
-      ZONELESS_BY_DEFAULT ? [] : internalProvideZoneChangeDetection({}),
       errorHandlerEnvironmentInitializer,
       ...(ngDevMode ? [validAppIdInitializer] : []),
       ...(appProviders || []),

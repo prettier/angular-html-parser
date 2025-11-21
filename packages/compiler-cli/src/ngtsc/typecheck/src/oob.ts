@@ -28,6 +28,8 @@ import {
   TmplAstTextAttribute,
   TmplAstVariable,
   TmplAstViewportDeferredTrigger,
+  ParseSourceSpan,
+  BindingType,
 } from '@angular/compiler';
 import ts from 'typescript';
 
@@ -235,6 +237,14 @@ export interface OutOfBandDiagnosticRecorder {
       | TmplAstHoverDeferredTrigger
       | TmplAstInteractionDeferredTrigger
       | TmplAstViewportDeferredTrigger,
+  ): void;
+
+  /**
+   * Reports an unsupported binding on a form `Field` node.
+   */
+  formFieldUnsupportedBinding(
+    id: TypeCheckId,
+    node: TmplAstBoundAttribute | TmplAstTextAttribute,
   ): void;
 }
 
@@ -562,11 +572,33 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
       isComponent ? 'component' : 'directive'
     } ${directiveName} must be specified.`;
 
+    let span: ParseSourceSpan;
+    let name: string | null;
+
+    if (element instanceof TmplAstElement || element instanceof TmplAstDirective) {
+      name = element.name;
+    } else if (element instanceof TmplAstComponent) {
+      name = element.componentName;
+    } else {
+      name = null;
+    }
+
+    if (name === null) {
+      span = element.startSourceSpan;
+    } else {
+      // Only highlight the tag name since highlighting the entire start tag can be noisy.
+      const start = element.startSourceSpan.start.moveBy(1);
+      const end = element.startSourceSpan.end.moveBy(
+        start.offset + name.length - element.startSourceSpan.end.offset,
+      );
+      span = new ParseSourceSpan(start, end);
+    }
+
     this._diagnostics.push(
       makeTemplateDiagnostic(
         id,
         this.resolver.getTemplateSourceMapping(id),
-        element.startSourceSpan,
+        span,
         ts.DiagnosticCategory.Error,
         ngErrorCode(ErrorCode.MISSING_REQUIRED_INPUTS),
         message,
@@ -825,6 +857,41 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
         ngErrorCode(ErrorCode.DEFER_IMPLICIT_TRIGGER_INVALID_PLACEHOLDER),
         'Trigger with no target can only be placed on an @defer that has a ' +
           '@placeholder block with exactly one root element node',
+      ),
+    );
+  }
+
+  formFieldUnsupportedBinding(
+    id: TypeCheckId,
+    node: TmplAstBoundAttribute | TmplAstTextAttribute,
+  ): void {
+    let message: string;
+
+    if (node instanceof TmplAstBoundAttribute) {
+      let name: string;
+
+      if (node.type === BindingType.Property) {
+        name = `[${node.name}]`;
+      } else if (node.type === BindingType.Attribute) {
+        name = `[attr.${node.name}]`;
+      } else {
+        // We shouldn't hit this, but we have this logic as a fallback.
+        name = node.name;
+      }
+
+      message = `Binding to '${name}' is not allowed on nodes using the '[field]' directive`;
+    } else {
+      message = `Setting the '${node.name}' attribute is not allowed on nodes using the '[field]' directive`;
+    }
+
+    this._diagnostics.push(
+      makeTemplateDiagnostic(
+        id,
+        this.resolver.getTemplateSourceMapping(id),
+        node.sourceSpan,
+        ts.DiagnosticCategory.Error,
+        ngErrorCode(ErrorCode.FORM_FIELD_UNSUPPORTED_BINDING),
+        message,
       ),
     );
   }

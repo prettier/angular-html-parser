@@ -102,6 +102,7 @@ export {
   HydrationInfo as ɵHydrationInfo,
   readHydrationInfo as ɵreadHydrationInfo,
   SSR_CONTENT_INTEGRITY_MARKER as ɵSSR_CONTENT_INTEGRITY_MARKER,
+  resetIncrementalHydrationEnabledWarnedForTests as ɵresetIncrementalHydrationEnabledWarnedForTests,
 } from './hydration/utils';
 export {
   CurrencyIndex as ɵCurrencyIndex,
@@ -175,4 +176,4 @@ export {TimerScheduler as ɵTimerScheduler} from './defer/timer_scheduler';
 export {ɵassertType} from './type_checking';
 export {ANIMATIONS_DISABLED as ɵANIMATIONS_DISABLED} from './animation/interfaces';
 export {allLeavingAnimations as ɵallLeavingAnimations} from './animation/longest_animation';
-export {setZoneProvidersForNextBootstrap as ɵsetZoneProvidersForNextBootstrap} from './platform/platform_ref';
+export {promiseWithResolvers as ɵpromiseWithResolvers} from './util/promise_with_resolvers';

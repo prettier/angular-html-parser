@@ -9,7 +9,7 @@
 import '../util/ng_dev_mode';
 
 import {RuntimeError, RuntimeErrorCode} from '../errors';
-import {OnDestroy} from '../interface/lifecycle_hooks';
+import {OnDestroy} from '../change_detection/lifecycle_hooks';
 import {Type} from '../interface/type';
 import {
   emitInjectorToCreateInstanceEvent,
@@ -122,6 +122,8 @@ interface Record<T> {
 /**
  * An `Injector` that's part of the environment injector hierarchy, which exists outside of the
  * component tree.
+ *
+ * @see [Types of injector hierarchies](guide/di/hierarchical-dependency-injection#types-of-injector-hierarchies)
  *
  * @publicApi
  */

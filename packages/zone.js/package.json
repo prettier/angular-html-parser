@@ -1,6 +1,6 @@
 {
   "name": "zone.js",
-  "version": "0.15.1",
+  "version": "0.16.0",
   "description": "Zones for JavaScript",
   "main": "./bundles/zone.umd.js",
   "module": "./fesm2015/zone.js",
@@ -11,7 +11,7 @@
     "@csstools/css-calc": "2.1.4",
     "@csstools/css-color-parser": "3.1.0",
     "@externs/nodejs": "1.5.0",
-    "@types/jasmine": "5.1.9",
+    "@types/jasmine": "5.1.13",
     "@types/node": "^24.3.0",
     "@types/systemjs": "6.15.3",
     "bluebird": "3.7.2",
@@ -20,16 +20,16 @@
     "jest-environment-jsdom": "30.2.0",
     "jest-environment-node": "30.2.0",
     "jest": "30.2.0",
-    "mocha": "11.7.4",
+    "mocha": "11.7.5",
     "mock-require": "3.0.3",
     "jasmine": "5.12.0",
     "source-map-support": "0.5.21",
-    "jasmine-core": "5.12.0",
+    "jasmine-core": "5.12.1",
     "jasmine-reporters": "2.5.2",
     "rxjs": "7.8.2",
     "systemjs": "6.15.1",
     "tslib": "^2.3.0",
-    "vitest": "^3.1.3"
+    "vitest": "^4.0.0"
   },
   "scripts": {
     "electrontest": "cd test/extra && node electron.js",

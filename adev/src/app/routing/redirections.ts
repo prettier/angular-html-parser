@@ -10,9 +10,23 @@ import {Route} from '@angular/router';
 /**
  * This file contains the redirections we keep to prevent breakages on existing links
  * that may exist on the internet and over which we have no control.
+ *
+ * The redirectTo should always that start with a "/" to avoid relative redirections.
  */
 
 export const REDIRECT_ROUTES: Route[] = [
+  {
+    path: 'guide/di/dependency-injection',
+    redirectTo: '/guide/di',
+  },
+  {
+    path: 'guide/di/creating-injectable-service',
+    redirectTo: '/guide/di/creating-and-using-services',
+  },
+  {
+    path: 'guide/di/dependency-injection-providers',
+    redirectTo: '/guide/di/defining-dependency-providers',
+  },
   {
     path: 'guide/defer',
     redirectTo: '/guide/templates/defer',
@@ -149,5 +163,13 @@ export const REDIRECT_ROUTES: Route[] = [
   {
     path: 'guide/animations/reusable-animations',
     redirectTo: '/guide/legacy-animations/reusable-animations',
+  },
+  {
+    path: 'guide/aria',
+    redirectTo: '/guide/aria/overview',
+  },
+  {
+    path: 'signal-forms',
+    redirectTo: '/playground?templateId=4-signal-forms',
   },
 ];

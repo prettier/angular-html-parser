@@ -15,7 +15,6 @@ import {
   InjectionToken,
   NgZone,
   OnDestroy,
-  PLATFORM_ID,
   Renderer2,
   RendererFactory2,
   RendererStyleFlags2,
@@ -66,7 +65,6 @@ const REMOVE_STYLES_ON_COMPONENT_DESTROY_DEFAULT = true;
 export const REMOVE_STYLES_ON_COMPONENT_DESTROY = new InjectionToken<boolean>(
   typeof ngDevMode !== undefined && ngDevMode ? 'RemoveStylesOnCompDestroy' : '',
   {
-    providedIn: 'root',
     factory: () => REMOVE_STYLES_ON_COMPONENT_DESTROY_DEFAULT,
   },
 );
@@ -144,7 +142,6 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
     @Inject(APP_ID) private readonly appId: string,
     @Inject(REMOVE_STYLES_ON_COMPONENT_DESTROY) private removeStylesOnCompDestroy: boolean,
     @Inject(DOCUMENT) private readonly doc: Document,
-    @Inject(PLATFORM_ID) readonly platformId: Object,
     readonly ngZone: NgZone,
     @Inject(CSP_NONCE) private readonly nonce: string | null = null,
     @Inject(TracingService)
@@ -170,7 +167,7 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
       typeof ngServerMode !== 'undefined' &&
       ngServerMode &&
       (type.encapsulation === ViewEncapsulation.ShadowDom ||
-        type.encapsulation === ViewEncapsulation.IsolatedShadowDom)
+        type.encapsulation === ViewEncapsulation.ExperimentalIsolatedShadowDom)
     ) {
       // Domino does not support shadow DOM.
       type = {...type, encapsulation: ViewEncapsulation.Emulated};
@@ -227,7 +224,7 @@ export class DomRendererFactory2 implements RendererFactory2, OnDestroy {
             tracingService,
             sharedStylesHost,
           );
-        case ViewEncapsulation.IsolatedShadowDom:
+        case ViewEncapsulation.ExperimentalIsolatedShadowDom:
           return new ShadowDomRenderer(
             eventManager,
             element,
@@ -525,7 +522,7 @@ class ShadowDomRenderer extends DefaultDomRenderer2 {
     this.shadowRoot = (hostEl as any).attachShadow({mode: 'open'});
 
     // SharedStylesHost is used to add styles to the shadow root by ShadowDom.
-    // This is optional as it is not used by IsolatedShadowDom.
+    // This is optional as it is not used by ExperimentalIsolatedShadowDom.
     if (this.sharedStylesHost) {
       this.sharedStylesHost.addHost(this.shadowRoot);
     }

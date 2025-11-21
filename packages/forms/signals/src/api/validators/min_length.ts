@@ -7,9 +7,9 @@
  */
 
 import {computed} from '@angular/core';
-import {aggregateProperty, property, validate} from '../logic';
-import {MIN_LENGTH} from '../property';
-import {FieldPath, LogicFn, PathKind} from '../types';
+import {aggregateMetadata, metadata, validate} from '../logic';
+import {MIN_LENGTH} from '../metadata';
+import {SchemaPath, LogicFn, PathKind, SchemaPathRules} from '../types';
 import {minLengthError} from '../validation_errors';
 import {
   BaseValidatorConfig,
@@ -40,19 +40,19 @@ export function minLength<
   TValue extends ValueWithLengthOrSize,
   TPathKind extends PathKind = PathKind.Root,
 >(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   minLength: number | LogicFn<TValue, number | undefined, TPathKind>,
   config?: BaseValidatorConfig<TValue, TPathKind>,
 ) {
-  const MIN_LENGTH_MEMO = property(path, (ctx) =>
+  const MIN_LENGTH_MEMO = metadata(path, (ctx) =>
     computed(() => (typeof minLength === 'number' ? minLength : minLength(ctx))),
   );
-  aggregateProperty(path, MIN_LENGTH, ({state}) => state.property(MIN_LENGTH_MEMO)!());
+  aggregateMetadata(path, MIN_LENGTH, ({state}) => state.metadata(MIN_LENGTH_MEMO)!());
   validate(path, (ctx) => {
     if (isEmpty(ctx.value())) {
       return undefined;
     }
-    const minLength = ctx.state.property(MIN_LENGTH_MEMO)!();
+    const minLength = ctx.state.metadata(MIN_LENGTH_MEMO)!();
     if (minLength === undefined) {
       return undefined;
     }

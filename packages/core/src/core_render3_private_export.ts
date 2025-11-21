@@ -62,7 +62,6 @@ export {
   ɵDeferBlockDependencyInterceptor,
   ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
   ɵDEFER_BLOCK_CONFIG,
-  Framework as ɵFramework,
   BaseDirectiveDebugMetadata as ɵBaseDirectiveDebugMetadata,
   AngularDirectiveDebugMetadata as ɵAngularDirectiveDebugMetadata,
   AngularComponentDebugMetadata as ɵAngularComponentDebugMetadata,
@@ -96,7 +95,6 @@ export {
   ɵɵcontrol,
   ɵɵcontrolCreate,
   ɵɵcomponentInstance,
-  ɵɵCopyDefinitionFeature,
   ɵɵdefineComponent,
   ɵɵdefineDirective,
   ɵɵdefineNgModule,
@@ -243,7 +241,7 @@ export {
 } from './render3/index';
 export {CONTAINER_HEADER_OFFSET as ɵCONTAINER_HEADER_OFFSET} from './render3/interfaces/container';
 export {LContext as ɵLContext} from './render3/interfaces/context';
-export {ɵCONTROL, ɵControl, ɵFieldState} from './render3/interfaces/control';
+export {ɵCONTROL, ɵControl, ɵFieldState, ɵInteropControl} from './render3/interfaces/control';
 export {setDocument as ɵsetDocument} from './render3/interfaces/document';
 export {
   compileComponent as ɵcompileComponent,
@@ -272,7 +270,11 @@ export {
 } from './render3/jit/partial';
 export {compilePipe as ɵcompilePipe} from './render3/jit/pipe';
 export {isNgModule as ɵisNgModule} from './render3/jit/util';
-export {Profiler as ɵProfiler, ProfilerEvent as ɵProfilerEvent} from './render3/profiler_types';
+export {
+  Profiler as ɵProfiler,
+  ProfilerEvent as ɵProfilerEvent,
+  Framework as ɵFramework,
+} from '../primitives/devtools';
 export {
   FrameworkAgnosticGlobalUtils as ɵFrameworkAgnosticGlobalUtils,
   GlobalDevModeUtils as ɵGlobalDevModeUtils,

@@ -26,7 +26,6 @@ import {getOutlet, sortByMatchingOutlets} from './utils/config';
 import {
   emptyPathMatch,
   match,
-  MatchResult,
   matchWithChecks,
   noLeftoversInUrl,
   split,
@@ -105,9 +104,9 @@ export class Recognizer {
       this.urlTree.queryParams,
       this.urlTree.fragment,
     );
-    // https://github.com/angular/angular/issues/47307
     // Creating the tree stringifies the query params
-    // We don't want to do this here so reassign them to the original.
+    // We don't want to do this here to preserve pre-existing behavior
+    // so reassign them to the original.
     tree.queryParams = this.urlTree.queryParams;
     routeState.url = this.urlSerializer.serialize(tree);
     return {state: routeState, tree};
@@ -129,6 +128,7 @@ export class Recognizer {
       this.rootComponentType,
       null,
       {},
+      this.injector,
     );
     try {
       const children = await this.processSegmentGroup(
@@ -358,6 +358,7 @@ export class Recognizer {
       route.component ?? route._loadedComponent ?? null,
       route,
       getResolve(route),
+      injector,
     );
     const inherited = getInherited(currentSnapshot, parentRoute, this.paramsInheritanceStrategy);
     currentSnapshot.params = Object.freeze(inherited.params);
@@ -426,6 +427,7 @@ export class Recognizer {
       route.component ?? route._loadedComponent ?? null,
       route,
       getResolve(route),
+      injector,
     );
     const inherited = getInherited(snapshot, parentRoute, this.paramsInheritanceStrategy);
     snapshot.params = Object.freeze(inherited.params);
@@ -495,10 +497,7 @@ export class Recognizer {
         runCanLoadGuards(injector, route, segments, this.urlSerializer, this.abortSignal),
       );
       if (shouldLoadResult) {
-        const cfg = await firstValueFrom(this.configLoader.loadChildren(injector, route));
-        if (!cfg) {
-          throw canLoadFails(route);
-        }
+        const cfg = await this.configLoader.loadChildren(injector, route);
         route._loadedRoutes = cfg.routes;
         route._loadedInjector = cfg.injector;
         return cfg;

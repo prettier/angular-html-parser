@@ -7,12 +7,12 @@
  */
 
 import {
+  DecoratorEntry,
   DocEntry,
   EntryType,
   FunctionSignatureMetadata,
   GenericEntry,
   MemberEntry,
-  DecoratorEntry,
   MemberTags,
   ParameterEntry,
   PropertyEntry,
@@ -34,16 +34,20 @@ import {
 } from '../entities/categorization.mjs';
 import {CodeLineRenderable} from '../entities/renderables.mjs';
 import {HasModuleName, HasRenderableToc} from '../entities/traits.mjs';
-import {getSymbolUrl} from '../symbol-context.mjs';
 import {
   getHighlighterInstance,
   insertParenthesesForDecoratorInShikiHtml,
   replaceKeywordFromShikiHtml,
 } from '../shiki/shiki.mjs';
+import {getSymbolUrl} from '../symbol-context.mjs';
 
-import {filterLifecycleMethods, mergeGettersAndSetters} from './member-transforms.mjs';
-import {formatJs} from './format-code.mjs';
 import {codeToHtml} from '../../../shared/shiki.mjs';
+import {formatJs} from './format-code.mjs';
+import {
+  filterLifecycleMethods,
+  filterMergedNamespaceMembers,
+  mergeGettersAndSetters,
+} from './member-transforms.mjs';
 
 const INDENT = '  ';
 const SPACE = ' ';
@@ -198,7 +202,10 @@ function mapDocEntryToCode(entry: DocEntry): CodeTableOfContentsData {
   }
 
   if (isInterfaceEntry(entry)) {
-    return getCodeTocData(mergeGettersAndSetters(entry.members), isDeprecated);
+    return getCodeTocData(
+      filterMergedNamespaceMembers(mergeGettersAndSetters(entry.members)),
+      isDeprecated,
+    );
   }
 
   if (isFunctionEntry(entry)) {
@@ -474,6 +481,18 @@ export function printInitializerFunctionSignatureLine(
   return `function ${res}`;
 }
 
+export function formatExtendsClause(extendsValue: string | string[] | undefined): string {
+  if (!extendsValue) {
+    return '';
+  }
+
+  if (typeof extendsValue === 'string') {
+    return ` extends ${extendsValue}`;
+  }
+
+  return extendsValue.length > 0 ? ` extends ${extendsValue.join(', ')}` : '';
+}
+
 function appendPrefixAndSuffix(entry: DocEntry, codeTocData: CodeTableOfContentsData): void {
   const appendFirstAndLastLines = (
     data: CodeTableOfContentsData,
@@ -485,7 +504,7 @@ function appendPrefixAndSuffix(entry: DocEntry, codeTocData: CodeTableOfContents
 
   if (isClassEntry(entry) || isInterfaceEntry(entry)) {
     const generics = makeGenericsText(entry.generics);
-    const extendsStr = entry.extends ? ` extends ${entry.extends}` : '';
+    const extendsStr = formatExtendsClause(entry.extends);
     const implementsStr =
       entry.implements.length > 0 ? ` implements ${entry.implements.join(' ,')}` : '';
 

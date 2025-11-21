@@ -12,8 +12,8 @@ import {FieldNode} from '../field/node';
 import {addDefaultField} from '../field/validation';
 import {FieldPathNode} from '../schema/path_node';
 import {assertPathIsCurrent} from '../schema/schema';
-import {property} from './logic';
-import {FieldContext, FieldPath, PathKind, TreeValidationResult} from './types';
+import {metadata} from './logic';
+import {FieldContext, SchemaPath, PathKind, TreeValidationResult, SchemaPathRules} from './types';
 
 /**
  * A function that takes the result of an async operation and the current field context, and maps it
@@ -71,7 +71,11 @@ export interface AsyncValidatorOptions<
    * @returns A reference to the constructed resource.
    */
   readonly factory: (params: Signal<TParams | undefined>) => ResourceRef<TResult | undefined>;
-
+  /**
+   * A function to handle errors thrown by httpResource (HTTP errors, network errors, etc.).
+   * Receives the error and the field context, returns a list of validation errors.
+   */
+  readonly onError: (error: unknown, ctx: FieldContext<TValue, TPathKind>) => TreeValidationResult;
   /**
    * A function that takes the resource result, and the current field context and maps it to a list
    * of validation errors.
@@ -83,7 +87,7 @@ export interface AsyncValidatorOptions<
    *   A targeted error will show up as an error on its target field rather than the field being validated.
    *   If a field is not given, the error is assumed to apply to the field being validated.
    */
-  readonly errors: MapToErrorsFn<TValue, TResult, TPathKind>;
+  readonly onSuccess: MapToErrorsFn<TValue, TResult, TPathKind>;
 }
 
 /**
@@ -120,8 +124,13 @@ export interface HttpValidatorOptions<TValue, TResult, TPathKind extends PathKin
    *   A targeted error will show up as an error on its target field rather than the field being validated.
    *   If a field is not given, the error is assumed to apply to the field being validated.
    */
-  readonly errors: MapToErrorsFn<TValue, TResult, TPathKind>;
+  readonly onSuccess: MapToErrorsFn<TValue, TResult, TPathKind>;
 
+  /**
+   * A function to handle errors thrown by httpResource (HTTP errors, network errors, etc.).
+   * Receives the error and the field context, returns a list of validation errors.
+   */
+  readonly onError: (error: unknown, ctx: FieldContext<TValue, TPathKind>) => TreeValidationResult;
   /**
    * The options to use when creating the httpResource.
    */
@@ -143,13 +152,13 @@ export interface HttpValidatorOptions<TValue, TResult, TPathKind extends PathKin
  * @experimental 21.0.0
  */
 export function validateAsync<TValue, TParams, TResult, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   opts: AsyncValidatorOptions<TValue, TParams, TResult, TPathKind>,
 ): void {
   assertPathIsCurrent(path);
   const pathNode = FieldPathNode.unwrapFieldPath(path);
 
-  const RESOURCE = property(path, (ctx) => {
+  const RESOURCE = metadata(path, (ctx) => {
     const params = computed(() => {
       const node = ctx.stateOf(path) as FieldNode;
       const validationState = node.validationState;
@@ -161,8 +170,9 @@ export function validateAsync<TValue, TParams, TResult, TPathKind extends PathKi
     return opts.factory(params);
   });
 
-  pathNode.logic.addAsyncErrorRule((ctx) => {
-    const res = ctx.state.property(RESOURCE)!;
+  pathNode.builder.addAsyncErrorRule((ctx) => {
+    const res = ctx.state.metadata(RESOURCE)!;
+    let errors;
     switch (res.status()) {
       case 'idle':
         return undefined;
@@ -174,11 +184,11 @@ export function validateAsync<TValue, TParams, TResult, TPathKind extends PathKi
         if (!res.hasValue()) {
           return undefined;
         }
-        const errors = opts.errors(res.value()!, ctx as FieldContext<TValue, TPathKind>);
+        errors = opts.onSuccess(res.value()!, ctx as FieldContext<TValue, TPathKind>);
         return addDefaultField(errors, ctx.field);
       case 'error':
-        // TODO: Design error handling for async validation. For now, just throw the error.
-        throw res.error();
+        errors = opts.onError(res.error(), ctx as FieldContext<TValue, TPathKind>);
+        return addDefaultField(errors, ctx.field);
     }
   });
 }
@@ -197,12 +207,13 @@ export function validateAsync<TValue, TParams, TResult, TPathKind extends PathKi
  * @experimental 21.0.0
  */
 export function validateHttp<TValue, TResult = unknown, TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<TValue, TPathKind>,
+  path: SchemaPath<TValue, SchemaPathRules.Supported, TPathKind>,
   opts: HttpValidatorOptions<TValue, TResult, TPathKind>,
 ) {
   validateAsync(path, {
     params: opts.request,
     factory: (request: Signal<any>) => httpResource(request, opts.options),
-    errors: opts.errors,
+    onSuccess: opts.onSuccess,
+    onError: opts.onError,
   });
 }

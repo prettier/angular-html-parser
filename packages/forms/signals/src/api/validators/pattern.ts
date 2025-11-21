@@ -7,9 +7,9 @@
  */
 
 import {computed} from '@angular/core';
-import {aggregateProperty, property, validate} from '../logic';
-import {PATTERN} from '../property';
-import {FieldPath, LogicFn, PathKind} from '../types';
+import {aggregateMetadata, metadata, validate} from '../logic';
+import {PATTERN} from '../metadata';
+import {SchemaPath, LogicFn, PathKind, SchemaPathRules} from '../types';
 import {patternError} from '../validation_errors';
 import {BaseValidatorConfig, getOption, isEmpty} from './util';
 
@@ -29,19 +29,19 @@ import {BaseValidatorConfig, getOption, isEmpty} from './util';
  * @experimental 21.0.0
  */
 export function pattern<TPathKind extends PathKind = PathKind.Root>(
-  path: FieldPath<string, TPathKind>,
+  path: SchemaPath<string, SchemaPathRules.Supported, TPathKind>,
   pattern: RegExp | LogicFn<string | undefined, RegExp | undefined, TPathKind>,
   config?: BaseValidatorConfig<string, TPathKind>,
 ) {
-  const PATTERN_MEMO = property(path, (ctx) =>
+  const PATTERN_MEMO = metadata(path, (ctx) =>
     computed(() => (pattern instanceof RegExp ? pattern : pattern(ctx))),
   );
-  aggregateProperty(path, PATTERN, ({state}) => state.property(PATTERN_MEMO)!());
+  aggregateMetadata(path, PATTERN, ({state}) => state.metadata(PATTERN_MEMO)!());
   validate(path, (ctx) => {
     if (isEmpty(ctx.value())) {
       return undefined;
     }
-    const pattern = ctx.state.property(PATTERN_MEMO)!();
+    const pattern = ctx.state.metadata(PATTERN_MEMO)!();
     if (pattern === undefined) {
       return undefined;
     }

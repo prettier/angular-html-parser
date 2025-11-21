@@ -7,12 +7,12 @@
  */
 
 import {Location} from '@angular/common';
-import {ɵprovideFakePlatformNavigation} from '@angular/common/testing';
 import {
   ChangeDetectionStrategy,
   Component,
   NgModule,
   ɵConsole as Console,
+  makeEnvironmentProviders,
   signal,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
@@ -35,7 +35,7 @@ import {
   RoutesRecognized,
 } from '../../index';
 
-import {provideRouter} from '../../src/provide_router';
+import {provideRouter, withPlatformNavigation} from '../../src/provide_router';
 import {
   BlankCmp,
   CollectParamsCmp,
@@ -58,6 +58,7 @@ import {
   UserCmp,
   createRoot,
   advance,
+  simulateLocationChange,
 } from './integration_helpers';
 import {guardsIntegrationSuite} from './guards.spec';
 import {lazyLoadingIntegrationSuite} from './lazy_loading.spec';
@@ -83,8 +84,12 @@ for (const browserAPI of ['navigation', 'history'] as const) {
         imports: [...ROUTER_DIRECTIVES, TestModule],
         providers: [
           {provide: Console, useValue: noopConsole},
-          provideRouter([{path: 'simple', component: SimpleCmp}]),
-          browserAPI === 'navigation' ? ɵprovideFakePlatformNavigation() : [],
+          provideRouter(
+            [{path: 'simple', component: SimpleCmp}],
+            browserAPI === 'navigation'
+              ? withPlatformNavigation()
+              : (makeEnvironmentProviders([]) as any),
+          ),
         ],
       });
     });
@@ -425,12 +430,10 @@ for (const browserAPI of ['navigation', 'history'] as const) {
       router.navigateByUrl('/team/22/user/victor');
       await advance(fixture);
 
-      location.go('/team/22/user/fedor');
-      location.historyGo(0);
+      simulateLocationChange('/team/22/user/fedor', browserAPI);
       await advance(fixture);
 
-      location.go('/team/22/user/fedor');
-      location.historyGo(0);
+      simulateLocationChange('/team/22/user/fedor', browserAPI);
       await advance(fixture);
 
       expect(fixture.nativeElement).toHaveText('team 22 [ user fedor, right:  ]');
@@ -922,17 +925,17 @@ for (const browserAPI of ['navigation', 'history'] as const) {
       expect(cmp.path.length).toEqual(2);
     });
 
-    navigationErrorsIntegrationSuite();
+    navigationErrorsIntegrationSuite(browserAPI);
     eagerUrlUpdateStrategyIntegrationSuite();
     duplicateInFlightNavigationsIntegrationSuite();
-    navigationIntegrationTestSuite();
+    navigationIntegrationTestSuite(browserAPI);
     routeDataIntegrationSuite();
     routerLinkIntegrationSpec();
-    redirectsIntegrationSuite();
+    redirectsIntegrationSuite(browserAPI);
     guardsIntegrationSuite();
     routerEventsIntegrationSuite();
     routerLinkActiveIntegrationSuite();
-    lazyLoadingIntegrationSuite();
+    lazyLoadingIntegrationSuite(browserAPI);
     routeReuseIntegrationSuite();
   });
 }

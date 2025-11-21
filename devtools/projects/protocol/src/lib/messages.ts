@@ -18,7 +18,14 @@ import {
 
 export interface DebugSignalGraphNode {
   id: string;
-  kind: string;
+  kind:
+    | 'signal'
+    | 'computed'
+    | 'effect'
+    | 'template'
+    | 'linkedSignal'
+    | 'afterRenderEffectPhase'
+    | 'unknown';
   epoch: number;
   label?: string;
   preview: Descriptor;
@@ -316,13 +323,25 @@ export interface Route {
   title?: string;
   children?: Array<Route>;
   data?: any;
+  resolvers?: any;
   path: string;
   component: string;
+  redirectTo?: string;
   isActive: boolean;
   isAux: boolean;
   isLazy: boolean;
-  isRedirect: boolean;
+  matcher?: string;
+  runGuardsAndResolvers?:
+    | 'pathParamsChange'
+    | 'pathParamsOrQueryParamsChange'
+    | 'paramsChange'
+    | 'paramsOrQueryParamsChange'
+    | 'always'
+    | (string & {});
 }
+
+type OnlyLiterals<T> = T extends string ? (string extends T ? never : T) : never;
+export type RunGuardsAndResolvers = OnlyLiterals<Route['runGuardsAndResolvers']>;
 
 export interface AngularDetection {
   // This is necessary because the runtime
@@ -373,7 +392,7 @@ export interface Events {
   inspectorEnd: () => void;
 
   getSignalGraph: (query: ElementPosition) => void;
-  latestSignalGraph: (graph: DebugSignalGraph) => void;
+  latestSignalGraph: (graph: DebugSignalGraph | null) => void;
 
   getSignalNestedProperties: (position: SignalNodePosition, path: string[]) => void;
   signalNestedProperties: (position: SignalNodePosition, data: Properties, path: string[]) => void;

@@ -238,7 +238,7 @@ export class RouterOutlet implements OnDestroy, OnInit, RouterOutletContract {
    *
    * When unset, the value of the token is `undefined` by default.
    */
-  readonly routerOutletData = input<unknown>(undefined);
+  readonly routerOutletData = input<unknown>();
 
   private parentContexts = inject(ChildrenOutletContexts);
   private location = inject(ViewContainerRef);
@@ -434,7 +434,9 @@ class OutletInjector implements Injector {
   }
 }
 
-export const INPUT_BINDER = new InjectionToken<RoutedComponentInputBinder>('');
+export const INPUT_BINDER = new InjectionToken<RoutedComponentInputBinder>(
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'Router Input Binder' : '',
+);
 
 /**
  * Injectable used as a tree-shakable provider for opting in to binding router data to component

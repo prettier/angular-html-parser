@@ -23,6 +23,9 @@
   "dependencies": {
     "tslib": "^2.3.0"
   },
+  "devDependencies": {
+    "@types/dom-navigation": "^1.0.5"
+  },
   "peerDependencies": {
     "@angular/core": "0.0.0-PLACEHOLDER",
     "@angular/common": "0.0.0-PLACEHOLDER",

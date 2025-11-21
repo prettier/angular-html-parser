@@ -25,7 +25,7 @@ import type {Subscription} from 'rxjs';
 
 import {HttpRequest} from './request';
 import {HttpClient} from './client';
-import {HttpErrorResponse, HttpEventType, HttpProgressEvent, HttpResponseBase} from './response';
+import {HttpErrorResponse, HttpEventType, HttpProgressEvent} from './response';
 import {HttpHeaders} from './headers';
 import {HttpParams} from './params';
 import {HttpResourceRef, HttpResourceOptions, HttpResourceRequest} from './resource_api';
@@ -288,6 +288,7 @@ function normalizeRequest(
       transferCache: unwrappedRequest.transferCache,
       credentials: unwrappedRequest.credentials as RequestCredentials,
       referrer: unwrappedRequest.referrer,
+      referrerPolicy: unwrappedRequest.referrerPolicy as ReferrerPolicy,
       integrity: unwrappedRequest.integrity,
       timeout: unwrappedRequest.timeout,
     },

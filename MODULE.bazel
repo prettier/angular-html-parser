@@ -5,27 +5,27 @@ module(
 )
 
 bazel_dep(name = "rules_pkg", version = "1.1.0")
-bazel_dep(name = "rules_nodejs", version = "6.5.2")
-bazel_dep(name = "aspect_rules_ts", version = "3.7.0")
-bazel_dep(name = "aspect_rules_js", version = "2.6.2")
-bazel_dep(name = "aspect_rules_esbuild", version = "0.23.0")
+bazel_dep(name = "rules_nodejs", version = "6.6.2")
+bazel_dep(name = "aspect_rules_ts", version = "3.7.1")
+bazel_dep(name = "aspect_rules_js", version = "2.8.1")
+bazel_dep(name = "aspect_rules_esbuild", version = "0.24.0")
 bazel_dep(name = "aspect_rules_jasmine", version = "2.0.0")
 bazel_dep(name = "aspect_rules_rollup", version = "2.0.1")
 bazel_dep(name = "bazel_skylib", version = "1.8.2")
 bazel_dep(name = "aspect_bazel_lib", version = "2.21.2")
-bazel_dep(name = "tar.bzl", version = "0.6.0")
-bazel_dep(name = "yq.bzl", version = "0.3.1")
+bazel_dep(name = "tar.bzl", version = "0.7.0")
+bazel_dep(name = "yq.bzl", version = "0.3.2")
 bazel_dep(name = "rules_angular")
 git_override(
     module_name = "rules_angular",
-    commit = "c3721b6ece2050a59a97562e3b95527a3092b03b",
+    commit = "74d8baec22a5ffd3a1a36bac252399fa125a6c4b",
     remote = "https://github.com/devversion/rules_angular.git",
 )
 
 bazel_dep(name = "devinfra")
 git_override(
     module_name = "devinfra",
-    commit = "56543b10ddb9941c76b4413cc24ec3fa7a43cf5c",
+    commit = "f47684669736e28fd77eab64e65b2952c8a948ee",
     remote = "https://github.com/angular/dev-infra.git",
 )
 
@@ -39,7 +39,7 @@ git_override(
 bazel_dep(name = "rules_browsers")
 git_override(
     module_name = "rules_browsers",
-    commit = "0e04a5443e783ef983c84314e311e68410dd82e1",
+    commit = "f066f614451374721fac787fb1f0dbbd818d50d4",
     remote = "https://github.com/devversion/rules_browsers.git",
 )
 
@@ -132,14 +132,14 @@ register_toolchains(
     "@devinfra//bazel/git-toolchain:git_windows_toolchain",
 )
 
-CLDR_VERSION = "41"
+CLDR_VERSION = "47"
 
 cldr_json_data = use_repo_rule("//packages/common/locales/generate-locales-tool:cldr-data.bzl", "cldr_json_data_repository")
 
 cldr_json_data(
     name = "cldr_json_data",
     urls = {
-        "https://github.com/unicode-org/cldr-json/releases/download/%s.0.0/cldr-%s.0.0-json-full.zip" % (CLDR_VERSION, CLDR_VERSION): "649b76647269e32b1b0a5f7b6eed52e9e63a1581f1afdcf4f6771e49c9713614",
+        "https://github.com/unicode-org/cldr-json/releases/download/%s.0.0/cldr-%s.0.0-json-full.zip" % (CLDR_VERSION, CLDR_VERSION): "bbb9a9aac2dfc534bd18288678a5984023d11d22f712f3c33425f3214bd1def6",
     },
 )
 
@@ -148,7 +148,7 @@ cldr_xml_data = use_repo_rule("//packages/common/locales/generate-locales-tool:c
 cldr_xml_data(
     name = "cldr_xml_data",
     urls = {
-        "https://github.com/unicode-org/cldr/releases/download/release-%s/cldr-common-%s.0.zip" % (CLDR_VERSION, CLDR_VERSION): "823c6170c41e2de2c229574e8a436332d25f1c9723409867fe721e00bc92d853",
+        "https://github.com/unicode-org/cldr/releases/download/release-%s/core.zip" % CLDR_VERSION: "d5ee2abac64158c04884a722f8ef4830ea22b6c74aac20185be2838db8eda788",
     },
 )
 

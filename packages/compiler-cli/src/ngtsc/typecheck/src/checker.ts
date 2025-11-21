@@ -106,7 +106,7 @@ import {TypeCheckShimGenerator} from './shim';
 import {DirectiveSourceManager} from './source';
 import {findTypeCheckBlock, getSourceMapping, TypeCheckSourceResolver} from './tcb_util';
 import {SymbolBuilder} from './template_symbol_builder';
-import {ExpressionIdentifier, findAllMatchingNodes, hasExpressionIdentifier} from './comments';
+import {findAllMatchingNodes} from './comments';
 
 const REGISTRY = new DomElementSchemaRegistry();
 /**
@@ -184,6 +184,15 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
   ): TmplAstHostElement | null {
     const {data} = this.getLatestComponentState(directive, optimizeFor);
     return data?.hostElement ?? null;
+  }
+
+  getDirectivesOfNode(
+    component: ts.ClassDeclaration,
+    node: TmplAstElement | TmplAstTemplate,
+  ): TypeCheckableDirectiveMeta[] | null {
+    return (
+      this.getLatestComponentState(component).data?.boundTarget.getDirectivesOfNode(node) ?? null
+    );
   }
 
   getUsedDirectives(component: ts.ClassDeclaration): TypeCheckableDirectiveMeta[] | null {

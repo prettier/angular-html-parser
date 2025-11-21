@@ -47,6 +47,9 @@ import {NgZone} from './zone/ng_zone';
  * ```
  *
  * @publicApi
+ *
+ * @see [Unhandled errors in Angular](best-practices/error-handling)
+ *
  */
 export class ErrorHandler {
   /**
@@ -65,7 +68,6 @@ export class ErrorHandler {
 export const INTERNAL_APPLICATION_ERROR_HANDLER = new InjectionToken<(e: any) => void>(
   typeof ngDevMode === 'undefined' || ngDevMode ? 'internal error handler' : '',
   {
-    providedIn: 'root',
     factory: () => {
       // The user's error handler may depend on things that create a circular dependency
       // so we inject it lazily.
@@ -106,7 +108,6 @@ export const errorHandlerEnvironmentInitializer = {
 const globalErrorListeners = new InjectionToken<void>(
   typeof ngDevMode !== undefined && ngDevMode ? 'GlobalErrorListeners' : '',
   {
-    providedIn: 'root',
     factory: () => {
       if (typeof ngServerMode !== 'undefined' && ngServerMode) {
         return;
@@ -162,6 +163,8 @@ const globalErrorListeners = new InjectionToken<void>(
  * Provides an environment initializer which forwards unhandled errors to the ErrorHandler.
  *
  * The listeners added are for the window's 'unhandledrejection' and 'error' events.
+ *
+ * @see [Global error listeners](best-practices/error-handling#global-error-listeners)
  *
  * @publicApi
  */

@@ -205,7 +205,7 @@ export type ComponentInputBindingFeature = RouterFeature<RouterFeatureKind.Compo
 export function convertToParamMap(params: Params): ParamMap;
 
 // @public
-export function createUrlTreeFromSnapshot(relativeTo: ActivatedRouteSnapshot, commands: readonly any[], queryParams?: Params | null, fragment?: string | null): UrlTree;
+export function createUrlTreeFromSnapshot(relativeTo: ActivatedRouteSnapshot, commands: readonly any[], queryParams?: Params | null, fragment?: string | null, urlSerializer?: DefaultUrlSerializer): UrlTree;
 
 // @public
 export type Data = {
@@ -415,6 +415,7 @@ export interface NavigationBehaviorOptions {
     readonly info?: unknown;
     onSameUrlNavigation?: OnSameUrlNavigation;
     replaceUrl?: boolean;
+    readonly scroll?: 'manual' | 'after-transition';
     skipLocationChange?: boolean;
     state?: {
         [k: string]: any;
@@ -838,7 +839,7 @@ export { RouterLink as RouterLinkWithHref }
 
 // @public
 export class RouterLinkActive implements OnChanges, OnDestroy, AfterContentInit {
-    constructor(router: Router, element: ElementRef, renderer: Renderer2, cdr: ChangeDetectorRef, link?: RouterLink | undefined);
+    constructor(router: Router, element: ElementRef, renderer: Renderer2, cdr: ChangeDetectorRef);
     ariaCurrentWhenActive?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false;
     // (undocumented)
     get isActive(): boolean;
@@ -856,7 +857,7 @@ export class RouterLinkActive implements OnChanges, OnDestroy, AfterContentInit 
     // (undocumented)
     static ɵdir: i0.ɵɵDirectiveDeclaration<RouterLinkActive, "[routerLinkActive]", ["routerLinkActive"], { "routerLinkActiveOptions": { "alias": "routerLinkActiveOptions"; "required": false; }; "ariaCurrentWhenActive": { "alias": "ariaCurrentWhenActive"; "required": false; }; "routerLinkActive": { "alias": "routerLinkActive"; "required": false; }; }, { "isActiveChange": "isActiveChange"; }, ["links"], never, true, never>;
     // (undocumented)
-    static ɵfac: i0.ɵɵFactoryDeclaration<RouterLinkActive, [null, null, null, null, { optional: true; }]>;
+    static ɵfac: i0.ɵɵFactoryDeclaration<RouterLinkActive, never>;
 }
 
 // @public
@@ -982,13 +983,16 @@ export class Scroll {
     constructor(
     routerEvent: NavigationEnd | NavigationSkipped,
     position: [number, number] | null,
-    anchor: string | null);
+    anchor: string | null,
+    scrollBehavior?: "manual" | "after-transition" | undefined);
     // (undocumented)
     readonly anchor: string | null;
     // (undocumented)
     readonly position: [number, number] | null;
     // (undocumented)
     readonly routerEvent: NavigationEnd | NavigationSkipped;
+    // (undocumented)
+    readonly scrollBehavior?: "manual" | "after-transition" | undefined;
     // (undocumented)
     toString(): string;
     // (undocumented)

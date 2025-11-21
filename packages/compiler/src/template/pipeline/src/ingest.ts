@@ -21,10 +21,10 @@ import {BindingParser} from '../../../template_parser/binding_parser';
 import * as ir from '../ir';
 
 import {
-  TemplateCompilationMode,
   CompilationUnit,
   ComponentCompilationJob,
   HostBindingCompilationJob,
+  TemplateCompilationMode,
   type CompilationJob,
   type ViewCompilationUnit,
 } from './compilation';
@@ -1202,7 +1202,7 @@ function convertAst(
       convertSourceSpan(ast.span, baseSourceSpan),
     );
   } else if (ast instanceof e.RegularExpressionLiteral) {
-    return new o.RegularExpressionLiteral(ast.body, ast.flags, baseSourceSpan);
+    return new o.RegularExpressionLiteralExpr(ast.body, ast.flags, baseSourceSpan);
   } else {
     throw new Error(
       `Unhandled expression type "${ast.constructor.name}" in file "${baseSourceSpan?.start.file.url}"`,
@@ -1348,9 +1348,9 @@ function ingestElementBindings(
       ),
     );
 
-    // If the input name is 'control', this could be a form control binding which requires a
+    // If the input name is 'field', this could be a form control binding which requires a
     // `ControlCreateOp` to properly initialize.
-    if (input.type === e.BindingType.Property && input.name === 'control') {
+    if (input.type === e.BindingType.Property && input.name === 'field') {
       unit.create.push(ir.createControlCreateOp(input.sourceSpan));
     }
   }

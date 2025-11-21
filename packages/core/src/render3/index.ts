@@ -6,7 +6,6 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import {ɵɵdefineComponent, ɵɵdefineDirective, ɵɵdefineNgModule, ɵɵdefinePipe} from './definition';
-import {ɵɵCopyDefinitionFeature} from './features/copy_definition_feature';
 import {ɵɵHostDirectivesFeature} from './features/host_directives_feature';
 import {ɵɵInheritDefinitionFeature} from './features/inherit_definition_feature';
 import {ɵɵNgOnChangesFeature} from './features/ng_onchanges_feature';
@@ -30,7 +29,6 @@ import {
 } from './interfaces/public_definitions';
 import {ɵɵsetComponentScope, ɵɵsetNgModuleScope} from './scope';
 import {
-  Framework,
   BaseDirectiveDebugMetadata,
   AngularDirectiveDebugMetadata,
   AngularComponentDebugMetadata,
@@ -214,7 +212,6 @@ export {
   ComponentDef,
   ComponentTemplate,
   ComponentType,
-  Framework,
   BaseDirectiveDebugMetadata,
   AngularDirectiveDebugMetadata,
   AngularComponentDebugMetadata,
@@ -233,7 +230,6 @@ export {
   getRenderedText,
   PipeDef,
   ɵɵComponentDeclaration,
-  ɵɵCopyDefinitionFeature,
   ɵɵdefineComponent,
   ɵɵdefineDirective,
   ɵɵdefineNgModule,

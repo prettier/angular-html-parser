@@ -14,38 +14,41 @@ import {
   ComponentRef,
   createComponent,
   DestroyRef,
+  effect,
   ElementRef,
   EnvironmentInjector,
   inject,
   Injector,
+  input,
+  output,
+  PendingTasks,
   PLATFORM_ID,
   Type,
   ViewContainerRef,
   ViewEncapsulation,
-  PendingTasks,
-  output,
-  input,
-  effect,
 } from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {TOC_SKIP_CONTENT_MARKER, NavigationState} from '../../../services';
-import {TableOfContents} from '../../table-of-contents/table-of-contents.component';
-import {IconComponent} from '../../icon/icon.component';
-import {handleHrefClickEventWithRouter} from '../../../utils';
-import {Snippet} from '../../../interfaces';
 import {Router} from '@angular/router';
 import {fromEvent} from 'rxjs';
+import {Snippet} from '../../../interfaces';
+import {NavigationState, TOC_SKIP_CONTENT_MARKER} from '../../../services';
+import {handleHrefClickEventWithRouter} from '../../../utils';
+import {IconComponent} from '../../icon/icon.component';
+import {TableOfContents} from '../../table-of-contents/table-of-contents.component';
 
+import {DomSanitizer} from '@angular/platform-browser';
 import {Breadcrumb} from '../../breadcrumb/breadcrumb.component';
 import {CopySourceCodeButton} from '../../copy-source-code-button/copy-source-code-button.component';
 import {ExampleViewer} from '../example-viewer/example-viewer.component';
-import {DomSanitizer} from '@angular/platform-browser';
+import {TabGroup} from '../../tab-group/tab-group.component';
 
 const TOC_HOST_ELEMENT_NAME = 'docs-table-of-contents';
 export const ASSETS_EXAMPLES_PATH = 'assets/content/examples';
 export const DOCS_VIEWER_SELECTOR = 'docs-viewer, main[docsViewer]';
 export const DOCS_CODE_SELECTOR = '.docs-code';
 export const DOCS_CODE_MUTLIFILE_SELECTOR = '.docs-code-multifile';
+export const DOCS_CODE_TAB_GROUP_SELECTOR = '.docs-tab-group';
+export const DOCS_CODE_TAB_SELECTOR = '.docs-tab';
 // TODO: Update the branch/sha
 export const GITHUB_CONTENT_URL = 'https://github.com/angular/angular/blob/main/';
 
@@ -118,6 +121,9 @@ export class DocViewer {
       // In case when content contains static code snippets, then create buttons
       // responsible for copy source code.
       this.loadCopySourceCodeButtons();
+      // In case when content contains tabs, create tabs component and move
+      // content in a tab into tab panel.
+      this.constructTabs(contentContainer);
     }
 
     // Display Breadcrumb component if the `<docs-breadcrumb>` element exists
@@ -165,9 +171,16 @@ export class DocViewer {
       return;
     }
 
-    const firstHeading = element.querySelector<HTMLHeadingElement>('h2,h3[id]');
+    let firstHeading = element.querySelector<HTMLElement>('h2,h3[id]');
     if (!firstHeading) {
       return;
+    }
+
+    // If the first header is in a card container element, place TOC element
+    // before the container.
+    const parentEl = firstHeading.parentElement;
+    if (parentEl && parentEl.classList.contains('docs-card-container-header')) {
+      firstHeading = parentEl.parentElement;
     }
 
     // Since the content of the main area is dynamically created and there is
@@ -221,6 +234,8 @@ export class DocViewer {
       name: tab.getAttribute('path') ?? tab.getAttribute('header') ?? '',
       sanitizedContent: this.sanitizer.bypassSecurityTrustHtml(tab.innerHTML),
       visibleLinesRange: tab.getAttribute('visibleLines') ?? undefined,
+      shell: tab.classList.contains('shell'),
+      title: tab.getAttribute('header') ?? undefined,
     }));
   }
 
@@ -243,6 +258,7 @@ export class DocViewer {
         ? this.sanitizer.bypassSecurityTrustHtml(content.outerHTML)
         : '',
       visibleLinesRange: visibleLines,
+      shell: element.classList.contains('shell'),
     };
   }
 
@@ -250,7 +266,9 @@ export class DocViewer {
   // the code
   private loadCopySourceCodeButtons(): void {
     const staticCodeSnippets = <Element[]>(
-      Array.from(this.elementRef.nativeElement.querySelectorAll('.docs-code:not([mermaid])'))
+      Array.from(
+        this.elementRef.nativeElement.querySelectorAll('.docs-code:not([mermaid],.docs-no-copy)'),
+      )
     );
 
     for (let codeSnippet of staticCodeSnippets) {
@@ -282,7 +300,7 @@ export class DocViewer {
    */
   private renderComponent<T>(
     type: Type<T>,
-    hostElement: HTMLElement,
+    hostElement: Element,
     inputs?: {[key: string]: unknown},
   ): ComponentRef<T> {
     const componentRef = createComponent(type, {
@@ -358,6 +376,20 @@ export class DocViewer {
     for (const anchor of Array.from(element.querySelectorAll(`a[href^="#"]:not(a[download])`))) {
       const url = new URL((anchor as HTMLAnchorElement).href);
       (anchor as HTMLAnchorElement).href = this.location.path() + url.hash;
+    }
+  }
+
+  /** Replace .docs-tab-group and .docs-tab with tabs component. */
+  private constructTabs(element: HTMLElement) {
+    for (const tabGroup of Array.from(element.querySelectorAll(DOCS_CODE_TAB_GROUP_SELECTOR))) {
+      const tabs = Array.from(tabGroup.querySelectorAll(DOCS_CODE_TAB_SELECTOR)).map((t) => ({
+        label: t.getAttribute('label') ?? '',
+        panel: t,
+      }));
+
+      const tabGroupRef = this.viewContainer.createComponent(TabGroup);
+      tabGroupRef.setInput('tabs', tabs);
+      tabGroup.parentElement!.replaceChild(tabGroupRef.location.nativeElement, tabGroup);
     }
   }
 }

@@ -16,6 +16,7 @@ import {
   signal,
   viewChild,
   ChangeDetectionStrategy,
+  linkedSignal,
 } from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {ContainerType} from '../../../../../../../../../../protocol';
@@ -42,10 +43,15 @@ const parseValue = (value: EditorResult): EditorResult => {
   styleUrls: ['./property-editor.component.scss'],
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(click)': 'onClick()',
+  },
 })
 export class PropertyEditorComponent {
   readonly key = input.required<string>();
   readonly initialValue = input.required<EditorResult>();
+  readonly previewValue = input.required<string>();
+
   readonly containerType = input<ContainerType>();
 
   readonly updateValue = output<EditorResult>();
@@ -55,21 +61,14 @@ export class PropertyEditorComponent {
   readState = PropertyEditorState.Read;
   writeState = PropertyEditorState.Write;
 
-  readonly valueToSubmit = signal<EditorResult | undefined>(undefined);
+  readonly valueToSubmit = linkedSignal<EditorResult | undefined>(this.initialValue);
   readonly currentPropertyState = signal(this.readState);
 
   constructor() {
-    afterNextRender({
-      read: () => {
-        this.valueToSubmit.set(this.initialValue());
-      },
-    });
-
     effect(() => {
       const editor = this.inputEl()?.nativeElement;
       if (editor && this.currentPropertyState() === this.writeState) {
         editor.focus();
-        editor.select();
       }
     });
   }
@@ -89,6 +88,13 @@ export class PropertyEditorComponent {
     if (this.currentPropertyState() === this.readState) {
       this.currentPropertyState.set(this.writeState);
     }
+  }
+
+  onFocus() {
+    // A slight timeout is required for text selection.
+    setTimeout(() => {
+      this.inputEl()?.nativeElement.select();
+    });
   }
 
   onBlur(): void {

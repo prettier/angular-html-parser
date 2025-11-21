@@ -7,13 +7,13 @@
  */
 
 import {
-  ANIMATION_QUEUE,
+  AnimationClassBindingFn,
   AnimationCallbackEvent,
   AnimationFunction,
   MAX_ANIMATION_TIMEOUT,
 } from '../../animation/interfaces';
 import {getLView, getCurrentTNode} from '../state';
-import {RENDERER, INJECTOR, CONTEXT, LView, ANIMATIONS} from '../interfaces/view';
+import {RENDERER, INJECTOR, CONTEXT, LView} from '../interfaces/view';
 import {getNativeByTNode} from '../util/view_utils';
 import {performanceMarkFeature} from '../../util/performance';
 import {Renderer} from '../interfaces/renderer';
@@ -21,8 +21,6 @@ import {NgZone} from '../../zone';
 import {determineLongestAnimation, allLeavingAnimations} from '../../animation/longest_animation';
 import {TNode} from '../interfaces/node';
 import {promiseWithResolvers} from '../../util/promise_with_resolvers';
-import {Injector} from '../../di';
-import {afterEveryRender} from '../after_render/hooks';
 
 import {
   addAnimationToLView,
@@ -41,11 +39,13 @@ import {
   getLViewEnterAnimations,
   getLViewLeaveAnimations,
   isLongestAnimation,
+  leaveAnimationFunctionCleanup,
   longestAnimations,
   noOpAnimationComplete,
   trackEnterClasses,
   trackLeavingNodes,
 } from '../../animation/utils';
+import {initializeAnimationQueueScheduler, queueEnterAnimations} from '../../animation/queue';
 
 /**
  * Instruction to handle the `animate.enter` behavior for class bindings.
@@ -55,7 +55,7 @@ import {
  *
  * @codeGenApi
  */
-export function ɵɵanimateEnter(value: string | Function): typeof ɵɵanimateEnter {
+export function ɵɵanimateEnter(value: string | AnimationClassBindingFn): typeof ɵɵanimateEnter {
   performanceMarkFeature('NgAnimateEnter');
 
   if ((typeof ngServerMode !== 'undefined' && ngServerMode) || !areAnimationSupported) {
@@ -69,19 +69,29 @@ export function ɵɵanimateEnter(value: string | Function): typeof ɵɵanimateEn
   }
 
   const tNode = getCurrentTNode()!;
-
   cancelLeavingNodes(tNode, lView);
 
   addAnimationToLView(getLViewEnterAnimations(lView), tNode, () =>
     runEnterAnimation(lView, tNode, value),
   );
 
-  queueEnterAnimations(lView);
+  initializeAnimationQueueScheduler(lView[INJECTOR]);
+
+  // We have to queue here due to the animation instruction being invoked after the element
+  // instruction. The DOM node has to exist before we can queue an animation. Any node that
+  // is not inside of control flow needs to get queued here. For nodes inside of control
+  // flow, those are queued in node_manipulation.ts and are deduped by a Set in the animation
+  // queue.
+  queueEnterAnimations(lView[INJECTOR], getLViewEnterAnimations(lView));
 
   return ɵɵanimateEnter; // For chaining
 }
 
-export function runEnterAnimation(lView: LView, tNode: TNode, value: string | Function) {
+export function runEnterAnimation(
+  lView: LView,
+  tNode: TNode,
+  value: string | AnimationClassBindingFn,
+): void {
   const nativeElement = getNativeByTNode(tNode, lView) as HTMLElement;
 
   ngDevMode && assertElementNodes(nativeElement, 'animate.enter');
@@ -92,7 +102,7 @@ export function runEnterAnimation(lView: LView, tNode: TNode, value: string | Fu
   // Retrieve the actual class list from the value. This will resolve any resolver functions from
   // bindings.
   const activeClasses = getClassListFromValue(value);
-  const cleanupFns: Function[] = [];
+  const cleanupFns: VoidFunction[] = [];
 
   // In the case where multiple animations are happening on the element, we need
   // to get the longest animation to ensure we don't complete animations early.
@@ -190,14 +200,20 @@ export function ɵɵanimateEnterListener(value: AnimationFunction): typeof ɵɵa
     return ɵɵanimateEnterListener;
   }
   const tNode = getCurrentTNode()!;
-
   cancelLeavingNodes(tNode, lView);
 
   addAnimationToLView(getLViewEnterAnimations(lView), tNode, () =>
     runEnterAnimationFunction(lView, tNode, value),
   );
 
-  queueEnterAnimations(lView);
+  initializeAnimationQueueScheduler(lView[INJECTOR]);
+
+  // We have to queue here due to the animation instruction being invoked after the element
+  // instruction. The DOM node has to exist before we can queue an animation. Any node that
+  // is not inside of control flow needs to get queued here. For nodes inside of control
+  // flow, those are queued in node_manipulation.ts and are deduped by a Set in the animation
+  // queue.
+  queueEnterAnimations(lView[INJECTOR], getLViewEnterAnimations(lView));
 
   return ɵɵanimateEnterListener;
 }
@@ -222,7 +238,7 @@ function runEnterAnimationFunction(lView: LView, tNode: TNode, value: AnimationF
  *
  * @codeGenApi
  */
-export function ɵɵanimateLeave(value: string | Function): typeof ɵɵanimateLeave {
+export function ɵɵanimateLeave(value: string | AnimationClassBindingFn): typeof ɵɵanimateLeave {
   performanceMarkFeature('NgAnimateLeave');
 
   if ((typeof ngServerMode !== 'undefined' && ngServerMode) || !areAnimationSupported) {
@@ -238,12 +254,13 @@ export function ɵɵanimateLeave(value: string | Function): typeof ɵɵanimateLe
   }
 
   const tNode = getCurrentTNode()!;
+  cancelLeavingNodes(tNode, lView);
 
   addAnimationToLView(getLViewLeaveAnimations(lView), tNode, () =>
     runLeaveAnimations(lView, tNode, value),
   );
 
-  enableAnimationQueueScheduler(lView[INJECTOR]);
+  initializeAnimationQueueScheduler(lView[INJECTOR]);
 
   return ɵɵanimateLeave; // For chaining
 }
@@ -251,7 +268,7 @@ export function ɵɵanimateLeave(value: string | Function): typeof ɵɵanimateLe
 function runLeaveAnimations(
   lView: LView,
   tNode: TNode,
-  value: string | Function,
+  value: string | AnimationClassBindingFn,
 ): {promise: Promise<void>; resolve: VoidFunction} {
   const {promise, resolve} = promiseWithResolvers<void>();
   const nativeElement = getNativeByTNode(tNode, lView) as Element;
@@ -293,7 +310,7 @@ function animateLeaveClassRunner(
   ngZone: NgZone,
 ) {
   cancelAnimationsIfRunning(el, renderer);
-  const cleanupFns: Function[] = [];
+  const cleanupFns: VoidFunction[] = [];
   const resolvers = getLViewLeaveAnimations(lView).get(tNode.index)?.resolvers;
 
   const handleOutAnimationEnd = (event: AnimationEvent | TransitionEvent | CustomEvent) => {
@@ -370,13 +387,15 @@ export function ɵɵanimateLeaveListener(value: AnimationFunction): typeof ɵɵa
 
   const lView = getLView();
   const tNode = getCurrentTNode()!;
+  cancelLeavingNodes(tNode, lView);
+
   allLeavingAnimations.add(lView);
 
   addAnimationToLView(getLViewLeaveAnimations(lView), tNode, () =>
     runLeaveAnimationFunction(lView, tNode, value),
   );
 
-  enableAnimationQueueScheduler(lView[INJECTOR]);
+  initializeAnimationQueueScheduler(lView[INJECTOR]);
 
   return ɵɵanimateLeaveListener; // For chaining
 }
@@ -388,83 +407,79 @@ function runLeaveAnimationFunction(
   lView: LView,
   tNode: TNode,
   value: AnimationFunction,
-): Promise<void> {
+): {promise: Promise<void>; resolve: VoidFunction} {
   const {promise, resolve} = promiseWithResolvers<void>();
   const nativeElement = getNativeByTNode(tNode, lView) as Element;
 
   ngDevMode && assertElementNodes(nativeElement, 'animate.leave');
 
+  const cleanupFns: VoidFunction[] = [];
   const renderer = lView[RENDERER];
   const animationsDisabled = areAnimationsDisabled(lView);
   const ngZone = lView[INJECTOR]!.get(NgZone);
   const maxAnimationTimeout = lView[INJECTOR]!.get(MAX_ANIMATION_TIMEOUT);
 
+  (getLViewLeaveAnimations(lView).get(tNode.index)!.resolvers ??= []).push(resolve);
+  const resolvers = getLViewLeaveAnimations(lView).get(tNode.index)?.resolvers;
+
   if (animationsDisabled) {
-    resolve();
+    leaveAnimationFunctionCleanup(
+      lView,
+      tNode,
+      nativeElement as HTMLElement,
+      resolvers,
+      cleanupFns,
+    );
   } else {
-    const timeoutId = setTimeout(() => {
-      clearLeavingNodes(tNode, nativeElement as HTMLElement);
-      resolve();
-    }, maxAnimationTimeout);
+    const timeoutId = setTimeout(
+      () =>
+        leaveAnimationFunctionCleanup(
+          lView,
+          tNode,
+          nativeElement as HTMLElement,
+          resolvers,
+          cleanupFns,
+        ),
+      maxAnimationTimeout,
+    );
 
     const event: AnimationCallbackEvent = {
       target: nativeElement,
       animationComplete: () => {
-        clearLeavingNodes(tNode, nativeElement as HTMLElement);
+        leaveAnimationFunctionCleanup(
+          lView,
+          tNode,
+          nativeElement as HTMLElement,
+          resolvers,
+          cleanupFns,
+        );
         clearTimeout(timeoutId);
-        resolve();
       },
     };
     trackLeavingNodes(tNode, nativeElement as HTMLElement);
 
     ngZone.runOutsideAngular(() => {
-      renderer.listen(
-        nativeElement,
-        'animationend',
-        () => {
-          resolve();
-        },
-        {once: true},
+      cleanupFns.push(
+        renderer.listen(
+          nativeElement,
+          'animationend',
+          () => {
+            leaveAnimationFunctionCleanup(
+              lView,
+              tNode,
+              nativeElement as HTMLElement,
+              resolvers,
+              cleanupFns,
+            );
+            clearTimeout(timeoutId);
+          },
+          {once: true},
+        ),
       );
     });
     value.call(lView[CONTEXT], event);
   }
 
   // Ensure cleanup if the LView is destroyed before the animation runs.
-  return promise;
-}
-
-function queueEnterAnimations(lView: LView) {
-  enableAnimationQueueScheduler(lView[INJECTOR]);
-  const enterAnimations = lView[ANIMATIONS]?.enter;
-  if (enterAnimations) {
-    const animationQueue = lView[INJECTOR].get(ANIMATION_QUEUE);
-    for (const [_, nodeAnimations] of enterAnimations) {
-      for (const animateFn of nodeAnimations.animateFns) {
-        animationQueue.queue.add(animateFn);
-      }
-    }
-  }
-}
-
-function enableAnimationQueueScheduler(injector: Injector) {
-  const animationQueue = injector.get(ANIMATION_QUEUE);
-  // We only need to schedule the animation queue runner once per application.
-  if (!animationQueue.isScheduled) {
-    afterEveryRender(
-      () => {
-        runQueuedAnimations(injector);
-      },
-      {injector},
-    );
-    animationQueue.isScheduled = true;
-  }
-}
-
-function runQueuedAnimations(injector: Injector) {
-  const animationQueue = injector.get(ANIMATION_QUEUE);
-  for (let animateFn of animationQueue.queue) {
-    animateFn();
-  }
-  animationQueue.queue.clear();
+  return {promise, resolve};
 }

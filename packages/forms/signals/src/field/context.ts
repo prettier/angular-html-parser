@@ -7,7 +7,15 @@
  */
 
 import {computed, Signal, untracked, WritableSignal} from '@angular/core';
-import {FieldContext, FieldPath, FieldState, FieldTree} from '../api/types';
+import {AbstractControl} from '@angular/forms';
+import {
+  FieldContext,
+  FieldState,
+  FieldTree,
+  SchemaPath,
+  SchemaPathRules,
+  SchemaPathTree,
+} from '../api/types';
 import {FieldPathNode} from '../schema/path_node';
 import {isArray} from '../util/type_guards';
 import type {FieldNode} from './node';
@@ -25,7 +33,10 @@ export class FieldNodeContext implements FieldContext<unknown> {
    * actually change, as they only place we currently track fields moving within the parent
    * structure is for arrays, and paths do not currently support array indexing.
    */
-  private readonly cache = new WeakMap<FieldPath<unknown>, Signal<FieldTree<unknown>>>();
+  private readonly cache = new WeakMap<
+    SchemaPath<unknown, SchemaPathRules>,
+    Signal<FieldTree<unknown>>
+  >();
 
   constructor(
     /** The field node this context corresponds to. */
@@ -37,7 +48,7 @@ export class FieldNodeContext implements FieldContext<unknown> {
    * @param target The path to resolve
    * @returns The field corresponding to the target path.
    */
-  private resolve<U>(target: FieldPath<U>): FieldTree<U> {
+  private resolve<U>(target: SchemaPath<U, SchemaPathRules>): FieldTree<U> {
     if (!this.cache.has(target)) {
       const resolver = computed<FieldTree<unknown>>(() => {
         const targetPathNode = FieldPathNode.unwrapFieldPath(target);
@@ -50,7 +61,7 @@ export class FieldNodeContext implements FieldContext<unknown> {
         // applied schema.
         let field: FieldNode | undefined = this.node;
         let stepsRemaining = getBoundPathDepth();
-        while (stepsRemaining > 0 || !field.structure.logic.hasLogic(targetPathNode.root.logic)) {
+        while (stepsRemaining > 0 || !field.structure.logic.hasLogic(targetPathNode.root.builder)) {
           stepsRemaining--;
           field = field.structure.parent;
           if (field === undefined) {
@@ -96,6 +107,10 @@ export class FieldNodeContext implements FieldContext<unknown> {
     return this.node.structure.keyInParent;
   }
 
+  get pathKeys(): Signal<readonly string[]> {
+    return this.node.structure.pathKeys;
+  }
+
   readonly index = computed(() => {
     // Attempt to read the key first, this will throw an error if we're on a root field.
     const key = this.key();
@@ -107,7 +122,16 @@ export class FieldNodeContext implements FieldContext<unknown> {
     return Number(key);
   });
 
-  readonly fieldOf = <P>(p: FieldPath<P>) => this.resolve(p);
-  readonly stateOf = <P>(p: FieldPath<P>) => this.resolve(p)();
-  readonly valueOf = <P>(p: FieldPath<P>) => this.resolve(p)().value();
+  readonly fieldTreeOf = <TModel>(p: SchemaPathTree<TModel>) => this.resolve<TModel>(p);
+  readonly stateOf = <TModel>(p: SchemaPath<TModel, SchemaPathRules>) => this.resolve<TModel>(p)();
+  readonly valueOf = <TValue>(p: SchemaPath<TValue, SchemaPathRules>) => {
+    const result = this.resolve(p)().value();
+
+    if (result instanceof AbstractControl) {
+      throw new Error(
+        `Tried to read an 'AbstractControl' value form a 'form()'. Did you mean to use 'compatForm()' instead?`,
+      );
+    }
+    return result;
+  };
 }
