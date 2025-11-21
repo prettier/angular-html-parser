@@ -19,21 +19,21 @@
   "license": "MIT",
   "scripts": {
     "prepublish": "yarn run build",
-    "build": "tsdown",
+    "build": "tsdown --unbundle",
     "test": "vitest",
     "release": "release-it",
     "fix": "prettier . --write",
     "lint": "prettier . --check"
   },
   "devDependencies": {
-    "@types/node": "24.7.1",
-    "@vitest/coverage-v8": "3.2.4",
+    "@types/node": "24.10.1",
+    "@vitest/coverage-v8": "4.0.12",
     "prettier": "3.6.2",
-    "release-it": "19.0.5",
+    "release-it": "19.0.6",
     "tsconfig-paths": "4.2.0",
-    "tsdown": "0.15.6",
+    "tsdown": "0.16.6",
     "typescript": "5.9.3",
-    "vitest": "3.2.4"
+    "vitest": "4.0.12"
   },
   "engines": {
     "node": ">= 14"
