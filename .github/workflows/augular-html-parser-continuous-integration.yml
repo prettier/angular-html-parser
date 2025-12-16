@@ -44,4 +44,3 @@ jobs:
           yarn test
           yarn build
           yarn lint
-
