@@ -293,13 +293,53 @@ Common patterns:
 | Alphanumeric     | `/^[a-zA-Z0-9]+$/`      | abc123       |
 | URL-safe         | `/^[a-zA-Z0-9_-]+$/`    | my-url_123   |
 
+## Validation of array items
+
+Forms can include arrays of nested objects (for example, a list of order items). To apply validation rules to each item in an array, use `applyEach()` inside your schema function. `applyEach()` iterates the array path and supplies a path for each item where you can apply validators just like top-level fields.
+
+```ts
+import { Component, signal } from '@angular/core'
+import { applyEach, Field, form, min, required, SchemaPathTree } from '@angular/forms/signals';
+
+type Item = { name: string; quantity: number }
+
+interface Order {
+  title: string;
+  description: string;
+  items: Item[];
+}
+
+function ItemSchema(item: SchemaPathTree<Item>) {
+  required(item.name, { message: 'Item name is required' })
+  min(item.quantity, 1, { message: 'Quantity must be at least 1' })
+}
+
+@Component(/* ... */)
+export class OrderComponent {
+  orderModel = signal<Order>({
+    title: '',
+    description: '',
+    items: [
+      { name: '', quantity: 0 },
+    ]
+  })
+
+  orderForm = form(this.orderModel, (schemaPath) => {
+    required(schemaPath.title)
+    required(schemaPath.description)
+
+    applyEach(schemaPath.items, ItemSchema)
+  })
+}
+```
+
 ## Validation errors
 
 When validation rules fail, they produce error objects that describe what went wrong. Understanding error structure helps you provide clear feedback to users.
 
 <!-- TODO: Uncomment when field state management guide is published
 
-NOTE: This section covers the errors that validation rules produce. For displaying and using validation errors in your UI, see the [Field State Management guide](guide/forms/signal-forms/field-state-management). -->
+NOTE: This section covers the errors that validation rules produce. For displaying and using validation errors in your UI, see the [Field State Management guide](guide/forms/signals/field-state-management). -->
 
 ### Error structure
 
@@ -374,7 +414,7 @@ signupForm = form(this.signupModel, (schemaPath) => {
 
 If the email field is empty, only the `required()` error appears. If the user types "a@b", both `email()` and `minLength()` errors appear. All validation rules run - validation doesn't stop after the first failure.
 
-TIP: Use the `touched() && invalid()` pattern in your templates to prevent errors from appearing before users have interacted with a field. For comprehensive guidance on displaying validation errors, see the [Field State Management guide](guide/forms/signal-forms/field-state-management#conditional-error-display).
+TIP: Use the `touched() && invalid()` pattern in your templates to prevent errors from appearing before users have interacted with a field. For comprehensive guidance on displaying validation errors, see the [Field State Management guide](guide/forms/signals/field-state-management#conditional-error-display).
 
 ## Custom validation rules
 
@@ -612,7 +652,7 @@ The `validateHttp()` validation rule:
 
 While async validation runs, the field's `pending()` signal returns `true`. Use this to show loading indicators:
 
-```ts
+```angular-html
 @if (form.username().pending()) {
   <span class="spinner">Checking...</span>
 }
@@ -624,6 +664,10 @@ The `valid()` signal returns `false` while validation is pending, even if there 
 
 This guide covered creating and applying validation rules. Related guides explore other aspects of Signal Forms:
 
-- [Form Models guide](guide/forms/signal-forms/models) - Creating and updating form models
-  <!-- TODO: Uncomment when Field State Management guide is published -->
-  <!-- - [Field State Management guide](guide/forms/signal-forms/field-state-management) - Using validation state in templates and displaying errors -->
+<!-- TODO: UNCOMMENT WHEN THE GUIDES ARE AVAILABLE -->
+<docs-pill-row>
+  <docs-pill href="guide/forms/signals/field-state-management" title="Field state management" />
+  <docs-pill href="guide/forms/signals/models" title="Form models" />
+  <docs-pill href="guide/forms/signals/custom-controls" title="Custom controls" />
+  <!-- <docs-pill href="guide/forms/signals/arrays" title="Working with Arrays" /> -->
+</docs-pill-row>

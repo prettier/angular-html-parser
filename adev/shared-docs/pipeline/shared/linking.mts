@@ -10,13 +10,22 @@
 // Example when there is a conflict between API entries and compiler features.
 // eg: "animate" is both an Animation API entry and an template instruction "animation.enter"
 // or "style" is a generic term but also an Animation API entry.
-const LINK_EXEMPT = new Set(['animate', 'animate.enter', 'animate.leave', 'style']);
+const LINK_EXEMPT = new Set([
+  'animate',
+  'animate.enter',
+  'animate.leave',
+  'style',
+  'readonly',
+  'disabled',
+  'hidden',
+]);
 
 export function shouldLinkSymbol(symbol: string): boolean {
   return !LINK_EXEMPT.has(symbol);
 }
 
-export type ApiEntries = Record<string, string>; // symbolName -> moduleName (without @angular/ prefix)
+// symbolName -> symbol info with moduleName and optional targetSymbol for aliases
+export type ApiEntries = Record<string, {moduleName: string; targetSymbol?: string}>;
 
 /**
  * Extracts the symbol name and property name from a symbol string.
@@ -53,9 +62,15 @@ export function getSymbolUrl(symbol: string, apiEntries: ApiEntries): string | u
 
   const {symbolName, propName} = extractFromSymbol(symbol);
   // We don't want to match entries like "constructor"
-  const apiEntry = Object.hasOwn(apiEntries, symbolName) && apiEntries[symbolName];
+  if (!Object.hasOwn(apiEntries, symbolName)) {
+    return undefined;
+  }
 
-  return apiEntry ? `/api/${apiEntry}/${symbolName}${propName ? `#${propName}` : ''}` : undefined;
+  const apiEntry = apiEntries[symbolName];
+  const moduleName = apiEntry.moduleName;
+  const targetSymbol = apiEntry.targetSymbol ?? symbolName;
+
+  return `/api/${moduleName}/${targetSymbol}${propName ? `#${propName}` : ''}`;
 }
 
 function hasMoreThanOneDot(str: string) {

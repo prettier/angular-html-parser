@@ -14,9 +14,9 @@ export class TestDir {
         this.query4 = contentChildren('locatorD', ...(ngDevMode ? [{ debugName: "query4" }] : []));
         this.query5 = viewChild(forwardRef(() => SomeToken), ...(ngDevMode ? [{ debugName: "query5" }] : []));
         this.query6 = viewChildren(SomeToken, ...(ngDevMode ? [{ debugName: "query6" }] : []));
-        this.query7 = viewChild('locatorE', ...(ngDevMode ? [{ debugName: "query7", read: SomeToken }] : [{ read: SomeToken }]));
-        this.query8 = contentChildren('locatorF, locatorG', ...(ngDevMode ? [{ debugName: "query8", descendants: true }] : [{ descendants: true }]));
-        this.query9 = contentChildren(nonAnalyzableRefersToString, ...(ngDevMode ? [{ debugName: "query9", descendants: true }] : [{ descendants: true }]));
+        this.query7 = viewChild('locatorE', Object.assign(Object.assign({}, (ngDevMode ? { debugName: "query7" } : {})), { read: SomeToken }));
+        this.query8 = contentChildren('locatorF, locatorG', Object.assign(Object.assign({}, (ngDevMode ? { debugName: "query8" } : {})), { descendants: true }));
+        this.query9 = contentChildren(nonAnalyzableRefersToString, Object.assign(Object.assign({}, (ngDevMode ? { debugName: "query9" } : {})), { descendants: true }));
     }
 }
 TestDir.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestDir, deps: [], target: i0.ɵɵFactoryTarget.Directive });

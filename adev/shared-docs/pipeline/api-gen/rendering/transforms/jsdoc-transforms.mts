@@ -28,7 +28,7 @@ import {parseMarkdown} from '../../../shared/marked/parse.mjs';
 import {getHighlighterInstance} from '../shiki/shiki.mjs';
 import {
   getCurrentSymbol,
-  getSymbols,
+  getSymbolsAsApiEntries,
   getSymbolUrl,
   unknownSymbolMessage,
 } from '../symbol-context.mjs';
@@ -107,7 +107,7 @@ export function addHtmlUsageNotes<T extends HasJsDocTags>(entry: T): T & HasHtml
 function getHtmlForJsDocText(text: string): string {
   const mdToParse = convertLinks(wrapExampleHtmlElementsWithCode(text));
   const parsed = parseMarkdown(mdToParse, {
-    apiEntries: getSymbols(),
+    apiEntries: getSymbolsAsApiEntries(),
     highlighter: getHighlighterInstance(),
   });
   return addApiLinksToHtml(parsed);
@@ -119,7 +119,7 @@ export function setEntryFlags<T extends HasJsDocTags & HasModuleName>(
   const deprecationMessage = getDeprecatedEntry(entry);
   return {
     ...entry,
-    deprecated: getTagSinceVersion(entry, 'deprecated'),
+    deprecated: getTagSinceVersion(entry, 'deprecated', true),
     deprecationMessage: deprecationMessage
       ? getHtmlForJsDocText(deprecationMessage)
       : deprecationMessage,
@@ -140,7 +140,7 @@ function getHtmlAdditionalLinks<T extends HasJsDocTags>(entry: T): LinkEntryRend
 
       if (markdownLinkMatch) {
         return {
-          label: markdownLinkMatch[1],
+          label: convertBackticksToCodeTags(markdownLinkMatch[1]),
           url: markdownLinkMatch[2],
           title: markdownLinkMatch[3],
         };
@@ -163,6 +163,15 @@ function getHtmlAdditionalLinks<T extends HasJsDocTags>(entry: T): LinkEntryRend
     .filter((link): link is LinkEntryRenderable => !!link);
 
   return seeAlsoLinks;
+}
+
+/**
+ * Converts backticks to HTML code tags.
+ * This handles code blocks within link text, e.g., `ViewContainerRef.createComponent`
+ */
+function convertBackticksToCodeTags(text: string): string {
+  // Convert backticks to <code> tags
+  return text.replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
 /**

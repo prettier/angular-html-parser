@@ -1,5 +1,3 @@
-@use './anchor' as anchor;
-
 /* Common styles for the API & CLI references */
 @mixin reference-common() {
   .docs-code {
@@ -71,8 +69,21 @@
     }
 
     & > a {
-      @include anchor.docs-anchor();
       color: inherit;
+    }
+  }
+
+  .docs-api {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      // Show copy link button when hovering the heading
+      &:hover docs-copy-link-button {
+        opacity: 1;
+      }
     }
   }
 
@@ -334,6 +345,16 @@
         // & does not follow a function definition
         &:not(.docs-function-definition + .docs-return-type) {
           border-block-start: 1px solid var(--senary-contrast);
+        }
+      }
+
+      .docs-usage-notes {
+        border-block-start: 1px solid var(--senary-contrast);
+
+        .docs-usage-notes-heading {
+          color: var(--primary-contrast);
+          margin: 0.5rem 0;
+          font-size: 1.2rem;
         }
       }
     }

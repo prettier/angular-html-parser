@@ -2,8 +2,6 @@
 
 The [Angular CLI][CliMain] automatically includes locale data if you run the [`ng build`][CliBuild] command with the `--localize` option.
 
-<!--todo: replace with docs-code -->
-
 ```shell
 ng build --localize
 ```
@@ -18,7 +16,7 @@ Global variants of the locale data are available in `@angular/common/locales/glo
 
 For example, you could import the global variants for French \(`fr`\) in `main.ts` where you bootstrap the application.
 
-<docs-code header="src/main.ts (import locale)" path="adev/src/content/examples/i18n/src/main.ts" visibleRegion="global-locale"/>
+<docs-code header="src/main.ts (import locale)" path="adev/src/content/examples/i18n/src/main.ts" region="global-locale"/>
 
 HELPFUL: In an `NgModules` application, you would import it in your `app.module`.
 

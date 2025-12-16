@@ -34,6 +34,8 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     CYCLIC_DI_DEPENDENCY = -200,
     // (undocumented)
+    DEF_TYPE_UNDEFINED = -919,
+    // (undocumented)
     DEFER_IN_HMR_MODE = -751,
     // (undocumented)
     DEFER_LOADING_FAILED = -750,
@@ -186,6 +188,8 @@ export const enum RuntimeErrorCode {
     // (undocumented)
     UNKNOWN_ELEMENT = 304,
     // (undocumented)
+    UNSAFE_ATTRIBUTE_BINDING = -910,
+    // @deprecated (undocumented)
     UNSAFE_IFRAME_ATTRS = -910,
     // (undocumented)
     UNSAFE_VALUE_IN_RESOURCE_URL = 904,

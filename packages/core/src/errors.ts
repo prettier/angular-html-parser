@@ -120,6 +120,11 @@ export const enum RuntimeErrorCode {
   TYPE_IS_NOT_STANDALONE = 907,
   MISSING_ZONEJS = 908,
   UNEXPECTED_ZONE_STATE = 909,
+  UNSAFE_ATTRIBUTE_BINDING = -910,
+  /**
+   * @deprecated use `UNSAFE_ATTRIBUTE_BINDING` instead.
+   */
+  // tslint:disable-next-line:no-duplicate-enum-values
   UNSAFE_IFRAME_ATTRS = -910,
   VIEW_ALREADY_DESTROYED = 911,
   COMPONENT_ID_COLLISION = -912,
@@ -129,6 +134,7 @@ export const enum RuntimeErrorCode {
   MISSING_DIRECTIVE_DEFINITION = 916,
   NO_COMPONENT_FACTORY_FOUND = 917,
   EXTERNAL_RESOURCE_LOADING_FAILED = 918,
+  DEF_TYPE_UNDEFINED = -919,
 
   // Signal integration errors
   REQUIRED_INPUT_NO_VALUE = -950,

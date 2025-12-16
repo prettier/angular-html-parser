@@ -18,6 +18,7 @@ import {
   TmplAstDirective,
   TmplAstElement,
   TmplAstHostElement,
+  TmplAstNode,
   TmplAstTemplate,
 } from '@angular/compiler';
 import ts from 'typescript';
@@ -73,38 +74,27 @@ const formControlOptionalFields = new Set([
 /**
  * A `TcbOp` which constructs an instance of the signal forms `Field` directive on a native element.
  */
-export class TcbNativeFieldDirectiveTypeOp extends TcbOp {
+export class TcbNativeFieldOp extends TcbOp {
   /** Bindings that aren't supported on signal form fields. */
   protected readonly unsupportedBindingFields = new Set([
     ...formControlInputFields,
     'value',
     'checked',
-    'type',
     'maxlength',
     'minlength',
   ]);
-
-  private readonly inputType: string | null;
 
   override get optional() {
     return false;
   }
 
   constructor(
-    private tcb: Context,
-    private scope: Scope,
-    private node: TmplAstElement,
+    protected tcb: Context,
+    protected scope: Scope,
+    protected node: TmplAstElement,
+    private inputType: string | null,
   ) {
     super();
-
-    this.inputType =
-      (node.name === 'input' && node.attributes.find((attr) => attr.name === 'type')?.value) ||
-      null;
-
-    // Radio controls are allowed to set the `value`.
-    if (this.inputType === 'radio') {
-      this.unsupportedBindingFields.delete('value');
-    }
   }
 
   override execute(): null {
@@ -120,11 +110,7 @@ export class TcbNativeFieldDirectiveTypeOp extends TcbOp {
 
     checkUnsupportedFieldBindings(this.node, this.unsupportedBindingFields, this.tcb);
 
-    const expectedType =
-      this.node instanceof TmplAstElement
-        ? this.getExpectedTypeFromDomNode(this.node)
-        : this.getUnsupportedType();
-
+    const expectedType = this.getExpectedTypeFromDomNode(this.node);
     const value = extractFieldValue(fieldBinding.value, this.tcb, this.scope);
 
     // Create a variable with the expected type and check that the field value is assignable, e.g.
@@ -171,12 +157,63 @@ export class TcbNativeFieldDirectiveTypeOp extends TcbOp {
         ]);
     }
 
+    const hasDynamicType =
+      this.inputType === null &&
+      this.node.inputs.some(
+        (input) =>
+          (input.type === BindingType.Property || input.type === BindingType.Attribute) &&
+          input.name === 'type',
+      );
+
+    // If the type is dynamic, check it as if it can be any of the types above.
+    if (hasDynamicType) {
+      return ts.factory.createUnionTypeNode([
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
+        ts.factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
+        ts.factory.createTypeReferenceNode('Date'),
+        ts.factory.createLiteralTypeNode(ts.factory.createNull()),
+      ]);
+    }
+
     // Fall back to string if we couldn't map the type.
     return ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword);
   }
 
   private getUnsupportedType(): ts.TypeNode {
     return ts.factory.createKeywordTypeNode(ts.SyntaxKind.NeverKeyword);
+  }
+}
+
+/**
+ * A variation of the `TcbNativeFieldOp` with specific logic for radio buttons.
+ */
+export class TcbNativeRadioButtonFieldOp extends TcbNativeFieldOp {
+  constructor(tcb: Context, scope: Scope, node: TmplAstElement) {
+    super(tcb, scope, node, 'radio');
+    this.unsupportedBindingFields.delete('value');
+  }
+
+  override execute(): null {
+    super.execute();
+
+    const valueBinding = this.node.inputs.find((attr) => {
+      return attr.type === BindingType.Property && attr.name === 'value';
+    });
+
+    if (valueBinding !== undefined) {
+      // Include an additional expression to check that the `value` is a string.
+      const id = this.tcb.allocateId();
+      const value = tcbExpression(valueBinding.value, this.tcb, this.scope);
+      const assignment = ts.factory.createBinaryExpression(id, ts.SyntaxKind.EqualsToken, value);
+      addParseSpanInfo(assignment, valueBinding.sourceSpan);
+      this.scope.addStatement(
+        tsDeclareVariable(id, ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword)),
+      );
+      this.scope.addStatement(ts.factory.createExpressionStatement(assignment));
+    }
+
+    return null;
   }
 }
 
@@ -314,6 +351,43 @@ export function getCustomFieldDirectiveType(
   return null;
 }
 
+/** Determines if a directive usage is on a native field. */
+export function isNativeField(
+  dir: TypeCheckableDirectiveMeta,
+  node: TmplAstNode,
+  allDirectiveMatches: TypeCheckableDirectiveMeta[],
+): node is TmplAstElement & {name: 'input' | 'select' | 'textarea'} {
+  // Only applies to the `Field` directive.
+  if (!isFieldDirective(dir)) {
+    return false;
+  }
+
+  // Only applies to input, select and textarea elements.
+  if (
+    !(node instanceof TmplAstElement) ||
+    (node.name !== 'input' && node.name !== 'select' && node.name !== 'textarea')
+  ) {
+    return false;
+  }
+
+  // Only applies if there are no custom fields or ControlValueAccessors.
+  return allDirectiveMatches.every((meta) => {
+    return getCustomFieldDirectiveType(meta) === null && !isControlValueAccessorLike(meta);
+  });
+}
+
+/**
+ * Determines if a directive is shaped like a `ControlValueAccessor`. Note that this isn't
+ * 100% reliable, because we don't know if the directive was actually provided at runtime.
+ */
+function isControlValueAccessorLike(meta: TypeCheckableDirectiveMeta): boolean {
+  return (
+    meta.publicMethods.has('writeValue') &&
+    meta.publicMethods.has('registerOnChange') &&
+    meta.publicMethods.has('registerOnTouched')
+  );
+}
+
 /** Checks whether a node has bindings that aren't supported on fields. */
 export function checkUnsupportedFieldBindings(
   node: DirectiveOwner,
@@ -335,10 +409,7 @@ export function checkUnsupportedFieldBindings(
 
   if (!(node instanceof TmplAstHostElement)) {
     for (const attr of node.attributes) {
-      const name = attr.name.toLowerCase();
-
-      // `type` is allowed to be a static attribute.
-      if (name !== 'type' && unsupportedBindingFields.has(name)) {
+      if (unsupportedBindingFields.has(attr.name.toLowerCase())) {
         tcb.oobRecorder.formFieldUnsupportedBinding(tcb.id, attr);
       }
     }

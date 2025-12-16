@@ -3,7 +3,7 @@
 
 ## What is Angular Aria?
 
-Building accessible components seems straightforward, but implementing them according to the W3 Accessibility Guidelines requires significant effort and accessibility expertise.
+Building accessible components seems straightforward, but implementing them according to the W3C Accessibility Guidelines requires significant effort and accessibility expertise.
 
 Angular Aria is a collection of headless, accessible directives that implement common WAI-ARIA patterns. The directives handle keyboard interactions, ARIA attributes, focus management, and screen reader support. All you have to do is provide the HTML structure, CSS styling, and business logic!
 
@@ -66,18 +66,18 @@ Angular Aria includes directives with comprehensive documentation, working examp
 
 ### Navigation and call to actions
 
-| Component                     | Description                                                 |
-| ----------------------------- | ----------------------------------------------------------- |
-| [Menu](guide/aria/menu)       | Dropdown menus with nested submenus and keyboard shortcuts  |
-| [Menubar](guide/aria/menubar) | Horizontal navigation bar for persistent application menus  |
-| [Tabs](guide/aria/tabs)       | Tabbed interfaces with automatic or manual activation modes |
-| [Toolbar](guide/aria/toolbar) | Grouped sets of controls with logical keyboard navigation   |
+| Component                     | Description                                                |
+| ----------------------------- | ---------------------------------------------------------- |
+| [Menu](guide/aria/menu)       | Dropdown menus with nested submenus and keyboard shortcuts |
+| [Menubar](guide/aria/menubar) | Horizontal navigation bar for persistent application menus |
+| [Toolbar](guide/aria/toolbar) | Grouped sets of controls with logical keyboard navigation  |
 
 ### Content organization
 
 | Component                         | Description                                                            |
 | --------------------------------- | ---------------------------------------------------------------------- |
 | [Accordion](guide/aria/accordion) | Collapsible content panels that can expand individually or exclusively |
+| [Tabs](guide/aria/tabs)           | Tabbed interfaces with automatic or manual activation modes            |
 | [Tree](guide/aria/tree)           | Hierarchical lists with expand/collapse functionality                  |
 | [Grid](guide/aria/grid)           | Two-dimensional data display with cell-by-cell keyboard navigation     |
 

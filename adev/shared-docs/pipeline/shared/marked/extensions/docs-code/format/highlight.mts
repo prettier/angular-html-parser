@@ -13,9 +13,6 @@ import {HighlighterGeneric} from 'shiki';
 import {codeToHtml} from '../../../../shiki.mjs';
 
 const lineNumberClassName: string = 'shiki-ln-number';
-const lineAddedClassName: string = 'add';
-const lineRemovedClassName: string = 'remove';
-const lineHighlightedClassName: string = 'highlighted';
 
 /**
  * Updates the provided token's code value to include syntax highlighting.
@@ -25,79 +22,32 @@ export function highlightCode(highlighter: HighlighterGeneric<any, any>, token: 
   if (token.language !== 'none' && token.language !== 'file') {
     // Decode the code content to replace HTML entities to characters
     const language = token.language ?? guessLanguageFromPath(token.path);
+    /** The set of all lines which should be highlighted. */
+    const highlight = token.highlight
+      ? new Set(expandRangeStringValues(token.highlight))
+      : undefined;
 
-    const codeAsHtml = codeToHtml(highlighter, token.code, language);
-    token.code = codeAsHtml;
+    token.code = codeToHtml(highlighter, token.code, {language, highlight});
   }
 
-  const dom = new JSDOM(token.code);
-  const document = dom.window.document;
-  const lines = document.body.querySelectorAll('.line');
+  if (token.linenums) {
+    const dom = new JSDOM(token.code);
+    const document = dom.window.document;
+    const lines = document.body.querySelectorAll('.line');
 
-  // removing whitespaces text nodes so we don't have spaces between codelines
-  removeWhitespaceNodes(document.body.querySelector('.shiki > code'));
+    const linesCount = lines.length;
+    if (linesCount === 0) {
+      return;
+    }
 
-  const linesCount = lines.length;
-  if (linesCount === 0) {
-    return;
-  }
-
-  let lineIndex = 0;
-  let resultFileLineIndex = 1;
-
-  const highlightedLineRanges = token.highlight ? expandRangeStringValues(token.highlight) : [];
-
-  do {
-    const isRemovedLine = token.diffMetadata?.linesRemoved.includes(lineIndex);
-    const isAddedLine = token.diffMetadata?.linesAdded.includes(lineIndex);
-    const isHighlighted = highlightedLineRanges.includes(lineIndex);
-    const addClasses = (el: Element) => {
-      if (isRemovedLine) {
-        el.classList.add(lineRemovedClassName);
-      }
-      if (isAddedLine) {
-        el.classList.add(lineAddedClassName);
-      }
-      if (isHighlighted) {
-        el.classList.add(lineHighlightedClassName);
-      }
-    };
-
-    const currentline = lines[lineIndex];
-    addClasses(currentline);
-
-    if (!!token.linenums) {
+    lines.forEach((lineEl, idx) => {
       const lineNumberEl = JSDOM.fragment(
-        `<span role="presentation" class="${lineNumberClassName}"></span>`,
+        `<span role="presentation" class="${lineNumberClassName}">${idx + 1}</span>`,
       ).firstElementChild!;
-      addClasses(lineNumberEl);
-      lineNumberEl.textContent = isRemovedLine ? '-' : isAddedLine ? '+' : `${resultFileLineIndex}`;
+      lineEl.parentElement!.insertBefore(lineNumberEl, lineEl);
+    });
 
-      currentline.parentElement!.insertBefore(lineNumberEl, currentline);
-      resultFileLineIndex++;
-    }
-
-    lineIndex++;
-  } while (lineIndex < linesCount);
-
-  token.code = document.body.innerHTML;
-}
-
-/**
- *
- * Removed whitespaces between 1st level children
- */
-function removeWhitespaceNodes(parent: Element | null) {
-  if (!parent) {
-    return;
-  }
-
-  const childNodes = parent.childNodes;
-  for (let i = childNodes.length - 1; i >= 0; i--) {
-    const node = childNodes[i];
-    if (node.nodeType === 3 && !/\S/.test(node.nodeValue!)) {
-      parent.removeChild(node);
-    }
+    token.code = document.body.innerHTML;
   }
 }
 

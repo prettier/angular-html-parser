@@ -17,11 +17,12 @@ export class HostBindingLinkDir {
   host: {
     '[innerHtml]': 'evil',
     '[attr.style]': 'evil',
-    '[src]': 'evil',
+    '[src]': 'nonEvil',
   },
 })
 export class HostBindingImageDir {
   evil = 'evil';
+  nonEvil = 'nonEvil';
 }
 
 @Directive({
@@ -31,8 +32,20 @@ export class HostBindingImageDir {
     '[attr.style]': 'evil',
     '[src]': 'evil',
     '[sandbox]': 'evil',
+    '[attr.attributeName]': 'nonEvil',
   },
 })
 export class HostBindingIframeDir {
+  evil = 'evil';
+  nonEvil = 'nonEvil';
+}
+
+@Directive({
+  selector: 'animateMotion[hostBindingSvgAnimateDir]',
+  host: {
+    '[attr.attributeName]': 'evil',
+  },
+})
+export class HostBindingSvgAnimateDir {
   evil = 'evil';
 }

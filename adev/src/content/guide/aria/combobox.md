@@ -3,7 +3,7 @@
 
 <docs-pill-row>
   <docs-pill href="https://www.w3.org/WAI/ARIA/apg/patterns/combobox/" title="Combobox ARIA pattern"/>
-  <docs-pill href="/api?query=accordion#angular_aria_accordion" title="Combobox API Reference"/>
+  <docs-pill href="/api?query=combobox#angular_aria_combobox" title="Combobox API Reference"/>
 </docs-pill-row>
 
 ## Overview
@@ -12,26 +12,26 @@ A directive that coordinates a text input with a popup, providing the primitive 
 
 <docs-tab-group>
   <docs-tab label="Basic">
-    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.ts">
-      <docs-code header="app.component.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.ts"/>
-      <docs-code header="app.component.html" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.html"/>
-      <docs-code header="app.component.css" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.css"/>
+    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.ts">
+      <docs-code header="app.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.ts"/>
+      <docs-code header="app.html" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.html"/>
+      <docs-code header="app.css" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.css"/>
     </docs-code-multifile>
   </docs-tab>
 
   <docs-tab label="Material">
-    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.ts">
-      <docs-code header="app.component.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.ts"/>
-      <docs-code header="app.component.html" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.html"/>
-      <docs-code header="app.component.css" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.css"/>
+    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.ts">
+      <docs-code header="app.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.ts"/>
+      <docs-code header="app.html" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.html"/>
+      <docs-code header="app.css" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.css"/>
     </docs-code-multifile>
   </docs-tab>
 
   <docs-tab label="Retro">
-    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.ts">
-      <docs-code header="app.component.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.ts"/>
-      <docs-code header="app.component.html" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.html"/>
-      <docs-code header="app.component.css" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.css"/>
+    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.ts">
+      <docs-code header="app.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.ts"/>
+      <docs-code header="app.html" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.html"/>
+      <docs-code header="app.css" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.css"/>
     </docs-code-multifile>
   </docs-tab>
 </docs-tab-group>
@@ -51,7 +51,7 @@ Use documented patterns instead when:
 - Single-selection dropdowns are needed - See the [Select pattern](guide/aria/select) for complete dropdown implementation
 - Multiple-selection dropdowns are needed - See the [Multiselect pattern](guide/aria/multiselect) for multi-select with compact display
 
-Note: The [Autocomplete](guide/aria/autocomplete), [Select](guide/aria/select), and [Multiselect](guide/aria/multiselect) guides show documented patterns that combine this directive with [Listbox](guide/aria/listbox) for specific use cases.
+NOTE: The [Autocomplete](guide/aria/autocomplete), [Select](guide/aria/select), and [Multiselect](guide/aria/multiselect) guides show documented patterns that combine this directive with [Listbox](guide/aria/listbox) for specific use cases.
 
 ## Features
 
@@ -72,26 +72,26 @@ An accessible input field that filters and suggests options as users type, helpi
 
 <docs-tab-group>
   <docs-tab label="Basic">
-    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.ts">
-      <docs-code header="app.component.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.ts"/>
-      <docs-code header="app.component.html" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.html"/>
-      <docs-code header="app.component.css" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.component.css"/>
+    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.ts">
+      <docs-code header="app.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.ts"/>
+      <docs-code header="app.html" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.html"/>
+      <docs-code header="app.css" path="adev/src/content/examples/aria/autocomplete/src/basic/app/app.css"/>
     </docs-code-multifile>
   </docs-tab>
 
   <docs-tab label="Material">
-    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.ts">
-      <docs-code header="app.component.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.ts"/>
-      <docs-code header="app.component.html" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.html"/>
-      <docs-code header="app.component.css" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.component.css"/>
+    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.ts">
+      <docs-code header="app.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.ts"/>
+      <docs-code header="app.html" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.html"/>
+      <docs-code header="app.css" path="adev/src/content/examples/aria/autocomplete/src/basic/material/app/app.css"/>
     </docs-code-multifile>
   </docs-tab>
 
   <docs-tab label="Retro">
-    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.ts">
-      <docs-code header="app.component.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.ts"/>
-      <docs-code header="app.component.html" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.html"/>
-      <docs-code header="app.component.css" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.component.css"/>
+    <docs-code-multifile preview hideCode path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.ts">
+      <docs-code header="app.ts" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.ts"/>
+      <docs-code header="app.html" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.html"/>
+      <docs-code header="app.css" path="adev/src/content/examples/aria/autocomplete/src/basic/retro/app/app.css"/>
     </docs-code-multifile>
   </docs-tab>
 </docs-tab-group>

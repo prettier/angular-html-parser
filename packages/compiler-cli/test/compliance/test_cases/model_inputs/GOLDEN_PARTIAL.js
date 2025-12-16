@@ -66,7 +66,7 @@ import * as i0 from "@angular/core";
 export class TestDir {
     constructor() {
         this.counter = model(0, ...(ngDevMode ? [{ debugName: "counter" }] : []));
-        this.modelWithAlias = model(false, ...(ngDevMode ? [{ debugName: "modelWithAlias", alias: 'alias' }] : [{ alias: 'alias' }]));
+        this.modelWithAlias = model(false, Object.assign(Object.assign({}, (ngDevMode ? { debugName: "modelWithAlias" } : {})), { alias: 'alias' }));
         this.decoratorInput = true;
         this.decoratorInputWithAlias = true;
         this.decoratorOutput = new EventEmitter();

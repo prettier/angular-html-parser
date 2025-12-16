@@ -12,14 +12,30 @@ import {WritableSignal} from '../reactivity/signal';
 export const ɵCONTROL: unique symbol = Symbol('CONTROL');
 
 /**
+ * Instructions for dynamically binding a {@link ɵControl} to a form control.
+ */
+export interface ɵControlBinding {
+  create(): void;
+  update(): void;
+}
+
+/**
  * A directive that binds a {@link ɵFieldState} to a form control.
  */
 export interface ɵControl<T> {
-  /** The presence of this property is used to identify {@link ɵControl} implementations. */
-  readonly [ɵCONTROL]: undefined;
+  /**
+   * The presence of this property is used to identify {@link ɵControl} implementations, while the
+   * value is used to store the instructions for dynamically binding to a form control. The
+   * instructions are stored on the directive so that they can be tree-shaken when the directive is
+   * not used.
+   */
+  readonly [ɵCONTROL]: ɵControlBinding;
 
   /** The state of the field bound to this control. */
   readonly state: Signal<ɵFieldState<T>>;
+
+  /** Options for the control. */
+  readonly classes: ReadonlyArray<readonly [string, Signal<boolean>]>;
 
   /** A reference to the interoperable control, if one is present. */
   readonly ɵinteropControl: ɵInteropControl | undefined;
@@ -126,6 +142,21 @@ export interface ɵFieldState<T> {
    * A signal indicating whether the field has been touched by the user.
    */
   readonly touched: Signal<boolean>;
+
+  /**
+   * A signal indicating whether the field value has been changed by user.
+   */
+  readonly dirty: Signal<boolean>;
+
+  /**
+   * A signal indicating whether the field is hidden.
+   */
+  readonly hidden: Signal<boolean>;
+
+  /**
+   * A signal indicating whether there are any validators still pending for this field.
+   */
+  readonly pending: Signal<boolean>;
 
   /**
    * A writable signal containing the value for this field.

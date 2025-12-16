@@ -55,7 +55,9 @@ import {
   CustomFieldType,
   getCustomFieldDirectiveType,
   isFieldDirective,
-  TcbNativeFieldDirectiveTypeOp,
+  isNativeField,
+  TcbNativeFieldOp,
+  TcbNativeRadioButtonFieldOp,
 } from './signal_forms';
 import {Reference} from '../../../imports';
 import {ClassDeclaration} from '../../../reflection';
@@ -772,13 +774,16 @@ export class Scope {
     const dirIndex = this.opQueue.push(directiveOp) - 1;
     dirMap.set(dir, dirIndex);
 
-    if (
-      isFieldDirective(dir) &&
-      node instanceof TmplAstElement &&
-      (node.name === 'input' || node.name === 'select' || node.name === 'textarea') &&
-      !allDirectiveMatches.some(getCustomFieldDirectiveType)
-    ) {
-      this.opQueue.push(new TcbNativeFieldDirectiveTypeOp(this.tcb, this, node));
+    if (isNativeField(dir, node, allDirectiveMatches)) {
+      const inputType =
+        (node.name === 'input' && node.attributes.find((attr) => attr.name === 'type')?.value) ||
+        null;
+
+      this.opQueue.push(
+        inputType === 'radio'
+          ? new TcbNativeRadioButtonFieldOp(this.tcb, this, node)
+          : new TcbNativeFieldOp(this.tcb, this, node, inputType),
+      );
     }
 
     this.opQueue.push(new TcbDirectiveInputsOp(this.tcb, this, node, dir, customFieldType));

@@ -4,7 +4,7 @@ Deciding what to display on the screen for a user is a common task in applicatio
 
 To express conditional displays in templates, Angular uses the `@if` template syntax.
 
-Note: Learn more about [control flow in the essentials guide](/essentials/templates#control-flow-with-if-and-for).
+NOTE: Learn more about [control flow in the essentials guide](/essentials/templates#control-flow-with-if-and-for).
 
 In this activity, you'll learn how to use conditionals in templates.
 
@@ -49,7 +49,7 @@ Now Angular supports native template syntax for defining the else case with the 
 
 Here's an example:
 
-```angular-ts
+```angular-html
 template: `
   @if (isServerRunning) { ... }
   @else { ... }

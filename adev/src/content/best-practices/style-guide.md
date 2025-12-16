@@ -110,11 +110,11 @@ When in doubt, go with the approach that leads to smaller files.
 
 ### Prefer the `inject` function over constructor parameter injection
 
-Prefer using the `inject` function over injecting constructor parameters. The `inject` function works the same way as constructor parameter injection, but offers several style advantages:
+Prefer using the [`inject`](/api/core/inject) function over injecting constructor parameters. The [`inject`](/api/core/inject) function works the same way as constructor parameter injection, but offers several style advantages:
 
-- `inject` is generally more readable, especially when a class injects many dependencies.
+- [`inject`](/api/core/inject) is generally more readable, especially when a class injects many dependencies.
 - It's more syntactically straightforward to add comments to injected dependencies
-- `inject` offers better type inference.
+- [`inject`](/api/core/inject) offers better type inference.
 - When targeting ES2022+ with [`useDefineForClassFields`](https://www.typescriptlang.org/tsconfig/#useDefineForClassFields), you can avoid separating field declaration and initialization when fields read on injected dependencies.
 
 [You can refactor existing code to `inject` with an automatic tool](reference/migrations/inject-function).
@@ -219,16 +219,15 @@ export class UserProfile {
 
 Prefer `class` and `style` bindings over using the [`NgClass`](/api/common/NgClass) and [`NgStyle`](/api/common/NgStyle) directives.
 
-```html
-<!-- PREFER -->
+```html {prefer}
 <div [class.admin]="isAdmin" [class.dense]="density === 'high'">
 <div [style.color]="textColor" [style.background-color]="backgroundColor">
 <!-- OR -->
 <div [class]="{admin: isAdmin, dense: density === 'high'}">
 <div [style]="{'color': textColor, 'background-color': backgroundColor}">
+```
 
-
-<!-- AVOID -->
+```html {avoid}
 <div [ngClass]="{admin: isAdmin, dense: density === 'high'}">
 <div [ngStyle]="{'color': textColor, 'background-color': backgroundColor}">
 ```
@@ -246,11 +245,11 @@ For more details, refer to the [bindings guide](/guide/templates/binding#css-cla
 
 Prefer naming event handlers for the action they perform rather than for the triggering event:
 
-```html
-<!-- PREFER -->
+```html {prefer}
 <button (click)="saveUserData()">Save</button>
+```
 
-<!-- AVOID -->
+```html {avoid}
 <button (click)="handleClick()">Save</button>
 ```
 
@@ -291,14 +290,14 @@ well-named methods to contain that logic and then _call those methods_ in your l
 Lifecycle hook names describe _when_ they run, meaning that the code inside doesn't have a
 meaningful name that describes what the code inside is doing.
 
-```typescript
-// PREFER
+```ts {prefer}
 ngOnInit() {
   this.startLogging();
   this.runBackgroundTask();
 }
+```
 
-// AVOID
+```ts {avoid}
 ngOnInit() {
   this.logger.setMode('info');
   this.logger.monitorErrors();

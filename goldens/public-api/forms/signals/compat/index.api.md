@@ -17,9 +17,9 @@ import { ValidationErrors } from '@angular/forms';
 import { ValidatorFn } from '@angular/forms';
 import { WritableSignal } from '@angular/core';
 import { ɵCONTROL } from '@angular/core';
-import { ɵControl } from '@angular/core';
+import { ɵcontrolUpdate } from '@angular/core';
 import { ɵFieldState } from '@angular/core';
-import { ɵInteropControl } from '@angular/core';
+import { ɵɵcontrolCreate } from '@angular/core';
 
 // @public
 export function compatForm<TModel>(model: WritableSignal<TModel>): FieldTree<TModel>;
@@ -51,6 +51,9 @@ export class CompatValidationError<T = unknown> implements ValidationError {
     // (undocumented)
     readonly message?: string;
 }
+
+// @public
+export const NG_STATUS_CLASSES: SignalFormsConfig['classes'];
 
 // (No @packageDocumentation comment for this package)
 

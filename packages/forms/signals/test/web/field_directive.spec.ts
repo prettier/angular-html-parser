@@ -7,7 +7,9 @@
  */
 
 import {
+  booleanAttribute,
   Component,
+  computed,
   Directive,
   ElementRef,
   inject,
@@ -15,13 +17,15 @@ import {
   input,
   inputBinding,
   model,
-  provideZonelessChangeDetection,
+  numberAttribute,
+  resource,
   signal,
   viewChild,
   viewChildren,
   ViewContainerRef,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
+import {NG_STATUS_CLASSES} from '../../compat/public_api';
 import {
   debounce,
   disabled,
@@ -33,8 +37,10 @@ import {
   min,
   minLength,
   pattern,
+  provideSignalFormsConfig,
   readonly,
   required,
+  validateAsync,
   type DisabledReason,
   type FieldTree,
   type FormCheckboxControl,
@@ -54,12 +60,6 @@ class TestStringControl {
 }
 
 describe('field directive', () => {
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [provideZonelessChangeDetection()],
-    });
-  });
-
   describe('field input', () => {
     it('should bind new field to control when changed', () => {
       @Component({
@@ -1137,6 +1137,143 @@ describe('field directive', () => {
     });
   });
 
+  describe('input transforms', () => {
+    it('should accept InputSignal without transform', () => {
+      @Component({selector: 'custom-control', template: ``})
+      class CustomControl implements FormValueControl<string> {
+        readonly value = model('');
+        readonly disabled = input(false);
+        readonly readonly = input(false);
+        readonly required = input(false);
+        readonly hidden = input(false);
+        readonly invalid = input(false);
+        readonly pending = input(false);
+        readonly dirty = input(false);
+        readonly touched = input(false);
+        readonly min = input<number | undefined>(1);
+        readonly max = input<number | undefined>(1_0000);
+        readonly minLength = input<number | undefined>(1);
+        readonly maxLength = input<number | undefined>(5);
+      }
+
+      @Component({
+        imports: [Field, CustomControl],
+        template: `<custom-control [field]="f" />`,
+      })
+      class TestCmp {
+        readonly f = form(signal(''));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      expect(fixture.componentInstance).toBeDefined();
+    });
+
+    it('should accept InputSignalWithTransform for boolean properties', () => {
+      @Component({selector: 'custom-control', template: ``})
+      class CustomControl implements FormValueControl<string> {
+        readonly value = model('');
+        readonly disabled = input(false, {transform: booleanAttribute});
+        readonly readonly = input(false, {transform: booleanAttribute});
+        readonly required = input(false, {transform: booleanAttribute});
+        readonly hidden = input(false, {transform: booleanAttribute});
+        readonly invalid = input(false, {transform: booleanAttribute});
+        readonly pending = input(false, {transform: booleanAttribute});
+        readonly dirty = input(false, {transform: booleanAttribute});
+        readonly touched = input(false, {transform: booleanAttribute});
+      }
+
+      @Component({
+        imports: [Field, CustomControl],
+        template: `<custom-control [field]="f" />`,
+      })
+      class TestCmp {
+        readonly f = form(signal(''));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      expect(fixture.componentInstance).toBeDefined();
+    });
+
+    it('should accept InputSignalWithTransform for number properties', () => {
+      @Component({selector: 'custom-control', template: ``})
+      class CustomControl implements FormValueControl<number> {
+        readonly value = model(0);
+        readonly min = input<number | undefined, unknown>(undefined, {transform: numberAttribute});
+        readonly max = input<number | undefined, unknown>(undefined, {transform: numberAttribute});
+        readonly minLength = input<number | undefined, unknown>(undefined, {
+          transform: numberAttribute,
+        });
+        readonly maxLength = input<number | undefined, unknown>(undefined, {
+          transform: numberAttribute,
+        });
+      }
+
+      @Component({
+        imports: [Field, CustomControl],
+        template: `<custom-control [field]="f" />`,
+      })
+      class TestCmp {
+        readonly f = form(signal(0));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      expect(fixture.componentInstance).toBeDefined();
+    });
+
+    it('should accept custom transform for arrays', () => {
+      @Component({selector: 'custom-control', template: ``})
+      class CustomControl implements FormValueControl<string> {
+        readonly value = model('');
+        readonly name = input('', {transform: (v: unknown) => String(v ?? '')});
+        readonly pattern = input<readonly RegExp[], unknown>([], {
+          transform: (v: unknown) => (Array.isArray(v) ? v : []),
+        });
+        readonly errors = input<readonly WithOptionalField<ValidationError>[], unknown>([], {
+          transform: (v: unknown) => (Array.isArray(v) ? v : []),
+        });
+        readonly disabledReasons = input<readonly WithOptionalField<DisabledReason>[], unknown>(
+          [],
+          {
+            transform: (v: unknown) => (Array.isArray(v) ? v : []),
+          },
+        );
+      }
+
+      @Component({
+        imports: [Field, CustomControl],
+        template: `<custom-control [field]="f" />`,
+      })
+      class TestCmp {
+        readonly f = form(signal(''));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      expect(fixture.componentInstance).toBeDefined();
+    });
+
+    it('should accept mixed InputSignal and InputSignalWithTransform', () => {
+      @Component({selector: 'custom-control', template: ``})
+      class CustomControl implements FormValueControl<string> {
+        readonly value = model('');
+        readonly disabled = input(false);
+        readonly readonly = input(false, {transform: booleanAttribute});
+        readonly required = input(false);
+        readonly name = input('', {transform: (v: unknown) => String(v ?? '')});
+      }
+
+      @Component({
+        imports: [Field, CustomControl],
+        template: `<custom-control [field]="f" />`,
+      })
+      class TestCmp {
+        readonly f = form(signal(''));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      expect(fixture.componentInstance).toBeDefined();
+    });
+  });
+
   it('synchronizes with a value control', () => {
     @Component({
       imports: [Field],
@@ -1281,6 +1418,165 @@ describe('field directive', () => {
     expect(cmp.f().value()).toBe('two');
   });
 
+  it('synchronizes with a custom value control', () => {
+    @Component({
+      selector: 'my-input',
+      template: '<input #i [value]="value()" (input)="value.set(i.value)" />',
+    })
+    class CustomInput implements FormValueControl<string> {
+      value = model('');
+    }
+
+    @Component({
+      imports: [Field, CustomInput],
+      template: `<my-input [field]="f" />`,
+    })
+    class TestCmp {
+      f = form<string>(signal('test'));
+    }
+
+    const fix = act(() => TestBed.createComponent(TestCmp));
+    const input = fix.nativeElement.firstChild.firstChild as HTMLInputElement;
+    const cmp = fix.componentInstance as TestCmp;
+
+    // Initial state
+    expect(input.value).toBe('test');
+
+    // Model -> View
+    act(() => cmp.f().value.set('testing'));
+    expect(input.value).toBe('testing');
+
+    // View -> Model
+    act(() => {
+      input.value = 'typing';
+      input.dispatchEvent(new Event('input'));
+    });
+    expect(cmp.f().value()).toBe('typing');
+  });
+
+  it('synchronizes with a custom value control directive', () => {
+    @Directive({
+      selector: 'input[my-input]',
+      host: {
+        '[value]': 'value()',
+        '(input)': 'handleInput($event)',
+      },
+    })
+    class CustomInputDirective implements FormValueControl<string> {
+      value = model('');
+
+      handleInput(e: Event) {
+        this.value.set((e.target as HTMLInputElement).value);
+      }
+    }
+
+    @Component({
+      imports: [Field, CustomInputDirective],
+      template: `<input my-input [field]="f" />`,
+    })
+    class TestCmp {
+      f = form<string>(signal('test'));
+    }
+
+    const fix = act(() => TestBed.createComponent(TestCmp));
+    const input = fix.nativeElement.firstChild as HTMLInputElement;
+    const cmp = fix.componentInstance as TestCmp;
+
+    // Initial state
+    expect(input.value).toBe('test');
+
+    // Model -> View
+    act(() => cmp.f().value.set('testing'));
+    expect(input.value).toBe('testing');
+
+    // View -> Model
+    act(() => {
+      input.value = 'typing';
+      input.dispatchEvent(new Event('input'));
+    });
+    expect(cmp.f().value()).toBe('typing');
+  });
+
+  it('synchronizes with a custom checkbox control', () => {
+    @Component({
+      selector: 'my-checkbox',
+      template:
+        '<input type="checkbox" #i [checked]="checked()" (input)="checked.set(i.checked)" />',
+    })
+    class CustomCheckbox implements FormCheckboxControl {
+      checked = model(false);
+    }
+
+    @Component({
+      imports: [Field, CustomCheckbox],
+      template: `<my-checkbox [field]="f" />`,
+    })
+    class TestCmp {
+      f = form(signal(true));
+    }
+
+    const fix = act(() => TestBed.createComponent(TestCmp));
+    const input = fix.nativeElement.querySelector('input') as HTMLInputElement;
+    const cmp = fix.componentInstance as TestCmp;
+
+    // Initial state
+    expect(input.checked).toBe(true);
+
+    // Model -> View
+    act(() => cmp.f().value.set(false));
+    expect(input.checked).toBe(false);
+
+    // View -> Model
+    act(() => {
+      input.checked = true;
+      input.dispatchEvent(new Event('input'));
+    });
+    expect(cmp.f().value()).toBe(true);
+  });
+
+  it('synchronizes with a custom checkbox control directive', () => {
+    @Directive({
+      selector: 'input[my-checkbox]',
+      host: {
+        '[checked]': 'checked()',
+        '(input)': 'handleInput($event)',
+      },
+    })
+    class CustomCheckboxDirective implements FormCheckboxControl {
+      checked = model(false);
+
+      handleInput(e: Event) {
+        this.checked.set((e.target as HTMLInputElement).checked);
+      }
+    }
+
+    @Component({
+      imports: [Field, CustomCheckboxDirective],
+      template: `<input type="checkbox" my-checkbox [field]="f" />`,
+    })
+    class TestCmp {
+      f = form<boolean>(signal(true));
+    }
+
+    const fix = act(() => TestBed.createComponent(TestCmp));
+    const input = fix.nativeElement.querySelector('input') as HTMLInputElement;
+    const cmp = fix.componentInstance as TestCmp;
+
+    // Initial state
+    expect(input.checked).toBe(true);
+
+    // Model -> View
+    act(() => cmp.f().value.set(false));
+    expect(input.checked).toBe(false);
+
+    // View -> Model
+    act(() => {
+      input.checked = true;
+      input.dispatchEvent(new Event('input'));
+    });
+    expect(cmp.f().value()).toBe(true);
+  });
+
   it('should assign correct value when unhiding select', async () => {
     @Component({
       imports: [Field],
@@ -1370,42 +1666,6 @@ describe('field directive', () => {
     await fix.whenStable();
 
     expect(fix.componentInstance.select()!.nativeElement.value).toEqual('four');
-  });
-
-  it('synchronizes with a custom value control', () => {
-    @Component({
-      selector: 'my-input',
-      template: '<input #i [value]="value()" (input)="value.set(i.value)" />',
-    })
-    class CustomInput implements FormValueControl<string> {
-      value = model('');
-    }
-
-    @Component({
-      imports: [Field, CustomInput],
-      template: `<my-input [field]="f" />`,
-    })
-    class TestCmp {
-      f = form<string>(signal('test'));
-    }
-
-    const fix = act(() => TestBed.createComponent(TestCmp));
-    const input = fix.nativeElement.firstChild.firstChild as HTMLInputElement;
-    const cmp = fix.componentInstance as TestCmp;
-
-    // Initial state
-    expect(input.value).toBe('test');
-
-    // Model -> View
-    act(() => cmp.f().value.set('testing'));
-    expect(input.value).toBe('testing');
-
-    // View -> Model
-    act(() => {
-      input.value = 'typing';
-      input.dispatchEvent(new Event('input'));
-    });
-    expect(cmp.f().value()).toBe('typing');
   });
 
   it('initializes a required value input before the component lifecycle runs', () => {
@@ -1626,6 +1886,109 @@ describe('field directive', () => {
     expect(comp.myInput().invalid()).toBe(true);
     act(() => comp.f().value.set('valid'));
     expect(comp.myInput().invalid()).toBe(false);
+  });
+
+  it('should synchronize hidden status', () => {
+    @Component({
+      selector: 'my-input',
+      template: '<input #i [value]="value()" (input)="value.set(i.value)" />',
+    })
+    class CustomInput implements FormValueControl<string> {
+      value = model('');
+      hidden = input(false);
+    }
+
+    @Component({
+      template: `
+        <my-input [field]="f" />
+      `,
+      imports: [CustomInput, Field],
+    })
+    class HiddenTestCmp {
+      myInput = viewChild.required<CustomInput>(CustomInput);
+      data = signal('');
+      f = form(this.data, (p) => {
+        hidden(p, ({value}) => value() === '');
+      });
+    }
+
+    const comp = act(() => TestBed.createComponent(HiddenTestCmp)).componentInstance;
+    expect(comp.myInput().hidden()).toBe(true);
+    act(() => comp.f().value.set('visible'));
+    expect(comp.myInput().hidden()).toBe(false);
+  });
+
+  it('should synchronize dirty status', () => {
+    @Component({
+      selector: 'my-input',
+      template: '<input #i [value]="value()" (input)="value.set(i.value)" />',
+    })
+    class CustomInput implements FormValueControl<string> {
+      value = model('');
+      dirty = input(false);
+    }
+
+    @Component({
+      template: `
+        <my-input [field]="f" />
+      `,
+      imports: [CustomInput, Field],
+    })
+    class DirtyTestCmp {
+      myInput = viewChild.required<CustomInput>(CustomInput);
+      data = signal('');
+      f = form(this.data);
+    }
+
+    const comp = act(() => TestBed.createComponent(DirtyTestCmp)).componentInstance;
+    expect(comp.myInput().dirty()).toBe(false);
+    act(() => comp.f().markAsDirty());
+    expect(comp.myInput().dirty()).toBe(true);
+  });
+
+  it('should synchronize pending status', async () => {
+    const {promise, resolve} = promiseWithResolvers<ValidationError[]>();
+
+    @Component({
+      selector: 'my-input',
+      template: '<input #i [value]="value()" (input)="value.set(i.value)" />',
+    })
+    class CustomInput implements FormValueControl<string> {
+      value = model('');
+      pending = input(false);
+    }
+
+    @Component({
+      template: `
+        <my-input [field]="f" />
+      `,
+      imports: [CustomInput, Field],
+    })
+    class PendingTestCmp {
+      myInput = viewChild.required<CustomInput>(CustomInput);
+      data = signal('test');
+      f = form(this.data, (p) => {
+        validateAsync(p, {
+          params: () => [],
+          factory: (params) =>
+            resource({
+              params,
+              loader: () => promise,
+            }),
+          onSuccess: (results) => results,
+          onError: () => null,
+        });
+      });
+    }
+
+    const fix = act(() => TestBed.createComponent(PendingTestCmp));
+
+    expect(fix.componentInstance.myInput().pending()).toBe(true);
+
+    resolve([]);
+    await promise;
+    await fix.whenStable();
+    expect(fix.componentInstance.myInput().pending()).toBe(false);
   });
 
   it(`should mark field as touched on native control 'blur' event`, () => {
@@ -1969,6 +2332,51 @@ describe('field directive', () => {
       });
       expect(cmp.f().value()).toBe('#0000ff');
     });
+
+    it('should sync string field with dynamically typed input', () => {
+      @Component({
+        imports: [Field],
+        template: `<input [type]="type()" [field]="f">`,
+      })
+      class TestCmp {
+        readonly passwordVisible = signal(false);
+        readonly type = computed(() => (this.passwordVisible() ? 'text' : 'password'));
+        f = form(signal(''));
+      }
+
+      const fix = act(() => TestBed.createComponent(TestCmp));
+      const input = fix.nativeElement.firstChild as HTMLInputElement;
+      const cmp = fix.componentInstance as TestCmp;
+
+      // Initial state
+      expect(input.type).toBe('password');
+
+      // Model -> View as password
+      act(() => cmp.f().value.set('123'));
+      expect(input.value).toBe('123');
+
+      // View -> Model as password
+      act(() => {
+        input.value = 'abc';
+        input.dispatchEvent(new Event('input'));
+      });
+      expect(cmp.f().value()).toBe('abc');
+
+      // Change input type
+      act(() => cmp.passwordVisible.set(true));
+      expect(input.type).toBe('text');
+
+      // Model -> View as text
+      act(() => cmp.f().value.set('123'));
+      expect(input.value).toBe('123');
+
+      // View -> Model as text
+      act(() => {
+        input.value = 'abc';
+        input.dispatchEvent(new Event('input'));
+      });
+      expect(cmp.f().value()).toBe('abc');
+    });
   });
 
   describe('should be marked dirty by user interaction', () => {
@@ -2037,7 +2445,7 @@ describe('field directive', () => {
     }
 
     expect(() => act(() => TestBed.createComponent(TestCmp))).toThrowError(
-      /'<div>' is an invalid \[field\] directive host\./,
+      /<div> is an invalid \[field\] directive host\./,
     );
   });
 
@@ -2237,6 +2645,201 @@ describe('field directive', () => {
       await promise;
       expect(fixture.componentInstance.f().value()).toBe('typing');
     });
+  });
+
+  describe('config', () => {
+    it('should apply classes based on config', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideSignalFormsConfig({
+            classes: {
+              'my-invalid-class': ({state}) => state().invalid(),
+            },
+          }),
+        ],
+      });
+
+      @Component({
+        imports: [Field],
+        template: `<input [field]="f">`,
+      })
+      class TestCmp {
+        readonly f = form(signal(''), (p) => {
+          required(p);
+        });
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      const input = fixture.nativeElement.firstChild as HTMLInputElement;
+      expect(input.classList.contains('my-invalid-class')).toBe(true);
+
+      act(() => fixture.componentInstance.f().value.set('valid'));
+      expect(input.classList.contains('my-invalid-class')).toBe(false);
+    });
+
+    it('should apply NG_STATUS_CLASSES', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideSignalFormsConfig({
+            classes: NG_STATUS_CLASSES,
+          }),
+        ],
+      });
+
+      @Component({
+        imports: [Field],
+        template: `<input [field]="f">`,
+      })
+      class TestCmp {
+        readonly f = form(signal(''), (p) => {
+          required(p);
+        });
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      const input = fixture.nativeElement.firstChild as HTMLInputElement;
+
+      // Initial state: invalid, pristine, untouched
+      expect(input.classList.contains('ng-invalid')).toBe(true);
+      expect(input.classList.contains('ng-pristine')).toBe(true);
+      expect(input.classList.contains('ng-untouched')).toBe(true);
+      expect(input.classList.contains('ng-valid')).toBe(false);
+      expect(input.classList.contains('ng-dirty')).toBe(false);
+      expect(input.classList.contains('ng-touched')).toBe(false);
+      expect(input.classList.contains('ng-pending')).toBe(false);
+
+      // Make it valid
+      act(() => fixture.componentInstance.f().value.set('valid'));
+      expect(input.classList.contains('ng-valid')).toBe(true);
+      expect(input.classList.contains('ng-invalid')).toBe(false);
+
+      // Make it dirty
+      act(() => input.dispatchEvent(new Event('input')));
+      expect(input.classList.contains('ng-dirty')).toBe(true);
+      expect(input.classList.contains('ng-pristine')).toBe(false);
+
+      // Touch it
+      act(() => input.dispatchEvent(new Event('blur')));
+      expect(input.classList.contains('ng-touched')).toBe(true);
+      expect(input.classList.contains('ng-untouched')).toBe(false);
+    });
+
+    it('should apply classes on a custom and native control, but not a component with a `field` input', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideSignalFormsConfig({
+            classes: {'always': () => true},
+          }),
+        ],
+      });
+
+      @Component({
+        selector: 'custom-control',
+        template: '',
+      })
+      class CustomControl implements FormValueControl<string> {
+        readonly value = model.required<string>();
+      }
+
+      @Component({
+        selector: 'custom-subform',
+        template: '',
+      })
+      class CustomSubform {
+        readonly field = input.required<FieldTree<string>>();
+      }
+
+      @Component({
+        imports: [Field, CustomControl, CustomSubform],
+        template: `
+          <input [field]="f" />
+          <custom-control [field]="f" />
+          <custom-subform [field]="f" />
+        `,
+      })
+      class TestCmp {
+        readonly f = form(signal(''));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      const nativeCtrl = fixture.nativeElement.querySelector('input') as HTMLElement;
+      const customCtrl = fixture.nativeElement.querySelector('custom-control') as HTMLElement;
+      const customSubform = fixture.nativeElement.querySelector('custom-subform') as HTMLElement;
+
+      expect(nativeCtrl.classList.contains('always')).toBe(true);
+      expect(customCtrl.classList.contains('always')).toBe(true);
+      expect(customSubform.classList.contains('always')).toBe(false);
+    });
+
+    it('should apply classes based on element', () => {
+      TestBed.configureTestingModule({
+        providers: [
+          provideSignalFormsConfig({
+            classes: {
+              'multiline': ({element}) => element.tagName.toLowerCase() === 'textarea',
+            },
+          }),
+        ],
+      });
+
+      @Component({
+        imports: [Field],
+        template: `
+          <input [field]="f">
+          <textarea [field]="f"></textarea>
+        `,
+      })
+      class TestCmp {
+        readonly f = form(signal(''));
+      }
+
+      const fixture = act(() => TestBed.createComponent(TestCmp));
+      const input = fixture.nativeElement.querySelector('input');
+      const textarea = fixture.nativeElement.querySelector('textarea');
+      expect(input.classList.contains('multiline')).toBe(false);
+      expect(textarea.classList.contains('multiline')).toBe(true);
+    });
+  });
+
+  it('should create & bind input when a macro task is running', async () => {
+    const {promise, resolve} = promiseWithResolvers<void>();
+
+    @Component({
+      selector: 'app-form',
+      imports: [Field],
+      template: `
+        <form>
+          <select [field]="form">
+            <option value="us">United States</option>
+            <option value="ca">Canada</option>
+          </select>
+        </form>
+  `,
+    })
+    class FormComponent {
+      form = form(signal('us'));
+    }
+
+    @Component({
+      selector: 'app-root',
+      template: ``,
+    })
+    class App {
+      vcr = inject(ViewContainerRef);
+      constructor() {
+        promise.then(() => {
+          this.vcr.createComponent(FormComponent);
+        });
+      }
+    }
+
+    const fixture = act(() => TestBed.createComponent(App));
+
+    resolve();
+    await fixture.whenStable();
+
+    const select = fixture.debugElement.parent!.nativeElement.querySelector('select');
+    expect(select.value).toBe('us');
   });
 });
 

@@ -22,7 +22,7 @@ NOTE: Signal Forms are [experimental](reference/releases#experimental) as of Ang
 The best way to understand the differences is to see the same form implemented in all three approaches.
 
 <docs-code-multifile>
-  <docs-code header="Signal forms" path="adev/src/content/examples/signal-forms/src/comparison/app/signal-forms.ts"/>
+  <docs-code language="angular-ts" header="Signal forms" path="adev/src/content/examples/signal-forms/src/comparison/app/signal-forms.ts"/>
   <docs-code header="Reactive forms" path="adev/src/content/examples/signal-forms/src/comparison/app/reactive-forms.ts"/>
   <docs-code header="Template-driven forms" path="adev/src/content/examples/signal-forms/src/comparison/app/template-driven-forms.ts"/>
 </docs-code-multifile>
@@ -158,6 +158,6 @@ TypeScript understands your component properties but has no knowledge of form st
 
 To learn more about each approach:
 
-- **Signal Forms**: See the [Overview guide](guide/forms/signal-forms/overview) to get started, or dive into [Form Models](guide/forms/signal-forms/models), [Validation](guide/forms/signal-forms/validation), and [Field State Management](guide/forms/signal-forms/field-state-management)
+- **Signal Forms**: See the [Overview guide](guide/forms/signals/overview) to get started, or dive into [Form Models](guide/forms/signals/models), [Validation](guide/forms/signals/validation), and [Field State Management](guide/forms/signals/field-state-management)
 - **Reactive Forms**: See the [Reactive Forms guide](guide/forms/reactive-forms) in Angular documentation
 - **Template-driven Forms**: See the [Template-driven Forms guide](guide/forms/template-driven-forms) in Angular documentation

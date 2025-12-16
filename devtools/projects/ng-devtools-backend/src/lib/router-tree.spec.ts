@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {parseRoutes} from './router-tree';
+import {getRouterCallableConstructRef, parseRoutes} from './router-tree';
 
 describe('parseRoutes', () => {
   it('should work without any routes', () => {
@@ -16,7 +16,6 @@ describe('parseRoutes', () => {
       component: 'App Root',
       path: 'App Root',
       children: [],
-      data: [],
       isAux: false,
       isLazy: false,
       isActive: true,
@@ -31,7 +30,6 @@ describe('parseRoutes', () => {
     expect(parsedRoutes).toEqual({
       'component': 'App Root',
       'path': 'App Root',
-      'data': [],
       'children': [],
       'isAux': false,
       'isLazy': false,
@@ -121,10 +119,8 @@ describe('parseRoutes', () => {
           'canMatchGuards': [],
           'canDeactivateGuards': [],
           'providers': [],
-          'resolvers': [],
           'path': '/(outlet:component-one)',
           'pathMatch': undefined,
-          'data': [],
           'isAux': true,
           'isLazy': false,
           'isActive': false,
@@ -136,11 +132,10 @@ describe('parseRoutes', () => {
           'canMatchGuards': [],
           'canDeactivateGuards': [],
           'providers': [],
-          'resolvers': [],
           'path': '/component-two',
           'pathMatch': undefined,
           'title': 'Component Two',
-          'data': [{'key': 'name', 'value': 'component-two'}],
+          'data': {name: 'component-two'},
           'isAux': false,
           'isLazy': false,
           'isActive': false,
@@ -152,11 +147,9 @@ describe('parseRoutes', () => {
               'canMatchGuards': [],
               'canDeactivateGuards': [],
               'providers': [],
-              'resolvers': [],
               'path': '/component-two/component-two-one',
               'pathMatch': undefined,
               'title': '[Function]',
-              'data': [],
               'isAux': false,
               'isLazy': false,
               'isActive': false,
@@ -168,11 +161,9 @@ describe('parseRoutes', () => {
               'canMatchGuards': [],
               'canDeactivateGuards': [],
               'providers': [],
-              'resolvers': [],
               'path': '/component-two/component-two-two',
               'pathMatch': undefined,
-              'title': 'titleResolver()',
-              'data': [],
+              'title': 'titleResolver',
               'isAux': false,
               'isLazy': false,
               'isActive': false,
@@ -186,10 +177,8 @@ describe('parseRoutes', () => {
           'canMatchGuards': [],
           'canDeactivateGuards': [],
           'providers': [],
-          'resolvers': [],
           'path': '/lazy',
           'pathMatch': undefined,
-          'data': [],
           'isAux': false,
           'isLazy': true,
           'isActive': false,
@@ -201,10 +190,8 @@ describe('parseRoutes', () => {
           'canMatchGuards': [],
           'canDeactivateGuards': [],
           'providers': [],
-          'resolvers': [],
           'path': '/redirect',
           'pathMatch': undefined,
-          'data': [],
           'isAux': false,
           'isLazy': false,
           'isActive': false,
@@ -217,10 +204,8 @@ describe('parseRoutes', () => {
           'canMatchGuards': [],
           'canDeactivateGuards': [],
           'providers': [],
-          'resolvers': [],
           'path': '/redirect-fn',
           'pathMatch': undefined,
-          'data': [],
           'isAux': false,
           'isLazy': false,
           'isActive': false,
@@ -233,19 +218,16 @@ describe('parseRoutes', () => {
           'canMatchGuards': [],
           'canDeactivateGuards': [],
           'providers': [],
-          'resolvers': [],
           'path': '/redirect-named-fn',
           'pathMatch': undefined,
-          'data': [],
           'isAux': false,
           'isLazy': false,
           'isActive': false,
-          'redirectTo': 'redirectResolver()',
+          'redirectTo': 'redirectResolver',
         },
       ],
       'isAux': false,
       'isLazy': false,
-      'data': [],
       'isActive': true,
     } as any);
   });
@@ -267,7 +249,7 @@ describe('parseRoutes', () => {
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
-    expect(parsedRoutes.children![0].canActivateGuards).toEqual(['canActivateGuard()']);
+    expect(parsedRoutes.children![0].canActivateGuards).toEqual(['canActivateGuard']);
   });
 
   it('should handle guards with arrow functions', () => {
@@ -285,7 +267,7 @@ describe('parseRoutes', () => {
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
-    expect(parsedRoutes.children![0].canActivateGuards).toEqual(['arrowGuard()']);
+    expect(parsedRoutes.children![0].canActivateGuards).toEqual(['arrowGuard']);
   });
 
   it('should handle guards with class instances', () => {
@@ -342,11 +324,11 @@ describe('parseRoutes', () => {
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
     expect(parsedRoutes.children![0].canActivateGuards).toEqual([
-      'canActivateGuard()',
+      'canActivateGuard',
       '[Function]',
       '[Function]',
     ]);
-    expect(parsedRoutes.children![0].canMatchGuards).toEqual(['canMatchGuard()']);
+    expect(parsedRoutes.children![0].canMatchGuards).toEqual(['canMatchGuard']);
     expect(parsedRoutes.children![0].canDeactivateGuards).toEqual(['CanDeactivateGuard']);
   });
 
@@ -365,7 +347,7 @@ describe('parseRoutes', () => {
     };
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
-    expect(parsedRoutes.children![0].matcher).toEqual('customMatcher()');
+    expect(parsedRoutes.children![0].matcher).toEqual('customMatcher');
     expect(parsedRoutes.children![0].path).toEqual('[Matcher]');
   });
 
@@ -406,7 +388,7 @@ describe('parseRoutes', () => {
     };
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
-    expect(parsedRoutes.children![0].runGuardsAndResolvers).toEqual('customRerunLogic()');
+    expect(parsedRoutes.children![0].runGuardsAndResolvers).toEqual('customRerunLogic');
   });
 
   it('should handle resolvers with named functions', () => {
@@ -428,7 +410,7 @@ describe('parseRoutes', () => {
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
-    expect(parsedRoutes.children![0].resolvers).toEqual([{key: 'user', value: 'userResolver()'}]);
+    expect(parsedRoutes.children![0].resolvers).toEqual({user: 'userResolver'});
   });
 
   it('should handle resolvers with arrow functions', () => {
@@ -448,7 +430,7 @@ describe('parseRoutes', () => {
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
-    expect(parsedRoutes.children![0].resolvers).toEqual([{key: 'data', value: 'dataResolver()'}]);
+    expect(parsedRoutes.children![0].resolvers).toEqual({data: 'dataResolver'});
   });
 
   it('should handle multiple resolvers on a single route', () => {
@@ -478,11 +460,11 @@ describe('parseRoutes', () => {
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
-    expect(parsedRoutes.children![0].resolvers).toEqual([
-      {key: 'user', value: 'userResolver()'},
-      {key: 'settings', value: 'settingsResolver()'},
-      {key: 'permissions', value: 'PermissionsResolver'},
-    ]);
+    expect(parsedRoutes.children![0].resolvers).toEqual({
+      user: 'userResolver',
+      settings: 'settingsResolver',
+      permissions: 'PermissionsResolver',
+    });
   });
 
   it('should handle nested routes with resolvers', () => {
@@ -516,11 +498,143 @@ describe('parseRoutes', () => {
 
     const parsedRoutes = parseRoutes(nestedRouter as any);
 
-    expect(parsedRoutes.children![0].resolvers).toEqual([
-      {key: 'parentData', value: 'parentResolver()'},
-    ]);
-    expect(parsedRoutes.children![0].children![0].resolvers).toEqual([
-      {key: 'childData', value: 'childResolver()'},
-    ]);
+    expect(parsedRoutes.children![0].resolvers).toEqual({parentData: 'parentResolver'});
+    expect(parsedRoutes.children![0].children![0].resolvers).toEqual({
+      childData: 'childResolver',
+    });
+  });
+});
+
+describe('getRouterCallableConstructRef', () => {
+  class MockComponent {}
+  class MockService {}
+  function mockResolver() {}
+  function mockTitle() {}
+  function mockRedirectTo() {}
+  function mockMatcher() {}
+  function mockRunGuardsAndResolvers() {}
+  function mockCanActivate() {}
+  function mockCanDeactivate() {}
+  class MockCanActivateChild {}
+  class MockCanMatch {}
+
+  const MOCK_ROUTES = [
+    {
+      path: '',
+      providers: [MockService],
+      _loadedRoutes: [
+        {
+          path: 'foo',
+          component: MockComponent,
+          children: [
+            {
+              path: 'foo',
+              resolve: {
+                auth: mockResolver,
+              },
+            },
+            {
+              path: 'bar',
+              redirectTo: mockRedirectTo as any,
+              _loadedRoutes: [
+                {
+                  path: 'foo',
+                  title: mockTitle as any,
+                },
+                {
+                  path: 'bar',
+                  runGuardsAndResolvers: mockRunGuardsAndResolvers as any,
+                },
+                {
+                  path: 'baz',
+                  canActivate: [mockCanActivate],
+                  canActivateChild: [MockCanActivateChild],
+                  canDeactivate: [mockCanDeactivate],
+                },
+                {
+                  path: 'qux',
+                  canMatch: [MockCanMatch],
+                },
+              ],
+            },
+            {
+              path: 'baz',
+              matcher: mockMatcher as any,
+            },
+          ],
+        },
+        {
+          path: 'bar',
+        },
+      ],
+    },
+  ];
+
+  it(`should return null if the callable doesn't exist`, () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'component', 'NonExistent');
+    expect(ref).toEqual(null);
+  });
+
+  it('should return null if there is a callable with the provided name but wrongly typed', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'providers', 'MockComponent');
+    expect(ref).toEqual(null);
+  });
+
+  it('should find a component class', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'component', 'MockComponent');
+    expect(ref).toEqual(MockComponent);
+  });
+
+  it('should find a resolver function', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'resolvers', 'mockResolver');
+    expect(ref).toEqual(mockResolver);
+  });
+
+  it('should find a title function', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'title', 'mockTitle');
+    expect(ref).toEqual(mockTitle);
+  });
+
+  it('should find a redirectTo function', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'redirectTo', 'mockRedirectTo');
+    expect(ref).toEqual(mockRedirectTo);
+  });
+
+  it('should find a matcher function', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'matcher', 'mockMatcher');
+    expect(ref).toEqual(mockMatcher);
+  });
+
+  it('should find a runGuardsAndResolvers function', () => {
+    const ref = getRouterCallableConstructRef(
+      MOCK_ROUTES,
+      'runGuardsAndResolvers',
+      'mockRunGuardsAndResolvers',
+    );
+    expect(ref).toEqual(mockRunGuardsAndResolvers);
+  });
+
+  it('should find a canActivate function', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'canActivate', 'mockCanActivate');
+    expect(ref).toEqual(mockCanActivate);
+  });
+
+  it('should find a canDeactivate function', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'canDeactivate', 'mockCanDeactivate');
+    expect(ref).toEqual(mockCanDeactivate);
+  });
+
+  it('should find a canActivateChild class', () => {
+    const ref = getRouterCallableConstructRef(
+      MOCK_ROUTES,
+      'canActivateChild',
+      'MockCanActivateChild',
+    );
+    expect(ref).toEqual(MockCanActivateChild);
+  });
+
+  it('should find a canMatch class', () => {
+    const ref = getRouterCallableConstructRef(MOCK_ROUTES, 'canMatch', 'MockCanMatch');
+    expect(ref).toEqual(MockCanMatch);
   });
 });

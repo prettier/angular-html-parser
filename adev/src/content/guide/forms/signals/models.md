@@ -108,22 +108,6 @@ const userModel = signal<UserData>({
 
 Fields set to `undefined` are excluded from the field tree. A model with `{value: undefined}` behaves identically to `{}` - accessing the field returns `undefined` rather than a `FieldTree`.
 
-### Dynamic field addition
-
-You can dynamically add fields by updating the model with new properties. The field tree automatically updates to include new fields when they appear in the model value.
-
-```ts
-// Start with just email
-const model = signal({ email: '' })
-const myForm = form(model)
-
-// Later, add a password field
-model.update(current => ({ ...current, password: '' }))
-// myForm.password is now available
-```
-
-This pattern is useful when fields become relevant based on user choices or loaded data.
-
 ## Reading model values
 
 You can access form values in two ways: directly from the model signal, or through individual fields. Each approach serves a different purpose.
@@ -172,15 +156,9 @@ Field state provides reactive signals for each field's value, making it suitable
 TIP: Field state includes many more signals beyond `value()`, such as validation state (e.g., valid, invalid, errors), interaction tracking (e.g., touched, dirty), and visibility (e.g., hidden, disabled).
 
 <!-- TODO: UNCOMMENT BELOW WHEN GUIDE IS AVAILABLE -->
-<!-- See the [Field State Management guide](guide/forms/signal-forms/field-state-management) for complete coverage. -->
+<!-- See the [Field State Management guide](guide/forms/signals/field-state-management) for complete coverage. -->
 
 ## Updating form models programmatically
-
-Form models update through programmatic mechanisms:
-
-1. [Replace the entire form model](#replacing-form-models-with-set) with `set()`
-2. [Update one or more fields](#update-one-or-more-fields-with-update) with `update()`
-3. [Update a single field directly](#update-a-single-field-directly-with-set) through field state
 
 ### Replacing form models with `set()`
 
@@ -206,22 +184,7 @@ resetForm() {
 
 This approach works well when loading data from an API or resetting the entire form.
 
-### Update one or more fields with `update()`
-
-Use `update()` to modify specific fields while preserving others:
-
-```ts
-updateEmail(newEmail: string) {
-  this.userModel.update(current => ({
-    ...current,
-    email: newEmail,
-  }));
-}
-```
-
-This pattern is useful when you need to change one or more fields based on the current model state.
-
-### Update a single field directly with `set()`
+### Update a single field directly with `set()` or `update()`
 
 Use `set()` on individual field values to directly update the field state:
 
@@ -231,8 +194,7 @@ clearEmail() {
 }
 
 incrementAge() {
-  const currentAge = this.userForm.age().value();
-  this.userForm.age().value.set(currentAge + 1);
+  this.userForm.age().value.update(currentAge => currentAge + 1);
 }
 ```
 
@@ -305,7 +267,7 @@ export class UserComponent {
   userForm = form(this.userModel)
 
   setName(name: string) {
-    this.userModel.update(current => ({ ...current, name }))
+    this.userForm.name().value.set(name);
     // Input automatically displays 'Bob'
   }
 }
@@ -419,118 +381,16 @@ orderForm.items[0].quantity // FieldTree<number>
 
 Array items containing objects automatically receive tracking identities, which helps maintain field state even when items change position in the array. This ensures validation state and user interactions persist correctly when arrays are reordered.
 
-<!-- TBD: For dynamic arrays and complex array operations, see the [Working with arrays guide](guide/forms/signal-forms/arrays). -->
+<!-- TBD: For dynamic arrays and complex array operations, see the [Working with arrays guide](guide/forms/signals/arrays). -->
 
-## Model design best practices
+## Next steps
 
-Well-designed form models make forms easier to maintain and extend. Follow these patterns when designing your models.
-
-### Use specific types
-
-Always define interfaces or types for your models as shown in [Using TypeScript types](#using-typescript-types). Explicit types provide better IntelliSense, catch errors at compile time, and serve as documentation for what data the form contains.
-
-### Initialize all fields
-
-Provide initial values for every field in your model:
-
-```ts
-// Good: All fields initialized
-const taskModel = signal({
-  title: '',
-  description: '',
-  priority: 'medium',
-  completed: false
-})
-```
-
-```ts
-// Avoid: Partial initialization
-const taskModel = signal({
-  title: ''
-  // Missing description, priority, completed
-})
-```
-
-Missing initial values mean those fields won't exist in the field tree, making them inaccessible for form interactions.
-
-### Keep models focused
-
-Each model should represent a single form or a cohesive set of related data:
-
-```ts
-// Good: Focused on login
-const loginModel = signal({
-  email: '',
-  password: ''
-})
-```
-
-```ts
-// Avoid: Mixing unrelated concerns
-const appModel = signal({
-  // Login data
-  email: '',
-  password: '',
-  // User preferences
-  theme: 'light',
-  language: 'en',
-  // Shopping cart
-  cartItems: []
-})
-```
-
-Separate models for different concerns makes forms easier to understand and reuse. Create multiple forms if you're managing distinct sets of data.
-
-### Consider validation requirements
-
-Design models with validation in mind. Group fields that validate together:
-
-```ts
-// Good: Password fields grouped for comparison
-interface PasswordChangeData {
-  currentPassword: string
-  newPassword: string
-  confirmPassword: string
-}
-```
-
-This structure makes cross-field validation (like checking if `newPassword` matches `confirmPassword`) more natural.
-
-### Plan for initial state
-
-Consider whether your form starts empty or pre-populated:
-
-```ts
-// Form that starts empty (new user)
-const newUserModel = signal({
-  name: '',
-  email: '',
-});
-
-// Form that loads existing data
-const editUserModel = signal({
-  name: '',
-  email: '',
-});
-
-// Later, in ngOnInit:
-ngOnInit() {
-  this.loadExistingUser();
-}
-
-async loadExistingUser() {
-  const user = await this.userService.getUser(this.userId);
-  this.editUserModel.set(user);
-}
-```
-
-For forms that always start with existing data, you might wait to render the form until data loads in order to avoid a flash of empty fields.
+This guide covered creating models and updating values. Related guides explore other aspects of Signal Forms:
 
 <!-- TODO: UNCOMMENT WHEN THE GUIDES ARE AVAILABLE -->
-<!-- ## Next steps
-
 <docs-pill-row>
-  <docs-pill href="guide/forms/signal-forms/field-state-management" title="Field State Management" />
-  <docs-pill href="guide/forms/signal-forms/validation" title="Validation" />
-  <docs-pill href="guide/forms/signal-forms/arrays" title="Working with Arrays" />
-</docs-pill-row> -->
+  <docs-pill href="guide/forms/signals/field-state-management" title="Field state management" />
+  <docs-pill href="guide/forms/signals/validation" title="Validation" />
+  <docs-pill href="guide/forms/signals/custom-controls" title="Custom controls" />
+  <!-- <docs-pill href="guide/forms/signals/arrays" title="Working with Arrays" /> -->
+</docs-pill-row>

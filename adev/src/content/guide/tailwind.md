@@ -57,27 +57,28 @@ Next, open a terminal in your Angular project's root directory and run the follo
 Next, add a `.postcssrc.json` file in the file root of the project.
 Add the `@tailwindcss/postcss` plugin into your PostCSS configuration.
 
-<docs-code language="json" header=".postcssrc.json">
+```json {header: '.postcssrc.json'}
+
 {
   "plugins": {
     "@tailwindcss/postcss": {}
   }
 }
-</docs-code>
+```
 
 ### 4. Import Tailwind CSS
 
 Add an `@import` to `./src/styles.css` that imports Tailwind CSS.
 
-<docs-code language="css" header="src/styles.css">
+```css {header: "src/styles.css"}
 @import "tailwindcss";
-</docs-code>
+```
 
 If you're using SCSS, add `@use` to `./src/styles.scss`.
 
-<docs-code language="scss" header="src/styles.scss">
+```scss {header: "src/styles.scss"}
 @use "tailwindcss";
-</docs-code>
+```
 
 ### 5. Start using Tailwind in your project
 
@@ -85,11 +86,11 @@ You can now start using Tailwind's utility classes in your component templates t
 
 For example, you can add the following to your `app.html` file:
 
-<docs-code language="html">
+```html
 <h1 class="text-3xl font-bold underline">
   Hello world!
 </h1>
-</docs-code>
+```
 
 ## Additional Resources
 

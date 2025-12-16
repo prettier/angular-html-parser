@@ -12,29 +12,21 @@ import {
   ChangeDetectorRef,
   Component,
   computed,
-  DestroyRef,
   ElementRef,
   inject,
   Injector,
   input,
   signal,
   Type,
-  viewChild,
 } from '@angular/core';
 import {DOCUMENT, NgComponentOutlet, NgTemplateOutlet} from '@angular/common';
-import {MatTabGroup, MatTabsModule} from '@angular/material/tabs';
+import {MatTabsModule} from '@angular/material/tabs';
 import {Clipboard} from '@angular/cdk/clipboard';
 import {CopySourceCodeButton} from '../../copy-source-code-button/copy-source-code-button.component';
 import {IconComponent} from '../../icon/icon.component';
 import {ExampleMetadata, Snippet} from '../../../interfaces/index';
 import {EXAMPLE_VIEWER_CONTENT_LOADER} from '../../../providers/index';
-import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MatTooltipModule} from '@angular/material/tooltip';
-
-export enum CodeExampleViewMode {
-  SNIPPET = 'snippet',
-  MULTI_FILE = 'multi',
-}
 
 export const CODE_LINE_NUMBER_CLASS_NAME = 'shiki-ln-number';
 export const CODE_LINE_CLASS_NAME = 'line';
@@ -59,11 +51,8 @@ export class ExampleViewer {
   readonly exampleMetadata = input<ExampleMetadata | null>(null, {alias: 'metadata'});
   readonly githubUrl = input<string | null>(null);
   readonly stackblitzUrl = input<string | null>(null);
-  readonly matTabGroup = viewChild<MatTabGroup>('codeTabs');
 
-  private readonly changeDetector = inject(ChangeDetectorRef);
   private readonly clipboard = inject(Clipboard);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly document = inject(DOCUMENT);
   private readonly injector = inject(Injector);
   private readonly elementRef = inject(ElementRef<HTMLElement>);
@@ -77,7 +66,6 @@ export class ExampleViewer {
     return new Set(fileExtensions).size !== fileExtensions.length;
   });
 
-  CodeExampleViewMode = CodeExampleViewMode;
   exampleComponent?: Type<unknown>;
 
   readonly expandable = signal<boolean>(false);
@@ -90,11 +78,6 @@ export class ExampleViewer {
         file.title ?? (this.shouldDisplayFullName() ? file.name : this.getFileExtension(file.name)),
       code: file.sanitizedContent,
     })),
-  );
-  readonly view = computed(() =>
-    this.exampleMetadata()?.files.length === 1
-      ? CodeExampleViewMode.SNIPPET
-      : CodeExampleViewMode.MULTI_FILE,
   );
 
   async renderExample(): Promise<void> {
@@ -119,10 +102,6 @@ export class ExampleViewer {
           'id',
           `example-${this.exampleMetadata()?.id.toString()!}`,
         );
-
-        this.matTabGroup()?.realignInkBar();
-
-        this.listenToMatTabIndexChange();
 
         const lines = this.getHiddenCodeLines();
         const lineNumbers = this.getHiddenCodeLineNumbers();
@@ -150,16 +129,9 @@ export class ExampleViewer {
     this.clipboard.copy(fullUrl);
   }
 
-  private listenToMatTabIndexChange(): void {
-    const matTabGroup = this.matTabGroup();
-    matTabGroup?.realignInkBar();
-    matTabGroup?.selectedIndexChange
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((index) => {
-        this.snippetCode.set(this.exampleMetadata()?.files[index]);
-        this.changeDetector.detectChanges();
-        this.setCodeLinesVisibility();
-      });
+  protected onTabIndexChange(index: number): void {
+    this.snippetCode.set(this.exampleMetadata()?.files[index]);
+    this.setCodeLinesVisibility();
   }
 
   private getFileExtension(name: string): string {
@@ -216,7 +188,7 @@ export class ExampleViewer {
     const appendGapBefore = [];
 
     for (const [index, line] of lines.entries()) {
-      if (!linesToDisplay.includes(index)) {
+      if (!linesToDisplay.includes(index + 1)) {
         line.classList.add(HIDDEN_CLASS_NAME);
       } else if (!linesToDisplay.includes(index - 1)) {
         appendGapBefore.push(line);

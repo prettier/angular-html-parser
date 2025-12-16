@@ -9,17 +9,17 @@
 import {computed, linkedSignal, type Signal, untracked, type WritableSignal} from '@angular/core';
 import type {Field} from '../api/field_directive';
 import {
-  AggregateMetadataKey,
   MAX,
   MAX_LENGTH,
-  MetadataKey,
+  type MetadataKey,
   MIN,
   MIN_LENGTH,
   PATTERN,
   REQUIRED,
-} from '../api/metadata';
+} from '../api/rules/metadata';
+import type {ValidationError} from '../api/rules/validation/validation_errors';
 import type {DisabledReason, FieldContext, FieldState, FieldTree} from '../api/types';
-import type {ValidationError} from '../api/validation_errors';
+import {DYNAMIC} from '../schema/logic';
 import {LogicNode} from '../schema/logic_node';
 import {FieldPathNode} from '../schema/path_node';
 import {FieldNodeContext} from './context';
@@ -29,11 +29,11 @@ import {FieldMetadataState} from './metadata';
 import {FIELD_PROXY_HANDLER} from './proxy';
 import {FieldNodeState} from './state';
 import {
-  type ChildFieldNodeOptions,
   ChildFieldNodeStructure,
   type FieldNodeOptions,
   type FieldNodeStructure,
   RootFieldNodeStructure,
+  type TrackingKey,
 } from './structure';
 import {FieldSubmitState} from './submit';
 import {ValidationState} from './validation';
@@ -68,8 +68,10 @@ export class FieldNode implements FieldState<unknown> {
    * Proxy to this node which allows navigation of the form graph below it.
    */
   readonly fieldProxy = new Proxy(() => this, FIELD_PROXY_HANDLER) as unknown as FieldTree<any>;
+  private readonly pathNode: FieldPathNode;
 
   constructor(options: FieldNodeOptions) {
+    this.pathNode = options.pathNode;
     this.fieldAdapter = options.fieldAdapter;
     this.structure = this.fieldAdapter.createStructure(this, options);
     this.validationState = this.fieldAdapter.createValidationState(this, options);
@@ -166,40 +168,35 @@ export class FieldNode implements FieldState<unknown> {
     return this.nodeState.name;
   }
 
-  private metadataOrUndefined<M>(key: AggregateMetadataKey<M, any>): Signal<M> | undefined {
-    return this.hasMetadata(key) ? this.metadata(key) : undefined;
-  }
-
   get max(): Signal<number | undefined> | undefined {
-    return this.metadataOrUndefined(MAX);
+    return this.metadata(MAX);
   }
 
   get maxLength(): Signal<number | undefined> | undefined {
-    return this.metadataOrUndefined(MAX_LENGTH);
+    return this.metadata(MAX_LENGTH);
   }
 
   get min(): Signal<number | undefined> | undefined {
-    return this.metadataOrUndefined(MIN);
+    return this.metadata(MIN);
   }
 
   get minLength(): Signal<number | undefined> | undefined {
-    return this.metadataOrUndefined(MIN_LENGTH);
+    return this.metadata(MIN_LENGTH);
   }
 
   get pattern(): Signal<readonly RegExp[]> {
-    return this.metadataOrUndefined(PATTERN) ?? EMPTY;
+    return this.metadata(PATTERN) ?? EMPTY;
   }
 
   get required(): Signal<boolean> {
-    return this.metadataOrUndefined(REQUIRED) ?? FALSE;
+    return this.metadata(REQUIRED) ?? FALSE;
   }
 
-  metadata<M>(key: AggregateMetadataKey<M, any>): Signal<M>;
-  metadata<M>(key: MetadataKey<M>): M | undefined;
-  metadata<M>(key: MetadataKey<M> | AggregateMetadataKey<M, any>): Signal<M> | M | undefined {
+  metadata<M>(key: MetadataKey<M, any, any>): M | undefined {
     return this.metadataState.get(key);
   }
-  hasMetadata(key: MetadataKey<any> | AggregateMetadataKey<any, any>): boolean {
+
+  hasMetadata(key: MetadataKey<any, any, any>): boolean {
     return this.metadataState.has(key);
   }
 
@@ -223,12 +220,18 @@ export class FieldNode implements FieldState<unknown> {
    * Resets the {@link touched} and {@link dirty} state of the field and its descendants.
    *
    * Note this does not change the data model, which can be reset directly if desired.
+   *
+   * @param value Optional value to set to the form. If not passed, the value will not be changed.
    */
-  reset(): void {
-    untracked(() => this._reset());
+  reset(value?: unknown): void {
+    untracked(() => this._reset(value));
   }
 
-  private _reset() {
+  private _reset(value?: unknown) {
+    if (value !== undefined) {
+      this.value.set(value);
+    }
+
     this.nodeState.markAsUntouched();
     this.nodeState.markAsPristine();
 
@@ -293,34 +296,49 @@ export class FieldNode implements FieldState<unknown> {
     return adapter.newRoot(fieldManager, value, pathNode, adapter);
   }
 
-  /**
-   * Creates a child field node based on the given options.
-   */
-  private static newChild(options: ChildFieldNodeOptions): FieldNode {
-    return options.fieldAdapter.newChild(options);
-  }
-
   createStructure(options: FieldNodeOptions) {
     return options.kind === 'root'
       ? new RootFieldNodeStructure(
           this,
-          options.pathNode,
           options.logic,
           options.fieldManager,
           options.value,
-          options.fieldAdapter,
-          FieldNode.newChild,
+          this.newChild.bind(this),
         )
       : new ChildFieldNodeStructure(
           this,
-          options.pathNode,
           options.logic,
           options.parent,
           options.identityInParent,
           options.initialKeyInParent,
-          options.fieldAdapter,
-          FieldNode.newChild,
+          this.newChild.bind(this),
         );
+  }
+
+  private newChild(key: string, trackingId: TrackingKey | undefined, isArray: boolean): FieldNode {
+    // Determine the logic for the field that we're defining.
+    let childPath: FieldPathNode | undefined;
+    let childLogic: LogicNode;
+    if (isArray) {
+      // Fields for array elements have their logic defined by the `element` mechanism.
+      // TODO: other dynamic data
+      childPath = this.pathNode.getChild(DYNAMIC);
+      childLogic = this.structure.logic.getChild(DYNAMIC);
+    } else {
+      // Fields for plain properties exist in our logic node's child map.
+      childPath = this.pathNode.getChild(key);
+      childLogic = this.structure.logic.getChild(key);
+    }
+
+    return this.fieldAdapter.newChild({
+      kind: 'child',
+      parent: this as ParentFieldNode,
+      pathNode: childPath,
+      logic: childLogic,
+      initialKeyInParent: key,
+      identityInParent: trackingId,
+      fieldAdapter: this.fieldAdapter,
+    });
   }
 }
 

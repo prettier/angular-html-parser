@@ -11,20 +11,52 @@ As a result, you might need to access a component's DOM element.
 
 Angular exposes the underlying element of a `@Component` or `@Directive` via injection using the `ElementRef` injection token:
 
-<docs-code language="typescript" highlight="[7]">
-import { Directive, ElementRef } from '@angular/core';
+```ts {highlight:[7]}
+import {Directive, ElementRef, inject} from '@angular/core';
 
 @Directive({
-selector: '[appHighlight]'
+  selector: '[appHighlight]',
 })
 export class HighlightDirective {
-private element = inject(ElementRef)
+  private element = inject(ElementRef);
 
-update() {
-this.element.nativeElement.style.color = 'red';
+  update() {
+    this.element.nativeElement.style.color = 'red';
+  }
 }
+
+```
+
+## Inject the host element's tag name
+
+When you need the tag name of a host element, inject it using the `HOST_TAG_NAME` token.
+
+```ts
+import {Directive, HOST_TAG_NAME, inject} from '@angular/core';
+
+@Directive({
+  selector: '[roleButton]',
+})
+export class RoleButtonDirective {
+  private tagName = inject(HOST_TAG_NAME);
+
+  onAction() {
+    switch (this.tagName) {
+      case 'button':
+        // Handle button action
+        break;
+      case 'a':
+        // Handle anchor action
+        break;
+      default:
+        // Handle other elements
+        break;
+    }
+  }
 }
-</docs-code>
+```
+
+NOTE: If the host element might not have a tag name (e.g., `ng-container` or `ng-template`), make the injection optional.
 
 ## Resolve circular dependencies with a forward reference
 
@@ -42,11 +74,11 @@ For example, in its `providers` array.
 The `providers` array is a property of the `@Component()` decorator function, which must appear before the class definition.
 You can break such circular references by using `forwardRef`.
 
-<docs-code header="app.component.ts" language="typescript" highlight="[4]">
+```typescript {header: 'app.component.ts', highlight: [4]}
 providers: [
   {
     provide: PARENT_MENU_ITEM,
     useExisting: forwardRef(() => MenuItem),
   },
 ],
-</docs-code>
+```

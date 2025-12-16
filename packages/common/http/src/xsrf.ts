@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {DOCUMENT, ɵparseCookieValue as parseCookieValue} from '../../index';
+import {DOCUMENT, ɵparseCookieValue as parseCookieValue, PlatformLocation} from '../../index';
 import {
   EnvironmentInjector,
   inject,
@@ -22,7 +22,7 @@ import {HttpRequest} from './request';
 import {HttpEvent} from './response';
 
 export const XSRF_ENABLED = new InjectionToken<boolean>(
-  typeof ngDevMode !== undefined && ngDevMode ? 'XSRF_ENABLED' : '',
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'XSRF_ENABLED' : '',
   {
     factory: () => true,
   },
@@ -30,16 +30,16 @@ export const XSRF_ENABLED = new InjectionToken<boolean>(
 
 export const XSRF_DEFAULT_COOKIE_NAME = 'XSRF-TOKEN';
 export const XSRF_COOKIE_NAME = new InjectionToken<string>(
-  typeof ngDevMode !== undefined && ngDevMode ? 'XSRF_COOKIE_NAME' : '',
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'XSRF_COOKIE_NAME' : '',
   {
-    providedIn: 'root',
+    // Providing a factory implies that the token is provided in root by default
     factory: () => XSRF_DEFAULT_COOKIE_NAME,
   },
 );
 
 export const XSRF_DEFAULT_HEADER_NAME = 'X-XSRF-TOKEN';
 export const XSRF_HEADER_NAME = new InjectionToken<string>(
-  typeof ngDevMode !== undefined && ngDevMode ? 'XSRF_HEADER_NAME' : '',
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'XSRF_HEADER_NAME' : '',
   {
     providedIn: 'root',
     factory: () => XSRF_DEFAULT_HEADER_NAME,
@@ -95,18 +95,24 @@ export function xsrfInterceptorFn(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
 ): Observable<HttpEvent<unknown>> {
-  const lcUrl = req.url.toLowerCase();
-  // Skip both non-mutating requests and absolute URLs.
-  // Non-mutating requests don't require a token, and absolute URLs require special handling
-  // anyway as the cookie set
-  // on our origin is not the same as the token expected by another origin.
-  if (
-    !inject(XSRF_ENABLED) ||
-    req.method === 'GET' ||
-    req.method === 'HEAD' ||
-    lcUrl.startsWith('http://') ||
-    lcUrl.startsWith('https://')
-  ) {
+  // Skip both non-mutating requests
+  // Non-mutating requests generally don't require a token.
+  if (!inject(XSRF_ENABLED) || req.method === 'GET' || req.method === 'HEAD') {
+    return next(req);
+  }
+
+  try {
+    const locationHref = inject(PlatformLocation).href;
+    const {origin: locationOrigin} = new URL(locationHref);
+    // We can use `new URL` to normalize a relative URL like '//something.com' to
+    // 'https://something.com' in order to make consistent same-origin comparisons.
+    const {origin: requestOrigin} = new URL(req.url, locationOrigin);
+
+    if (locationOrigin !== requestOrigin) {
+      return next(req);
+    }
+  } catch {
+    // Handle invalid URLs gracefully.
     return next(req);
   }
 

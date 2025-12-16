@@ -23,10 +23,11 @@ import {docsCodeBlockExtension} from './extensions/docs-code/docs-code-block.mjs
 import {docsCodeExtension, DocsCodeToken} from './extensions/docs-code/docs-code.mjs';
 import {docsCodeMultifileExtension} from './extensions/docs-code/docs-code-multifile.mjs';
 import {docsTabGroupExtension, docsTabExtension} from './extensions/docs-tabs.mjs';
-import {hooks} from './hooks.mjs';
+import {docsImageExtension} from './extensions/docs-image.mjs';
 
 let markedInstance: typeof marked;
 const extensions = [
+  docsImageExtension,
   docsAlertExtension,
   docsCalloutExtension,
   docsPillExtension,
@@ -48,14 +49,14 @@ const extensions = [
 
 export async function parseMarkdownAsync(
   markdownContent: string,
-  context: RendererContext,
+  context: Partial<RendererContext>,
 ): Promise<string> {
-  markedInstance ??= marked.use({hooks, extensions, walkTokens, async: true});
+  markedInstance ??= marked.use({extensions, walkTokens, async: true});
   return markedInstance.parse(markdownContent, {renderer: new AdevDocsRenderer(context)});
 }
 
-export function parseMarkdown(markdownContent: string, context: RendererContext): string {
-  markedInstance ??= marked.use({hooks, extensions, walkTokens});
+export function parseMarkdown(markdownContent: string, context: Partial<RendererContext>): string {
+  markedInstance ??= marked.use({extensions, walkTokens});
   return markedInstance.parse(markdownContent, {renderer: new AdevDocsRenderer(context)}) as string;
 }
 

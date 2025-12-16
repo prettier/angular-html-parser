@@ -9,12 +9,12 @@
 import {Injector, signal, WritableSignal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {
-  aggregateMetadata,
   applyEach,
+  createMetadataKey,
   FieldContext,
   form,
+  metadata,
   PathKind,
-  reducedMetadataKey,
   SchemaPath,
   SchemaPathTree,
   validate,
@@ -87,7 +87,7 @@ describe('Field Context', () => {
     );
     f().valid();
     expect(keys).toEqual([
-      'RuntimeError: the top-level field in the form has no parent',
+      jasmine.stringContaining('NG01905'), // SIGNAL_FORMS_ROOT_FIELD_NO_PARENT
       'name',
       'age',
     ]);
@@ -125,32 +125,32 @@ describe('Field Context', () => {
     );
     f().valid();
     expect(indices).toEqual([
-      'RuntimeError: the top-level field in the form has no parent',
+      jasmine.stringContaining('NG01905'), // SIGNAL_FORMS_ROOT_FIELD_NO_PARENT
       0,
       1,
-      'RuntimeError: cannot access index, parent field is not an array',
+      jasmine.stringContaining('NG01906'), // SIGNAL_FORMS_PARENT_NOT_ARRAY
     ]);
   });
 
   it('pathKeys', () => {
-    const KEYS = reducedMetadataKey(
-      (_: readonly string[], n: readonly string[]) => n,
-      () => [],
-    );
+    const KEYS = createMetadataKey({
+      reduce: (_: readonly string[], n: readonly string[]) => n,
+      getInitial: () => [],
+    });
     const f = form(
       signal({x: [1]}),
       (p) => {
-        aggregateMetadata(p, KEYS, ({pathKeys}) => pathKeys());
-        aggregateMetadata(p.x, KEYS, ({pathKeys}) => pathKeys());
+        metadata(p, KEYS, ({pathKeys}) => pathKeys());
+        metadata(p.x, KEYS, ({pathKeys}) => pathKeys());
         applyEach(p.x, (it) => {
-          aggregateMetadata(it, KEYS, ({pathKeys}) => pathKeys());
+          metadata(it, KEYS, ({pathKeys}) => pathKeys());
         });
       },
       {injector: TestBed.inject(Injector)},
     );
-    expect(f().metadata(KEYS)()).toEqual([]);
-    expect(f.x().metadata(KEYS)()).toEqual(['x']);
-    expect(f.x[0]().metadata(KEYS)()).toEqual(['x', '0']);
+    expect(f().metadata(KEYS)?.()).toEqual([]);
+    expect(f.x().metadata(KEYS)?.()).toEqual(['x']);
+    expect(f.x[0]().metadata(KEYS)?.()).toEqual(['x', '0']);
   });
 
   it('valueOf', () => {

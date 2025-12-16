@@ -4,7 +4,7 @@ Images are a big part of many applications, and can be a major contributor to ap
 
 Image optimization can be a complex topic, but Angular handles most of it for you, with the `NgOptimizedImage` directive.
 
-Note: Learn more about [image optimization with NgOptimizedImage in the in-depth guide](/guide/image-optimization).
+NOTE: Learn more about [image optimization with NgOptimizedImage in the in-depth guide](/guide/image-optimization).
 
 In this activity, you'll learn how to use `NgOptimizedImage` to ensure your images are loaded efficiently.
 
@@ -31,7 +31,7 @@ import { NgOptimizedImage } from '@angular/common';
 
 To enable the `NgOptimizedImage` directive, swap out the `src` attribute for `ngSrc`. This applies for both static image sources (i.e., `src`) and dynamic image sources (i.e., `[src]`).
 
-<docs-code language="angular-ts" highlight="[[9], [13]]">
+```angular-ts {highlight:[[9],[13]]}
 import { NgOptimizedImage } from '@angular/common';
 
 @Component({
@@ -48,7 +48,7 @@ template: `     ...
   `,
 imports: [NgOptimizedImage],
 })
-</docs-code>
+```
 
 </docs-step>
 

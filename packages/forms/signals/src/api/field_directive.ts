@@ -8,18 +8,22 @@
 
 import {
   computed,
+  ɵɵcontrolCreate as createControlBinding,
   Directive,
   effect,
+  ElementRef,
   inject,
   InjectionToken,
   Injector,
   input,
+  ɵcontrolUpdate as updateControlBinding,
   ɵCONTROL,
-  ɵControl,
   ɵInteropControl,
+  type ɵControl,
 } from '@angular/core';
 import {NG_VALUE_ACCESSOR, NgControl} from '@angular/forms';
 import {InteropNgControl} from '../controls/interop_ng_control';
+import {SIGNAL_FORMS_CONFIG} from '../field/di';
 import type {FieldNode} from '../field/node';
 import type {FieldTree} from './types';
 
@@ -30,8 +34,16 @@ import type {FieldTree} from './types';
  * @experimental 21.0.0
  */
 export const FIELD = new InjectionToken<Field<unknown>>(
-  typeof ngDevMode !== undefined && ngDevMode ? 'FIELD' : '',
+  typeof ngDevMode !== 'undefined' && ngDevMode ? 'FIELD' : '',
 );
+
+/**
+ * Instructions for dynamically binding a {@link Field} to a form control.
+ */
+const controlInstructions = {
+  create: createControlBinding,
+  update: updateControlBinding,
+} as const;
 
 /**
  * Binds a form `FieldTree` to a UI control that edits it. A UI control can be one of several things:
@@ -59,11 +71,23 @@ export const FIELD = new InjectionToken<Field<unknown>>(
     {provide: NgControl, useFactory: () => inject(Field).getOrCreateNgControl()},
   ],
 })
-export class Field<T> implements ɵControl<T> {
-  private readonly injector = inject(Injector);
+// This directive should `implements ɵControl<T>`, but actually adding that breaks people's
+// builds because part of the public API is marked `@internal` and stripped.
+// Instead we have an type check below that enforces this in a non-breaking way.
+export class Field<T> {
+  readonly element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  readonly injector = inject(Injector);
   readonly field = input.required<FieldTree<T>>();
   readonly state = computed(() => this.field()());
-  readonly [ɵCONTROL] = undefined;
+
+  readonly [ɵCONTROL] = controlInstructions;
+
+  private config = inject(SIGNAL_FORMS_CONFIG, {optional: true});
+  /** @internal */
+  readonly classes = Object.entries(this.config?.classes ?? {}).map(
+    ([className, computation]) =>
+      [className, computed(() => computation(this as Field<unknown>))] as const,
+  );
 
   /** Any `ControlValueAccessor` instances provided on the host element. */
   private readonly controlValueAccessors = inject(NG_VALUE_ACCESSOR, {optional: true, self: true});
@@ -71,7 +95,11 @@ export class Field<T> implements ɵControl<T> {
   /** A lazily instantiated fake `NgControl`. */
   private interopNgControl: InteropNgControl | undefined;
 
-  /** A `ControlValueAccessor`, if configured, for the host component. */
+  /**
+   * A `ControlValueAccessor`, if configured, for the host component.
+   *
+   * @internal
+   */
   get ɵinteropControl(): ɵInteropControl | undefined {
     return this.controlValueAccessors?.[0] ?? this.interopNgControl?.valueAccessor ?? undefined;
   }
@@ -81,7 +109,7 @@ export class Field<T> implements ɵControl<T> {
     return (this.interopNgControl ??= new InteropNgControl(this.state));
   }
 
-  // TODO: https://github.com/orgs/angular/projects/60/views/1?pane=issue&itemId=131861631
+  /** @internal */
   ɵregister() {
     // Register this control on the field it is currently bound to. We do this at the end of
     // initialization so that it only runs if we are actually syncing with this control
@@ -103,3 +131,8 @@ export class Field<T> implements ɵControl<T> {
     );
   }
 }
+
+// We can't add `implements ɵControl<T>` to `Field` even though it should conform to the interface.
+// Instead we enforce it here through some utility types.
+type Check<T extends true> = T;
+type FieldImplementsɵControl = Check<Field<any> extends ɵControl<any> ? true : false>;

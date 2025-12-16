@@ -1,6 +1,6 @@
 # Server and hybrid rendering
 
-Angular ships all applications as client-side rendered (CSR) by default. While this approach delivers a initial payload that's lightweight, it introduces trade-offs including slower load times, degraded performance metrics, and higher resource demands since the user's device performs most of the computations. As a result, many applications achieve significant performance improvements by integrating server-side rendering (SSR) into a hybrid rendering strategy.
+Angular ships all applications as client-side rendered (CSR) by default. While this approach delivers an initial payload that's lightweight, it introduces trade-offs including slower load times, degraded performance metrics, and higher resource demands since the user's device performs most of the computations. As a result, many applications achieve significant performance improvements by integrating server-side rendering (SSR) into a hybrid rendering strategy.
 
 ## What is hybrid rendering?
 
@@ -267,12 +267,83 @@ export class MyComponent {
 }
 ```
 
+NOTE: Prefer [platform-specific providers](guide/ssr#providing-platform-specific-implementations) over runtime checks with `isPlatformBrowser` or `isPlatformServer`.
+
+IMPORTANT: Avoid using `isPlatformBrowser` in templates with `@if` or other conditionals to render different content on server and client. This causes hydration mismatches and layout shifts, negatively impacting user experience and [Core Web Vitals](https://web.dev/learn-core-web-vitals/). Instead, use `afterNextRender` for browser-specific initialization and keep rendered content consistent across platforms.
+
 ## Setting providers on the server
 
 On the server side, top level provider values are set once when the application code is initially parsed and evaluated.
 This means that providers configured with `useValue` will keep their value across multiple requests, until the server application is restarted.
 
 If you want to generate a new value for each request, use a factory provider with `useFactory`. The factory function will run for every incoming request, ensuring that a new value is created and assigned to the token each time.
+
+## Providing platform-specific implementations
+
+When your application needs different behavior on the browser and server, provide separate service implementations for each platform. This approach centralizes platform logic in dedicated services.
+
+```ts
+export abstract class AnalyticsService {
+  abstract trackEvent(name: string): void;
+}
+```
+
+Create the browser implementation:
+
+```ts
+@Injectable()
+export class BrowserAnalyticsService implements AnalyticsService {
+  trackEvent(name: string): void {
+    // Sends the event to the browser-based third-party analytics provider
+  }
+}
+```
+
+Create the server implementation:
+
+```ts
+@Injectable()
+export class ServerAnalyticsService implements AnalyticsService {
+  trackEvent(name: string): void {
+    // Records the event on the server
+  }
+}
+```
+
+Register the browser implementation in your main application configuration:
+
+```ts
+// app.config.ts
+export const appConfig: ApplicationConfig = {
+  providers: [
+    { provide: AnalyticsService, useClass: BrowserAnalyticsService },
+  ]
+};
+```
+
+Override with the server implementation in your server configuration:
+
+```ts
+// app.config.server.ts
+const serverConfig: ApplicationConfig = {
+  providers: [
+    { provide: AnalyticsService, useClass: ServerAnalyticsService },
+  ]
+};
+```
+
+Inject and use the service in your components:
+
+```ts
+@Component({/* ... */})
+export class Checkout {
+  private analytics = inject(AnalyticsService);
+
+  onAction() {
+    this.analytics.trackEvent('action');
+  }
+}
+```
 
 ## Accessing Document via DI
 
@@ -479,6 +550,8 @@ To disable caching for an individual request, you can specify the [`transferCach
 ```ts
 httpClient.get('/api/sensitive-data', { transferCache: false });
 ```
+
+NOTE: If your application uses different HTTP origins to make API calls on the server and on the client, the `HTTP_TRANSFER_CACHE_ORIGIN_MAP` token allows you to establish a mapping between those origins, so that `HttpTransferCache` feature can recognize those requests as the same ones and reuse the data cached on the server during hydration on the client.
 
 ## Configuring a server
 

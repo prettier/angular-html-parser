@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {computed, effect, Injector, signal} from '@angular/core';
+import {computed, effect, Injector, signal, WritableSignal} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {
   apply,
@@ -17,7 +17,6 @@ import {
   hidden,
   readonly,
   required,
-  REQUIRED,
   requiredError,
   Schema,
   schema,
@@ -100,6 +99,63 @@ describe('FieldNode', () => {
     );
     const childA = computed(() => f.a);
     expect(childA()).toBeDefined();
+  });
+
+  describe('resetting', () => {
+    it('can be reset with a value', () => {
+      const model = signal({a: 1, b: 2});
+      const f = form(model, {injector: TestBed.inject(Injector)});
+      f.a().markAsDirty();
+      f.a().markAsTouched();
+
+      f().reset({a: 5, b: 8});
+      expect(f.a().value()).toBe(5);
+      expect(f.a().dirty()).toBe(false);
+      expect(f.a().touched()).toBe(false);
+    });
+
+    it('can be reset without a value', () => {
+      const model = signal({a: 1, b: 2});
+      const f = form(model, {injector: TestBed.inject(Injector)});
+
+      f().reset();
+      expect(f.a().value()).toBe(1);
+    });
+
+    it('can reset with empty string', () => {
+      const model = signal('hello');
+      const f = form(model, {injector: TestBed.inject(Injector)});
+      f().reset('');
+      expect(f().value()).toBe('');
+    });
+
+    it('can reset with false', () => {
+      const model = signal(true);
+      const f = form(model, {injector: TestBed.inject(Injector)});
+      f().reset(false);
+      expect(f().value()).toBe(false);
+    });
+
+    it('can reset with null', () => {
+      const model: WritableSignal<string | null> = signal('hello');
+      const f = form(model, {injector: TestBed.inject(Injector)});
+      f().reset(null);
+      expect(f().value()).toBeNull();
+    });
+
+    it('can reset with 0', () => {
+      const model = signal(5);
+      const f = form(model, {injector: TestBed.inject(Injector)});
+      f().reset(0);
+      expect(f().value()).toBe(0);
+    });
+
+    it('can reset with NaN', () => {
+      const model = signal(5);
+      const f = form(model, {injector: TestBed.inject(Injector)});
+      f().reset(NaN);
+      expect(f().value()).toBeNaN();
+    });
   });
 
   describe('dirty', () => {
@@ -847,12 +903,12 @@ describe('FieldNode', () => {
         {injector: TestBed.inject(Injector)},
       );
 
-      expect(f().metadata(REQUIRED)()).toBe(true);
+      expect(f().required()).toBe(true);
       expect(f().valid()).toBe(false);
       expect(f().readonly()).toBe(false);
 
       isReadonly.set(true);
-      expect(f().metadata(REQUIRED)()).toBe(true);
+      expect(f().required()).toBe(true);
       expect(f().valid()).toBe(true);
       expect(f().readonly()).toBe(true);
     });
@@ -922,13 +978,13 @@ describe('FieldNode', () => {
 
       expect(f.first().errors()).toEqual([requiredError({field: f.first})]);
       expect(f.first().valid()).toBe(false);
-      expect(f.first().metadata(REQUIRED)()).toBe(true);
+      expect(f.first().required()).toBe(true);
 
       f.first().value.set('Bob');
 
       expect(f.first().errors()).toEqual([]);
       expect(f.first().valid()).toBe(true);
-      expect(f.first().metadata(REQUIRED)()).toBe(true);
+      expect(f.first().required()).toBe(true);
     });
 
     it('should validate conditionally required field', () => {
@@ -944,19 +1000,19 @@ describe('FieldNode', () => {
 
       expect(f.first().errors()).toEqual([]);
       expect(f.first().valid()).toBe(true);
-      expect(f.first().metadata(REQUIRED)()).toBe(false);
+      expect(f.first().required()).toBe(false);
 
       f.last().value.set('Loblaw');
 
       expect(f.first().errors()).toEqual([requiredError({field: f.first})]);
       expect(f.first().valid()).toBe(false);
-      expect(f.first().metadata(REQUIRED)()).toBe(true);
+      expect(f.first().required()).toBe(true);
 
       f.first().value.set('Bob');
 
       expect(f.first().errors()).toEqual([]);
       expect(f.first().valid()).toBe(true);
-      expect(f.first().metadata(REQUIRED)()).toBe(true);
+      expect(f.first().required()).toBe(true);
     });
 
     it('should link required error messages to their predicate', () => {
@@ -1263,7 +1319,7 @@ describe('FieldNode', () => {
         {injector: TestBed.inject(Injector)},
       );
 
-      expect(() => f().disabled()).toThrowError('Path is not part of this field tree.');
+      expect(() => f().disabled()).toThrowError(/Path is not part of this field tree\./);
     });
   });
 

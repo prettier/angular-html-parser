@@ -6,6 +6,9 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {ɵRuntimeError as RuntimeError} from '@angular/core';
+import {SignalFormsErrorCode} from '../errors';
+
 import {
   ControlValueAccessor,
   Validators,
@@ -15,7 +18,6 @@ import {
   type ValidationErrors,
   type ValidatorFn,
 } from '@angular/forms';
-import {REQUIRED} from '../api/metadata';
 import type {FieldState} from '../api/types';
 
 // TODO: Also consider supporting (if possible):
@@ -123,7 +125,10 @@ export class InteropNgControl
     if (this.field().pending()) {
       return 'PENDING';
     }
-    throw Error('AssertionError: unknown form control status');
+    throw new RuntimeError(
+      SignalFormsErrorCode.UNKNOWN_STATUS,
+      ngDevMode && 'Unknown form control status',
+    );
   }
 
   valueAccessor: ControlValueAccessor | null = null;
@@ -132,7 +137,7 @@ export class InteropNgControl
     // This addresses a common case where users look for the presence of `Validators.required` to
     // determine whether or not to show a required "*" indicator in the UI.
     if (validator === Validators.required) {
-      return this.field().metadata(REQUIRED)();
+      return this.field().required();
     }
     return false;
   }

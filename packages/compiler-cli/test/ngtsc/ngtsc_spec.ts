@@ -27,14 +27,28 @@ const trim = (input: string): string => input.replace(/\s+/g, ' ').trim();
 
 const varRegExp = (name: string): RegExp => new RegExp(`const \\w+ = \\[\"${name}\"\\];`);
 
-const viewQueryRegExp = (predicate: string, flags: number, ref?: string): RegExp => {
-  const maybeRef = ref ? `, ${ref}` : ``;
-  return new RegExp(`i0\\.ɵɵviewQuery\\(${predicate}, ${flags}${maybeRef}\\)`);
+const viewQueryRegExp = (queries: [{predicate: string; flags: number; ref?: string}]): RegExp => {
+  let result = `i0\\.ɵɵviewQuery`;
+
+  for (const {ref, predicate, flags} of queries) {
+    const maybeRef = ref ? `, ${ref}` : ``;
+    result += `\\(${predicate}, ${flags}${maybeRef}\\)`;
+  }
+
+  return new RegExp(result);
 };
 
-const contentQueryRegExp = (predicate: string, flags: number, ref?: string): RegExp => {
-  const maybeRef = ref ? `, ${ref}` : ``;
-  return new RegExp(`i0\\.ɵɵcontentQuery\\(dirIndex, ${predicate}, ${flags}${maybeRef}\\)`);
+const contentQueryRegExp = (
+  queries: {predicate: string; flags: number; ref?: string}[],
+): RegExp => {
+  let result = `i0\\.ɵɵcontentQuery`;
+
+  for (const {predicate, flags, ref} of queries) {
+    const maybeRef = ref ? `, ${ref}` : ``;
+    result += `\\(dirIndex, ${predicate}, ${flags}${maybeRef}\\)`;
+  }
+
+  return new RegExp(result);
 };
 
 const setClassMetadataRegExp = (expectedType: string): RegExp =>
@@ -1600,7 +1614,12 @@ runInEachFileSystem((os: string) => {
     });
 
     it('should compile Components with a templateUrl in a different rootDir', () => {
-      env.tsconfig({}, ['./extraRootDir']);
+      env.tsconfig(
+        {},
+        {
+          rootDirs: ['.', './extraRootDir'],
+        },
+      );
       env.write('extraRootDir/test.html', '<p>Hello World</p>');
       env.write(
         'test.ts',
@@ -1623,7 +1642,12 @@ runInEachFileSystem((os: string) => {
     });
 
     it('should compile Components with an absolute templateUrl in a different rootDir', () => {
-      env.tsconfig({}, ['./extraRootDir']);
+      env.tsconfig(
+        {},
+        {
+          rootDirs: ['.', './extraRootDir'],
+        },
+      );
       env.write('extraRootDir/test.html', '<p>Hello World</p>');
       env.write(
         'test.ts',
@@ -5222,9 +5246,11 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toMatch(varRegExp('test2'));
       expect(jsContents).toMatch(varRegExp('accessor'));
       // match `i0.ɵɵcontentQuery(dirIndex, _c1, 5, TemplateRef)`
-      expect(jsContents).toMatch(contentQueryRegExp('\\w+', 5, 'TemplateRef'));
+      expect(jsContents).toMatch(
+        contentQueryRegExp([{predicate: '\\w+', flags: 5, ref: 'TemplateRef'}]),
+      );
       // match `i0.ɵɵviewQuery(_c2, 5, null)`
-      expect(jsContents).toMatch(viewQueryRegExp('\\w+', 5));
+      expect(jsContents).toMatch(viewQueryRegExp([{predicate: '\\w+', flags: 5}]));
     });
 
     it('should generate queries for directives', () => {
@@ -5257,13 +5283,15 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toMatch(varRegExp('test2'));
       expect(jsContents).toMatch(varRegExp('accessor'));
       // match `i0.ɵɵcontentQuery(dirIndex, _c1, 5, TemplateRef)`
-      expect(jsContents).toMatch(contentQueryRegExp('\\w+', 5, 'TemplateRef'));
+      expect(jsContents).toMatch(
+        contentQueryRegExp([{predicate: '\\w+', flags: 5, ref: 'TemplateRef'}]),
+      );
 
       // match `i0.ɵɵviewQuery(_c2, 5)`
       // Note that while ViewQuery doesn't necessarily make sense on a directive,
       // because it doesn't have a view, we still need to handle it because a component
       // could extend the directive.
-      expect(jsContents).toMatch(viewQueryRegExp('\\w+', 5));
+      expect(jsContents).toMatch(viewQueryRegExp([{predicate: '\\w+', flags: 5}]));
     });
 
     it('should handle queries that use forwardRef', () => {
@@ -5288,13 +5316,15 @@ runInEachFileSystem((os: string) => {
 
       env.driveMain();
       const jsContents = env.getContents('test.js');
-      // match `i0.ɵɵcontentQuery(dirIndex, TemplateRef, 5, null)`
-      expect(jsContents).toMatch(contentQueryRegExp('TemplateRef', 5));
-      // match `i0.ɵɵcontentQuery(dirIndex, ViewContainerRef, 5, null)`
-      expect(jsContents).toMatch(contentQueryRegExp('ViewContainerRef', 5));
-      // match `i0.ɵɵcontentQuery(dirIndex, _c0, 5, null)`
+      // match `i0.ɵɵcontentQuery(dirIndex, TemplateRef, 5, null)(dirIndex, ViewContainerRef, 5, null)(dirIndex, _c0, 5, null)`
+      expect(jsContents).toMatch(
+        contentQueryRegExp([
+          {predicate: 'TemplateRef', flags: 5},
+          {predicate: 'ViewContainerRef', flags: 5},
+          {predicate: '_c0', flags: 5},
+        ]),
+      );
       expect(jsContents).toContain('_c0 = ["parens"];');
-      expect(jsContents).toMatch(contentQueryRegExp('_c0', 5));
     });
 
     it('should handle queries that use an InjectionToken', () => {
@@ -5319,9 +5349,9 @@ runInEachFileSystem((os: string) => {
       env.driveMain();
       const jsContents = env.getContents('test.js');
       // match `i0.ɵɵviewQuery(TOKEN, 5, null)`
-      expect(jsContents).toMatch(viewQueryRegExp('TOKEN', 5));
+      expect(jsContents).toMatch(viewQueryRegExp([{predicate: 'TOKEN', flags: 5}]));
       // match `i0.ɵɵcontentQuery(dirIndex, TOKEN, 5, null)`
-      expect(jsContents).toMatch(contentQueryRegExp('TOKEN', 5));
+      expect(jsContents).toMatch(contentQueryRegExp([{predicate: 'TOKEN', flags: 5}]));
     });
 
     it('should compile expressions that write keys', () => {
@@ -8467,7 +8497,7 @@ runInEachFileSystem((os: string) => {
         hostVars: 6,
         hostBindings: function UnsafeAttrsDirective_HostBindings(rf, ctx) {
           if (rf & 2) {
-            i0.ɵɵattribute("href", ctx.attrHref, i0.ɵɵsanitizeUrlOrResourceUrl)("src", ctx.attrSrc, i0.ɵɵsanitizeUrlOrResourceUrl)("action", ctx.attrAction, i0.ɵɵsanitizeUrl)("profile", ctx.attrProfile, i0.ɵɵsanitizeResourceUrl)("innerHTML", ctx.attrInnerHTML, i0.ɵɵsanitizeHtml)("title", ctx.attrSafeTitle);
+            i0.ɵɵattribute("href", ctx.attrHref, i0.ɵɵsanitizeUrlOrResourceUrl)("src", ctx.attrSrc, i0.ɵɵsanitizeUrlOrResourceUrl)("action", ctx.attrAction, i0.ɵɵsanitizeUrl)("profile", ctx.attrProfile)("innerHTML", ctx.attrInnerHTML, i0.ɵɵsanitizeHtml)("title", ctx.attrSafeTitle);
           }
         }
       `;
@@ -9248,6 +9278,33 @@ runInEachFileSystem((os: string) => {
       });
     });
 
+    describe('SVG animation processing', () => {
+      it('should generate SVG animation validation instruction', () => {
+        env.write(
+          'test.ts',
+          `
+            import {Component} from '@angular/core';
+
+            @Component({
+              selector: 'test-cmp',
+              template: '<svg><animate [attr.attributeName]="attr"></animate></svg>',
+              standalone: false,
+            })
+            export class TestCmp {
+              attr = 'opacity';
+            }
+          `,
+        );
+
+        env.driveMain();
+
+        const jsContents = env.getContents('test.js');
+        expect(jsContents).toContain(
+          'i0.ɵɵattribute("attributeName", ctx.attr, i0.ɵɵvalidateAttribute);',
+        );
+      });
+    });
+
     describe('inline resources', () => {
       it('should process inline <style> tags', () => {
         env.write(
@@ -9669,11 +9726,11 @@ runInEachFileSystem((os: string) => {
         // Only `sandbox` has an extra validation fn (since it's security-sensitive),
         // the `title` property doesn't have an extra validation fn.
         expect(jsContents).toContain(
-          'ɵɵdomProperty("sandbox", "", i0.ɵɵvalidateIframeAttribute)("title", "Hi!")',
+          'ɵɵdomProperty("sandbox", "", i0.ɵɵvalidateAttribute)("title", "Hi!")',
         );
 
         // The `allow` property is also security-sensitive, thus an extra validation fn.
-        expect(jsContents).toContain('ɵɵattribute("allow", "", i0.ɵɵvalidateIframeAttribute)');
+        expect(jsContents).toContain('ɵɵattribute("allow", "", i0.ɵɵvalidateAttribute)');
       });
 
       it(
@@ -9703,7 +9760,7 @@ runInEachFileSystem((os: string) => {
           // Make sure that the `sandbox` has an extra validation fn,
           // and the check is case-insensitive (since the `setAttribute` DOM API
           // is case-insensitive as well).
-          expect(jsContents).toContain('ɵɵattribute("SANDBOX", "", i0.ɵɵvalidateIframeAttribute)');
+          expect(jsContents).toContain('ɵɵattribute("SANDBOX", "", i0.ɵɵvalidateAttribute)');
         },
       );
 
@@ -9761,11 +9818,11 @@ runInEachFileSystem((os: string) => {
         // The `sandbox` is potentially a security-sensitive attribute of an <iframe>.
         // Generate an extra validation function to invoke at runtime, which would
         // check if an underlying host element is an <iframe>.
-        expect(jsContents).toContain('ɵɵdomProperty("sandbox", "", i0.ɵɵvalidateIframeAttribute)');
+        expect(jsContents).toContain('ɵɵdomProperty("sandbox", "", i0.ɵɵvalidateAttribute)');
 
         // Similar to the above, but for an attribute binding (host attributes are
         // represented via `ɵɵattribute`).
-        expect(jsContents).toContain('ɵɵattribute("allow", "", i0.ɵɵvalidateIframeAttribute)');
+        expect(jsContents).toContain('ɵɵattribute("allow", "", i0.ɵɵvalidateAttribute)');
       });
 
       it(
@@ -9791,7 +9848,7 @@ runInEachFileSystem((os: string) => {
 
           // Make sure that we generate a validation fn for the `sandbox` attribute,
           // even when it was declared as `SANDBOX`.
-          expect(jsContents).toContain('ɵɵattribute("SANDBOX", "", i0.ɵɵvalidateIframeAttribute)');
+          expect(jsContents).toContain('ɵɵattribute("SANDBOX", "", i0.ɵɵvalidateAttribute)');
         },
       );
     });
