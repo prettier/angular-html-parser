@@ -14,12 +14,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    working-directory: packages/angular-html-parser
+
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
         node:
+          - "24"
           - "22"
           - "20"
           - "18"
@@ -39,5 +44,4 @@ jobs:
           yarn test
           yarn build
           yarn lint
-        working-directory: packages/angular-html-parser
 

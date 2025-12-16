@@ -54,6 +54,3 @@ baseline.json
 
 # Ignore cache created with the Angular CLI.
 .angular/
-
-# angular-html-parser
-packages/angular-html-parser/coverage

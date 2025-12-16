@@ -1,12 +1,13 @@
 {
-  "$schema": "https://unpkg.com/release-it@18/schema/release-it.json",
+  "$schema": "https://unpkg.com/release-it/schema/release-it.json",
   "git": {
-    "commitMessage": "chore: release v${version}"
+    "commitMessage": "chore: release v${version}",
+    "tagName": "v${version}"
   },
   "github": {
     "release": true
   },
-  "hooks": {
-    "after:bump": "node --run build"
+  "npm": {
+    "publish": false
   }
 }

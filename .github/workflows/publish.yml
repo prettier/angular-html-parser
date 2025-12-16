@@ -1,0 +1,37 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions: {}
+
+defaults:
+  run:
+    working-directory: packages/angular-html-parser
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 'lts/*'
+
+      - run: |
+          yarn --immutable
+          yarn build
+
+      - run: npm pkg delete scripts devDependencies packageManager
+
+      - run: |
+          node --version
+          npm --version
+
+      - run: npm publish
