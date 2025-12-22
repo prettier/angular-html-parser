@@ -54,6 +54,7 @@ export {
   ANIMATION_MODULE_TYPE,
   CSP_NONCE,
 } from './application/application_tokens';
+export {provideStabilityDebugging} from './application/stability_debug_impl';
 export {
   APP_INITIALIZER,
   ApplicationInitStatus,
@@ -116,7 +117,7 @@ export {Binding, inputBinding, outputBinding, twoWayBinding} from './render3/dyn
 export {ApplicationConfig, mergeApplicationConfig} from './application/application_config';
 export {makeStateKey, StateKey, TransferState} from './transfer_state';
 export {booleanAttribute, numberAttribute} from './util/coercion';
-export {REQUEST, REQUEST_CONTEXT, RESPONSE_INIT} from './application/platform_tokens';
+export {REQUEST, REQUEST_CONTEXT, RESPONSE_INIT, ResponseInit} from './application/platform_tokens';
 export {DOCUMENT} from './document';
 export {provideNgReflectAttributes} from './ng_reflect';
 export {
