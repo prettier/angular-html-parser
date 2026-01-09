@@ -106,6 +106,53 @@ describe("AST format", () => {
         ],
       }),
     ]);
+
+    {
+      const input = `
+@switch (case) {
+  @case (0)
+  @case (1) {
+    <div>case 0 or 1</div>
+  }
+  @case (2) {
+    <div>case 2</div>
+  }
+  @default {
+    <div>default</div>
+  }
+}
+      `;
+      const ast = parse(input, { tokenizeAngularBlocks: true });
+      expect(humanizeDom(ast)).toEqual([
+        [html.Text, "\n", 0, ["\n"]],
+        [html.Block, "switch", 0],
+        [html.BlockParameter, "case"],
+        [html.Text, "\n  ", 1, ["\n  "]],
+        [html.Block, "case", 1],
+        [html.BlockParameter, "0"],
+        [html.Block, "case", 1],
+        [html.BlockParameter, "1"],
+        [html.Text, "\n    ", 2, ["\n    "]],
+        [html.Element, "div", 2],
+        [html.Text, "case 0 or 1", 3, ["case 0 or 1"]],
+        [html.Text, "\n  ", 2, ["\n  "]],
+        [html.Text, "\n  ", 1, ["\n  "]],
+        [html.Block, "case", 1],
+        [html.BlockParameter, "2"],
+        [html.Text, "\n    ", 2, ["\n    "]],
+        [html.Element, "div", 2],
+        [html.Text, "case 2", 3, ["case 2"]],
+        [html.Text, "\n  ", 2, ["\n  "]],
+        [html.Text, "\n  ", 1, ["\n  "]],
+        [html.Block, "default", 1],
+        [html.Text, "\n    ", 2, ["\n    "]],
+        [html.Element, "div", 2],
+        [html.Text, "default", 3, ["default"]],
+        [html.Text, "\n  ", 2, ["\n  "]],
+        [html.Text, "\n", 1, ["\n"]],
+        [html.Text, "\n      ", 0, ["\n      "]],
+      ]);
+    }
   });
 
   it("should support 'tokenizeAngularLetDeclaration'", () => {
