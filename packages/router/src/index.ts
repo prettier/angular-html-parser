@@ -82,6 +82,7 @@ export {
   NavigationErrorHandlerFeature,
   PreloadingFeature,
   provideRouter,
+  withExperimentalPlatformNavigation,
   provideRoutes,
   RouterConfigurationFeature,
   RouterFeature,
@@ -96,10 +97,13 @@ export {
   withNavigationErrorHandler,
   withPreloading,
   withRouterConfig,
+  withExperimentalAutoCleanupInjectors,
 } from './provide_router';
+
 export {
   BaseRouteReuseStrategy,
   DetachedRouteHandle,
+  destroyDetachedRouteHandle,
   RouteReuseStrategy,
 } from './route_reuse_strategy';
 export {Router} from './router';
@@ -134,6 +138,7 @@ export {
   UrlSegmentGroup,
   UrlSerializer,
   UrlTree,
+  isActive,
 } from './url_tree';
 export {
   mapToCanActivate,

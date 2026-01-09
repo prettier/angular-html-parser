@@ -456,11 +456,16 @@ export abstract class AbstractEmitterVisitor implements o.StatementVisitor, o.Ex
     ctx.print(ast, `{`);
     this.visitAllObjects(
       (entry) => {
-        ctx.print(
-          ast,
-          `${escapeIdentifier(entry.key, this._escapeDollarInStrings, entry.quoted)}:`,
-        );
-        entry.value.visitExpression(this, ctx);
+        if (entry instanceof o.LiteralMapSpreadAssignment) {
+          ctx.print(ast, '...');
+          entry.expression.visitExpression(this, ctx);
+        } else {
+          ctx.print(
+            ast,
+            `${escapeIdentifier(entry.key, this._escapeDollarInStrings, entry.quoted)}:`,
+          );
+          entry.value.visitExpression(this, ctx);
+        }
       },
       ast.entries,
       ctx,
@@ -480,6 +485,10 @@ export abstract class AbstractEmitterVisitor implements o.StatementVisitor, o.Ex
     // the inner expression.
     // TODO: Do we *need* to parenthesize everything?
     ast.expr.visitExpression(this, ctx);
+  }
+  visitSpreadElementExpr(ast: o.SpreadElementExpr, ctx: EmitterVisitorContext) {
+    ctx.print(ast, '...');
+    ast.expression.visitExpression(this, ctx);
   }
   visitAllExpressions(
     expressions: o.Expression[],

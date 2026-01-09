@@ -318,7 +318,9 @@ function ingestElement(unit: ViewCompilationUnit, element: t.Element): void {
 
   // We want to ensure that the controlCreateOp is after the ops that create the element
   const fieldInput = element.inputs.find(
-    (input) => input.name === 'field' && input.type === e.BindingType.Property,
+    (input) =>
+      (input.name === 'field' || input.name === 'formField') &&
+      input.type === e.BindingType.Property,
   );
   if (fieldInput) {
     // If the input name is 'field', this could be a form control binding which requires a
@@ -572,24 +574,24 @@ function ingestIfBlock(unit: ViewCompilationUnit, ifBlock: t.IfBlock): void {
  */
 function ingestSwitchBlock(unit: ViewCompilationUnit, switchBlock: t.SwitchBlock): void {
   // Don't ingest empty switches since they won't render anything.
-  if (switchBlock.cases.length === 0) {
+  if (switchBlock.groups.length === 0) {
     return;
   }
 
   let firstXref: ir.XrefId | null = null;
   let conditions: Array<ir.ConditionalCaseExpr> = [];
-  for (let i = 0; i < switchBlock.cases.length; i++) {
-    const switchCase = switchBlock.cases[i];
+  for (let i = 0; i < switchBlock.groups.length; i++) {
+    const switchCaseGroup = switchBlock.groups[i];
     const cView = unit.job.allocateView(unit.xref);
-    const tagName = ingestControlFlowInsertionPoint(unit, cView.xref, switchCase);
+    const tagName = ingestControlFlowInsertionPoint(unit, cView.xref, switchCaseGroup);
     let switchCaseI18nMeta: i18n.BlockPlaceholder | undefined = undefined;
-    if (switchCase.i18n !== undefined) {
-      if (!(switchCase.i18n instanceof i18n.BlockPlaceholder)) {
+    if (switchCaseGroup.i18n !== undefined) {
+      if (!(switchCaseGroup.i18n instanceof i18n.BlockPlaceholder)) {
         throw Error(
-          `Unhandled i18n metadata type for switch block: ${switchCase.i18n?.constructor.name}`,
+          `Unhandled i18n metadata type for switch block: ${switchCaseGroup.i18n?.constructor.name}`,
         );
       }
-      switchCaseI18nMeta = switchCase.i18n;
+      switchCaseI18nMeta = switchCaseGroup.i18n;
     }
 
     const createOp = i === 0 ? ir.createConditionalCreateOp : ir.createConditionalBranchCreateOp;
@@ -601,24 +603,27 @@ function ingestSwitchBlock(unit: ViewCompilationUnit, switchBlock: t.SwitchBlock
       'Case',
       ir.Namespace.HTML,
       switchCaseI18nMeta,
-      switchCase.startSourceSpan,
-      switchCase.sourceSpan,
+      switchCaseGroup.startSourceSpan,
+      switchCaseGroup.sourceSpan,
     );
     unit.create.push(conditionalCreateOp);
 
     if (firstXref === null) {
       firstXref = cView.xref;
     }
-    const caseExpr = switchCase.expression
-      ? convertAst(switchCase.expression, unit.job, switchBlock.startSourceSpan)
-      : null;
-    const conditionalCaseExpr = new ir.ConditionalCaseExpr(
-      caseExpr,
-      conditionalCreateOp.xref,
-      conditionalCreateOp.handle,
-    );
-    conditions.push(conditionalCaseExpr);
-    ingestNodes(cView, switchCase.children);
+
+    for (const switchCase of switchCaseGroup.cases) {
+      const caseExpr = switchCase.expression
+        ? convertAst(switchCase.expression, unit.job, switchBlock.startSourceSpan)
+        : null;
+      const conditionalCaseExpr = new ir.ConditionalCaseExpr(
+        caseExpr,
+        conditionalCreateOp.xref,
+        conditionalCreateOp.handle,
+      );
+      conditions.push(conditionalCaseExpr);
+    }
+    ingestNodes(cView, switchCaseGroup.children);
   }
   unit.update.push(
     ir.createConditionalOp(
@@ -1067,10 +1072,7 @@ function convertAst(
   if (ast instanceof e.ASTWithSource) {
     return convertAst(ast.ast, job, baseSourceSpan);
   } else if (ast instanceof e.PropertyRead) {
-    // Whether this is an implicit receiver, *excluding* explicit reads of `this`.
-    const isImplicitReceiver =
-      ast.receiver instanceof e.ImplicitReceiver && !(ast.receiver instanceof e.ThisReceiver);
-    if (isImplicitReceiver) {
+    if (ast.receiver instanceof e.ImplicitReceiver) {
       return new ir.LexicalReadExpr(ast.name);
     } else {
       return new o.ReadPropExpr(
@@ -1138,10 +1140,13 @@ function convertAst(
     throw new Error(`AssertionError: Chain in unknown context`);
   } else if (ast instanceof e.LiteralMap) {
     const entries = ast.keys.map((key, idx) => {
-      const value = ast.values[idx];
+      const value = convertAst(ast.values[idx], job, baseSourceSpan);
+
       // TODO: should literals have source maps, or do we just map the whole surrounding
       // expression?
-      return new o.LiteralMapEntry(key.key, convertAst(value, job, baseSourceSpan), key.quoted);
+      return key.kind === 'spread'
+        ? new o.LiteralMapSpreadAssignment(value)
+        : new o.LiteralMapPropertyAssignment(key.key, value, key.quoted);
     });
     return new o.LiteralMapExpr(entries, undefined, convertSourceSpan(ast.span, baseSourceSpan));
   } else if (ast instanceof e.LiteralArray) {
@@ -1213,6 +1218,8 @@ function convertAst(
     );
   } else if (ast instanceof e.RegularExpressionLiteral) {
     return new o.RegularExpressionLiteralExpr(ast.body, ast.flags, baseSourceSpan);
+  } else if (ast instanceof e.SpreadElement) {
+    return new o.SpreadElementExpr(convertAst(ast.expression, job, baseSourceSpan));
   } else {
     throw new Error(
       `Unhandled expression type "${ast.constructor.name}" in file "${baseSourceSpan?.start.file.url}"`,
@@ -1834,7 +1841,7 @@ function convertSourceSpan(
 function ingestControlFlowInsertionPoint(
   unit: ViewCompilationUnit,
   xref: ir.XrefId,
-  node: t.IfBlockBranch | t.SwitchBlockCase | t.ForLoopBlock | t.ForLoopBlockEmpty,
+  node: t.IfBlockBranch | t.SwitchBlockCaseGroup | t.ForLoopBlock | t.ForLoopBlockEmpty,
 ): string | null {
   let root: t.Element | t.Template | null = null;
 

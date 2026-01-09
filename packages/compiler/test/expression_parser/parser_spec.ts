@@ -18,6 +18,8 @@ import {
   TemplateBinding,
   VariableBinding,
   BindingPipeType,
+  ParseSpan,
+  LiteralMapPropertyKey,
 } from '../../src/expression_parser/ast';
 import {ParseError} from '../../src/parse_util';
 import {Lexer} from '../../src/expression_parser/lexer';
@@ -200,6 +202,21 @@ describe('parser', () => {
         expectActionError('{a["b"]}', 'expected } at column 3');
         expectActionError('{1234}', ' expected identifier, keyword, or string at column 2');
       });
+
+      it('should parse spread assignments in object literals', () => {
+        checkAction('{...foo}');
+        checkAction('{one: 1, ...foo, two: 2}');
+        checkAction('{...foo, middle: true, ...bar}');
+        checkAction('{...{...{...{foo: 1}}}}');
+      });
+
+      it('should spread elements in array literals', () => {
+        checkAction('[...foo]');
+        checkAction('[1, ...foo, 2]');
+        checkAction('[...foo, middle, ...bar]');
+        checkAction('[...[...[...[1]]]]');
+        checkAction('[a, ...b, ...[1, 2, 3]]');
+      });
     });
 
     describe('member access', () => {
@@ -299,6 +316,20 @@ describe('parser', () => {
         checkAction('a?.add?.(1, 2)');
         checkAction('fn?.().add?.(1, 2)');
         checkAction('fn?.()?.(1, 2)');
+      });
+
+      it('should parse rest arguments in calls', () => {
+        checkAction('fn(...foo)');
+        checkAction('fn(1, ...foo, 2)');
+        checkAction('fn(...foo, middle, ...bar)');
+        checkAction('fn(a, ...b, ...[1, 2, 3])');
+      });
+
+      it('should parse rest arguments in safe calls', () => {
+        checkAction('fn?.(...foo)');
+        checkAction('fn?.(1, ...foo, 2)');
+        checkAction('fn?.(...foo, middle, ...bar)');
+        checkAction('fn?.(a, ...b, ...[1, 2, 3])');
       });
     });
 
@@ -718,6 +749,36 @@ describe('parser', () => {
       }
     });
 
+    it('should produce correct span for typeof expression', () => {
+      const ast = parseAction('foo = typeof bar');
+
+      expect(unparseWithSpan(ast)).toEqual([
+        ['foo = typeof bar', 'foo = typeof bar'],
+        ['foo', 'foo'],
+        ['foo', '[nameSpan] foo'],
+        ['', ''],
+        ['typeof bar', 'typeof bar'],
+        ['bar', 'bar'],
+        ['bar', '[nameSpan] bar'],
+        ['', ' '],
+      ]);
+    });
+
+    it('should produce correct span for void expression', () => {
+      const ast = parseAction('foo = void bar');
+
+      expect(unparseWithSpan(ast)).toEqual([
+        ['foo = void bar', 'foo = void bar'],
+        ['foo', 'foo'],
+        ['foo', '[nameSpan] foo'],
+        ['', ''],
+        ['void bar', 'void bar'],
+        ['bar', 'bar'],
+        ['bar', '[nameSpan] bar'],
+        ['', ' '],
+      ]);
+    });
+
     it('should record span for a regex without flags', () => {
       const ast = parseBinding('/^http:\\/\\/foo\\.bar/');
       expect(unparseWithSpan(ast)).toContain([
@@ -731,6 +792,43 @@ describe('parser', () => {
       expect(unparseWithSpan(ast)).toContain([
         '/^http:\\/\\/foo\\.bar/gim',
         '/^http:\\/\\/foo\\.bar/gim',
+      ]);
+    });
+
+    it('should record span for literal map keys', () => {
+      const ast = parseBinding('{one: 1, two: "the number two", three, "four": 4, ...five}');
+      const literal = ast.ast as LiteralMap;
+      const getSource = (span: ParseSpan) => ast.source?.substring(span.start, span.end);
+
+      expect(getSource(literal.keys[0].span)).toBe('one');
+      expect(getSource(literal.keys[1].span)).toBe('two');
+      expect(getSource(literal.keys[2].span)).toBe('three');
+      expect(getSource(literal.keys[3].span)).toBe('"four"');
+      expect(getSource(literal.keys[4].span)).toBe('...');
+    });
+
+    it('should record span for spread elements', () => {
+      expect(unparseWithSpan(parseBinding('[...foo]'))).toEqual([
+        ['[...foo]', '[...foo]'],
+        ['...foo', '...foo'],
+        ['foo', 'foo'],
+        ['foo', '[nameSpan] foo'],
+        ['', ''],
+      ]);
+    });
+
+    it('should record span for rest arguments in functions', () => {
+      expect(unparseWithSpan(parseBinding('fn(1, ...foo)'))).toEqual([
+        ['fn(1, ...foo)', 'fn(1, ...foo)'],
+        ['fn(1, ...foo)', '[argumentSpan] 1, ...foo'],
+        ['fn', 'fn'],
+        ['fn', '[nameSpan] fn'],
+        ['', ''],
+        ['1', '1'],
+        ['...foo', '...foo'],
+        ['foo', 'foo'],
+        ['foo', '[nameSpan] foo'],
+        ['', ''],
       ]);
     });
   });
@@ -902,9 +1000,10 @@ describe('parser', () => {
     it('should expose object shorthand information in AST', () => {
       const parser = new Parser(new Lexer());
       const ast = parser.parseBinding('{bla}', getFakeSpan(), 0);
-      expect(ast.ast instanceof LiteralMap).toBe(true);
-      expect((ast.ast as LiteralMap).keys.length).toBe(1);
-      expect((ast.ast as LiteralMap).keys[0].isShorthandInitialized).toBe(true);
+      const map = ast.ast as LiteralMap;
+      expect(map instanceof LiteralMap).toBe(true);
+      expect(map.keys.length).toBe(1);
+      expect((map.keys[0] as LiteralMapPropertyKey).isShorthandInitialized).toBe(true);
     });
   });
 

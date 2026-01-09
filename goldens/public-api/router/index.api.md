@@ -106,6 +106,7 @@ export class ActivationStart {
 export abstract class BaseRouteReuseStrategy implements RouteReuseStrategy {
     retrieve(route: ActivatedRouteSnapshot): DetachedRouteHandle | null;
     shouldAttach(route: ActivatedRouteSnapshot): boolean;
+    shouldDestroyInjector(route: Route): boolean;
     shouldDetach(route: ActivatedRouteSnapshot): boolean;
     shouldReuseRoute(future: ActivatedRouteSnapshot, curr: ActivatedRouteSnapshot): boolean;
     store(route: ActivatedRouteSnapshot, detachedTree: DetachedRouteHandle): void;
@@ -248,6 +249,9 @@ export type DeprecatedGuard = ProviderToken<any> | string;
 export type DeprecatedResolve = DeprecatedGuard | any;
 
 // @public
+export function destroyDetachedRouteHandle(handle: DetachedRouteHandle): void;
+
+// @public
 export type DetachedRouteHandle = {};
 
 // @public
@@ -364,6 +368,9 @@ export interface InMemoryScrollingOptions {
     anchorScrolling?: 'disabled' | 'enabled';
     scrollPositionRestoration?: 'disabled' | 'enabled' | 'top';
 }
+
+// @public
+export function isActive(url: string | UrlTree, router: Router, matchOptions: IsActiveMatchOptions): Signal<boolean>;
 
 // @public
 export interface IsActiveMatchOptions {
@@ -605,7 +612,7 @@ export class RedirectCommand {
 }
 
 // @public
-export type RedirectFunction = (redirectData: Pick<ActivatedRouteSnapshot, 'routeConfig' | 'url' | 'params' | 'queryParams' | 'fragment' | 'data' | 'outlet' | 'title'>) => MaybeAsync<string | UrlTree>;
+export type RedirectFunction = (redirectData: Pick<ActivatedRouteSnapshot, 'routeConfig' | 'url' | 'params' | 'queryParams' | 'fragment' | 'data' | 'outlet' | 'title' | 'paramMap' | 'queryParamMap'>) => MaybeAsync<string | UrlTree>;
 
 // @public
 export interface Resolve<T> {
@@ -718,6 +725,7 @@ export class Router {
     initialNavigation(): void;
     // @deprecated
     isActive(url: string | UrlTree, exact: boolean): boolean;
+    // @deprecated
     isActive(url: string | UrlTree, matchOptions: IsActiveMatchOptions): boolean;
     get lastSuccessfulNavigation(): Signal<Navigation | null>;
     navigate(commands: readonly any[], extras?: NavigationExtras): Promise<boolean>;
@@ -793,7 +801,7 @@ export interface RouterFeature<FeatureKind extends RouterFeatureKind> {
 }
 
 // @public
-export type RouterFeatures = PreloadingFeature | DebugTracingFeature | InitialNavigationFeature | InMemoryScrollingFeature | RouterConfigurationFeature | NavigationErrorHandlerFeature | ComponentInputBindingFeature | ViewTransitionsFeature | RouterHashLocationFeature;
+export type RouterFeatures = PreloadingFeature | DebugTracingFeature | InitialNavigationFeature | InMemoryScrollingFeature | RouterConfigurationFeature | NavigationErrorHandlerFeature | ComponentInputBindingFeature | ViewTransitionsFeature | ExperimentalAutoCleanupInjectorsFeature | RouterHashLocationFeature | ExperimentalPlatformNavigationFeature;
 
 // @public
 export type RouterHashLocationFeature = RouterFeature<RouterFeatureKind.RouterHashLocationFeature>;
@@ -1132,6 +1140,12 @@ export function withDisabledInitialNavigation(): DisabledInitialNavigationFeatur
 
 // @public
 export function withEnabledBlockingInitialNavigation(): EnabledBlockingInitialNavigationFeature;
+
+// @public
+export function withExperimentalAutoCleanupInjectors(): ExperimentalAutoCleanupInjectorsFeature;
+
+// @public
+export function withExperimentalPlatformNavigation(): ExperimentalPlatformNavigationFeature;
 
 // @public
 export function withHashLocation(): RouterHashLocationFeature;

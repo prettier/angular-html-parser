@@ -117,12 +117,12 @@ export class Field<T> {
     effect(
       (onCleanup) => {
         const fieldNode = this.state() as unknown as FieldNode;
-        fieldNode.nodeState.fieldBindings.update((controls) => [
+        fieldNode.nodeState.formFieldBindings.update((controls) => [
           ...controls,
           this as Field<unknown>,
         ]);
         onCleanup(() => {
-          fieldNode.nodeState.fieldBindings.update((controls) =>
+          fieldNode.nodeState.formFieldBindings.update((controls) =>
             controls.filter((c) => c !== this),
           );
         });

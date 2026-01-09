@@ -1275,12 +1275,12 @@ export function transformExpressionsInExpression(
       expr.entries[i] = transformExpressionsInExpression(expr.entries[i], transform, flags);
     }
   } else if (expr instanceof o.LiteralMapExpr) {
-    for (let i = 0; i < expr.entries.length; i++) {
-      expr.entries[i].value = transformExpressionsInExpression(
-        expr.entries[i].value,
-        transform,
-        flags,
-      );
+    for (const entry of expr.entries) {
+      if (entry instanceof o.LiteralMapSpreadAssignment) {
+        entry.expression = transformExpressionsInExpression(entry.expression, transform, flags);
+      } else {
+        entry.value = transformExpressionsInExpression(entry.value, transform, flags);
+      }
     }
   } else if (expr instanceof o.ConditionalExpr) {
     expr.condition = transformExpressionsInExpression(expr.condition, transform, flags);
@@ -1319,6 +1319,8 @@ export function transformExpressionsInExpression(
     }
   } else if (expr instanceof o.ParenthesizedExpr) {
     expr.expr = transformExpressionsInExpression(expr.expr, transform, flags);
+  } else if (expr instanceof o.SpreadElementExpr) {
+    expr.expression = transformExpressionsInExpression(expr.expression, transform, flags);
   } else if (
     expr instanceof o.ReadVarExpr ||
     expr instanceof o.ExternalExpr ||

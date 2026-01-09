@@ -1,3 +1,126 @@
+<a name="21.1.0-rc.0"></a>
+# 21.1.0-rc.0 (2026-01-08)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [d8790972be](https://github.com/angular/angular/commit/d8790972bea4c59a208219dd36d158b5d7e4fdde) | feat | Add custom transformations for Cloudflare and Cloudinary image loaders |
+| [a6b8cb68af](https://github.com/angular/angular/commit/a6b8cb68afaded6999ee68f495512be1a9932ae4) | feat | support custom transformations in ImageKit and Imgix loaders |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [640693da8e](https://github.com/angular/angular/commit/640693da8e667c015662246152236585d9b24e7f) | feat | Add support for multiple swich cases matching |
+| [10da2f9029](https://github.com/angular/angular/commit/10da2f9029720e7a647d57921548b39cf11f55dd) | fix | better types for a few expression AST nodes |
+| [3a56c1367f](https://github.com/angular/angular/commit/3a56c1367f336a7da0ed8dd00c299c8be8da848c) | fix | produce accurate span for typeof and void expressions |
+| [76fa180005](https://github.com/angular/angular/commit/76fa180005a30b431c133285b68e8398df2e0e52) | fix | provide location information for literal map keys |
+| [fa7cb4b87a](https://github.com/angular/angular/commit/fa7cb4b87af39f64a77ba930d891ac371a6858e9) | fix | stop ThisReceiver inheritance from ImplicitReceiver |
+| [0ad3adc7c6](https://github.com/angular/angular/commit/0ad3adc7c6d4094f1e3432a3f2e3bdc9862cb4fa) | fix | Support empty cases |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [106ba63650](https://github.com/angular/angular/commit/106ba63650340cc828e302dc4eb46dbd4fb43a3b) | fix | ensure component import diagnostics are reported within the `imports` expression |
+| [3a26244d61](https://github.com/angular/angular/commit/3a26244d61c9233e237817dc861be12dfc4bc918) | fix | fix up spelling of diagnostic |
+| [f12e160bc1](https://github.com/angular/angular/commit/f12e160bc1010daf582d5f0ab863a16e4b94ca4c) | fix | support qualified names in `typeof` type references |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [99ad18a4ee](https://github.com/angular/angular/commit/99ad18a4ee82ecc5524106d1d403ccfa9bae2304) | feat | Add stability debugging utility |
+| [a0dfa5fa86](https://github.com/angular/angular/commit/a0dfa5fa86f40520b0e368a021b3c72009a45e8e) | feat | support rest arguments in function calls |
+| [6e18fa8bc9](https://github.com/angular/angular/commit/6e18fa8bc9d7e6801e2e89e635c2f759dc422317) | feat | support spread elements in array literals |
+| [e407280ab5](https://github.com/angular/angular/commit/e407280ab53cde5f93c3a643457c848845c6ec8b) | feat | support spread expressions in object literals |
+| [80b0fbba1f](https://github.com/angular/angular/commit/80b0fbba1f9e3a8ce9a89aa88ae3efd4a1f60271) | fix | avoid leaking view data in animations |
+| [e2a9938c51](https://github.com/angular/angular/commit/e2a9938c517b1e0429818e285ef70b69bf61181b) | fix | explicitly cast signal node value to String |
+| [30e9c62bdf](https://github.com/angular/angular/commit/30e9c62bdfb8af73c24833473bd4492869538d2d) | fix | fix memory leak with event replay |
+| [86dc1283e8](https://github.com/angular/angular/commit/86dc1283e8cad0eac1a31bc2c6cff137e6cb2542) | fix | handle cancelled traversals in fake navigation |
+| [91dc91bae4](https://github.com/angular/angular/commit/91dc91bae4a1bbefc58bef6ef739d0e02ab44d56) | fix | sanitize sensitive attributes on SVG script elements |
+### forms
+| Commit | Type | Description |
+| -- | -- | -- |
+| [2d85ae5811](https://github.com/angular/angular/commit/2d85ae58115690507d4a47ca5c6a7a642abd1c2e) | feat | add `[formField]` directive |
+| [89c37f1f7f](https://github.com/angular/angular/commit/89c37f1f7f93ec3746479c73b87b948a6e93dcaa) | fix | allow custom controls to require `dirty` input |
+| [82edf18427](https://github.com/angular/angular/commit/82edf18427b1fcf7e63cb3ac930dfa1d065a25f1) | fix | allow custom controls to require `hidden` input |
+| [1a4c3eb1d0](https://github.com/angular/angular/commit/1a4c3eb1d09a5db57a07ea5ed593cbe3e47e8125) | fix | allow custom controls to require `pending` input |
+| [e7d99f02cb](https://github.com/angular/angular/commit/e7d99f02cba503aa7a30f71d388aef353205fff7) | fix | clean up abort listener after timeout |
+| [cb09fb8308](https://github.com/angular/angular/commit/cb09fb8308a7c94cca9af6074ef523ce094d5f67) | fix | support custom controls with non signal-based models |
+| [282220d032](https://github.com/angular/angular/commit/282220d032a64d32c466bb37057c6f91df39bfb3) | fix | Support readonly arrays in signal forms |
+### router
+| Commit | Type | Description |
+| -- | -- | -- |
+| [5edceffd04](https://github.com/angular/angular/commit/5edceffd0431f5a25e111a731db521e966b91f86) | feat | add controls for route cleanup |
+| [e44839b016](https://github.com/angular/angular/commit/e44839b01640505e554fff16f24e08f282a557c0) | feat | Add standalone function to create a comptued for isActive |
+| [1c00ab42f8](https://github.com/angular/angular/commit/1c00ab42f8714f2775ed75bbf3cdf0fd44ee32c3) | feat | extend paramters of RedirectFunction to include paramMap and queryParamMap |
+| [7003e8d241](https://github.com/angular/angular/commit/7003e8d2417660f71b3a2a017aff3e650c8d9646) | feat | Publish Router's integration with platform Navigation API as experimental |
+| [bcef77d950](https://github.com/angular/angular/commit/bcef77d9507e9778c35a6186ef4a8c1d67cd5992) | fix | Fix RouterLink href not updating with `queryParamsHandling` |
+| [9e043decaf](https://github.com/angular/angular/commit/9e043decaf01dc622236814a2a2db73ec2bffe28) | fix | handle errors from view transition `updateCallbackDone` promise |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="21.0.8"></a>
+# 21.0.8 (2026-01-08)
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [a6a2621bf9](https://github.com/angular/angular/commit/a6a2621bf9df02584e4079f4a804278fc2060a9c) | fix | fix memory leak with event replay |
+| [5239e471a1](https://github.com/angular/angular/commit/5239e471a1f887574c6703c0497e5854304cce4e) | fix | handle cancelled traversals in fake navigation |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="20.3.16"></a>
+# 20.3.16 (2026-01-07)
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [c2c2b4aaa8](https://github.com/angular/angular/commit/c2c2b4aaa84c67d2eccd4ef4f94b5ea444a7f73a) | fix | sanitize sensitive attributes on SVG script elements |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="19.2.18"></a>
+# 19.2.18 (2026-01-07)
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [26cdc53d9c](https://github.com/angular/angular/commit/26cdc53d9cf99ec41ffc0c71f58f8a14efc828d9) | fix | sanitize sensitive attributes on SVG script elements |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="21.0.7"></a>
+# 21.0.7 (2026-01-07)
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [8e808740c9](https://github.com/angular/angular/commit/8e808740c9311daa0f1c9bab8596ed5e54bdcc6a) | fix | better types for a few expression AST nodes |
+| [63b1cdcf70](https://github.com/angular/angular/commit/63b1cdcf70e6de448e8fa4ba1732d7bd7b5400d1) | fix | produce accurate span for typeof and void expressions |
+| [3c3ae0cb64](https://github.com/angular/angular/commit/3c3ae0cb64bb112d7167fd9b0bf7739f0c9e6a39) | fix | provide location information for literal map keys |
+| [523dbaf1c3](https://github.com/angular/angular/commit/523dbaf1c3646ce27f1cf2e4cfc84c730fea8da9) | fix | stop ThisReceiver inheritance from ImplicitReceiver |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [4d9c4567ed](https://github.com/angular/angular/commit/4d9c4567edfb8dd424a3336ef54ffdfc6ca7c15f) | fix | ensure component import diagnostics are reported within the `imports` expression |
+| [cd405685af](https://github.com/angular/angular/commit/cd405685afbfad530de7fb841ad352d2b702a9a4) | fix | fix up spelling of diagnostic |
+| [778460fcca](https://github.com/angular/angular/commit/778460fccac13d8667bb53fa24ba977a930c0253) | fix | support qualified names in `typeof` type references |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [7c74674eb0](https://github.com/angular/angular/commit/7c74674eb07491f808f79976e3e21787a841aefb) | fix | avoid leaking view data in animations |
+| [0edbee4550](https://github.com/angular/angular/commit/0edbee4550e85b933e9bd2ba3c5511ef6fbf7304) | fix | explicitly cast signal node value to String |
+| [f9c29572d2](https://github.com/angular/angular/commit/f9c29572d28feef878c73edad562b3a6451825a6) | fix | sanitize sensitive attributes on SVG script elements |
+### forms
+| Commit | Type | Description |
+| -- | -- | -- |
+| [e3fba182f9](https://github.com/angular/angular/commit/e3fba182f90a2673040cf267a970c54c07d4840f) | feat | add `[formField]` directive |
+| [561772b152](https://github.com/angular/angular/commit/561772b152458e1d91d4bf3ef45d9645a731f2b1) | fix | allow custom controls to require `dirty` input |
+| [f0fb1d8581](https://github.com/angular/angular/commit/f0fb1d8581671ca499bcb4790b0549825eb36a91) | fix | allow custom controls to require `hidden` input |
+| [ec110f170b](https://github.com/angular/angular/commit/ec110f170bbba95f023c8ae0e4429c35bfedc572) | fix | allow custom controls to require `pending` input |
+| [ae1dc16bb0](https://github.com/angular/angular/commit/ae1dc16bb0d30b6e87b0f98b7989e6685d856e31) | fix | clean up abort listener after timeout |
+| [9748b0d5da](https://github.com/angular/angular/commit/9748b0d5da6ffb1fd2498b23cc452240f46e0549) | fix | support custom controls with non signal-based models |
+| [6bd22df987](https://github.com/angular/angular/commit/6bd22df987e433a9e3cb759e35eb6403991cf4b7) | fix | Support readonly arrays in signal forms |
+### router
+| Commit | Type | Description |
+| -- | -- | -- |
+| [41cd4a6af8](https://github.com/angular/angular/commit/41cd4a6af800cf7807c46862c99ae036457d8fa7) | fix | Fix RouterLink href not updating with `queryParamsHandling` |
+| [5e9e09aee0](https://github.com/angular/angular/commit/5e9e09aee0c08901d2a4d48b60bd13692c73e76e) | fix | handle errors from view transition `updateCallbackDone` promise |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
 <a name="21.1.0-next.4"></a>
 # 21.1.0-next.4 (2025-12-17)
 ## Breaking Changes

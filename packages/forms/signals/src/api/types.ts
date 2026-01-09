@@ -9,8 +9,8 @@
 import {Signal, ɵFieldState} from '@angular/core';
 import {AbstractControl} from '@angular/forms';
 import type {Field} from './field_directive';
-import type {MetadataKey} from './rules/metadata';
-import type {ValidationError} from './rules/validation/validation_errors';
+import type {FormField} from './form_field_directive';
+import type {MetadataKey, ValidationError} from './rules';
 
 /**
  * Symbol used to retain generic type information when it would otherwise be lost.
@@ -169,7 +169,7 @@ export type FieldTree<TModel, TKey extends string | number = string | number> =
     // Children:
     ([TModel] extends [AbstractControl]
       ? object
-      : [TModel] extends [Array<infer U>]
+      : [TModel] extends [ReadonlyArray<infer U>]
         ? ReadonlyArrayLike<MaybeFieldTree<U, number>>
         : TModel extends Record<string, any>
           ? Subfields<TModel>
@@ -295,7 +295,7 @@ export interface FieldState<TValue, TKey extends string | number = string | numb
   /**
    * The {@link Field} directives that bind this field to a UI control.
    */
-  readonly fieldBindings: Signal<readonly Field<unknown>[]>;
+  readonly formFieldBindings: Signal<readonly (Field<unknown> | FormField<unknown>)[]>;
 
   /**
    * Reads a metadata value from the field.
@@ -408,7 +408,7 @@ export type SchemaPathTree<TModel, TPathKind extends PathKind = PathKind.Root> =
     (TModel extends AbstractControl
       ? unknown
       : // Array paths have no subpaths
-        TModel extends Array<any>
+        TModel extends ReadonlyArray<any>
         ? unknown
         : // Object subfields
           TModel extends Record<string, any>
@@ -569,7 +569,7 @@ export type TreeValidator<TValue, TPathKind extends PathKind = PathKind.Root> = 
  *
  * @template TValue The type of value stored in the field being validated
  * @template TPathKind The kind of path being validated (root field, child field, or item of an array)
- *
+ * @see [Signal Form Validation](/guide/forms/signals/validation)
  * @category types
  * @experimental 21.0.0
  */

@@ -43,7 +43,10 @@ import {Router} from './router';
 import {InMemoryScrollingOptions, ROUTER_CONFIGURATION, RouterConfigOptions} from './router_config';
 import {ROUTES} from './router_config_loader';
 import {PreloadingStrategy, RouterPreloader} from './router_preloader';
+import {routeInjectorCleanup, ROUTE_INJECTOR_CLEANUP} from './route_injector_cleanup';
+
 import {ROUTER_SCROLLER, RouterScroller} from './router_scroller';
+
 import {ActivatedRoute} from './router_state';
 import {afterNextNavigation} from './utils/navigations';
 import {
@@ -234,13 +237,36 @@ export function withInMemoryScrolling(
 }
 
 /**
- * Enables the use of the browser's `History` API for navigation.
+ * A type alias for providers returned by `withExperimentalPlatformNavigation` for use with `provideRouter`.
+ *
+ * @see {@link withExperimentalPlatformNavigation}
+ * @see {@link provideRouter}
+ *
+ * @experimental 21.1
+ */
+export type ExperimentalPlatformNavigationFeature =
+  RouterFeature<RouterFeatureKind.ExperimentalPlatformNavigationFeature>;
+
+/**
+ * Enables interop with the browser's `Navigation` API for router navigations.
  *
  * @description
- * This function provides a `Location` strategy that uses the browser's `History` API.
- * It is required when using features that rely on `history.state`. For example, the
- * `state` object in `NavigationExtras` is passed to `history.pushState` or
- * `history.replaceState`.
+ * 
+ * CRITICAL: This feature is _highly_ experimental and should not be used in production. Browser support
+ * is limited and in active development. Use only for experimentation and feedback purposes.
+ * 
+ * This function provides a `Location` strategy that uses the browser's `Navigation` API.
+ * By using the platform's Navigation APIs, the Router is able to provide native
+ * browser navigation capabilities. Some advantages include:
+ * 
+ * - The ability to intercept navigations triggered outside the Router. This allows plain anchor
+ * elements _without_ `RouterLink` directives to be intercepted by the Router and converted to SPA navigations.
+ * - Native scroll and focus restoration support by the browser, without the need for custom implementations.
+ * - Communication of ongoing navigations to the browser, enabling built-in features like 
+ * accessibility announcements, loading indicators, stop buttons, and performance measurement APIs.
+
+ * NOTE: Deferred entry updates are not part of the interop 2025 Navigation API commitments so the "ongoing navigation"
+ * communication support is limited.
  *
  * @usageNotes
  *
@@ -251,14 +277,19 @@ export function withInMemoryScrolling(
  *
  * bootstrapApplication(AppComponent, {
  *   providers: [
- *     provideRouter(appRoutes, withPlatformNavigation())
+ *     provideRouter(appRoutes, withExperimentalPlatformNavigation())
  *   ]
  * });
  * ```
+ * 
+ * @see https://github.com/WICG/navigation-api?tab=readme-ov-file#problem-statement
+ * @see https://developer.chrome.com/docs/web-platform/navigation-api/
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Navigation_API
  *
+ * @experimental 21.1 
  * @returns A `RouterFeature` that enables the platform navigation.
  */
-export function withPlatformNavigation() {
+export function withExperimentalPlatformNavigation(): ExperimentalPlatformNavigationFeature {
   const devModeLocationCheck =
     typeof ngDevMode === 'undefined' || ngDevMode
       ? [
@@ -267,10 +298,10 @@ export function withPlatformNavigation() {
             if (!(locationInstance instanceof ɵNavigationAdapterForLocation)) {
               const locationConstructorName = (locationInstance as any).constructor.name;
               let message =
-                `'withPlatformNavigation' provides a 'Location' implementation that ensures navigation APIs are consistently used.` +
+                `'withExperimentalPlatformNavigation' provides a 'Location' implementation that ensures navigation APIs are consistently used.` +
                 ` An instance of ${locationConstructorName} was found instead.`;
               if (locationConstructorName === 'SpyLocation') {
-                message += ` One of 'RouterTestingModule' or 'provideLocationMocks' was likely used. 'withPlatformNavigation' does not work with these because they override the Location implementation.`;
+                message += ` One of 'RouterTestingModule' or 'provideLocationMocks' was likely used. 'withExperimentalPlatformNavigation' does not work with these because they override the Location implementation.`;
               }
               throw new Error(message);
             }
@@ -282,7 +313,7 @@ export function withPlatformNavigation() {
     {provide: Location, useClass: ɵNavigationAdapterForLocation},
     devModeLocationCheck,
   ];
-  return routerFeature(RouterFeatureKind.InMemoryScrollingFeature, providers);
+  return routerFeature(RouterFeatureKind.ExperimentalPlatformNavigationFeature, providers);
 }
 
 export function getBootstrapListener() {
@@ -747,6 +778,37 @@ export function withNavigationErrorHandler(
 }
 
 /**
+ * A type alias for providers returned by `withExperimentalAutoCleanupInjectors` for use with `provideRouter`.
+ *
+ * @see {@link withExperimentalAutoCleanupInjectors}
+ * @see {@link provideRouter}
+ *
+ * @experimental 21.1
+ */
+export type ExperimentalAutoCleanupInjectorsFeature =
+  RouterFeature<RouterFeatureKind.ExperimentalAutoCleanupInjectorsFeature>;
+
+/**
+ * Enables automatic destruction of unused route injectors.
+ *
+ * @description
+ *
+ * When enabled, the router will automatically destroy `EnvironmentInjector`s associated with `Route`s
+ * that are no longer active or stored by the `RouteReuseStrategy`.
+ *
+ * This feature is opt-in and requires `RouteReuseStrategy.shouldDestroyInjector` to return `true`
+ * for the routes that should be destroyed. If the `RouteReuseStrategy` uses stored handles, it
+ * should also implement `retrieveStoredHandle` to ensure we don't destroy injectors for handles that will be reattached.
+ *
+ * @experimental 21.1
+ */
+export function withExperimentalAutoCleanupInjectors(): ExperimentalAutoCleanupInjectorsFeature {
+  return routerFeature(RouterFeatureKind.ExperimentalAutoCleanupInjectorsFeature, [
+    {provide: ROUTE_INJECTOR_CLEANUP, useValue: routeInjectorCleanup},
+  ]);
+}
+
+/**
  * A type alias for providers returned by `withComponentInputBinding` for use with `provideRouter`.
  *
  * @see {@link withComponentInputBinding}
@@ -875,7 +937,9 @@ export type RouterFeatures =
   | NavigationErrorHandlerFeature
   | ComponentInputBindingFeature
   | ViewTransitionsFeature
-  | RouterHashLocationFeature;
+  | ExperimentalAutoCleanupInjectorsFeature
+  | RouterHashLocationFeature
+  | ExperimentalPlatformNavigationFeature;
 
 /**
  * The list of features as an enum to uniquely type each feature.
@@ -891,4 +955,6 @@ export const enum RouterFeatureKind {
   NavigationErrorHandlerFeature,
   ComponentInputBindingFeature,
   ViewTransitionsFeature,
+  ExperimentalAutoCleanupInjectorsFeature,
+  ExperimentalPlatformNavigationFeature,
 }

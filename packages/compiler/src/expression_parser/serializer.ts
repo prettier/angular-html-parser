@@ -58,7 +58,12 @@ class SerializeExpressionVisitor implements expr.AstVisitor {
 
   visitLiteralMap(ast: expr.LiteralMap, context: any): string {
     return `{${zip(
-      ast.keys.map((literal) => (literal.quoted ? `'${literal.key}'` : literal.key)),
+      ast.keys.map((literal) => {
+        if (literal.kind === 'spread') {
+          return '...';
+        }
+        return literal.quoted ? `'${literal.key}'` : literal.key;
+      }),
       ast.values.map((value) => value.visit(this, context)),
     )
       .map(([key, value]) => `${key}: ${value}`)
@@ -94,7 +99,10 @@ class SerializeExpressionVisitor implements expr.AstVisitor {
   }
 
   visitPropertyRead(ast: expr.PropertyRead, context: any): string {
-    if (ast.receiver instanceof expr.ImplicitReceiver) {
+    if (
+      ast.receiver instanceof expr.ImplicitReceiver ||
+      ast.receiver instanceof expr.ThisReceiver
+    ) {
       return ast.name;
     } else {
       return `${ast.receiver.visit(this, context)}.${ast.name}`;
@@ -155,6 +163,10 @@ class SerializeExpressionVisitor implements expr.AstVisitor {
 
   visitTaggedTemplateLiteral(ast: expr.TaggedTemplateLiteral, context: any) {
     return ast.tag.visit(this, context) + ast.template.visit(this, context);
+  }
+
+  visitSpreadElement(ast: expr.SpreadElement, context: any) {
+    return `...${ast.expression.visit(this, context)}`;
   }
 
   visitParenthesizedExpression(ast: expr.ParenthesizedExpression, context: any) {

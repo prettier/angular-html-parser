@@ -38,6 +38,41 @@ count.update((value) => value + 1);
 
 Writable signals have the type `WritableSignal`.
 
+#### Converting writable signals to readonly
+
+`WritableSignal` provide a `asReadonly()` method that returns a readonly version of the signal. This is useful when you want to expose a signal's value to consumers without allowing them to modify it directly:
+
+```ts
+@Injectable({providedIn: 'root'})
+export class CounterState {
+  // Private writable state
+  private readonly _count = signal(0);
+
+  readonly count = this._count.asReadonly(); // public readonly
+
+  increment() {
+    this._count.update((v) => v + 1);
+  }
+}
+
+@Component({
+  /* ... */
+})
+export class AwesomeCounter {
+  state = inject(CounterState);
+
+  count = this.state.count; // can read but not modify
+
+  increment() {
+    this.state.increment();
+  }
+}
+```
+
+The readonly signal reflects any changes made to the original writable signal, but cannot be modified using `set()` or `update()` methods.
+
+IMPORTANT: The readonly signals do **not** have any built-in mechanism that would prevent deep-mutation of their value.
+
 ### Computed signals
 
 **Computed signal** are read-only signals that derive their value from other signals. You define computed signals using the `computed` function and specifying a derivation:
@@ -108,7 +143,7 @@ During these operations, Angular creates a _live_ connection. If a tracked signa
 Angular provides the `assertNotInReactiveContext` helper function to assert that code is not executing within a reactive context. Pass a reference to the calling function so the error message points to the correct API entry point if the assertion fails. This produces a clearer, more actionable error message than a generic reactive context error.
 
 ```ts
-import { assertNotInReactiveContext } from '@angular/core';
+import {assertNotInReactiveContext} from '@angular/core';
 
 function subscribeToEvents() {
   assertNotInReactiveContext(subscribeToEvents);
@@ -160,7 +195,7 @@ All signal APIs are synchronous— `signal`, `computed`, `input`, etc. However, 
 
 ## Executing side effects on non-reactive APIs
 
-Synchronous or asynchronous derivations are recommended when we want to react to state changes. However this doesn't cover all the usecase and you'll sometime find yourself in a situation where you need to react on signal changes on non-reactive apis. Use `effect` or `afterRenderEffect` for those specific usecases. For more information see [Side effects for non-reactives APIs](/guide/signals/effect) guide.
+Synchronous or asynchronous derivations are recommended when we want to react to state changes. However, this doesn't cover all the possible use cases, and you'll sometimes find yourself in a situation where you need to react to signal changes on non-reactive apis. Use `effect` or `afterRenderEffect` for those specific usecases. For more information see [Side effects for non-reactive APIs](/guide/signals/effect) guide.
 
 ## Reading signals in `OnPush` components
 

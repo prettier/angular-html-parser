@@ -3,7 +3,7 @@
  * Copyright Google Inc. All Rights Reserved.
  *
  * Use of this source code is governed by an MIT-style license that can be
- * found in the LICENSE file at https://angular.io/license
+ * found in the LICENSE file at https://angular.dev/license
  */
 
 import * as fs from 'node:fs';
@@ -24,7 +24,7 @@ import {
   GetTemplateLocationForComponent,
   IsInAngularProject,
 } from '../../common/requests';
-import {NodeModule, resolve} from '../../common/resolver';
+import {NodeModule, resolve, Version} from '../../common/resolver';
 
 import {isInsideStringLiteral, isNotTypescriptOrSupportedDecoratorField} from './embedded_support';
 
@@ -575,8 +575,8 @@ function registerNotificationHandlers(client: lsp.LanguageClient): vscode.Dispos
       const doNotPromptAgain = 'Do not show again for this workspace';
       const selection = await vscode.window.showInformationMessage(
         'Some language features are not available. To access all features, enable ' +
-          '[strictTemplates](https://angular.io/guide/angular-compiler-options#stricttemplates) in ' +
-          '[angularCompilerOptions](https://angular.io/guide/angular-compiler-options).',
+          '[strictTemplates](https://angular.dev/reference/configs/angular-compiler-options#stricttemplates) in ' +
+          '[angularCompilerOptions](https://angular.dev/reference/configs/angular-compiler-options).',
         openTsConfig,
         doNotPromptAgain,
       );
@@ -676,6 +676,10 @@ function setAngularVersionAndShowMultipleVersionsWarning(
 ) {
   if (angularVersions.length === 0) {
     return;
+  }
+  if (angularVersions[0].version.toString() === '0.0.0') {
+    // If only version 0.x is found, update it to 999 instead (0.0.0 is used for the version when building locally)
+    angularVersions[0].version = new Version('999.999.999');
   }
   // Pass the earliest Angular version along to the compiler for maximum compatibility.
   // For example, if we tell the v21 compiler that we're using v21 but there's a v13 project,

@@ -243,20 +243,26 @@ export class TypeScriptAstFactory implements AstFactory<ts.Statement, ts.Express
 
   createObjectLiteral(properties: ObjectLiteralProperty<ts.Expression>[]): ts.Expression {
     return ts.factory.createObjectLiteralExpression(
-      properties.map((prop) =>
-        ts.factory.createPropertyAssignment(
+      properties.map((prop) => {
+        if (prop.kind === 'spread') {
+          return ts.factory.createSpreadAssignment(prop.expression);
+        }
+
+        return ts.factory.createPropertyAssignment(
           prop.quoted
             ? ts.factory.createStringLiteral(prop.propertyName)
             : ts.factory.createIdentifier(prop.propertyName),
           prop.value,
-        ),
-      ),
+        );
+      }),
     );
   }
 
   createParenthesizedExpression = ts.factory.createParenthesizedExpression;
 
   createPropertyAccess = ts.factory.createPropertyAccessExpression;
+
+  createSpreadElement = ts.factory.createSpreadElement;
 
   createReturnStatement(expression: ts.Expression | null): ts.Statement {
     return ts.factory.createReturnStatement(expression ?? undefined);

@@ -150,7 +150,7 @@ In some cases, especially with `viewChild`, you know with certainty that a speci
 
 ```ts
 @Component({
-  /* ... */
+  /*...*/
 })
 export class CustomCard {
   header = viewChild.required(CustomCardHeader);
@@ -270,7 +270,7 @@ original decorator-based query APIs remain fully supported.
 
 You can alternatively declare queries by adding the corresponding decorator to a property. Decorator-based queries behave the same way as signal-based queries except as described below.
 
-### View queries
+### View queries {#decorator-view-queries}
 
 You can query for a single result with the `@ViewChild` decorator.
 
@@ -333,11 +333,11 @@ export class CustomCard {
 
 `@ViewChildren` creates a `QueryList` object that contains the query results. You can subscribe to changes to the query results over time via the `changes` property.
 
-### Content queries
+### Content queries {#decorator-content-queries}
 
 You can query for a single result with the `@ContentChild` decorator.
 
-```angular-ts {highlight: [14, 16, 17, 18, 25]}
+```angular-ts {highlight: [15, 16, 17, 18, 19, 26]}
 @Component({
   selector: 'custom-toggle',
   /*...*/

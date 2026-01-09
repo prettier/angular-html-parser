@@ -32,6 +32,8 @@ import {
   LiteralArray,
   LiteralMap,
   LiteralMapKey,
+  LiteralMapPropertyKey,
+  LiteralMapSpreadKey,
   LiteralPrimitive,
   NonNullAssert,
   ParenthesizedExpression,
@@ -43,6 +45,7 @@ import {
   SafeCall,
   SafeKeyedRead,
   SafePropertyRead,
+  SpreadElement,
   TaggedTemplateLiteral,
   TemplateBinding,
   TemplateBindingIdentifier,
@@ -1059,14 +1062,14 @@ class _ParseAST {
           return new PrefixNot(this.span(start), this.sourceSpan(start), result);
       }
     } else if (this.next.isKeywordTypeof()) {
-      this.advance();
       const start = this.inputIndex;
-      let result = this.parsePrefix();
+      this.advance();
+      const result = this.parsePrefix();
       return new TypeofExpression(this.span(start), this.sourceSpan(start), result);
     } else if (this.next.isKeywordVoid()) {
-      this.advance();
       const start = this.inputIndex;
-      let result = this.parsePrefix();
+      this.advance();
+      const result = this.parsePrefix();
       return new VoidExpression(this.span(start), this.sourceSpan(start), result);
     }
     return this.parseCallChain();
@@ -1134,11 +1137,7 @@ class _ParseAST {
       this.advance();
       return new ThisReceiver(this.span(start), this.sourceSpan(start));
     } else if (this.consumeOptionalCharacter(chars.$LBRACKET)) {
-      this.rbracketsExpected++;
-      const elements = this.parseExpressionList(chars.$RBRACKET);
-      this.rbracketsExpected--;
-      this.expectCharacter(chars.$RBRACKET);
-      return new LiteralArray(this.span(start), this.sourceSpan(start), elements);
+      return this.parseLiteralArray(start);
     } else if (this.next.isCharacter(chars.$LBRACE)) {
       return this.parseLiteralMap();
     } else if (this.next.isIdentifier()) {
@@ -1173,17 +1172,23 @@ class _ParseAST {
     }
   }
 
-  private parseExpressionList(terminator: number): AST[] {
-    const result: AST[] = [];
+  private parseLiteralArray(arrayStart: number): LiteralArray {
+    this.rbracketsExpected++;
+    const elements: AST[] = [];
 
     do {
-      if (!this.next.isCharacter(terminator)) {
-        result.push(this.parsePipe());
+      if (this.next.isOperator('...')) {
+        elements.push(this.parseSpreadElement());
+      } else if (!this.next.isCharacter(chars.$RBRACKET)) {
+        elements.push(this.parsePipe());
       } else {
         break;
       }
     } while (this.consumeOptionalCharacter(chars.$COMMA));
-    return result;
+
+    this.rbracketsExpected--;
+    this.expectCharacter(chars.$RBRACKET);
+    return new LiteralArray(this.span(arrayStart), this.sourceSpan(arrayStart), elements);
   }
 
   private parseLiteralMap(): LiteralMap {
@@ -1195,9 +1200,29 @@ class _ParseAST {
       this.rbracesExpected++;
       do {
         const keyStart = this.inputIndex;
+
+        if (this.next.isOperator('...')) {
+          this.advance();
+          keys.push({
+            kind: 'spread',
+            span: this.span(keyStart),
+            sourceSpan: this.sourceSpan(keyStart),
+          } satisfies LiteralMapSpreadKey);
+          values.push(this.parsePipe());
+          continue;
+        }
+
         const quoted = this.next.isString();
         const key = this.expectIdentifierOrKeywordOrString();
-        const literalMapKey: LiteralMapKey = {key, quoted};
+        const keySpan = this.span(keyStart);
+        const keySourceSpan = this.sourceSpan(keyStart);
+        const literalMapKey: LiteralMapPropertyKey = {
+          kind: 'property',
+          key,
+          quoted,
+          span: keySpan,
+          sourceSpan: keySourceSpan,
+        };
         keys.push(literalMapKey);
 
         // Properties with quoted keys can't use the shorthand syntax.
@@ -1209,14 +1234,12 @@ class _ParseAST {
         } else {
           literalMapKey.isShorthandInitialized = true;
 
-          const span = this.span(keyStart);
-          const sourceSpan = this.sourceSpan(keyStart);
           values.push(
             new PropertyRead(
-              span,
-              sourceSpan,
-              sourceSpan,
-              new ImplicitReceiver(span, sourceSpan),
+              keySpan,
+              keySourceSpan,
+              keySourceSpan,
+              new ImplicitReceiver(keySpan, keySourceSpan),
               key,
             ),
           );
@@ -1302,12 +1325,30 @@ class _ParseAST {
   }
 
   private parseCallArguments(): BindingPipe[] {
-    if (this.next.isCharacter(chars.$RPAREN)) return [];
+    if (this.next.isCharacter(chars.$RPAREN)) {
+      return [];
+    }
+
     const positionals: AST[] = [];
+
     do {
-      positionals.push(this.parsePipe());
+      positionals.push(this.next.isOperator('...') ? this.parseSpreadElement() : this.parsePipe());
     } while (this.consumeOptionalCharacter(chars.$COMMA));
+
     return positionals as BindingPipe[];
+  }
+
+  private parseSpreadElement(): SpreadElement {
+    if (!this.next.isOperator('...')) {
+      this.error("Spread element must start with '...' operator");
+    }
+
+    const spreadStart = this.inputIndex;
+    this.advance();
+    const expression = this.parsePipe();
+    const span = this.span(spreadStart);
+    const sourceSpan = this.sourceSpan(spreadStart);
+    return new SpreadElement(span, sourceSpan, expression);
   }
 
   /**

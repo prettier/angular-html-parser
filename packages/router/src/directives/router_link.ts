@@ -120,14 +120,14 @@ import {isUrlTree, UrlTree} from '../url_tree';
  * </a>
  * ```
  *
- * Use {@link Router#getCurrentNavigation} to retrieve a saved
+ * Use {@link Router#currentNavigation} to retrieve a saved Signal
  * navigation-state value. For example, to capture the `tracingId` during the `NavigationStart`
  * event:
  *
  * ```ts
  * // Get NavigationStart events
  * router.events.pipe(filter(e => e instanceof NavigationStart)).subscribe(e => {
- *   const navigation = router.getCurrentNavigation();
+ *   const navigation = router.currentNavigation();
  *   tracingService.trace({id: navigation.extras.state.tracingId});
  * });
  * ```
@@ -254,27 +254,14 @@ export class RouterLink implements OnChanges, OnDestroy {
         )
       );
 
-    if (!this.isAnchorElement) {
-      this.subscribeToNavigationEventsIfNecessary();
-    } else {
+    if (this.isAnchorElement) {
       this.setTabIndexIfNotOnNativeEl('0');
+      this.subscribeToNavigationEventsIfNecessary();
     }
   }
 
   private subscribeToNavigationEventsIfNecessary() {
-    if (this.subscription !== undefined || !this.isAnchorElement) {
-      return;
-    }
-
-    // preserving fragment in router state
-    let createSubcription = this.preserveFragment;
-    // preserving or merging with query params in router state
-    const dependsOnRouterState = (handling?: QueryParamsHandling | null) =>
-      handling === 'merge' || handling === 'preserve';
-    createSubcription ||= dependsOnRouterState(this.queryParamsHandling);
-    createSubcription ||=
-      !this.queryParamsHandling && !dependsOnRouterState(this.options?.defaultQueryParamsHandling);
-    if (!createSubcription) {
+    if (this.subscription !== undefined) {
       return;
     }
 
@@ -339,7 +326,6 @@ export class RouterLink implements OnChanges, OnDestroy {
     }
     if (this.isAnchorElement) {
       this.updateHref();
-      this.subscribeToNavigationEventsIfNecessary();
     }
     // This is subscribed to by `RouterLinkActive` so that it knows to update when there are changes
     // to the RouterLinks it's tracking.

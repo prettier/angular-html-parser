@@ -277,8 +277,6 @@ To improve user experience during resolver execution, you can listen to router e
 ```angular-ts
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { map } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -330,7 +328,7 @@ provideRouter([
         resolve: {
           posts: (route: ActivatedRouteSnapshot) => {
             const postService = inject(PostService);
-            const user = route.data['user'] as User; // parent data
+            const user = route.parent?.data['user'] as User; // parent data
             const userId = user.id;
             return postService.getPostByUser(userId);
           },

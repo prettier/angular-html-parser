@@ -2741,6 +2741,61 @@ describe('acceptance integration tests', () => {
     expect(fixture.componentInstance.e!.defaultPrevented).toBe(false);
   });
 
+  it('should support object spread assigments in templates', () => {
+    @Component({
+      template: '@let obj = {a: {...foo}}; Hello, {{obj.a.b}}',
+    })
+    class TestComponent {
+      foo = {b: 'Frodo'};
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hello, Frodo');
+
+    fixture.componentInstance.foo = {b: 'Bilbo'};
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hello, Bilbo');
+  });
+
+  it('should support arrays with spread elements in templates', () => {
+    @Component({
+      template: "@let arr = [...[...[...foo]], 'Baggins']; Hello, {{arr[0]}} {{arr[1]}}",
+    })
+    class TestComponent {
+      foo = ['Frodo'];
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hello, Frodo Baggins');
+
+    fixture.componentInstance.foo = ['Bilbo'];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hello, Bilbo Baggins');
+  });
+
+  it('should support calls with rest arguments in templates', () => {
+    @Component({
+      template: "{{fn('Hello', ...foo)}}",
+    })
+    class TestComponent {
+      foo = ['Frodo', 'Baggins'];
+
+      fn(prefix: string, ...args: string[]) {
+        return `${prefix}, ${args.join(' ')}`;
+      }
+    }
+
+    const fixture = TestBed.createComponent(TestComponent);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hello, Frodo Baggins');
+
+    fixture.componentInstance.foo = ['J.', 'R.', 'R.', 'Tolkien'];
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('Hello, J. R. R. Tolkien');
+  });
+
   it('should have correct operator precedence', () => {
     @Component({
       template: '{{1 + 10 ** -2 * 3}}',
