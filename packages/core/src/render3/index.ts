@@ -165,6 +165,7 @@ export {
   ɵɵanimateEnterListener,
   ɵɵanimateLeave,
   ɵɵanimateLeaveListener,
+  ɵɵarrowFunction,
 } from './instructions/all';
 export {
   ɵɵdeferEnableTimerScheduling,

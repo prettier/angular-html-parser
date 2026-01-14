@@ -940,6 +940,16 @@ export function attachSourceLocation(
   return call(Identifiers.attachSourceLocations, [o.literal(templatePath), locations], null);
 }
 
+export function arrowFunction(
+  slotOffset: number,
+  factory: o.Expression,
+  contextRef: o.Expression,
+): o.Expression {
+  return o
+    .importExpr(Identifiers.arrowFunction)
+    .callFn([o.literal(slotOffset), factory, contextRef]);
+}
+
 /**
  * Collates the string an expression arguments for an interpolation instruction.
  */

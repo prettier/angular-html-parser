@@ -18,10 +18,9 @@ import {
   inject,
   input,
   linkedSignal,
-  viewChild,
 } from '@angular/core';
 import {Select, SelectOption, TextField} from '@angular/docs';
-import {Field, form} from '@angular/forms/signals';
+import {FormField, form} from '@angular/forms/signals';
 import {MatChipsModule} from '@angular/material/chips';
 import {Params, Router} from '@angular/router';
 import ApiItemLabel from '../api-item-label/api-item-label.component';
@@ -52,7 +51,7 @@ export const DEFAULT_STATUS = STATUSES.stable | STATUSES.developerPreview | STAT
     MatChipsModule,
     KeyValuePipe,
     Select,
-    Field,
+    FormField,
   ],
   templateUrl: './api-reference-list.component.html',
   styleUrls: ['./api-reference-list.component.scss'],
@@ -62,7 +61,6 @@ export default class ApiReferenceList {
   // services
   private readonly apiReferenceManager = inject(ApiReferenceManager);
   private readonly router = inject(Router);
-  private readonly filterInput = viewChild.required(TextField);
   private readonly injector = inject(EnvironmentInjector);
 
   // inputs
@@ -137,13 +135,12 @@ export default class ApiReferenceList {
 
   constructor() {
     effect(() => {
-      const filterInput = this.filterInput();
+      const filterInput = this.form.query();
       afterNextRender(
         {
           write: () => {
-            // Why not improve this once https://github.com/orgs/angular/projects/60?pane=issue&itemId=143488813 is done
             if (matchMedia('(hover: hover) and (pointer:fine)').matches) {
-              scheduleOnIdle(() => filterInput.focus());
+              scheduleOnIdle(() => filterInput.focusBoundControl());
             }
           },
         },

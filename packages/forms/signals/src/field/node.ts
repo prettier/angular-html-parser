@@ -7,7 +7,6 @@
  */
 
 import {computed, linkedSignal, type Signal, untracked, type WritableSignal} from '@angular/core';
-import type {Field} from '../api/field_directive';
 import type {FormField} from '../api/form_field_directive';
 import {
   MAX,
@@ -79,6 +78,31 @@ export class FieldNode implements FieldState<unknown> {
     this.nodeState = this.fieldAdapter.createNodeState(this, options);
     this.metadataState = new FieldMetadataState(this);
     this.submitState = new FieldSubmitState(this);
+  }
+
+  focusBoundControl(): void {
+    this.getBindingForFocus()?.focus();
+  }
+
+  /**
+   * Gets the Field directive binding that should be focused when the developer calls
+   * `focusBoundControl` on this node.
+   *
+   * This will prioritize focusable bindings to this node, and if multiple exist, it will return
+   * the first one in the DOM. If no focusable bindings exist on this node, it will return the
+   * first focusable binding in the DOM for any descendant node of this one.
+   */
+  private getBindingForFocus(): (FormField<unknown> & {focus: VoidFunction}) | undefined {
+    // First try to focus one of our own bindings.
+    const own = this.formFieldBindings()
+      .filter((b): b is FormField<unknown> & {focus: VoidFunction} => b.focus !== undefined)
+      .reduce(firstInDom<FormField<unknown> & {focus: VoidFunction}>, undefined);
+    if (own) return own;
+    // Fallback to focusing the bound control for one of our children.
+    return this.structure
+      .children()
+      .map((child) => child.getBindingForFocus())
+      .reduce(firstInDom, undefined);
   }
 
   /**
@@ -157,7 +181,7 @@ export class FieldNode implements FieldState<unknown> {
     return this.nodeState.readonly;
   }
 
-  get formFieldBindings(): Signal<readonly (Field<unknown> | FormField<unknown>)[]> {
+  get formFieldBindings(): Signal<readonly FormField<unknown>[]> {
     return this.nodeState.formFieldBindings;
   }
 
@@ -353,4 +377,15 @@ const FALSE = computed(() => false);
 export interface ParentFieldNode extends FieldNode {
   readonly value: WritableSignal<Record<string, unknown>>;
   readonly structure: FieldNodeStructure & {value: WritableSignal<Record<string, unknown>>};
+}
+
+/** Given two elements, returns the one that appears earlier in the DOM. */
+function firstInDom<T extends FormField<unknown>>(
+  a: T | undefined,
+  b: T | undefined,
+): T | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  const position = a.element.compareDocumentPosition(b.element);
+  return position & Node.DOCUMENT_POSITION_PRECEDING ? b : a;
 }

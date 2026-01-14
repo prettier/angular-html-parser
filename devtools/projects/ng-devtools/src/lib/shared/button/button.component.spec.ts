@@ -31,6 +31,13 @@ describe('ButtonComponent', () => {
     expect(element.classList.contains('size-compact')).toBeFalse();
   });
 
+  it('should change the type to secondary', async () => {
+    fixture.componentRef.setInput('btnType', 'secondary');
+    await fixture.whenStable();
+
+    expect(element.classList.contains('type-secondary')).toBeTrue();
+  });
+
   it('should be compact size', async () => {
     fixture.componentRef.setInput('size', 'compact');
     await fixture.whenStable();

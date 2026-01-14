@@ -7,14 +7,14 @@
  */
 
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
-  ElementRef,
-  Injector,
-  afterNextRender,
   effect,
+  ElementRef,
   inject,
+  Injector,
   output,
   viewChild,
   viewChildren,
@@ -26,7 +26,7 @@ import {Search, SearchHistory} from '../../services';
 
 import {ActiveDescendantKeyManager} from '@angular/cdk/a11y';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {Field, form} from '@angular/forms/signals';
+import {form, FormField} from '@angular/forms/signals';
 import {Router, RouterLink} from '@angular/router';
 import {fromEvent} from 'rxjs';
 import {RelativeLink} from '../../pipes';
@@ -40,7 +40,7 @@ import {TextField} from '../text-field/text-field.component';
   imports: [
     ClickOutside,
     TextField,
-    Field,
+    FormField,
     SearchItem,
     AlgoliaIcon,
     RelativeLink,
@@ -54,7 +54,6 @@ export class SearchDialog {
   readonly onClose = output();
   readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('searchDialog');
   readonly items = viewChildren(SearchItem);
-  readonly textField = viewChild(TextField);
 
   readonly history = inject(SearchHistory);
   private readonly search = inject(Search);
@@ -98,7 +97,7 @@ export class SearchDialog {
         }
         // We want to select the pre-existing text on opening
         // In order to change the search input with minimal user interaction.
-        this.textField()?.input().nativeElement.select();
+        this.searchForm().focusBoundControl();
       },
     });
 

@@ -106,7 +106,7 @@ All requests forward up to the root injector, whether you configured it with the
 If you configure an app-wide provider in the `ApplicationConfig` of `bootstrapApplication`, it overrides one configured for `root` in the `@Injectable()` metadata.
 You can do this to configure a non-default provider of a service that is shared with multiple applications.
 
-Here is an example of the case where the component router configuration includes a non-default [location strategy](guide/routing#location-strategy) by listing its provider in the `providers` list of the `ApplicationConfig`.
+Here is an example of the case where the component router configuration includes a non-default [location strategy](guide/routing/common-router-tasks#locationstrategy-and-browser-url-styles) by listing its provider in the `providers` list of the `ApplicationConfig`.
 
 ```ts
 providers: [{provide: LocationStrategy, useClass: HashLocationStrategy}];
@@ -959,8 +959,8 @@ export class VillainsList {}
 
 By providing `VillainsService` in the `VillainsList` metadata and nowhere else, the service becomes available only in the `VillainsList` and its subcomponent tree.
 
-`VillainService` is a singleton with respect to `VillainsList` because that is where it is declared.
-As long as `VillainsList` does not get destroyed it will be the same instance of `VillainService` but if there are multiple instances of `VillainsList`, then each instance of `VillainsList` will have its own instance of `VillainService`.
+`VillainsService` is a singleton with respect to `VillainsList` because that is where it is declared.
+As long as `VillainsList` does not get destroyed it will be the same instance of `VillainsService` but if there are multiple instances of `VillainsList`, then each instance of `VillainsList` will have its own instance of `VillainsService`.
 
 ### Scenario: multiple edit sessions
 
@@ -1170,5 +1170,5 @@ style RootInjector fill:#BDD7EE,color:#000
 ## More on dependency injection
 
 <docs-pill-row>
-  <docs-pill href="/guide/di/dependency-injection-providers" title="DI Providers"/>
+  <docs-pill href="/guide/di/defining-dependency-providers" title="DI Providers"/>
 </docs-pill-row>

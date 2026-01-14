@@ -318,12 +318,10 @@ function ingestElement(unit: ViewCompilationUnit, element: t.Element): void {
 
   // We want to ensure that the controlCreateOp is after the ops that create the element
   const fieldInput = element.inputs.find(
-    (input) =>
-      (input.name === 'field' || input.name === 'formField') &&
-      input.type === e.BindingType.Property,
+    (input) => input.name === 'formField' && input.type === e.BindingType.Property,
   );
   if (fieldInput) {
-    // If the input name is 'field', this could be a form control binding which requires a
+    // If the input name is 'formField', this could be a form control binding which requires a
     // `ControlCreateOp` to properly initialize.
     unit.create.push(ir.createControlCreateOp(fieldInput.sourceSpan));
   }
@@ -1220,6 +1218,13 @@ function convertAst(
     return new o.RegularExpressionLiteralExpr(ast.body, ast.flags, baseSourceSpan);
   } else if (ast instanceof e.SpreadElement) {
     return new o.SpreadElementExpr(convertAst(ast.expression, job, baseSourceSpan));
+  } else if (ast instanceof e.ArrowFunction) {
+    return updateParameterReferences(
+      o.arrowFn(
+        ast.parameters.map((arg) => new o.FnParam(arg.name)),
+        convertAst(ast.body, job, baseSourceSpan),
+      ),
+    );
   } else {
     throw new Error(
       `Unhandled expression type "${ast.constructor.name}" in file "${baseSourceSpan?.start.file.url}"`,
@@ -1922,4 +1927,30 @@ function ingestControlFlowInsertionPoint(
   }
 
   return null;
+}
+
+/**
+ * When an arrow function in the expression AST is converted into the output AST, all of its
+ * top-level reads become `LexicalReadExpr` because the output AST doesn't have a concept of a
+ * variable read. This function corrects the ones that point to parameters.
+ *
+ * @param root Root arrow function.
+ */
+function updateParameterReferences(root: o.ArrowFunctionExpr): o.ArrowFunctionExpr {
+  const parameterNames = new Set(root.params.map((param) => param.name));
+
+  return ir.transformExpressionsInExpression(
+    root,
+    (expr) => {
+      if (expr instanceof o.ArrowFunctionExpr) {
+        for (const param of expr.params) {
+          parameterNames.add(param.name);
+        }
+      } else if (expr instanceof ir.LexicalReadExpr && parameterNames.has(expr.name)) {
+        return o.variable(expr.name);
+      }
+      return expr;
+    },
+    ir.VisitorContextFlag.None,
+  ) as o.ArrowFunctionExpr;
 }

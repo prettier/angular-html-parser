@@ -17,6 +17,9 @@ import {CompilationJob, CompilationUnit} from '../compilation';
  */
 export function resolveContexts(job: CompilationJob): void {
   for (const unit of job.units) {
+    for (const expr of unit.functions) {
+      processLexicalScope(unit, expr.ops);
+    }
     processLexicalScope(unit, unit.create);
     processLexicalScope(unit, unit.update);
   }

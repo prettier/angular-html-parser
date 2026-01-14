@@ -7,6 +7,7 @@
  */
 
 import {
+  ArrowFunction,
   AST,
   AstVisitor,
   ASTWithSource,
@@ -43,6 +44,7 @@ import ts from 'typescript';
 import {TypeCheckingConfig} from '../api';
 import {addParseSpanInfo, wrapForDiagnostics, wrapForTypeChecker} from './diagnostics';
 import {tsCastToAny, tsNumericExpression} from './ts_util';
+import {markIgnoreDiagnostics} from './comments';
 
 /**
  * Gets an expression that is cast to any. Currently represented as `0 as any`.
@@ -104,7 +106,6 @@ class AstTranslator implements AstVisitor {
     ['&', ts.SyntaxKind.AmpersandToken],
     ['|', ts.SyntaxKind.BarToken],
     ['??', ts.SyntaxKind.QuestionQuestionToken],
-    ['in', ts.SyntaxKind.InKeyword],
     ['=', ts.SyntaxKind.EqualsToken],
     ['+=', ts.SyntaxKind.PlusEqualsToken],
     ['-=', ts.SyntaxKind.MinusEqualsToken],
@@ -115,6 +116,8 @@ class AstTranslator implements AstVisitor {
     ['&&=', ts.SyntaxKind.AmpersandAmpersandEqualsToken],
     ['||=', ts.SyntaxKind.BarBarEqualsToken],
     ['??=', ts.SyntaxKind.QuestionQuestionEqualsToken],
+    ['in', ts.SyntaxKind.InKeyword],
+    ['instanceof', ts.SyntaxKind.InstanceOfKeyword],
   ]);
 
   constructor(
@@ -127,13 +130,6 @@ class AstTranslator implements AstVisitor {
     // which would prevent any custom resolution through `maybeResolve` for that node.
     if (ast instanceof ASTWithSource) {
       ast = ast.ast;
-    }
-
-    // The `EmptyExpr` doesn't have a dedicated method on `AstVisitor`, so it's special cased here.
-    if (ast instanceof EmptyExpr) {
-      const res = ts.factory.createIdentifier('undefined');
-      addParseSpanInfo(res, ast.sourceSpan);
-      return res;
     }
 
     // First attempt to let any custom resolution logic provide a translation for the given node.
@@ -494,6 +490,50 @@ class AstTranslator implements AstVisitor {
     return node;
   }
 
+  visitEmptyExpr(ast: EmptyExpr, context: any) {
+    const node = ts.factory.createIdentifier('undefined');
+    addParseSpanInfo(node, ast.sourceSpan);
+    return node;
+  }
+
+  visitArrowFunction(ast: ArrowFunction): ts.ArrowFunction {
+    const params = ast.parameters.map((param) => {
+      const paramNode = ts.factory.createParameterDeclaration(undefined, undefined, param.name);
+      // Ignore diagnostics on the node to skip diagnostics from `noImplicitAny` since
+      // users aren't able to set types on the parameters. Note that this is preferable
+      // to setting their types to `any`, because it allows us to infer the types when
+      // the arrow function is passed as a callback.
+      markIgnoreDiagnostics(paramNode);
+      return paramNode;
+    });
+
+    const body = astToTypescript(
+      ast.body,
+      (innerAst) => {
+        if (
+          !(innerAst instanceof PropertyRead) ||
+          innerAst.receiver instanceof ThisReceiver ||
+          !(innerAst.receiver instanceof ImplicitReceiver)
+        ) {
+          return this.maybeResolve(innerAst);
+        }
+
+        const correspondingParam = ast.parameters.find((arg) => arg.name === innerAst.name);
+
+        if (correspondingParam) {
+          const node = ts.factory.createIdentifier(innerAst.name);
+          addParseSpanInfo(node, innerAst.sourceSpan);
+          return node;
+        }
+
+        return this.maybeResolve(innerAst);
+      },
+      this.config,
+    );
+
+    return ts.factory.createArrowFunction(undefined, undefined, params, undefined, undefined, body);
+  }
+
   private convertToSafeCall(
     ast: Call | SafeCall,
     expr: ts.Expression,
@@ -630,5 +670,8 @@ class VeSafeLhsInferenceBugDetector implements AstVisitor {
   }
   visitSpreadElement(ast: SpreadElement) {
     return ast.expression.visit(this);
+  }
+  visitArrowFunction(ast: ArrowFunction, context: any) {
+    return false;
   }
 }

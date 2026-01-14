@@ -33,7 +33,7 @@ import {
 
 import {ListEndOp, NEW_OP, StatementOp, VariableOp} from './shared';
 
-import type {BindingOp, Interpolation, UpdateOp} from './update';
+import type {Interpolation, UpdateOp} from './update';
 
 /**
  * An operation usable on the creation side of the IR.

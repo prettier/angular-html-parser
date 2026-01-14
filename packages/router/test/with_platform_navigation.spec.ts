@@ -7,7 +7,7 @@
  */
 
 import {TestBed} from '@angular/core/testing';
-import {provideRouter, Router} from '../src';
+import {NavigationStart, provideRouter, Router} from '../src';
 import {withExperimentalPlatformNavigation, withRouterConfig} from '../src/provide_router';
 import {withBody} from '@angular/private/testing';
 import {
@@ -15,6 +15,7 @@ import {
   Location,
   PlatformNavigation,
   BrowserPlatformLocation,
+  ɵPRECOMMIT_HANDLER_SUPPORTED as PRECOMMIT_HANDLER_SUPPORTED,
 } from '@angular/common';
 import {
   ɵFakeNavigation as FakeNavigation,
@@ -22,6 +23,7 @@ import {
   provideLocationMocks,
 } from '@angular/common/testing';
 import {timeout, useAutoTick} from './helpers';
+import {inject} from '@angular/core';
 
 /// <reference types="dom-navigation" />
 
@@ -110,11 +112,8 @@ describe('withPlatformNavigation feature', () => {
           children: [],
         },
       ]);
-      const {finished} = navigation.navigate('/somepath');
+      navigation.navigate('/somepath');
       await timeout(5);
-      // note that this finished promise will be rejected because the Router will create a separate 'replace' navigate
-      // since we cannot redirect the original navigation without precommit handler support
-      await expectAsync(finished).not.toBeResolved();
       expect(navigation.transition).not.toBeNull();
       await timeout(10);
       expect(navigation.transition).toBeNull();
@@ -133,7 +132,8 @@ describe('withPlatformNavigation feature', () => {
       // set up navigation
       navigation.addEventListener(
         'navigate',
-        (e: any) => e.intercept({handler: () => new Promise((_, reject) => setTimeout(reject, 5))}),
+        (e: any) =>
+          e.intercept({precommitHandler: () => new Promise((_, reject) => setTimeout(reject, 5))}),
         {once: true},
       );
 
@@ -160,6 +160,26 @@ describe('withPlatformNavigation feature', () => {
       await navigation.back().finished;
       expect(navigateEvents.length).toBe(1);
       expect(navigateEvents[0].navigationType).toBe('traverse');
+    });
+
+    it('retains a single NavigateEvent across redirects', async () => {
+      const navigateEvents: NavigateEvent[] = [];
+      navigation.addEventListener('navigate', (e: NavigateEvent) => navigateEvents.push(e));
+
+      router.resetConfig([
+        {path: 'first', canActivate: [() => inject(Router).parseUrl('/redirected')], children: []},
+        {path: '**', children: []},
+      ]);
+      const navPromise = router.navigateByUrl('/first');
+      if (TestBed.inject(PRECOMMIT_HANDLER_SUPPORTED)) {
+        router.events.subscribe((e) => {
+          if (e instanceof NavigationStart) {
+            expect(navigateEvents.length).toBe(1);
+          }
+        });
+      }
+      await navPromise;
+      expect(navigateEvents.length).toBe(1);
     });
   });
 
