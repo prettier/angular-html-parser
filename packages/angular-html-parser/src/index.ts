@@ -1,15 +1,7 @@
 import { HtmlParser } from "../../compiler/src/ml_parser/html_parser.js";
+import { XmlParser } from "../../compiler/src/ml_parser/xml_parser.js";
 import { TagContentType } from "../../compiler/src/ml_parser/tags.js";
 import { ParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
-
-let parser: HtmlParser | null = null;
-
-const getParser = () => {
-  if (!parser) {
-    parser = new HtmlParser();
-  }
-  return parser;
-};
 
 export interface ParseOptions {
   /**
@@ -56,6 +48,7 @@ export interface ParseOptions {
   enableAngularSelectorlessSyntax?: boolean;
 }
 
+let htmlParser: HtmlParser;
 export function parse(
   input: string,
   options: ParseOptions = {},
@@ -69,7 +62,9 @@ export function parse(
     tokenizeAngularLetDeclaration = false,
     enableAngularSelectorlessSyntax = false,
   } = options;
-  return getParser().parse(
+  htmlParser ??= new HtmlParser();
+
+  return htmlParser.parse(
     input,
     "angular-html-parser",
     {
@@ -83,6 +78,13 @@ export function parse(
     isTagNameCaseSensitive,
     getTagContentType,
   );
+}
+
+let xmlParser: XmlParser;
+export function parseXml(input: string) {
+  xmlParser ??= new XmlParser();
+
+  return xmlParser.parse(input, "angular-xml-parser");
 }
 
 // For prettier

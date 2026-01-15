@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "baseUrl": ".",
+    "target": "esnext",
+    "module": "esnext",
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "paths": {
       "@angular/*": ["../*"]
     },
-    "types": ["vitest/globals"]
+    "skipLibCheck": true,
+    "noEmit": true,
+    "moduleResolution": "bundler"
   }
 }

@@ -1,6 +1,7 @@
 import { parse, TagContentType } from "../src/index.js";
 import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.js";
-import * as html from "../../compiler/src/ml_parser/ast.js";
+import * as ast from "../../compiler/src/ml_parser/ast.js";
+import { describe, it, expect } from "vitest";
 
 describe("options", () => {
   describe("getTagContentType", () => {
@@ -35,17 +36,17 @@ describe("options", () => {
         }
       };
       expect(humanizeDom(parse(input, { getTagContentType }))).toEqual([
-        [html.Element, "template", 0],
-        [html.Element, "MyComponent", 1],
-        [html.Element, "template", 2],
-        [html.Attribute, "#content", ""],
-        [html.Text, "text", 3, ["text"]],
-        [html.Element, "template", 0],
-        [html.Attribute, "lang", "something-else", ["something-else"]],
-        [html.Text, "<div>", 1, ["<div>"]],
-        [html.Element, "custom", 0],
-        [html.Attribute, "lang", "babel", ["babel"]],
-        [html.Text, 'const foo = "</";', 1, ['const foo = "</";']],
+        [ast.Element, "template", 0],
+        [ast.Element, "MyComponent", 1],
+        [ast.Element, "template", 2],
+        [ast.Attribute, "#content", ""],
+        [ast.Text, "text", 3, ["text"]],
+        [ast.Element, "template", 0],
+        [ast.Attribute, "lang", "something-else", ["something-else"]],
+        [ast.Text, "<div>", 1, ["<div>"]],
+        [ast.Element, "custom", 0],
+        [ast.Attribute, "lang", "babel", ["babel"]],
+        [ast.Text, 'const foo = "</";', 1, ['const foo = "</";']],
       ]);
     });
 
@@ -56,8 +57,8 @@ describe("options", () => {
           MJML_RAW_TAGS.has(tagName) ? TagContentType.RAW_TEXT : undefined,
       });
       expect(humanizeDom(result)).toEqual([
-        [html.Element, "mj-raw", 0],
-        [html.Text, "</p>", 1, ["</p>"]],
+        [ast.Element, "mj-raw", 0],
+        [ast.Text, "</p>", 1, ["</p>"]],
       ]);
     });
   });
@@ -66,8 +67,8 @@ describe("options", () => {
 describe("AST format", () => {
   it("should have `type` property", () => {
     const input = `<!DOCTYPE html> <el attr></el>txt<!--  --><![CDATA[foo]]>`;
-    const ast = parse(input);
-    expect(ast.rootNodes).toEqual([
+    const result = parse(input);
+    expect(result.rootNodes).toEqual([
       expect.objectContaining({ kind: "docType" }),
       expect.objectContaining({ kind: "text" }),
       expect.objectContaining({
@@ -82,8 +83,8 @@ describe("AST format", () => {
 
   it("should support 'tokenizeAngularBlocks'", () => {
     const input = `@if (user.isHuman) { <p>Hello human</p> }`;
-    const ast = parse(input, { tokenizeAngularBlocks: true });
-    expect(ast.rootNodes).toEqual([
+    const result = parse(input, { tokenizeAngularBlocks: true });
+    expect(result.rootNodes).toEqual([
       expect.objectContaining({
         name: "if",
         kind: "block",
@@ -122,43 +123,43 @@ describe("AST format", () => {
   }
 }
       `;
-      const ast = parse(input, { tokenizeAngularBlocks: true });
-      expect(humanizeDom(ast)).toEqual([
-        [html.Text, "\n", 0, ["\n"]],
-        [html.Block, "switch", 0],
-        [html.BlockParameter, "case"],
-        [html.Text, "\n  ", 1, ["\n  "]],
-        [html.Block, "case", 1],
-        [html.BlockParameter, "0"],
-        [html.Block, "case", 1],
-        [html.BlockParameter, "1"],
-        [html.Text, "\n    ", 2, ["\n    "]],
-        [html.Element, "div", 2],
-        [html.Text, "case 0 or 1", 3, ["case 0 or 1"]],
-        [html.Text, "\n  ", 2, ["\n  "]],
-        [html.Text, "\n  ", 1, ["\n  "]],
-        [html.Block, "case", 1],
-        [html.BlockParameter, "2"],
-        [html.Text, "\n    ", 2, ["\n    "]],
-        [html.Element, "div", 2],
-        [html.Text, "case 2", 3, ["case 2"]],
-        [html.Text, "\n  ", 2, ["\n  "]],
-        [html.Text, "\n  ", 1, ["\n  "]],
-        [html.Block, "default", 1],
-        [html.Text, "\n    ", 2, ["\n    "]],
-        [html.Element, "div", 2],
-        [html.Text, "default", 3, ["default"]],
-        [html.Text, "\n  ", 2, ["\n  "]],
-        [html.Text, "\n", 1, ["\n"]],
-        [html.Text, "\n      ", 0, ["\n      "]],
+      const result = parse(input, { tokenizeAngularBlocks: true });
+      expect(humanizeDom(result)).toEqual([
+        [ast.Text, "\n", 0, ["\n"]],
+        [ast.Block, "switch", 0],
+        [ast.BlockParameter, "case"],
+        [ast.Text, "\n  ", 1, ["\n  "]],
+        [ast.Block, "case", 1],
+        [ast.BlockParameter, "0"],
+        [ast.Block, "case", 1],
+        [ast.BlockParameter, "1"],
+        [ast.Text, "\n    ", 2, ["\n    "]],
+        [ast.Element, "div", 2],
+        [ast.Text, "case 0 or 1", 3, ["case 0 or 1"]],
+        [ast.Text, "\n  ", 2, ["\n  "]],
+        [ast.Text, "\n  ", 1, ["\n  "]],
+        [ast.Block, "case", 1],
+        [ast.BlockParameter, "2"],
+        [ast.Text, "\n    ", 2, ["\n    "]],
+        [ast.Element, "div", 2],
+        [ast.Text, "case 2", 3, ["case 2"]],
+        [ast.Text, "\n  ", 2, ["\n  "]],
+        [ast.Text, "\n  ", 1, ["\n  "]],
+        [ast.Block, "default", 1],
+        [ast.Text, "\n    ", 2, ["\n    "]],
+        [ast.Element, "div", 2],
+        [ast.Text, "default", 3, ["default"]],
+        [ast.Text, "\n  ", 2, ["\n  "]],
+        [ast.Text, "\n", 1, ["\n"]],
+        [ast.Text, "\n      ", 0, ["\n      "]],
       ]);
     }
   });
 
   it("should support 'tokenizeAngularLetDeclaration'", () => {
     const input = `@let foo = 'bar';`;
-    const ast = parse(input, { tokenizeAngularLetDeclaration: true });
-    expect(ast.rootNodes).toEqual([
+    const result = parse(input, { tokenizeAngularLetDeclaration: true });
+    expect(result.rootNodes).toEqual([
       expect.objectContaining({
         name: "foo",
         kind: "letDeclaration",
@@ -170,10 +171,10 @@ describe("AST format", () => {
   // https://github.com/angular/angular/pull/60724
   it("should support 'enableAngularSelectorlessSyntax'", () => {
     {
-      const ast = parse("<div @Dir></div>", {
+      const result = parse("<div @Dir></div>", {
         enableAngularSelectorlessSyntax: true,
       });
-      expect(ast.rootNodes).toEqual([
+      expect(result.rootNodes).toEqual([
         expect.objectContaining({
           name: "div",
           kind: "element",
@@ -188,11 +189,11 @@ describe("AST format", () => {
     }
 
     {
-      const ast = parse("<MyComp>Hello</MyComp>", {
+      const result = parse("<MyComp>Hello</MyComp>", {
         enableAngularSelectorlessSyntax: true,
       });
 
-      expect(ast.rootNodes).toEqual([
+      expect(result.rootNodes).toEqual([
         expect.objectContaining({
           fullName: "MyComp",
           componentName: "MyComp",
@@ -202,8 +203,10 @@ describe("AST format", () => {
     }
 
     {
-      const ast = parse("<MyComp/>", { enableAngularSelectorlessSyntax: true });
-      expect(ast.rootNodes).toEqual([
+      const result = parse("<MyComp/>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(result.rootNodes).toEqual([
         expect.objectContaining({
           fullName: "MyComp",
           componentName: "MyComp",
@@ -213,10 +216,10 @@ describe("AST format", () => {
     }
 
     {
-      const ast = parse("<MyComp:button>Hello</MyComp:button>", {
+      const result = parse("<MyComp:button>Hello</MyComp:button>", {
         enableAngularSelectorlessSyntax: true,
       });
-      expect(ast.rootNodes).toEqual([
+      expect(result.rootNodes).toEqual([
         expect.objectContaining({
           fullName: "MyComp:button",
           componentName: "MyComp",
@@ -226,10 +229,10 @@ describe("AST format", () => {
     }
 
     {
-      const ast = parse("<MyComp:svg:title>Hello</MyComp:svg:title>", {
+      const result = parse("<MyComp:svg:title>Hello</MyComp:svg:title>", {
         enableAngularSelectorlessSyntax: true,
       });
-      expect(ast.rootNodes).toEqual([
+      expect(result.rootNodes).toEqual([
         expect.objectContaining({
           fullName: "MyComp:svg:title",
           componentName: "MyComp",
@@ -242,6 +245,6 @@ describe("AST format", () => {
 
 it("Edge cases", () => {
   expect(humanizeDom(parse("<html:style></html:style>"))).toEqual([
-    [html.Element, ":html:style", 0],
+    [ast.Element, ":html:style", 0],
   ]);
 });

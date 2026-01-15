@@ -1197,6 +1197,7 @@ __metadata:
   dependencies:
     "@types/node": "npm:25.0.2"
     "@vitest/coverage-v8": "npm:4.0.15"
+    outdent: "npm:0.8.0"
     prettier: "npm:3.7.4"
     release-it: "npm:19.1.0"
     tsconfig-paths: "npm:4.2.0"
@@ -2719,6 +2720,13 @@ __metadata:
     macos-release: "npm:^3.3.0"
     windows-release: "npm:^6.1.0"
   checksum: 10/d69a2060bea01dc502bd9a08802f43bebce85e95adde7740d0629a8522c16a92c05e0ee052819cac49f82aa61324ff038a3b79e015e26f122bbc08b40aa4ead3
+  languageName: node
+  linkType: hard
+
+"outdent@npm:0.8.0":
+  version: 0.8.0
+  resolution: "outdent@npm:0.8.0"
+  checksum: 10/a556c5c308705ad4e3441be435f2b2cf014cb5f9753a24cbd080eadc473b988c77d0d529a6a9a57c3931fb4178e5a81d668cc4bc49892b668191a5d0ba3df76e
   languageName: node
   linkType: hard
 
