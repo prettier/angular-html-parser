@@ -1,17 +1,9 @@
-import { HtmlParser } from "../../compiler/src/ml_parser/html_parser.js";
-import { TagContentType } from "../../compiler/src/ml_parser/tags.js";
-import { ParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
+import { HtmlParser } from "../../compiler/src/ml_parser/html_parser.ts";
+import { XmlParser } from "../../compiler/src/ml_parser/xml_parser.ts";
+import type { TagContentType } from "../../compiler/src/ml_parser/tags.ts";
+import { ParseTreeResult as HtmlParseTreeResult } from "../../compiler/src/ml_parser/parser.ts";
 
-let parser: HtmlParser | null = null;
-
-const getParser = () => {
-  if (!parser) {
-    parser = new HtmlParser();
-  }
-  return parser;
-};
-
-export interface ParseOptions {
+export interface HtmlParseOptions {
   /**
    * any element can self close
    *
@@ -56,10 +48,11 @@ export interface ParseOptions {
   enableAngularSelectorlessSyntax?: boolean;
 }
 
-export function parse(
+let htmlParser: HtmlParser;
+export function parseHtml(
   input: string,
-  options: ParseOptions = {},
-): ParseTreeResult {
+  options: HtmlParseOptions = {},
+): HtmlParseTreeResult {
   const {
     canSelfClose = false,
     allowHtmComponentClosingTags = false,
@@ -69,7 +62,9 @@ export function parse(
     tokenizeAngularLetDeclaration = false,
     enableAngularSelectorlessSyntax = false,
   } = options;
-  return getParser().parse(
+  htmlParser ??= new HtmlParser();
+
+  return htmlParser.parse(
     input,
     "angular-html-parser",
     {
@@ -85,19 +80,30 @@ export function parse(
   );
 }
 
+let xmlParser: XmlParser;
+export function parseXml(input: string) {
+  xmlParser ??= new XmlParser();
+
+  return xmlParser.parse(input, "angular-xml-parser");
+}
+
 // For prettier
-export { TagContentType };
+export { TagContentType } from "../../compiler/src/ml_parser/tags.ts";
 export {
   RecursiveVisitor,
   visitAll,
-} from "../../compiler/src/ml_parser/ast.js";
+} from "../../compiler/src/ml_parser/ast.ts";
 export {
   ParseSourceSpan,
   ParseLocation,
   ParseSourceFile,
-} from "../../compiler/src/parse_util.js";
-export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.js";
+} from "../../compiler/src/parse_util.ts";
+export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.ts";
 
 // Types
-export type { ParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
-export type * as Ast from "../../compiler/src/ml_parser/ast.js";
+export type { ParseTreeResult } from "../../compiler/src/ml_parser/parser.ts";
+export type * as Ast from "../../compiler/src/ml_parser/ast.ts";
+
+// Remove these alias in next major release
+export type { HtmlParseOptions as ParseOptions };
+export { parseHtml as parse };
