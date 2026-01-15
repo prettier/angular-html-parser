@@ -1,4 +1,4 @@
-import { it } from "vitest";
+import { it, expect } from "vitest";
 import { outdent } from "outdent";
 import { parseXml } from "../src/index.ts";
 import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.js";
