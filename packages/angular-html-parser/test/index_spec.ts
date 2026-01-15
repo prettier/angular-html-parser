@@ -1,7 +1,7 @@
-import { parse, TagContentType } from "../src/index.js";
-import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.js";
-import * as ast from "../../compiler/src/ml_parser/ast.js";
 import { describe, it, expect } from "vitest";
+import { parse, TagContentType } from "../src/index.ts";
+import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.ts";
+import * as ast from "../../compiler/src/ml_parser/ast.ts";
 
 describe("options", () => {
   describe("getTagContentType", () => {

@@ -1,8 +1,8 @@
 import { it, expect } from "vitest";
 import { outdent } from "outdent";
 import { parseXml } from "../src/index.ts";
-import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.js";
-import * as ast from "../../compiler/src/ml_parser/ast.js";
+import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.ts";
+import * as ast from "../../compiler/src/ml_parser/ast.ts";
 
 it("parseXml", () => {
   const input = outdent`
