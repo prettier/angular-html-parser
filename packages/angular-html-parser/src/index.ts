@@ -1,6 +1,6 @@
 import { HtmlParser } from "../../compiler/src/ml_parser/html_parser.js";
 import { XmlParser } from "../../compiler/src/ml_parser/xml_parser.js";
-import { TagContentType } from "../../compiler/src/ml_parser/tags.js";
+import type { TagContentType } from "../../compiler/src/ml_parser/tags.js";
 import { ParseTreeResult as HtmlParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
 
 export interface HtmlParseOptions {
@@ -88,7 +88,7 @@ export function parseXml(input: string) {
 }
 
 // For prettier
-export { TagContentType };
+export { TagContentType } from "../../compiler/src/ml_parser/tags.js";
 export {
   RecursiveVisitor,
   visitAll,
