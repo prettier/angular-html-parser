@@ -1,9 +1,9 @@
 import { HtmlParser } from "../../compiler/src/ml_parser/html_parser.js";
 import { XmlParser } from "../../compiler/src/ml_parser/xml_parser.js";
 import { TagContentType } from "../../compiler/src/ml_parser/tags.js";
-import { ParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
+import { ParseTreeResult as HtmlParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
 
-export interface ParseOptions {
+export interface HtmlParseOptions {
   /**
    * any element can self close
    *
@@ -49,10 +49,10 @@ export interface ParseOptions {
 }
 
 let htmlParser: HtmlParser;
-export function parse(
+export function parseHtml(
   input: string,
-  options: ParseOptions = {},
-): ParseTreeResult {
+  options: HtmlParseOptions = {},
+): HtmlParseTreeResult {
   const {
     canSelfClose = false,
     allowHtmComponentClosingTags = false,
@@ -103,3 +103,7 @@ export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.js"
 // Types
 export type { ParseTreeResult } from "../../compiler/src/ml_parser/parser.js";
 export type * as Ast from "../../compiler/src/ml_parser/ast.js";
+
+// Remove these alias in next major release
+export type { HtmlParseOptions as ParseOptions };
+export { parseHtml as parse };
