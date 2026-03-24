@@ -355,6 +355,15 @@ class _Tokenizer {
       this._endToken([]);
       this._beginToken(TokenType.BLOCK_CLOSE);
       this._endToken([]);
+    } else if (
+      startToken.parts[0]?.replace(/\s+/g, ' ') === 'default never' &&
+      this._attemptCharCode(chars.$SEMICOLON)
+    ) {
+      // @default never; (exhaustive switch type check)
+      this._beginToken(TokenType.BLOCK_OPEN_END);
+      this._endToken([]);
+      this._beginToken(TokenType.BLOCK_CLOSE);
+      this._endToken([]);
     } else {
       startToken.type = TokenType.INCOMPLETE_BLOCK_OPEN;
     }
