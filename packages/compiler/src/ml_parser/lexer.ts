@@ -113,8 +113,11 @@ export function tokenize(
   source: string,
   url: string,
   getTagContentType: (
-    tagName: string, prefix: string, hasParent: boolean,
-    attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
+    tagName: string,
+    prefix: string,
+    hasParent: boolean,
+    attrs: Array<{prefix: string; name: string; value?: string}>,
+  ) => TagContentType,
   options: TokenizeOptions = {},
 ): TokenizeResult {
   const tokenizer = new _Tokenizer(new ParseSourceFile(source, url), getTagContentType, options);
@@ -191,11 +194,14 @@ class _Tokenizer {
    * @param options Configuration of the tokenization.
    */
   constructor(
-      _file: ParseSourceFile,
-      private _getTagContentType:
-          (tagName: string, prefix: string, hasParent: boolean,
-           attrs: Array<{prefix: string, name: string, value?: string}>) => TagContentType,
-      options: TokenizeOptions,
+    _file: ParseSourceFile,
+    private _getTagContentType: (
+      tagName: string,
+      prefix: string,
+      hasParent: boolean,
+      attrs: Array<{prefix: string; name: string; value?: string}>,
+    ) => TagContentType,
+    options: TokenizeOptions,
   ) {
     this._tokenizeIcu = options.tokenizeExpansionForms || false;
     this._leadingTriviaCodePoints =
@@ -644,7 +650,9 @@ class _Tokenizer {
     const location = this._cursor.clone();
     if (!this._attemptStrCaseInsensitive(chars)) {
       throw this._createError(
-          _unexpectedCharacterErrorMsg(this._cursor.peek()), this._cursor.getSpan(location));
+        _unexpectedCharacterErrorMsg(this._cursor.peek()),
+        this._cursor.getSpan(location),
+      );
     }
   }
 
@@ -843,7 +851,7 @@ class _Tokenizer {
       | ComponentOpenStartToken
       | IncompleteComponentOpenToken
       | undefined;
-    const attrs: Array<{prefix: string, name: string, value?: string}> = [];
+    const attrs: Array<{prefix: string; name: string; value?: string}> = [];
 
     try {
       if (this._selectorlessEnabled && isSelectorlessNameStart(this._cursor.peek())) {
@@ -910,13 +918,19 @@ class _Tokenizer {
       throw e;
     }
 
-    if (this._canSelfClose &&
-        this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID) {
+    if (
+      this._canSelfClose &&
+      this.tokens[this.tokens.length - 1].type === TokenType.TAG_OPEN_END_VOID
+    ) {
       return;
     }
 
-    const contentTokenType =
-        this._getTagContentType(tagName, prefix, this._fullNameStack.length > 0, attrs);
+    const contentTokenType = this._getTagContentType(
+      tagName,
+      prefix,
+      this._fullNameStack.length > 0,
+      attrs,
+    );
     this._handleFullNameStackForTagOpen(prefix, tagName);
 
     if (contentTokenType === TagContentType.RAW_TEXT) {
@@ -936,11 +950,14 @@ class _Tokenizer {
       if (!this._attemptCharCode(chars.$LT)) return false;
       if (!this._attemptCharCode(chars.$SLASH)) return false;
       this._attemptCharCodeUntilFn(isNotWhitespace);
-      if (!this._attemptStrCaseInsensitive(
-        prefix && openToken.type !== TokenType.COMPONENT_OPEN_START ?
-          `${prefix}:${tagName}`
-        : tagName
-      )) return false;
+      if (
+        !this._attemptStrCaseInsensitive(
+          prefix && openToken.type !== TokenType.COMPONENT_OPEN_START
+            ? `${prefix}:${tagName}`
+            : tagName,
+        )
+      )
+        return false;
       this._attemptCharCodeUntilFn(isNotWhitespace);
       return this._attemptCharCode(chars.$GT);
     });
@@ -1462,16 +1479,20 @@ class _Tokenizer {
 
   private _handleFullNameStackForTagOpen(prefix: string, tagName: string) {
     const fullName = mergeNsAndName(prefix, tagName);
-    if (this._fullNameStack.length === 0 ||
-        this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+    if (
+      this._fullNameStack.length === 0 ||
+      this._fullNameStack[this._fullNameStack.length - 1] === fullName
+    ) {
       this._fullNameStack.push(fullName);
     }
   }
 
   private _handleFullNameStackForTagClose(prefix: string, tagName: string) {
     const fullName = mergeNsAndName(prefix, tagName);
-    if (this._fullNameStack.length !== 0 &&
-        this._fullNameStack[this._fullNameStack.length - 1] === fullName) {
+    if (
+      this._fullNameStack.length !== 0 &&
+      this._fullNameStack[this._fullNameStack.length - 1] === fullName
+    ) {
       this._fullNameStack.pop();
     }
   }
