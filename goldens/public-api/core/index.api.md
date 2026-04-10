@@ -4,6 +4,7 @@
 
 ```ts
 
+import * as _angular_core from '@angular/core';
 import { Observable } from 'rxjs';
 import { Subject } from 'rxjs';
 import { Subscription } from 'rxjs';
@@ -84,7 +85,7 @@ export const ANIMATION_MODULE_TYPE: InjectionToken<"NoopAnimations" | "BrowserAn
 // @public
 export type AnimationCallbackEvent = {
     target: Element;
-    animationComplete: Function;
+    animationComplete: VoidFunction;
 };
 
 // @public
@@ -132,9 +133,13 @@ export class ApplicationModule {
 export class ApplicationRef {
     constructor();
     attachView(viewRef: ViewRef): void;
-    bootstrap<C>(component: Type<C>, rootSelectorOrNode?: string | any): ComponentRef<C>;
-    // @deprecated
-    bootstrap<C>(componentFactory: ComponentFactory<C>, rootSelectorOrNode?: string | any): ComponentRef<C>;
+    bootstrap<C>(component: Type<C>, options?: {
+        hostElement?: Element | string;
+        directives?: (Type<unknown> | DirectiveWithBindings<unknown>)[];
+        bindings?: Binding[];
+    }): ComponentRef<C>;
+    // (undocumented)
+    bootstrap<C>(component: Type<C>, hostElement?: Element | string): ComponentRef<C>;
     readonly components: ComponentRef<any>[];
     readonly componentTypes: Type<any>[];
     destroy(): void;
@@ -185,7 +190,7 @@ export interface BaseResourceOptions<T, R> {
     defaultValue?: NoInfer<T>;
     equal?: ValueEqualityFn<T>;
     injector?: Injector;
-    params?: () => R;
+    params?: (ctx: ResourceParamsContext) => R;
 }
 
 // @public
@@ -209,14 +214,14 @@ export interface BootstrapOptions {
 
 // @public
 export enum ChangeDetectionStrategy {
+    // @deprecated
     Default = 1,
+    Eager = 1,
     OnPush = 0
 }
 
 // @public
 export abstract class ChangeDetectorRef {
-    // @deprecated
-    abstract checkNoChanges(): void;
     abstract detach(): void;
     abstract detectChanges(): void;
     abstract markForCheck(): void;
@@ -290,31 +295,6 @@ export const Component: ComponentDecorator;
 export interface ComponentDecorator {
     (obj: Component): TypeDecorator;
     new (obj: Component): Component;
-}
-
-// @public @deprecated
-export abstract class ComponentFactory<C> {
-    abstract get componentType(): Type<any>;
-    abstract create(injector: Injector, projectableNodes?: any[][], rootSelectorOrNode?: string | any, environmentInjector?: EnvironmentInjector | NgModuleRef<any>, directives?: (Type<unknown> | DirectiveWithBindings<unknown>)[], bindings?: Binding[]): ComponentRef<C>;
-    abstract get inputs(): {
-        propName: string;
-        templateName: string;
-        transform?: (value: any) => any;
-        isSignal: boolean;
-    }[];
-    abstract get ngContentSelectors(): string[];
-    abstract get outputs(): {
-        propName: string;
-        templateName: string;
-    }[];
-    abstract get selector(): string;
-}
-
-// @public @deprecated
-export abstract class ComponentFactoryResolver {
-    // (undocumented)
-    static NULL: ComponentFactoryResolver;
-    abstract resolveComponentFactory<T>(component: Type<T>): ComponentFactory<T>;
 }
 
 // @public
@@ -479,9 +459,6 @@ export function createEnvironmentInjector(providers: Array<Provider | Environmen
 // @public
 export function createNgModule<T>(ngModule: Type<T>, parentInjector?: Injector): NgModuleRef<T>;
 
-// @public @deprecated
-export const createNgModuleRef: typeof createNgModule;
-
 // @public
 export function createPlatform(injector: Injector): PlatformRef;
 
@@ -499,6 +476,18 @@ export const CSP_NONCE: InjectionToken<string | null>;
 
 // @public
 export const CUSTOM_ELEMENTS_SCHEMA: SchemaMetadata;
+
+// @public
+export function debounced<T>(source: () => T, wait: NoInfer<DebounceTimer<T>>, options?: NoInfer<DebouncedOptions<T>>): Resource<T>;
+
+// @public
+export interface DebouncedOptions<T> {
+    equal?: ValueEqualityFn<T>;
+    injector?: Injector;
+}
+
+// @public
+export type DebounceTimer<T> = number | ((value: T, lastValue: ResourceSnapshot<T>) => Promise<void> | void);
 
 // @public (undocumented)
 export class DebugElement extends DebugNode {
@@ -635,6 +624,12 @@ export const Directive: DirectiveDecorator;
 export interface DirectiveDecorator {
     (obj?: Directive): TypeDecorator;
     new (obj?: Directive): Directive;
+}
+
+// @public
+export interface DirectiveWithBindings<T> {
+    bindings: Binding[];
+    type: Type<T>;
 }
 
 // @public
@@ -836,6 +831,12 @@ export interface HostListenerDecorator {
 }
 
 // @public
+export interface IdleService {
+    cancelOnIdle(id: number): void;
+    requestOnIdle(callback: (deadline?: IdleDeadline) => void, options?: IdleRequestOptions): number;
+}
+
+// @public
 export function importProvidersFrom(...sources: ImportProvidersSource[]): EnvironmentProviders;
 
 // @public
@@ -969,7 +970,7 @@ export abstract class Injector {
     // (undocumented)
     static THROW_IF_NOT_FOUND: {};
     // (undocumented)
-    static ɵprov: unknown;
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<Injector>;
 }
 
 // @public
@@ -1098,7 +1099,7 @@ export class IterableDiffers {
     // (undocumented)
     find(iterable: any): IterableDifferFactory;
     // (undocumented)
-    static ɵprov: unknown;
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<IterableDiffers>;
 }
 
 // @public
@@ -1135,12 +1136,12 @@ export interface KeyValueDifferFactory {
 export class KeyValueDiffers {
     constructor(factories: KeyValueDifferFactory[]);
     // (undocumented)
-    static create<S>(factories: KeyValueDifferFactory[], parent?: KeyValueDiffers): KeyValueDiffers;
-    static extend<S>(factories: KeyValueDifferFactory[]): StaticProvider;
+    static create(factories: KeyValueDifferFactory[], parent?: KeyValueDiffers): KeyValueDiffers;
+    static extend(factories: KeyValueDifferFactory[]): StaticProvider;
     // (undocumented)
     find(kv: any): KeyValueDifferFactory;
     // (undocumented)
-    static ɵprov: unknown;
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<KeyValueDiffers>;
 }
 
 // @public
@@ -1397,7 +1398,7 @@ export class PendingTasks {
     add(): () => void;
     run(fn: () => Promise<unknown>): void;
     // (undocumented)
-    static ɵprov: unknown;
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<PendingTasks>;
 }
 
 // @public
@@ -1480,6 +1481,9 @@ export function provideCheckNoChangesConfig(options: {
 
 // @public
 export function provideEnvironmentInitializer(initializerFn: () => void): EnvironmentProviders;
+
+// @public
+export function provideIdleServiceWith(useExisting: AbstractType<IdleService> | InjectionToken<IdleService>): EnvironmentProviders;
 
 // @public
 export function provideNgReflectAttributes(): EnvironmentProviders;
@@ -1641,6 +1645,12 @@ export function resource<T, R>(options: ResourceOptions<T, R> & {
 export function resource<T, R>(options: ResourceOptions<T, R>): ResourceRef<T | undefined>;
 
 // @public
+export class ResourceDependencyError extends Error {
+    constructor(dependency: Resource<unknown>);
+    readonly dependency: Resource<unknown>;
+}
+
+// @public
 export function resourceFromSnapshots<T>(source: () => ResourceSnapshot<T>): Resource<T>;
 
 // @public
@@ -1662,6 +1672,17 @@ export interface ResourceLoaderParams<R> {
 export type ResourceOptions<T, R> = (PromiseResourceOptions<T, R> | StreamingResourceOptions<T, R>) & {
     debugName?: string;
 };
+
+// @public
+export interface ResourceParamsContext {
+    readonly chain: <T>(resource: Resource<T>) => T;
+}
+
+// @public
+export class ResourceParamsStatus extends Error {
+    static readonly IDLE: ResourceParamsStatus;
+    static readonly LOADING: ResourceParamsStatus;
+}
 
 // @public
 export interface ResourceRef<T> extends WritableResource<T> {
@@ -1717,7 +1738,7 @@ export abstract class Sanitizer {
     // (undocumented)
     abstract sanitize(context: SecurityContext, value: {} | string | null): string | null;
     // (undocumented)
-    static ɵprov: unknown;
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<null>;
 }
 
 // @public
@@ -1878,7 +1899,7 @@ export class TransferState {
     set<T>(key: StateKey<T>, value: T): void;
     toJson(): string;
     // (undocumented)
-    static ɵprov: unknown;
+    static ɵprov: _angular_core.ɵɵInjectableDeclaration<TransferState>;
 }
 
 // @public
@@ -2030,8 +2051,6 @@ export abstract class ViewContainerRef {
         directives?: (Type<unknown> | DirectiveWithBindings<unknown>)[];
         bindings?: Binding[];
     }): ComponentRef<C>;
-    // @deprecated
-    abstract createComponent<C>(componentFactory: ComponentFactory<C>, index?: number, injector?: Injector, projectableNodes?: any[][], environmentInjector?: EnvironmentInjector | NgModuleRef<any>, directives?: (Type<unknown> | DirectiveWithBindings<unknown>)[], bindings?: Binding[]): ComponentRef<C>;
     abstract createEmbeddedView<C>(templateRef: TemplateRef<C>, context?: C, options?: {
         index?: number;
         injector?: Injector;

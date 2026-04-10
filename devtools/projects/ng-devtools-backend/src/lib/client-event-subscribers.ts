@@ -42,7 +42,7 @@ import {
   idToInjector,
   injectorsSeen,
   isElementInjector,
-  isOnPushDirective,
+  getDirectiveCdStrategy,
   logValue,
   nodeInjectorToResolutionPath,
   queryDirectiveForest,
@@ -387,8 +387,10 @@ export interface SerializableComponentInstanceType extends ComponentType {
   id: number;
 }
 
-export interface SerializableComponentTreeNode
-  extends DevToolsNode<SerializableDirectiveInstanceType, SerializableComponentInstanceType> {
+export interface SerializableComponentTreeNode extends DevToolsNode<
+  SerializableDirectiveInstanceType,
+  SerializableComponentInstanceType
+> {
   children: SerializableComponentTreeNode[];
   nativeElement?: never;
   // Since the nativeElement is not serializable, we will use this boolean as backup
@@ -436,8 +438,8 @@ const prepareForestForSerialization = (
       })),
       children: prepareForestForSerialization(node.children, includeResolutionPath),
       hydration: node.hydration,
-      defer: node.defer,
-      onPush: node.component ? isOnPushDirective(node.component) : false,
+      controlFlowBlock: node.controlFlowBlock,
+      changeDetection: node.component ? getDirectiveCdStrategy(node.component) : undefined,
 
       // native elements are not serializable
       hasNativeElement: !!node.nativeElement,

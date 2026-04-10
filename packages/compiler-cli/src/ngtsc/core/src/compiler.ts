@@ -6,7 +6,6 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {R3Identifiers} from '@angular/compiler';
 import ts from 'typescript';
 
 import {
@@ -65,10 +64,10 @@ import {
 import {SemanticSymbol} from '../../incremental/semantic_graph';
 import {generateAnalysis, IndexedComponent, IndexingContext} from '../../indexer';
 import {
-  DirectiveResources,
   CompoundMetadataReader,
   CompoundMetadataRegistry,
   DirectiveMeta,
+  DirectiveResources,
   DtsMetadataReader,
   ExportedProviderStatusResolver,
   HostDirectivesResolver,
@@ -106,8 +105,8 @@ import {
   DecoratorHandler,
   DtsTransformRegistry,
   ivyTransformFactory,
-  TraitCompiler,
   signalMetadataTransform,
+  TraitCompiler,
 } from '../../transform';
 import {TemplateTypeCheckerImpl} from '../../typecheck';
 import {OptimizeFor, TemplateTypeChecker, TypeCheckingConfig} from '../../typecheck/api';
@@ -124,10 +123,9 @@ import {SourceFileValidator} from '../../validation';
 import {Xi18nContext} from '../../xi18n';
 import {DiagnosticCategoryLabel, NgCompilerAdapter, NgCompilerOptions} from '../api';
 
-import {coreVersionSupportsFeature} from './feature_detection';
-import {angularJitApplicationTransform} from '../../transform/jit';
 import {untagAllTsFiles} from '../../shims';
-import {DOC_PAGE_BASE_URL} from '../../diagnostics/src/error_details_base_url';
+import {angularJitApplicationTransform} from '../../transform/jit';
+import {coreVersionSupportsFeature} from './feature_detection';
 
 /**
  * State information about a compilation which is only generated once some data is requested from
@@ -423,7 +421,6 @@ export class NgCompiler {
           ticket.programDriver,
           ticket.incrementalBuildStrategy,
           IncrementalCompilation.fresh(
-            ticket.tsProgram,
             versionMapFromProgram(ticket.tsProgram, ticket.programDriver),
           ),
           ticket.enableTemplateTypeChecker,
@@ -659,7 +656,7 @@ export class NgCompiler {
       if (templateSemanticsChecker !== null) {
         diagnostics.push(...templateSemanticsChecker.getDiagnosticsForComponent(component));
       }
-      if (this.options.strictTemplates && extendedTemplateChecker !== null) {
+      if (this.strictTemplates && extendedTemplateChecker !== null) {
         diagnostics.push(...extendedTemplateChecker.getDiagnosticsForComponent(component));
       }
     } catch (err: unknown) {
@@ -672,7 +669,7 @@ export class NgCompiler {
   }
 
   /**
-   * Add Angular.io error guide links to diagnostics for this compilation.
+   * Add https://angular.dev/errors error guide links to diagnostics for this compilation.
    */
   private addMessageTextDetails(diagnostics: ts.Diagnostic[]): ts.Diagnostic[] {
     return diagnostics.map((diag) => {
@@ -836,6 +833,8 @@ export class NgCompiler {
         compilation.isCore,
         this.closureCompilerEnabled,
         this.emitDeclarationOnly,
+        compilation.refEmitter,
+        !!this.options['_experimentalEmitIntermediateTs'],
       ),
       aliasTransformFactory(compilation.traitCompiler.exportStatements),
       defaultImportTracker.importPreservingTransformer(),
@@ -1036,13 +1035,12 @@ export class NgCompiler {
     });
   }
 
-  private get fullTemplateTypeCheck(): boolean {
-    // Determine the strictness level of type checking based on compiler options. As
-    // `strictTemplates` is a superset of `fullTemplateTypeCheck`, the former implies the latter.
-    // Also see `verifyCompatibleTypeCheckOptions` where it is verified that `fullTemplateTypeCheck`
-    // is not disabled when `strictTemplates` is enabled.
-    const strictTemplates = !!this.options.strictTemplates;
-    return strictTemplates || !!this.options.fullTemplateTypeCheck;
+  /**
+   * strictTemplate is `true` by default.
+   * Explicit opt-out is required to disable strictness
+   */
+  private get strictTemplates(): boolean {
+    return this.options.strictTemplates !== false;
   }
 
   private getTypeCheckingConfig(): TypeCheckingConfig {
@@ -1050,7 +1048,7 @@ export class NgCompiler {
     // `strictTemplates` is a superset of `fullTemplateTypeCheck`, the former implies the latter.
     // Also see `verifyCompatibleTypeCheckOptions` where it is verified that `fullTemplateTypeCheck`
     // is not disabled when `strictTemplates` is enabled.
-    const strictTemplates = !!this.options.strictTemplates;
+    const strictTemplates = this.strictTemplates;
 
     const useInlineTypeConstructors = this.programDriver.supportsInlineOperations;
     const checkTwoWayBoundEvents = this.options['_checkTwoWayBoundEvents'] ?? false;
@@ -1069,7 +1067,7 @@ export class NgCompiler {
     // First select a type-checking configuration, based on whether full template type-checking is
     // requested.
     let typeCheckingConfig: TypeCheckingConfig;
-    if (this.fullTemplateTypeCheck) {
+    if (strictTemplates) {
       typeCheckingConfig = {
         applyTemplateContextGuards: strictTemplates,
         checkQueries: false,
@@ -1099,10 +1097,6 @@ export class NgCompiler {
         strictLiteralTypes: true,
         enableTemplateTypeChecker: this.enableTemplateTypeChecker,
         useInlineTypeConstructors,
-        // Warnings for suboptimal type inference are only enabled if in Language Service mode
-        // (providing the full TemplateTypeChecker API) and if strict mode is not enabled. In strict
-        // mode, the user is in full control of type inference.
-        suggestionsForSuboptimalTypeInference: this.enableTemplateTypeChecker && !strictTemplates,
         controlFlowPreventingContentProjection:
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         unusedStandaloneImports:
@@ -1136,9 +1130,6 @@ export class NgCompiler {
         strictLiteralTypes: false,
         enableTemplateTypeChecker: this.enableTemplateTypeChecker,
         useInlineTypeConstructors,
-        // In "basic" template type-checking mode, no warnings are produced since most things are
-        // not checked anyways.
-        suggestionsForSuboptimalTypeInference: false,
         controlFlowPreventingContentProjection:
           this.options.extendedDiagnostics?.defaultCategory || DiagnosticCategoryLabel.Warning,
         unusedStandaloneImports:
@@ -1150,7 +1141,7 @@ export class NgCompiler {
     }
 
     // Apply explicitly configured strictness flags on top of the default configuration
-    // based on "fullTemplateTypeCheck".
+    // based on "strictTemplates".
     if (this.options.strictInputTypes !== undefined) {
       typeCheckingConfig.checkTypeOfInputBindings = this.options.strictInputTypes;
       typeCheckingConfig.applyTemplateContextGuards = this.options.strictInputTypes;
@@ -1277,7 +1268,7 @@ export class NgCompiler {
           }),
         );
       }
-      if (this.options.strictTemplates && extendedTemplateChecker !== null) {
+      if (this.strictTemplates && extendedTemplateChecker !== null) {
         diagnostics.push(
           ...compilation.traitCompiler.runAdditionalChecks(sf, (clazz, handler) => {
             return handler.extendedTemplateCheck?.(clazz, extendedTemplateChecker) || null;
@@ -1632,6 +1623,7 @@ export class NgCompiler {
       semanticDepGraphUpdater,
       this.adapter,
       this.emitDeclarationOnly,
+      !!this.options['_experimentalEmitIntermediateTs'],
     );
 
     // Template type-checking may use the `ProgramDriver` to produce new `ts.Program`(s). If this
@@ -1756,33 +1748,11 @@ function getR3SymbolsFile(program: ts.Program): ts.SourceFile | null {
 }
 
 /**
- * Since "strictTemplates" is a true superset of type checking capabilities compared to
- * "fullTemplateTypeCheck", it is required that the latter is not explicitly disabled if the
- * former is enabled.
+ * Checks compiler options compatibility with strictTemplates
  */
 function* verifyCompatibleTypeCheckOptions(
   options: NgCompilerOptions,
 ): Generator<ts.Diagnostic, void, void> {
-  if (options.fullTemplateTypeCheck === false && options.strictTemplates === true) {
-    yield makeConfigDiagnostic({
-      category: ts.DiagnosticCategory.Error,
-      code: ErrorCode.CONFIG_STRICT_TEMPLATES_IMPLIES_FULL_TEMPLATE_TYPECHECK,
-      messageText: `
-Angular compiler option "strictTemplates" is enabled, however "fullTemplateTypeCheck" is disabled.
-
-Having the "strictTemplates" flag enabled implies that "fullTemplateTypeCheck" is also enabled, so
-the latter can not be explicitly disabled.
-
-One of the following actions is required:
-1. Remove the "fullTemplateTypeCheck" option.
-2. Remove "strictTemplates" or set it to 'false'.
-
-More information about the template type checking compiler options can be found in the documentation:
-${DOC_PAGE_BASE_URL}/tools/cli/template-typecheck
-      `.trim(),
-    });
-  }
-
   if (options.extendedDiagnostics && options.strictTemplates === false) {
     yield makeConfigDiagnostic({
       category: ts.DiagnosticCategory.Error,

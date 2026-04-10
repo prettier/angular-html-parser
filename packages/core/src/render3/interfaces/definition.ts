@@ -17,7 +17,7 @@ import {FactoryFn} from '../definition_factory';
 import {TAttributes, TConstantsOrFactory} from './node';
 import {CssSelectorList} from './projection';
 import type {TView} from './view';
-import {InputFlags} from './input_flags';
+import type {ControlDirectiveDef} from './control';
 
 /**
  * Definition of what a template rendering function should look like for a component.
@@ -118,7 +118,7 @@ export interface DirectiveDef<T> {
    */
   readonly inputs: Record<
     string,
-    [minifiedName: string, flags: InputFlags, transform: InputTransformFunction | null]
+    [minifiedName: string, flags: number, transform: InputTransformFunction | null]
   >;
 
   /**
@@ -126,7 +126,7 @@ export interface DirectiveDef<T> {
    * used to do further processing after the `inputs` have been inverted.
    */
   readonly inputConfig: {
-    [P in keyof T]?: string | [InputFlags, string, string?, InputTransformFunction?];
+    [P in keyof T]?: string | [number, string, string?, InputTransformFunction?];
   };
 
   /**
@@ -261,6 +261,14 @@ export interface DirectiveDef<T> {
    * distinguish if a function in the array is a `Type` or a `() => HostDirectiveConfig[]`.
    */
   hostDirectives: (HostDirectiveDef | (() => HostDirectiveConfig[]))[] | null;
+
+  controlDef: ControlDirectiveDef | null;
+
+  /**
+   * Cache of inputs that this custom control directive covers,
+   * used by the signal forms system.
+   */
+  signalFormsInputPresence: Record<string, boolean> | null;
 
   setInput:
     | (<U extends T>(
@@ -548,11 +556,8 @@ export type DependencyDef = DirectiveDef<unknown> | ComponentDef<unknown> | Pipe
 
 export type DirectiveTypesOrFactory = (() => DirectiveTypeList) | DirectiveTypeList;
 
-export type DirectiveTypeList = (
-  | DirectiveType<any>
-  | ComponentType<any>
-  | Type<any>
-) /* Type as workaround for: Microsoft/TypeScript/issues/4881 */[];
+export type DirectiveTypeList = (DirectiveType<any> | ComponentType<any> | Type<any>)[];
+/* Type as workaround for: Microsoft/TypeScript/issues/4881 */
 
 export type DependencyType = DirectiveType<any> | ComponentType<any> | PipeType<any> | Type<any>;
 
@@ -573,10 +578,8 @@ export type PipeDefList = PipeDef<any>[];
 
 export type PipeTypesOrFactory = (() => PipeTypeList) | PipeTypeList;
 
-export type PipeTypeList = (
-  | PipeType<any>
-  | Type<any>
-) /* Type as workaround for: Microsoft/TypeScript/issues/4881 */[];
+export type PipeTypeList = (PipeType<any> | Type<any>)[];
+/* Type as workaround for: Microsoft/TypeScript/issues/4881 */
 
 /**
  * NgModule scope info as provided by AoT compiler

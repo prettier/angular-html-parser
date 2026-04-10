@@ -126,6 +126,16 @@ describe('parser', () => {
     it('should parse in expressions', () => {
       checkAction(`'key' in obj`, `"key" in obj`);
       checkAction(`('key' in obj) && true`, `("key" in obj) && true`);
+      checkAction(`'in' in {in: foo}`, `"in" in {in: foo}`);
+    });
+
+    it('should throw on invalid in expressions', () => {
+      expectActionError('in', 'Unexpected token in');
+      expectActionError('in foo', 'Unexpected token in');
+      expectActionError(
+        `'foo' in`,
+        `Unexpected end of expression: 'foo' in at the end of the expression ['foo' in]`,
+      );
     });
 
     it('should ignore comments in expressions', () => {
@@ -1123,10 +1133,6 @@ describe('parser', () => {
 
         it('should report an arrow function without an opening paren', () => {
           expectBindingError('a) => a + 1', "Unexpected token ')'");
-        });
-
-        it('should report missing comma between arrow function parameters', () => {
-          expectBindingError('(a b) => a + b', 'Missing expected ,');
         });
 
         it('should report an error inside the arrow function expression', () => {

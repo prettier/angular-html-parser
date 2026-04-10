@@ -235,14 +235,14 @@ Think of Angular's dependency injection system as a hash map or dictionary. Each
 When manually providing dependencies, you typically see this shorthand syntax:
 
 ```angular-ts
-import { Component } from '@angular/core';
-import { LocalService } from './local-service';
+import {Component} from '@angular/core';
+import {LocalService} from './local-service';
 
 @Component({
   selector: 'app-example',
-  providers: [LocalService]  // Service without providedIn
+  providers: [LocalService], // Service without providedIn
 })
-export class Example { }
+export class Example {}
 ```
 
 This is actually a shorthand for a more detailed provider configuration:
@@ -282,16 +282,16 @@ Provider identifiers allow Angular's dependency injection (DI) system to retriev
 Class name use the imported class directly as the identifier:
 
 ```angular-ts
-import { Component } from '@angular/core';
-import { LocalService } from './local-service';
+import {Component} from '@angular/core';
+import {LocalService} from './local-service';
 
 @Component({
   selector: 'app-example',
-  providers: [
-    { provide: LocalService, useClass: LocalService }
-  ]
+  providers: [{provide: LocalService, useClass: LocalService}],
 })
-export class Example { /* ... */ }
+export class Example {
+  /* ... */
+}
 ```
 
 The class serves as both the identifier and the implementation, which is why Angular provides the shorthand `providers: [LocalService]`.
@@ -313,15 +313,13 @@ NOTE: The string `'DataService'` is a description used purely for debugging purp
 Use the token in your provider configuration:
 
 ```angular-ts
-import { Component, inject } from '@angular/core';
-import { LocalDataService } from './local-data-service';
-import { DATA_SERVICE_TOKEN } from './tokens';
+import {Component, inject} from '@angular/core';
+import {LocalDataService} from './local-data-service';
+import {DATA_SERVICE_TOKEN} from './tokens';
 
 @Component({
   selector: 'app-example',
-  providers: [
-    { provide: DATA_SERVICE_TOKEN, useClass: LocalDataService }
-  ]
+  providers: [{provide: DATA_SERVICE_TOKEN, useClass: LocalDataService}],
 })
 export class Example {
   private dataService = inject(DATA_SERVICE_TOKEN);
@@ -672,20 +670,20 @@ Use component or directive providers when:
 @Component({
   selector: 'app-advanced-form',
   providers: [
-    FormValidationService,  // Each form gets its own validator
-    { provide: FORM_CONFIG, useValue: { strictMode: true } }
-  ]
+    FormValidationService, // Each form gets its own validator
+    {provide: FORM_CONFIG, useValue: {strictMode: true}},
+  ],
 })
-export class AdvancedForm { }
+export class AdvancedForm {}
 
 // Modal component with isolated state management
 @Component({
   selector: 'app-modal',
   providers: [
-    ModalStateService  // Each modal manages its own state
-  ]
+    ModalStateService, // Each modal manages its own state
+  ],
 })
-export class Modal { }
+export class Modal {}
 ```
 
 **Benefits:**
@@ -732,6 +730,10 @@ export const routes: Routes = [
   },
 ];
 ```
+
+Services provided at the route level are available to all components and directives within that route, as well as to its guards and resolvers.
+
+Since these services are instantiated independently of the route’s components, they do not have direct access to route-specific information.
 
 ## Library author patterns
 

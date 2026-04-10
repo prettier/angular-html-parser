@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {ApplicationRef, Component, DoBootstrap, NgModule, Type} from '@angular/core';
+import {ApplicationRef, Component, DoBootstrap, NgModule} from '@angular/core';
 import {BrowserModule} from '@angular/platform-browser';
 
 @Component({
@@ -74,7 +74,7 @@ export class AppModuleThree implements DoBootstrap {
   // #docregion domNode
   ngDoBootstrap(appRef: ApplicationRef) {
     const element = document.querySelector('#root-element');
-    appRef.bootstrap(ComponentFour, element);
+    appRef.bootstrap(ComponentFour, element!);
   }
   // #enddocregion domNode
 }

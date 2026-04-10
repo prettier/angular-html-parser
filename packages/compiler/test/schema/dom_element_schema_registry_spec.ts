@@ -11,13 +11,10 @@ import {
   DomElementSchemaRegistry,
   SCHEMA,
 } from '../../src/schema/dom_element_schema_registry';
-import {CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, SecurityContext} from '@angular/core';
-import {isNode} from '@angular/private/testing';
+import {CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, SecurityContext} from '../../src/core';
 
 import {Element} from '../../src/ml_parser/ast';
 import {HtmlParser} from '../../src/ml_parser/html_parser';
-
-import {extractSchema} from './schema_extractor';
 
 describe('DOMElementSchema', () => {
   let registry: DomElementSchemaRegistry;
@@ -157,6 +154,18 @@ If 'onAnything' is a directive input, make sure the directive is imported by the
     expect(registry.securityContext('a', 'href', false)).toBe(SecurityContext.URL);
     expect(registry.securityContext('a', 'style', false)).toBe(SecurityContext.STYLE);
     expect(registry.securityContext('base', 'href', false)).toBe(SecurityContext.RESOURCE_URL);
+
+    // SVG animate and set attributes
+    expect(registry.securityContext('animate', 'to', false)).toBe(
+      SecurityContext.ATTRIBUTE_NO_BINDING,
+    );
+    expect(registry.securityContext('animate', 'from', false)).toBe(
+      SecurityContext.ATTRIBUTE_NO_BINDING,
+    );
+    expect(registry.securityContext('animate', 'values', false)).toBe(
+      SecurityContext.ATTRIBUTE_NO_BINDING,
+    );
+    expect(registry.securityContext('set', 'to', false)).toBe(SecurityContext.ATTRIBUTE_NO_BINDING);
   });
 
   it('should detect properties on namespaced elements', () => {
@@ -187,17 +196,16 @@ If 'onAnything' is a directive input, make sure the directive is imported by the
     });
   });
 
-  if (!isNode) {
-    it('generate a new schema', () => {
-      let schema = '\n';
-      extractSchema()!.forEach((props, name) => {
-        schema += `'${name}|${props.join(',')}',\n`;
-      });
-      // Uncomment this line to see:
-      // the generated schema which can then be pasted to the DomElementSchemaRegistry
-      // console.log(schema);
-    });
-  }
+  // Uncomment to see the generated schema which can then be pasted to the DomElementSchemaRegistry
+  // if (!isNode) {
+  //   it('generate a new schema', () => {
+  //     let schema = '\n';
+  //     extractSchema()!.forEach((props, name) => {
+  //       schema += `'${name}|${props.join(',')}',\n`;
+  //     });
+  //     console.log(schema);
+  //   });
+  // }
 
   describe('normalizeAnimationStyleProperty', () => {
     it('should normalize the given CSS property to camelCase', () => {

@@ -30,8 +30,6 @@ import {
 } from './compilation';
 import {BINARY_OPERATORS, namespaceForKey, prefixWithNamespace} from './conversion';
 
-const compatibilityMode = ir.CompatibilityMode.TemplateDefinitionBuilder;
-
 // Schema containing DOM elements and their properties.
 const domSchema = new DomElementSchemaRegistry();
 
@@ -69,7 +67,6 @@ export function ingestComponent(
   const job = new ComponentCompilationJob(
     componentName,
     constantPool,
-    compatibilityMode,
     compilationMode,
     relativeContextFilePath,
     i18nUseExternalIds,
@@ -102,7 +99,6 @@ export function ingestHostBinding(
   const job = new HostBindingCompilationJob(
     input.componentName,
     constantPool,
-    compatibilityMode,
     TemplateCompilationMode.DomOnly,
   );
   for (const property of input.properties ?? []) {
@@ -316,16 +312,6 @@ function ingestElement(unit: ViewCompilationUnit, element: t.Element): void {
   const endOp = ir.createElementEndOp(id, element.endSourceSpan ?? element.startSourceSpan);
   unit.create.push(endOp);
 
-  // We want to ensure that the controlCreateOp is after the ops that create the element
-  const fieldInput = element.inputs.find(
-    (input) => input.name === 'formField' && input.type === e.BindingType.Property,
-  );
-  if (fieldInput) {
-    // If the input name is 'formField', this could be a form control binding which requires a
-    // `ControlCreateOp` to properly initialize.
-    unit.create.push(ir.createControlCreateOp(fieldInput.sourceSpan));
-  }
-
   // If there is an i18n message associated with this element, insert i18n start and end ops.
   if (i18nBlockId !== null) {
     ir.OpList.insertBefore<ir.CreateOp>(
@@ -496,16 +482,12 @@ function ingestBoundText(
 
   const textXref = unit.job.allocateXrefId();
   unit.create.push(ir.createTextOp(textXref, '', icuPlaceholder, text.sourceSpan));
-  // TemplateDefinitionBuilder does not generate source maps for sub-expressions inside an
-  // interpolation. We copy that behavior in compatibility mode.
-  // TODO: is it actually correct to generate these extra maps in modern mode?
-  const baseSourceSpan = unit.job.compatibility ? null : text.sourceSpan;
   unit.update.push(
     ir.createInterpolateTextOp(
       textXref,
       new ir.Interpolation(
         value.strings,
-        value.expressions.map((expr) => convertAst(expr, unit.job, baseSourceSpan)),
+        value.expressions.map((expr) => convertAst(expr, unit.job, null)),
         i18nPlaceholders,
       ),
       text.sourceSpan,
@@ -767,7 +749,7 @@ function ingestDeferBlock(unit: ViewCompilationUnit, deferBlock: t.DeferredBlock
     deferOnOps.push(
       ir.createDeferOnOp(
         deferXref,
-        {kind: ir.DeferTriggerKind.Idle},
+        {kind: ir.DeferTriggerKind.Idle, timeout: null},
         ir.DeferOpModifierKind.NONE,
         null!,
       ),
@@ -796,7 +778,7 @@ function ingestDeferTriggers(
   if (triggers.idle !== undefined) {
     const deferOnOp = ir.createDeferOnOp(
       deferXref,
-      {kind: ir.DeferTriggerKind.Idle},
+      {kind: ir.DeferTriggerKind.Idle, timeout: triggers.idle.timeout ?? null},
       modifier,
       triggers.idle.sourceSpan,
     );
@@ -1221,7 +1203,7 @@ function convertAst(
   } else if (ast instanceof e.ArrowFunction) {
     return updateParameterReferences(
       o.arrowFn(
-        ast.parameters.map((arg) => new o.FnParam(arg.name)),
+        ast.parameters.map((arg) => new o.FnParam(arg.name, o.DYNAMIC_TYPE)),
         convertAst(ast.body, job, baseSourceSpan),
       ),
     );

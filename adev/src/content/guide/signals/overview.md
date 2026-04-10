@@ -186,9 +186,38 @@ effect(() => {
 });
 ```
 
+### Reactive context and async operations
+
+The reactive context is only active for synchronous code. Any signal reads that occur after an asynchronous boundary will not be tracked as dependencies.
+
+```ts {avoid}
+effect(async () => {
+  const data = await fetchUserData();
+  // Reactive context is lost here - theme() won't be tracked
+  console.log(`User: ${data.name}, Theme: ${theme()}`);
+});
+```
+
+To ensure all signal reads are tracked, read signals before the `await`. This includes passing them as arguments to the awaited function, since arguments are evaluated synchronously:
+
+```ts {prefer}
+effect(async () => {
+  const currentTheme = theme(); // Read before await
+  const data = await fetchUserData();
+  console.log(`User: ${data.name}, Theme: ${currentTheme}`);
+});
+```
+
+```ts {prefer}
+effect(async () => {
+  // Also works: signal is read before await (as function argument)
+  await renderContent(docContent());
+});
+```
+
 ## Advanced derivations
 
-While `computed` handles simple readonly derivations, you might find yourself needing a writable state that is dependant on other signals.
+While `computed` handles simple readonly derivations, you might find yourself needing a writable state that is dependent on other signals.
 For more information see the [Dependent state with linkedSignal](/guide/signals/linked-signal) guide.
 
 All signal APIs are synchronous— `signal`, `computed`, `input`, etc. However, applications often need to deal with data that is available asynchronously. A `Resource` gives you a way to incorporate async data into your application's signal-based code and still allow you to access its data synchronously. For more information see the [Async reactivity with resources](/guide/signals/resource) guide.
@@ -208,9 +237,9 @@ When you read a signal within an `OnPush` component's template, Angular tracks t
 When creating a signal, you can optionally provide an equality function, which will be used to check whether the new value is actually different than the previous one.
 
 ```ts
-import _ from 'lodash';
+import isEqual from 'lodash/isEqual';
 
-const data = signal(['test'], {equal: _.isEqual});
+const data = signal(['test'], {equal: isEqual});
 
 // Even though this is a different array instance, the deep equality
 // function will consider the values to be equal, and the signal won't

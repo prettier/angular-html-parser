@@ -13,6 +13,7 @@ import {CommonModule, DOCUMENT, registerLocaleData} from '@angular/common';
 import localeEs from '@angular/common/locales/es';
 import localeRo from '@angular/common/locales/ro';
 import {computeMsgId} from '@angular/compiler';
+import {isBrowser} from '@angular/private/testing';
 import {
   Attribute,
   Component,
@@ -33,6 +34,7 @@ import {
   ViewChild,
   ViewContainerRef,
   ɵsetDocument,
+  ChangeDetectionStrategy,
 } from '../../src/core';
 import {HEADER_OFFSET} from '../../src/render3/interfaces/view';
 import {getComponentLView} from '../../src/render3/util/discovery_utils';
@@ -348,6 +350,8 @@ describe('runtime i18n', () => {
       selector: 'app-comp',
       template: `<div i18n (click)="onClick()">Hello {{ name }}</div>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class ListenerComp {
       name = `Angular`;
@@ -560,6 +564,8 @@ describe('runtime i18n', () => {
       template:
         '<div i18n>Content: @defer (when isLoaded) {before<span>middle</span>after} ' +
         '@placeholder {before<div>placeholder</div>after}!</div>',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class DeferComp {
       isLoaded = false;
@@ -786,6 +792,8 @@ describe('runtime i18n', () => {
           </ng-template>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {
         isLogged = false;
@@ -1379,6 +1387,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: '<div><ng-content></ng-content></div>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -1389,6 +1399,8 @@ describe('runtime i18n', () => {
           other {at least {{value}} .}
         }</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         value = 3;
@@ -1440,6 +1452,8 @@ describe('runtime i18n', () => {
           </div>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {}
 
@@ -1449,6 +1463,8 @@ describe('runtime i18n', () => {
           <my-cmp i18n="test" *ngIf="condition">{count, plural, =1 {ONE} other {OTHER}}</my-cmp>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class App {
         count = 1;
@@ -1520,6 +1536,8 @@ describe('runtime i18n', () => {
           </div>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {}
 
@@ -1532,6 +1550,8 @@ describe('runtime i18n', () => {
           }</my-cmp>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class App {
         count = 1;
@@ -1583,6 +1603,8 @@ describe('runtime i18n', () => {
           </ng-container>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Comp {
         type = 'A';
@@ -1625,6 +1647,8 @@ describe('runtime i18n', () => {
           }</ng-container>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Comp {
         type = 'A';
@@ -1666,6 +1690,8 @@ describe('runtime i18n', () => {
           </div>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class AppComponent {
         types = ['A', 'B', 'C'];
@@ -1687,6 +1713,8 @@ describe('runtime i18n', () => {
         selector: 'app',
         template: ` <div i18n="@@idA">{count, select, 1 {one} other {more than one}}</div> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class AppComponent {
         count = 2;
@@ -1713,6 +1741,8 @@ describe('runtime i18n', () => {
           <div i18n="@@idB">{count, plural, =1 {one (plural)} =2 {two (plural)}}</div>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class AppComponent {
         count = 1;
@@ -1772,7 +1802,8 @@ describe('runtime i18n', () => {
           }</div>
         `,
         standalone: false,
-      })
+      
+        changeDetection: ChangeDetectionStrategy.Eager,})
       class AppComponent {
         type = 'A';
         count = 1;
@@ -1824,7 +1855,8 @@ describe('runtime i18n', () => {
           <div i18n="@@idA">{count$ | async, select, 1 {{{count$ | async}} item} 2 {two items}}</div>
         `,
         standalone: false,
-      })
+      
+        changeDetection: ChangeDetectionStrategy.Eager,})
       class AppComponent {
         count$ = new BehaviorSubject<number>(1);
       }
@@ -2009,6 +2041,8 @@ describe('runtime i18n', () => {
         selector: 'comp',
         template: '<ng-template i18n-title title="Hello"></ng-template>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Comp {}
 
@@ -2044,6 +2078,8 @@ describe('runtime i18n', () => {
         selector: 'my-cmp',
         template: ` <button *ngIf="true" i18n-title title="Hello"></button> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {}
 
@@ -2067,6 +2103,8 @@ describe('runtime i18n', () => {
         selector: 'my-cmp',
         template: ` <div *ngIf="true" i18n-title title="Hello"></div> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {}
 
@@ -2099,6 +2137,8 @@ describe('runtime i18n', () => {
         selector: 'my-app',
         template: '<ng-template i18n-dir dir="Hello {{ name }}"></ng-template>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class TestComp {
         name = 'Angular';
@@ -2133,6 +2173,8 @@ describe('runtime i18n', () => {
           selector: 'my-app',
           template: '<ng-template *ngIf="true" i18n-dir dir="Hello {{ name }}"></ng-template>',
           standalone: false,
+
+          changeDetection: ChangeDetectionStrategy.Eager,
         })
         class TestComp {
           name = 'Angular';
@@ -2160,6 +2202,8 @@ describe('runtime i18n', () => {
         selector: 'other',
         template: `<div i18n #ref="dir" test="Set" i18n-test="This is also a test"></div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Other {}
 
@@ -2170,6 +2214,8 @@ describe('runtime i18n', () => {
           <other></other>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {}
 
@@ -2221,6 +2267,8 @@ describe('runtime i18n', () => {
         selector: 'my-cmp',
         template: ` <ng-container i18n-mydir="meaning|description" mydir="Hello"></ng-container> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Cmp {}
 
@@ -2304,6 +2352,8 @@ describe('runtime i18n', () => {
         </div>
         <div test inner></div>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {
       exp1 = 1;
@@ -2353,6 +2403,8 @@ describe('runtime i18n', () => {
       selector: 'my-comp',
       template: '',
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyComp {
       t!: string;
@@ -2436,6 +2488,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: '<p><ng-content></ng-content></p>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2450,6 +2504,8 @@ describe('runtime i18n', () => {
           <remove-me-3></remove-me-3>
         </div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2478,6 +2534,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: '<p><ng-content></ng-content></p>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2491,6 +2549,8 @@ describe('runtime i18n', () => {
           </child>
         </div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2527,6 +2587,8 @@ describe('runtime i18n', () => {
         selector: 'grand-child',
         template: '<div><ng-content></ng-content></div>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class GrandChild {}
 
@@ -2534,6 +2596,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: '<grand-child><ng-content></ng-content></grand-child>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2541,6 +2605,8 @@ describe('runtime i18n', () => {
         selector: 'parent',
         template: `<child i18n><b>Hello</b> World!</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2563,6 +2629,8 @@ describe('runtime i18n', () => {
         selector: 'grand-child',
         template: '<div><ng-content></ng-content></div>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class GrandChild {}
 
@@ -2570,6 +2638,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: '<grand-child><ng-content></ng-content></grand-child>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2577,6 +2647,8 @@ describe('runtime i18n', () => {
         selector: 'parent',
         template: `<child i18n><b>Hello</b> World!</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2598,6 +2670,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: `<ng-content select="span"></ng-content>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2610,6 +2684,8 @@ describe('runtime i18n', () => {
           </child>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {}
 
@@ -2630,6 +2706,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: `<div i18n>Content projected from <ng-content></ng-content></div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2637,6 +2715,8 @@ describe('runtime i18n', () => {
         selector: 'parent',
         template: `<child>{{ name }}</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2665,6 +2745,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: `<div i18n>Content projected from <ng-content></ng-content></div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2674,6 +2756,8 @@ describe('runtime i18n', () => {
           ><b>{{ name }}</b></child
         >`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2695,6 +2779,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: `<div i18n>Child content <ng-content></ng-content></div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2702,6 +2788,8 @@ describe('runtime i18n', () => {
         selector: 'parent',
         template: `<child i18n>and projection from {{ name }}</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2729,6 +2817,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: '<div><ng-content></ng-content></div>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2739,6 +2829,8 @@ describe('runtime i18n', () => {
           other {at least {{value}} .}
         }</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         value = 3;
@@ -2756,6 +2848,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: `<div i18n>Child content <ng-content></ng-content></div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2765,6 +2859,8 @@ describe('runtime i18n', () => {
           >and projection from {name, select, angular {Angular} other {{{name}}}}</child
         >`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2799,6 +2895,8 @@ describe('runtime i18n', () => {
         selector: 'child',
         template: `<div i18n>Child content <ng-content></ng-content></div>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {}
 
@@ -2806,6 +2904,8 @@ describe('runtime i18n', () => {
         selector: 'parent',
         template: `<child i18n>and projection from {{ name }}</child>`,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Parent {
         name: string = 'Parent';
@@ -2831,6 +2931,8 @@ describe('runtime i18n', () => {
         selector: 'app',
         template: ` <ng-container>(<ng-content></ng-content>)</ng-container> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyContentApp {}
 
@@ -2838,6 +2940,8 @@ describe('runtime i18n', () => {
         selector: 'my-app',
         template: ` <app i18n *ngIf="condition">{type, select, A {A} B {B} other {other}}</app> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyApp {
         type = 'A';
@@ -2891,6 +2995,8 @@ describe('runtime i18n', () => {
         selector: 'div-query',
         template: '<ng-container #vc></ng-container>',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class DivQuery {
         @ContentChild(TemplateRef, {static: true}) template!: TemplateRef<any>;
@@ -3025,6 +3131,8 @@ describe('runtime i18n', () => {
         <div i18n>{{ myinput.value }}</div>
       `,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class App {}
 
@@ -3054,6 +3162,8 @@ describe('runtime i18n', () => {
         <div i18n-title title="{{ myinput.value }}"></div>
       `,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class App {}
 
@@ -3084,6 +3194,8 @@ describe('runtime i18n', () => {
         <button [close]="true">Button label</button>
       `,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class ContentElementDialog {
       data = false;
@@ -3154,6 +3266,8 @@ describe('runtime i18n', () => {
           <ng-template #tmpl i18n> <ng-content></ng-content> B </ng-template>
         `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Projector {}
 
@@ -3161,6 +3275,8 @@ describe('runtime i18n', () => {
         selector: 'app',
         template: ` <projector>a</projector> `,
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class AppComponent {}
 
@@ -3185,7 +3301,8 @@ describe('runtime i18n', () => {
             <div i18n>before|<div myDir>inside</div>|after</div>
           `,
         standalone: false,
-      })
+      
+        changeDetection: ChangeDetectionStrategy.Eager,})
       class MyApp {}
 
       @Directive({
@@ -3219,6 +3336,8 @@ describe('runtime i18n', () => {
         }
       </h1>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {
       registerItemCount = 1;
@@ -3236,6 +3355,8 @@ describe('runtime i18n', () => {
     @Component({
       template: `<div i18n>before|<child>TextNotProjected</child>|after</div>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {}
 
@@ -3243,6 +3364,8 @@ describe('runtime i18n', () => {
       selector: 'child',
       template: 'CHILD',
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class Child {}
 
@@ -3263,7 +3386,8 @@ describe('runtime i18n', () => {
       <div i18n [title]="null | async"><div>A</div></div>
       <div i18n>{{(null | async)||'B'}}<div></div></div>`,
       standalone: false,
-    })
+    
+      changeDetection: ChangeDetectionStrategy.Eager,})
     class MyApp {}
 
     TestBed.configureTestingModule({declarations: [MyApp]});
@@ -3284,23 +3408,30 @@ describe('runtime i18n', () => {
           </middle>
         </parent>`,
       standalone: false,
-    })
+    
+      changeDetection: ChangeDetectionStrategy.Eager,})
     class MyApp {}
 
     @Component({
       selector: 'parent',
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class Parent {}
 
     @Component({
       selector: 'middle',
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class Middle {}
     @Component({
       selector: 'child',
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class Child {
       constructor(public middle: Middle) {
@@ -3324,6 +3455,8 @@ describe('runtime i18n', () => {
         <span [ngTemplateOutlet]="tmpl"></span>
       </div>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {}
 
@@ -3361,6 +3494,8 @@ describe('runtime i18n', () => {
         </ng-container>
       `,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {}
 
@@ -3411,6 +3546,8 @@ describe('runtime i18n', () => {
         |after.
       `,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {
       retention = {
@@ -3434,7 +3571,7 @@ describe('runtime i18n', () => {
           {parameters.length, plural,
             =1 {
               Affects parameter
-              <span class="parameter-name" attr="should_be_present">{{ parameters[0].name }}</span>
+              <span class="parameter-name" label="should_be_present">{{ parameters[0].name }}</span>
             }
             other {
               Affects {{parameters.length}} parameters, including
@@ -3444,6 +3581,8 @@ describe('runtime i18n', () => {
         </div>
       `,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {
       parameters = [{name: 'void_abt_param'}];
@@ -3453,7 +3592,7 @@ describe('runtime i18n', () => {
     const fixture = TestBed.createComponent(MyApp);
     fixture.detectChanges();
     const span = (fixture.nativeElement as HTMLElement).querySelector('span')!;
-    expect(span.getAttribute('attr')).toEqual('should_be_present');
+    expect(span.getAttribute('label')).toEqual('should_be_present');
     expect(span.getAttribute('class')).toEqual('parameter-name');
   });
 
@@ -3463,6 +3602,8 @@ describe('runtime i18n', () => {
         <li *ngFor="let item of items">{item, plural, =1 {<b>one</b>} =2 {<i>two</i>}},</li>
       </ul>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyApp {
       items = [1, 2];
@@ -3492,6 +3633,8 @@ describe('runtime i18n', () => {
     @Component({
       template: `<div i18n-title title="text" injectTitle></div>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class App {
       @ViewChild(InjectTitleDir) dir!: InjectTitleDir;
@@ -3519,6 +3662,8 @@ describe('runtime i18n', () => {
     @Component({
       template: `<div i18n-title title="text {{ value }}" injectTitle></div>`,
       standalone: false,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class App {
       @ViewChild(InjectTitleDir) dir!: InjectTitleDir;
@@ -3534,6 +3679,92 @@ describe('runtime i18n', () => {
       'translatedText value',
     );
   });
+
+  describe('attribute sanitization', () => {
+    @Component({template: '', changeDetection: ChangeDetectionStrategy.Eager})
+    class SanitizeAppComp {
+      url = 'javascript:alert("oh no")';
+      count = 0;
+    }
+
+    it('should sanitize translated attribute binding', () => {
+      const fixture = initWithTemplate(SanitizeAppComp, '<a [attr.href]="url" i18n-href></a>');
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize translated property binding', () => {
+      const fixture = initWithTemplate(SanitizeAppComp, '<a [href]="url" i18n-href></a>');
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize translated interpolation', () => {
+      const fixture = initWithTemplate(SanitizeAppComp, '<a href="{{url}}" i18n-href></a>');
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize interpolation inside translated element', () => {
+      const fixture = initWithTemplate(SanitizeAppComp, `<div i18n><a href="{{url}}"></a></div>`);
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize attribute binding inside translated element', () => {
+      const fixture = initWithTemplate(
+        SanitizeAppComp,
+        `<div i18n><a [attr.href]="url"></a></div>`,
+      );
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize property binding inside translated element', () => {
+      const fixture = initWithTemplate(SanitizeAppComp, `<div i18n><a [href]="url"></a></div>`);
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize property binding inside an ICU', () => {
+      const fixture = initWithTemplate(
+        SanitizeAppComp,
+        `<div i18n>{count, plural,
+            =0 {no <strong>link</strong> yet}
+            other {{{count}} Here is the <a href="{{url}}">link</a>!}
+        }</div>`,
+      );
+
+      expect(fixture.nativeElement.querySelector('a')).toBeFalsy();
+
+      fixture.componentInstance.count = 1;
+      fixture.detectChanges();
+      const link: HTMLAnchorElement = fixture.nativeElement.querySelector('a');
+      expect(link).toBeTruthy();
+      expect(link.getAttribute('href')).toMatch(/^unsafe:/);
+    });
+
+    it('should sanitize action binding', () => {
+      const fixture = initWithTemplate(
+        SanitizeAppComp,
+        '<form action="{{url}}" i18n-action></form>',
+      );
+      const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
+      expect(form.getAttribute('action')).toMatch(/^unsafe:/);
+    });
+
+    // Skip this test in Node, because Domino doesn't support `formAction`.
+    if (isBrowser) {
+      it('should sanitize formaction binding', () => {
+        const fixture = initWithTemplate(
+          SanitizeAppComp,
+          '<input type="text" formaction="{{url}}" i18n-formaction>',
+        );
+        const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+        expect(input.getAttribute('formaction')).toMatch(/^unsafe:/);
+      });
+    }
+  });
 });
 
 function initWithTemplate(compType: Type<any>, template: string) {
@@ -3547,6 +3778,8 @@ function initWithTemplate(compType: Type<any>, template: string) {
   selector: 'app-comp',
   template: ``,
   standalone: false,
+
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class AppComp {
   name = `Angular`;
@@ -3561,6 +3794,8 @@ class AppComp {
   template: ``,
   preserveWhitespaces: true,
   standalone: false,
+
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class AppCompWithWhitespaces {}
 

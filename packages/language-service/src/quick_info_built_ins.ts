@@ -21,7 +21,7 @@ import {
   TmplAstForLoopBlockEmpty,
   TmplAstNode,
 } from '@angular/compiler';
-import ts from 'typescript';
+import type ts from 'typescript';
 
 import {DisplayInfoKind, SYMBOL_TEXT} from './utils/display_parts';
 import {createQuickInfo, getTextSpanOfNode, isWithin, toTextSpan} from './utils';
@@ -170,7 +170,8 @@ const BUILT_IN_NAMES_TO_DOC_MAP: {
     displayInfoKind: DisplayInfoKind.KEYWORD,
   },
   'idle': {
-    docString: triggerDescriptionPreamble + `the browser reports idle state (default).`,
+    docString:
+      triggerDescriptionPreamble + `the browser reports idle state. Accepts an optional timeout.`,
     links: ['[Reference](https://angular.dev/guide/templates/defer#on-idle)'],
     displayInfoKind: DisplayInfoKind.TRIGGER,
   },

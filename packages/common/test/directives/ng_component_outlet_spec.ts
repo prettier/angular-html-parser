@@ -6,10 +6,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {CommonModule} from '../../index';
-import {NgComponentOutlet} from '../../src/directives/ng_component_outlet';
+import {ChangeDetectionStrategy} from '@angular/compiler';
 import {
-  Compiler,
   Component,
   ComponentRef,
   createEnvironmentInjector,
@@ -19,7 +17,6 @@ import {
   Injector,
   Input,
   NgModule,
-  NgModuleFactory,
   NO_ERRORS_SCHEMA,
   Optional,
   QueryList,
@@ -29,15 +26,19 @@ import {
   ViewChildren,
   ViewContainerRef,
 } from '@angular/core';
-import {TestBed, waitForAsync} from '@angular/core/testing';
+import {TestBed} from '@angular/core/testing';
 import {expect} from '@angular/private/testing/matchers';
+import {CommonModule} from '../../index';
+import {NgComponentOutlet} from '../../src/directives/ng_component_outlet';
 
 describe('insert/remove', () => {
   beforeEach(() => {
-    TestBed.configureTestingModule({imports: [TestModule]});
+    TestBed.configureTestingModule({
+      imports: [TestModule],
+    });
   });
 
-  it('should do nothing if component is null', waitForAsync(() => {
+  it('should do nothing if component is null', () => {
     const template = `<ng-template *ngComponentOutlet="currentComponent"></ng-template>`;
     TestBed.overrideComponent(TestComponent, {set: {template: template}});
     let fixture = TestBed.createComponent(TestComponent);
@@ -47,9 +48,9 @@ describe('insert/remove', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement).toHaveText('');
-  }));
+  });
 
-  it('should insert content specified by a component', waitForAsync(() => {
+  it('should insert content specified by a component', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     fixture.detectChanges();
@@ -60,9 +61,9 @@ describe('insert/remove', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(fixture.nativeElement).toHaveText('foo');
-  }));
+  });
 
-  it('should emit a ComponentRef once a component was created', waitForAsync(() => {
+  it('should emit a ComponentRef once a component was created', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     fixture.detectChanges();
@@ -76,9 +77,9 @@ describe('insert/remove', () => {
     expect(fixture.nativeElement).toHaveText('foo');
     expect(fixture.componentInstance.cmpRef).toBeInstanceOf(ComponentRef);
     expect(fixture.componentInstance.cmpRef!.instance).toBeInstanceOf(InjectedComponent);
-  }));
+  });
 
-  it('should clear view if component becomes null', waitForAsync(() => {
+  it('should clear view if component becomes null', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     fixture.detectChanges();
@@ -95,9 +96,9 @@ describe('insert/remove', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(fixture.nativeElement).toHaveText('');
-  }));
+  });
 
-  it('should swap content if component changes', waitForAsync(() => {
+  it('should swap content if component changes', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     fixture.detectChanges();
@@ -114,9 +115,9 @@ describe('insert/remove', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(fixture.nativeElement).toHaveText('bar');
-  }));
+  });
 
-  it('should use the injector, if one supplied', waitForAsync(() => {
+  it('should use the injector, if one supplied', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     const uniqueValue = {};
@@ -132,9 +133,9 @@ describe('insert/remove', () => {
     expect(cmpRef).toBeInstanceOf(ComponentRef);
     expect(cmpRef.instance).toBeInstanceOf(InjectedComponent);
     expect(cmpRef.instance.testToken).toBe(uniqueValue);
-  }));
+  });
 
-  it('should use the environmentInjector, if one supplied', waitForAsync(() => {
+  it('should use the environmentInjector, if one supplied', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     const uniqueValue = {};
@@ -156,9 +157,9 @@ describe('insert/remove', () => {
     expect(cmpRef).toBeInstanceOf(ComponentRef);
     expect(cmpRef.instance).toBeInstanceOf(InjectedComponent);
     expect(cmpRef.instance.testToken).toBe(uniqueValue);
-  }));
+  });
 
-  it('should resolve with an injector', waitForAsync(() => {
+  it('should resolve with an injector', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     // We are accessing a ViewChild (ngComponentOutlet) before change detection has run
@@ -170,9 +171,9 @@ describe('insert/remove', () => {
     expect(cmpRef).toBeInstanceOf(ComponentRef);
     expect(cmpRef.instance).toBeInstanceOf(InjectedComponent);
     expect(cmpRef.instance.testToken).toBeNull();
-  }));
+  });
 
-  it('should render projectable nodes, if supplied', waitForAsync(() => {
+  it('should render projectable nodes, if supplied', () => {
     const template = `<ng-template>projected foo</ng-template>${TEST_CMP_TEMPLATE}`;
     TestBed.overrideComponent(TestComponent, {set: {template: template}}).configureTestingModule({
       schemas: [NO_ERRORS_SCHEMA],
@@ -196,9 +197,9 @@ describe('insert/remove', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(fixture.nativeElement).toHaveText('projected foo');
-  }));
+  });
 
-  it('should resolve components from other modules, if supplied as an NgModule class reference', waitForAsync(() => {
+  it('should resolve components from other modules, if supplied as an NgModule class reference', () => {
     let fixture = TestBed.createComponent(TestComponent);
 
     fixture.detectChanges();
@@ -210,9 +211,9 @@ describe('insert/remove', () => {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(fixture.nativeElement).toHaveText('baz');
-  }));
+  });
 
-  it('should clean up moduleRef, if supplied as an NgModule class reference', waitForAsync(() => {
+  it('should clean up moduleRef, if supplied as an NgModule class reference', () => {
     const fixture = TestBed.createComponent(TestComponent);
     fixture.componentInstance.ngModule = TestModule2;
     fixture.componentInstance.currentComponent = Module2InjectedComponent;
@@ -224,9 +225,9 @@ describe('insert/remove', () => {
     expect(moduleRef.destroy).not.toHaveBeenCalled();
     fixture.destroy();
     expect(moduleRef.destroy).toHaveBeenCalled();
-  }));
+  });
 
-  it('should re-create moduleRef when changed (NgModule class reference)', waitForAsync(() => {
+  it('should re-create moduleRef when changed (NgModule class reference)', () => {
     const fixture = TestBed.createComponent(TestComponent);
     fixture.componentInstance.ngModule = TestModule2;
     fixture.componentInstance.currentComponent = Module2InjectedComponent;
@@ -241,9 +242,9 @@ describe('insert/remove', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement).toHaveText('bat');
-  }));
+  });
 
-  it('should override providers from parent component using custom injector', waitForAsync(() => {
+  it('should override providers from parent component using custom injector', () => {
     TestBed.overrideComponent(InjectedComponent, {set: {template: 'Value: {{testToken}}'}});
     TestBed.overrideComponent(TestComponent, {
       set: {providers: [{provide: TEST_TOKEN, useValue: 'parent'}]},
@@ -258,7 +259,7 @@ describe('insert/remove', () => {
     fixture.detectChanges();
 
     expect(fixture.nativeElement).toHaveText('Value: child');
-  }));
+  });
 
   it('should be available as a standalone directive', () => {
     @Component({
@@ -385,6 +386,7 @@ const TEST_TOKEN = new InjectionToken('TestToken');
   selector: 'injected-component',
   template: 'foo',
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class InjectedComponent {
   constructor(@Optional() @Inject(TEST_TOKEN) public testToken: any) {}
@@ -394,6 +396,7 @@ class InjectedComponent {
   selector: 'injected-component-again',
   template: 'bar',
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class InjectedComponentAgain {}
 
@@ -409,6 +412,7 @@ const TEST_CMP_TEMPLATE = `<ng-template *ngComponentOutlet="
   selector: 'test-cmp',
   template: TEST_CMP_TEMPLATE,
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class TestComponent {
   currentComponent: Type<unknown> | null = null;
@@ -499,6 +503,7 @@ class AnotherComponentWithInputs {
   selector: 'test-cmp',
   imports: [NgComponentOutlet],
   template: `<ng-template *ngComponentOutlet="currentComponent; inputs: inputs"></ng-template>`,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class TestInputsComponent {
   currentComponent: Type<unknown> | null = null;

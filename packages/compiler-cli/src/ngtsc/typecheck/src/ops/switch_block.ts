@@ -7,12 +7,11 @@
  */
 
 import {TmplAstSwitchBlock, TmplAstSwitchBlockCaseGroup} from '@angular/compiler';
-import ts from 'typescript';
 import {TcbOp} from './base';
-import type {Scope} from './scope';
+import {getStatementsBlock, TcbExpr} from './codegen';
 import type {Context} from './context';
 import {tcbExpression} from './expression';
-import {markIgnoreDiagnostics} from '../comments';
+import type {Scope} from './scope';
 
 /**
  * A `TcbOp` which renders a `switch` block as a TypeScript `switch` statement.
@@ -34,7 +33,7 @@ export class TcbSwitchOp extends TcbOp {
 
   override execute(): null {
     const switchExpression = tcbExpression(this.block.expression, this.tcb, this.scope);
-    const clauses = this.block.groups.flatMap<ts.CaseOrDefaultClause>((current) => {
+    const clauses = this.block.groups.flatMap<TcbExpr>((current) => {
       const checkBody = this.tcb.env.config.checkControlFlowBodies;
       const clauseScope = this.scope.createChildScope(
         this.scope,
@@ -43,52 +42,65 @@ export class TcbSwitchOp extends TcbOp {
         checkBody ? this.generateGuard(current, switchExpression) : null,
       );
 
-      const statements = [...clauseScope.render(), ts.factory.createBreakStatement()];
+      const statements = [...clauseScope.render(), new TcbExpr('break')];
 
       return current.cases.map((switchCase, index) => {
-        const statementsForCase = index === current.cases.length - 1 ? statements : [];
-        return switchCase.expression === null
-          ? ts.factory.createDefaultClause(statementsForCase)
-          : ts.factory.createCaseClause(
-              tcbExpression(switchCase.expression, this.tcb, this.scope),
-              statementsForCase,
-            );
+        const statementsStr = getStatementsBlock(
+          index === current.cases.length - 1 ? statements : [],
+          true /* singleLine */,
+        );
+
+        const source =
+          switchCase.expression === null
+            ? `default: ${statementsStr}`
+            : `case ${tcbExpression(switchCase.expression, this.tcb, this.scope).print()}: ${statementsStr}`;
+
+        return new TcbExpr(source);
       });
     });
 
+    if (this.block.exhaustiveCheck) {
+      let translateExpression = this.block.expression;
+      if (this.block.exhaustiveCheck.expression) {
+        translateExpression = this.block.exhaustiveCheck.expression;
+      }
+
+      const switchValue = tcbExpression(translateExpression, this.tcb, this.scope);
+      const exhaustiveId = this.tcb.allocateId();
+
+      clauses.push(
+        new TcbExpr(`default: const tcbExhaustive${exhaustiveId}: never = ${switchValue.print()};`),
+      );
+    }
+
     this.scope.addStatement(
-      ts.factory.createSwitchStatement(switchExpression, ts.factory.createCaseBlock(clauses)),
+      new TcbExpr(
+        `switch (${switchExpression.print()}) { ${clauses.map((c) => c.print()).join('\n')} }`,
+      ),
     );
 
     return null;
   }
 
-  private generateGuard(
-    group: TmplAstSwitchBlockCaseGroup,
-    switchValue: ts.Expression,
-  ): ts.Expression | null {
+  private generateGuard(group: TmplAstSwitchBlockCaseGroup, switchValue: TcbExpr): TcbExpr | null {
     // For non-default cases, the guard needs to compare against the case value, e.g.
     // `switchExpression === caseExpression`.
     const hasDefault = group.cases.some((c) => c.expression === null);
 
     if (!hasDefault) {
-      let guard: ts.Expression | null = null;
+      let guard: TcbExpr | null = null;
 
       for (const switchCase of group.cases) {
         if (switchCase.expression !== null) {
           // The expression needs to be ignored for diagnostics since it has been checked already.
           const expression = tcbExpression(switchCase.expression, this.tcb, this.scope);
-          markIgnoreDiagnostics(expression);
-          const comparison = ts.factory.createBinaryExpression(
-            switchValue,
-            ts.SyntaxKind.EqualsEqualsEqualsToken,
-            expression,
-          );
+          expression.markIgnoreDiagnostics();
+          const comparison = new TcbExpr(`${switchValue.print()} === ${expression.print()}`);
 
           if (guard === null) {
             guard = comparison;
           } else {
-            guard = ts.factory.createBinaryExpression(guard, ts.SyntaxKind.BarBarToken, comparison);
+            guard = new TcbExpr(`(${guard.print()}) || (${comparison.print()})`);
           }
         }
       }
@@ -104,7 +116,7 @@ export class TcbSwitchOp extends TcbOp {
     //   @default {}
     // }
     // Will produce the guard `expr !== 1 && expr !== 2`.
-    let guard: ts.Expression | null = null;
+    let guard: TcbExpr | null = null;
 
     for (const currentGroup of this.block.groups) {
       if (currentGroup === group) {
@@ -119,21 +131,13 @@ export class TcbSwitchOp extends TcbOp {
 
         // The expression needs to be ignored for diagnostics since it has been checked already.
         const expression = tcbExpression(switchCase.expression, this.tcb, this.scope);
-        markIgnoreDiagnostics(expression);
-        const comparison = ts.factory.createBinaryExpression(
-          switchValue,
-          ts.SyntaxKind.ExclamationEqualsEqualsToken,
-          expression,
-        );
+        expression.markIgnoreDiagnostics();
+        const comparison = new TcbExpr(`${switchValue.print()} !== ${expression.print()}`);
 
         if (guard === null) {
           guard = comparison;
         } else {
-          guard = ts.factory.createBinaryExpression(
-            guard,
-            ts.SyntaxKind.AmpersandAmpersandToken,
-            comparison,
-          );
+          guard = new TcbExpr(`(${guard.print()}) && (${comparison.print()})`);
         }
       }
     }

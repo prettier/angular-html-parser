@@ -8,7 +8,6 @@
 
 import {
   afterRenderEffect,
-  ChangeDetectionStrategy,
   Component,
   computed,
   inject,
@@ -42,6 +41,8 @@ import {
   InjectorTreeD3Node,
   InjectorTreeNode,
   InjectorTreeVisualizer,
+  isElementTreeInjector,
+  isEnvironmentTreeInjector,
   splitInjectorPathsIntoElementAndEnvironmentPaths,
   transformInjectorResolutionPathsIntoTree,
 } from './injector-tree-fns';
@@ -76,7 +77,6 @@ const SNAP_ZOOM_SCALE = 0.8;
   host: {
     '[hidden]': 'hidden()',
   },
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class InjectorTreeComponent {
   private readonly elementTree = viewChild<InjectorTreeVisualizer>('elementTree');
@@ -212,7 +212,7 @@ export class InjectorTreeComponent {
   private refreshVisualizer(): void {
     this.updateInjectorTreeVisualization(this.rawDirectiveForest);
 
-    if (this.selectedNode()?.data.injector.type === 'environment') {
+    if (isEnvironmentTreeInjector(this.selectedNode()?.data.injector)) {
       this.snapToRoot(this.environmentTree());
     }
 
@@ -282,11 +282,11 @@ export class InjectorTreeComponent {
 
     // wait for CD to run before snapping to root so that svg container can change size.
     setTimeout(() => {
-      const {type} = node.data.injector;
+      const {injector} = node.data;
 
-      if (type === 'element') {
+      if (isElementTreeInjector(injector)) {
         this.elementTree()?.snapToNode(node.data, SNAP_ZOOM_SCALE);
-      } else if (type === 'environment') {
+      } else if (isEnvironmentTreeInjector(injector)) {
         this.environmentTree()?.snapToNode(node.data, SNAP_ZOOM_SCALE);
       }
     });
@@ -301,9 +301,9 @@ export class InjectorTreeComponent {
     const injector = selectedNode.data.injector;
     let newNode: TreeD3Node<InjectorTreeNode> | null = null;
 
-    if (injector.type === 'element') {
+    if (isElementTreeInjector(injector)) {
       newNode = this.elementTree()?.getNodeById(injector.id) ?? null;
-    } else if (injector.type === 'environment') {
+    } else if (isEnvironmentTreeInjector(injector)) {
       newNode = this.environmentTree()?.getNodeById(injector.id) ?? null;
     }
 
@@ -351,7 +351,7 @@ export class InjectorTreeComponent {
       return;
     }
 
-    if (this.selectedNode()!.data.injector.type === 'element') {
+    if (isElementTreeInjector(this.selectedNode()!.data.injector)) {
       const idsToRoot = getInjectorIdsToRootFromNode(this.selectedNode()!);
       idsToRoot.forEach((id) => this.highlightNodeById(elementTree, id));
       const edgeIds = generateEdgeIdsFromNodeIds(idsToRoot);

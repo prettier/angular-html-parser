@@ -9,7 +9,6 @@
 import {CdkMenuModule} from '@angular/cdk/menu';
 import {KeyValuePipe} from '@angular/common';
 import {
-  ChangeDetectionStrategy,
   Component,
   EnvironmentInjector,
   afterNextRender,
@@ -21,7 +20,7 @@ import {
 } from '@angular/core';
 import {Select, SelectOption, TextField} from '@angular/docs';
 import {FormField, form} from '@angular/forms/signals';
-import {MatChipsModule} from '@angular/material/chips';
+import {MatChipListbox, MatChipOption} from '@angular/material/chips';
 import {Params, Router} from '@angular/router';
 import ApiItemLabel from '../api-item-label/api-item-label.component';
 import ApiItemsSection from '../api-items-section/api-items-section.component';
@@ -48,14 +47,14 @@ export const DEFAULT_STATUS = STATUSES.stable | STATUSES.developerPreview | STAT
     TextField,
     ApiLabel,
     CdkMenuModule,
-    MatChipsModule,
+    MatChipListbox,
+    MatChipOption,
     KeyValuePipe,
     Select,
     FormField,
   ],
   templateUrl: './api-reference-list.component.html',
   styleUrls: ['./api-reference-list.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class ApiReferenceList {
   // services

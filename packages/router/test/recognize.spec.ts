@@ -15,7 +15,7 @@ import {RouterConfigLoader} from '../src/router_config_loader';
 import {ActivatedRouteSnapshot, RouterStateSnapshot} from '../src/router_state';
 import {Params, PRIMARY_OUTLET} from '../src/shared';
 import {DefaultUrlSerializer, UrlTree} from '../src/url_tree';
-import {useAutoTick} from './helpers';
+import {useAutoTick} from '@angular/private/testing';
 
 describe('recognize', () => {
   useAutoTick();
@@ -576,6 +576,71 @@ describe('recognize', () => {
           new AbortController().signal,
         ).recognize();
         await expectAsync(recognizePromise).toBeRejected();
+      });
+    });
+
+    describe('nested empty paths with outlets (issue 67708)', () => {
+      it('should match nested primary child regardless of named outlet empty path sibling', async () => {
+        const config = [
+          {
+            path: '',
+            component: ComponentA,
+            children: [
+              {
+                path: '',
+                component: ComponentB,
+                children: [{path: 'component', component: ComponentC}],
+              },
+              {
+                path: '',
+                outlet: 'secondary',
+                component: ComponentD,
+                children: [{path: 'component-copy', component: ComponentE}],
+              },
+            ],
+          },
+        ];
+
+        const s = await recognize(config, 'component');
+        checkActivatedRoute(s.root.firstChild!, '', {}, ComponentA);
+        const c = s.root.firstChild!.children;
+        // Should find primary child
+        checkActivatedRoute(c[0], '', {}, ComponentB, PRIMARY_OUTLET);
+        checkActivatedRoute(c[0].firstChild!, 'component', {}, ComponentC);
+      });
+
+      it('should match named outlet child when navigating to it via secondary URL', async () => {
+        const config = [
+          {
+            path: '',
+            component: ComponentA,
+            children: [
+              {
+                path: '',
+                component: ComponentB,
+                children: [{path: 'component', component: ComponentC}],
+              },
+              {
+                path: '',
+                outlet: 'secondary',
+                component: ComponentD,
+                children: [{path: 'component-copy', component: ComponentA}],
+              },
+            ],
+          },
+        ];
+
+        const s = await recognize(config, '(secondary:component-copy)');
+        checkActivatedRoute(s.root.firstChild!, '', {}, ComponentA);
+        const c = s.root.firstChild!.children;
+        const primaryRoute = c.find((r: any) => r.outlet === PRIMARY_OUTLET);
+        expect(primaryRoute).toBeDefined();
+        checkActivatedRoute(primaryRoute!, '', {}, ComponentB, PRIMARY_OUTLET);
+
+        const secondaryRoute = c.find((r: any) => r.outlet === 'secondary');
+        expect(secondaryRoute).toBeDefined();
+        checkActivatedRoute(secondaryRoute!, '', {}, ComponentD, 'secondary');
+        checkActivatedRoute(secondaryRoute!.firstChild!, 'component-copy', {}, ComponentA);
       });
     });
   });

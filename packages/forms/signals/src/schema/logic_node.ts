@@ -7,9 +7,9 @@
  */
 
 import {ɵRuntimeError as RuntimeError} from '@angular/core';
-import {SignalFormsErrorCode} from '../errors';
+import {RuntimeErrorCode} from '../errors';
 
-import type {ValidationError, MetadataKey} from '../api/rules';
+import type {MetadataKey, ValidationError} from '../api/rules';
 import type {AsyncValidationResult, DisabledReason, LogicFn, ValidationResult} from '../api/types';
 import {setBoundPathDepthForResolution} from '../field/resolution';
 import {type BoundPredicate, DYNAMIC, LogicContainer, type Predicate} from './logic';
@@ -62,6 +62,18 @@ export abstract class AbstractLogicNodeBuilder {
   abstract hasLogic(builder: AbstractLogicNodeBuilder): boolean;
 
   /**
+   * Checks whether this builder or any of its children have any logic rules defined.
+   * @returns True if rules exist, false otherwise.
+   */
+  abstract hasRules(): boolean;
+
+  /**
+   * Checks whether any of the children of this builder have any logic rules defined.
+   * @returns True if rules exist on any child, false otherwise.
+   */
+  abstract anyChildHasLogic(): boolean;
+
+  /**
    * Builds the `LogicNode` from the accumulated rules and child builders.
    * @returns The constructed `LogicNode`.
    */
@@ -105,19 +117,19 @@ export class LogicNodeBuilder extends AbstractLogicNodeBuilder {
   }
 
   override addSyncErrorRule(
-    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+    logic: LogicFn<any, ValidationResult<ValidationError.WithFieldTree>>,
   ): void {
     this.getCurrent().addSyncErrorRule(logic);
   }
 
   override addSyncTreeErrorRule(
-    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+    logic: LogicFn<any, ValidationResult<ValidationError.WithFieldTree>>,
   ): void {
     this.getCurrent().addSyncTreeErrorRule(logic);
   }
 
   override addAsyncErrorRule(
-    logic: LogicFn<any, AsyncValidationResult<ValidationError.WithField>>,
+    logic: LogicFn<any, AsyncValidationResult<ValidationError.WithFieldTree>>,
   ): void {
     this.getCurrent().addAsyncErrorRule(logic);
   }
@@ -153,6 +165,14 @@ export class LogicNodeBuilder extends AbstractLogicNodeBuilder {
       return true;
     }
     return this.all.some(({builder: subBuilder}) => subBuilder.hasLogic(builder));
+  }
+
+  override hasRules(): boolean {
+    return this.all.length > 0;
+  }
+
+  override anyChildHasLogic(): boolean {
+    return this.all.some(({builder}) => builder.anyChildHasLogic());
   }
 
   /**
@@ -235,19 +255,19 @@ class NonMergeableLogicNodeBuilder extends AbstractLogicNodeBuilder {
   }
 
   override addSyncErrorRule(
-    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+    logic: LogicFn<any, ValidationResult<ValidationError.WithFieldTree>>,
   ): void {
     this.logic.syncErrors.push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
   override addSyncTreeErrorRule(
-    logic: LogicFn<any, ValidationResult<ValidationError.WithField>>,
+    logic: LogicFn<any, ValidationResult<ValidationError.WithFieldTree>>,
   ): void {
     this.logic.syncTreeErrors.push(setBoundPathDepthForResolution(logic, this.depth));
   }
 
   override addAsyncErrorRule(
-    logic: LogicFn<any, AsyncValidationResult<ValidationError.WithField>>,
+    logic: LogicFn<any, AsyncValidationResult<ValidationError.WithFieldTree>>,
   ): void {
     this.logic.asyncErrors.push(setBoundPathDepthForResolution(logic, this.depth));
   }
@@ -265,6 +285,19 @@ class NonMergeableLogicNodeBuilder extends AbstractLogicNodeBuilder {
 
   override hasLogic(builder: AbstractLogicNodeBuilder): boolean {
     return this === builder;
+  }
+
+  override hasRules(): boolean {
+    return this.logic.hasAnyLogic() || this.children.size > 0;
+  }
+
+  override anyChildHasLogic(): boolean {
+    for (const child of this.children.values()) {
+      if (child.hasRules()) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
@@ -291,6 +324,18 @@ export interface LogicNode {
    * @returns True if the builder has been merged, false otherwise.
    */
   hasLogic(builder: AbstractLogicNodeBuilder): boolean;
+
+  /**
+   * Checks whether this node or any of its children have any logic rules defined.
+   * @returns True if rules exist, false otherwise.
+   */
+  hasRules(): boolean;
+
+  /**
+   * Checks whether any of the children of this node have any logic rules defined.
+   * @returns True if rules exist on any child, false otherwise.
+   */
+  anyChildHasLogic(): boolean;
 }
 
 /**
@@ -349,14 +394,19 @@ class LeafLogicNode implements LogicNode {
     }
   }
 
-  /**
-   * Checks whether the logic from a particular `AbstractLogicNodeBuilder` has been merged into this
-   * node.
-   * @param builder The builder to check for.
-   * @returns True if the builder has been merged, false otherwise.
-   */
   hasLogic(builder: AbstractLogicNodeBuilder): boolean {
-    return this.builder?.hasLogic(builder) ?? false;
+    if (!this.builder) {
+      return false;
+    }
+    return this.builder.hasLogic(builder);
+  }
+
+  hasRules(): boolean {
+    return this.builder ? this.builder.hasRules() : false;
+  }
+
+  anyChildHasLogic(): boolean {
+    return this.builder ? this.builder.anyChildHasLogic() : false;
   }
 }
 
@@ -399,6 +449,14 @@ class CompositeLogicNode implements LogicNode {
   hasLogic(builder: AbstractLogicNodeBuilder): boolean {
     return this.all.some((node) => node.hasLogic(builder));
   }
+
+  hasRules(): boolean {
+    return this.all.some((node) => node.hasRules());
+  }
+
+  anyChildHasLogic(): boolean {
+    return this.all.some((child) => child.anyChildHasLogic());
+  }
 }
 
 /**
@@ -436,7 +494,7 @@ function getAllChildBuilders(
     ];
   } else {
     throw new RuntimeError(
-      SignalFormsErrorCode.UNKNOWN_BUILDER_TYPE,
+      RuntimeErrorCode.UNKNOWN_BUILDER_TYPE,
       ngDevMode && 'Unknown LogicNodeBuilder type',
     );
   }
@@ -473,7 +531,7 @@ function createLogic(
     logic.mergeIn(builder.logic);
   } else {
     throw new RuntimeError(
-      SignalFormsErrorCode.UNKNOWN_BUILDER_TYPE,
+      RuntimeErrorCode.UNKNOWN_BUILDER_TYPE,
       ngDevMode && 'Unknown LogicNodeBuilder type',
     );
   }

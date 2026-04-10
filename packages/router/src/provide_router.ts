@@ -8,10 +8,10 @@
 
 import {
   HashLocationStrategy,
+  Location,
   LOCATION_INITIALIZED,
   LocationStrategy,
   ViewportScroller,
-  Location,
   ɵNavigationAdapterForLocation,
 } from '@angular/common';
 import {
@@ -23,15 +23,15 @@ import {
   inject,
   InjectionToken,
   Injector,
+  ɵIS_ENABLED_BLOCKING_INITIAL_NAVIGATION as IS_ENABLED_BLOCKING_INITIAL_NAVIGATION,
   makeEnvironmentProviders,
+  ɵperformanceMarkFeature as performanceMarkFeature,
   provideAppInitializer,
+  provideEnvironmentInitializer,
   Provider,
   runInInjectionContext,
-  ɵperformanceMarkFeature as performanceMarkFeature,
-  ɵIS_ENABLED_BLOCKING_INITIAL_NAVIGATION as IS_ENABLED_BLOCKING_INITIAL_NAVIGATION,
-  ɵpublishExternalGlobalUtil,
-  provideEnvironmentInitializer,
   Type,
+  ɵpublishExternalGlobalUtil,
 } from '@angular/core';
 import {of, Subject} from 'rxjs';
 
@@ -39,15 +39,23 @@ import {INPUT_BINDER, RoutedComponentInputBinder} from './directives/router_outl
 import {Event, NavigationError, stringifyEvent} from './events';
 import {RedirectCommand, Routes} from './models';
 import {NAVIGATION_ERROR_HANDLER, NavigationTransitions} from './navigation_transition';
+import {ROUTE_INJECTOR_CLEANUP, routeInjectorCleanup} from './route_injector_cleanup';
 import {Router} from './router';
-import {InMemoryScrollingOptions, ROUTER_CONFIGURATION, RouterConfigOptions} from './router_config';
+import {
+  ComponentInputBindingOptions,
+  InMemoryScrollingOptions,
+  ROUTER_CONFIGURATION,
+  RouterConfigOptions,
+} from './router_config';
 import {ROUTES} from './router_config_loader';
 import {PreloadingStrategy, RouterPreloader} from './router_preloader';
-import {routeInjectorCleanup, ROUTE_INJECTOR_CLEANUP} from './route_injector_cleanup';
 
 import {ROUTER_SCROLLER, RouterScroller} from './router_scroller';
 
+import {getLoadedRoutes, getRouterInstance, navigateByUrl} from './router_devtools';
 import {ActivatedRoute} from './router_state';
+import {NavigationStateManager} from './statemanager/navigation_state_manager';
+import {StateManager} from './statemanager/state_manager';
 import {afterNextNavigation} from './utils/navigations';
 import {
   CREATE_VIEW_TRANSITION,
@@ -55,9 +63,6 @@ import {
   VIEW_TRANSITION_OPTIONS,
   ViewTransitionsFeatureOptions,
 } from './utils/view_transition';
-import {getLoadedRoutes, getRouterInstance, navigateByUrl} from './router_devtools';
-import {StateManager} from './statemanager/state_manager';
-import {NavigationStateManager} from './statemanager/navigation_state_manager';
 
 /**
  * Sets up providers necessary to enable `Router` functionality for the application.
@@ -106,9 +111,6 @@ export function provideRouter(routes: Routes, ...features: RouterFeatures[]): En
 
   return makeEnvironmentProviders([
     {provide: ROUTES, multi: true, useValue: routes},
-    typeof ngDevMode === 'undefined' || ngDevMode
-      ? {provide: ROUTER_IS_PROVIDED, useValue: true}
-      : [],
     {provide: ActivatedRoute, useFactory: rootRoute},
     {provide: APP_BOOTSTRAP_LISTENER, multi: true, useFactory: getBootstrapListener},
     features.map((feature) => feature.ɵproviders),
@@ -137,56 +139,6 @@ function routerFeature<FeatureKind extends RouterFeatureKind>(
   providers: Array<Provider | EnvironmentProviders>,
 ): RouterFeature<FeatureKind> {
   return {ɵkind: kind, ɵproviders: providers};
-}
-
-/**
- * An Injection token used to indicate whether `provideRouter` or `RouterModule.forRoot` was ever
- * called.
- */
-export const ROUTER_IS_PROVIDED = new InjectionToken<boolean>(
-  typeof ngDevMode !== 'undefined' && ngDevMode ? 'Router is provided' : '',
-  {
-    factory: () => false,
-  },
-);
-
-const routerIsProvidedDevModeCheck = {
-  provide: ENVIRONMENT_INITIALIZER,
-  multi: true,
-  useFactory() {
-    return () => {
-      if (!inject(ROUTER_IS_PROVIDED)) {
-        console.warn(
-          '`provideRoutes` was called without `provideRouter` or `RouterModule.forRoot`. ' +
-            'This is likely a mistake.',
-        );
-      }
-    };
-  },
-};
-
-/**
- * Registers a DI provider for a set of routes.
- * @param routes The route configuration to provide.
- *
- * @usageNotes
- *
- * ```ts
- * @NgModule({
- *   providers: [provideRoutes(ROUTES)]
- * })
- * class LazyLoadedChildModule {}
- * ```
- *
- * @deprecated If necessary, provide routes using the `ROUTES` `InjectionToken`.
- * @see {@link ROUTES}
- * @publicApi
- */
-export function provideRoutes(routes: Routes): Provider[] {
-  return [
-    {provide: ROUTES, multi: true, useValue: routes},
-    typeof ngDevMode === 'undefined' || ngDevMode ? routerIsProvidedDevModeCheck : [],
-  ];
 }
 
 /**
@@ -282,9 +234,9 @@ export type ExperimentalPlatformNavigationFeature =
  * });
  * ```
  * 
- * @see https://github.com/WICG/navigation-api?tab=readme-ov-file#problem-statement
- * @see https://developer.chrome.com/docs/web-platform/navigation-api/
- * @see https://developer.mozilla.org/en-US/docs/Web/API/Navigation_API
+ * @see [Navigation API on WICG](https://github.com/WICG/navigation-api?tab=readme-ov-file#problem-statement)
+ * @see [Navigation API on Chrome from developers](https://developer.chrome.com/docs/web-platform/navigation-api/)
+ * @see [Navigation API on MDN](https://developer.mozilla.org/en-US/docs/Web/API/Navigation_API)
  *
  * @experimental 21.1 
  * @returns A `RouterFeature` that enables the platform navigation.
@@ -831,7 +783,8 @@ export type ViewTransitionsFeature = RouterFeature<RouterFeatureKind.ViewTransit
 
 /**
  * Enables binding information from the `Router` state directly to the inputs of the component in
- * `Route` configurations.
+ * `Route` configurations. Can also accept an `ComponentInputBindingOptions` object to set which
+ * sources are allowed to bind.
  *
  * @usageNotes
  *
@@ -864,13 +817,27 @@ export type ViewTransitionsFeature = RouterFeature<RouterFeatureKind.ViewTransit
  * Default values can be provided with a resolver on the route to ensure the value is always present
  * or an input and use an input transform in the component.
  *
+ * Advanced example of how you can disable binding from certain sources:
+ * ```ts
+ * const appRoutes: Routes = [];
+ * bootstrapApplication(AppComponent,
+ *   {
+ *     providers: [
+ *       provideRouter(appRoutes, withComponentInputBinding({queryParams: false}))
+ *     ]
+ *   }
+ * );
+ * ```
+ *
  * @see {@link /guide/components/inputs#input-transforms Input Transforms}
+ * @see {@link ComponentInputBindingOptions}
  * @returns A set of providers for use with `provideRouter`.
  */
-export function withComponentInputBinding(): ComponentInputBindingFeature {
+export function withComponentInputBinding(
+  options: ComponentInputBindingOptions = {},
+): ComponentInputBindingFeature {
   const providers = [
-    RoutedComponentInputBinder,
-    {provide: INPUT_BINDER, useExisting: RoutedComponentInputBinder},
+    {provide: INPUT_BINDER, useFactory: () => new RoutedComponentInputBinder(options)},
   ];
 
   return routerFeature(RouterFeatureKind.ComponentInputBindingFeature, providers);
@@ -899,8 +866,8 @@ export function withComponentInputBinding(): ComponentInputBindingFeature {
  * ```
  *
  * @returns A set of providers for use with `provideRouter`.
- * @see https://developer.chrome.com/docs/web-platform/view-transitions/
- * @see https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API
+ * @see [View Transitions on MDN](https://developer.chrome.com/docs/web-platform/view-transitions/)
+ * @see [View Transitions API on MDN](https://developer.mozilla.org/en-US/docs/Web/API/View_Transitions_API)
  * @see [Route transition animations](guide/routing/route-transition-animations)
  * @developerPreview 19.0
  */

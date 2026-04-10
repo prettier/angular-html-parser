@@ -222,10 +222,12 @@ export function triggerResourceLoading(
   // Start downloading of defer block dependencies.
   tDetails.loadingPromise = Promise.allSettled(dependenciesFn()).then((results) => {
     let failed = false;
+    let failedReason: Error | null = null;
     const directiveDefs: DirectiveDefList = [];
     const pipeDefs: PipeDefList = [];
 
-    for (const result of results) {
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
       if (result.status === 'fulfilled') {
         const dependency = result.value;
         const directiveDef = getComponentDef(dependency) || getDirectiveDef(dependency);
@@ -239,6 +241,8 @@ export function triggerResourceLoading(
         }
       } else {
         failed = true;
+        failedReason =
+          result.reason instanceof Error ? result.reason : new Error(String(result.reason));
         break;
       }
     }
@@ -248,13 +252,31 @@ export function triggerResourceLoading(
 
       if (tDetails.errorTmplIndex === null) {
         const templateLocation = ngDevMode ? getTemplateLocationDetails(lView) : '';
-        const error = new RuntimeError(
-          RuntimeErrorCode.DEFER_LOADING_FAILED,
-          ngDevMode &&
+        let errorMsg = '';
+
+        if (ngDevMode) {
+          errorMsg =
             'Loading dependencies for `@defer` block failed, ' +
-              `but no \`@error\` block was configured${templateLocation}. ` +
-              'Consider using the `@error` block to render an error state.',
-        );
+            `but no \`@error\` block was configured${templateLocation}. ` +
+            'Consider using the `@error` block to render an error state.';
+
+          const depsFn = tDetails.dependencyResolverFn;
+          const errorReason = failedReason?.message;
+
+          if (depsFn) {
+            errorMsg +=
+              `\n\nAngular tried to invoke the following dependency function (compiler-generated):\n` +
+              `\`\`\`\n${depsFn.toString()}\n\`\`\``;
+          }
+
+          if (errorReason) {
+            errorMsg += depsFn
+              ? `\n\nbut it resulted in the following error:\n\n${errorReason}`
+              : `\n\nThe loading resulted in the following error:\n\n${errorReason}`;
+          }
+        }
+
+        const error = new RuntimeError(RuntimeErrorCode.DEFER_LOADING_FAILED, errorMsg);
         handleUncaughtError(lView, error);
       }
     } else {

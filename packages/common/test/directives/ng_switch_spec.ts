@@ -6,10 +6,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {CommonModule, NgSwitch, NgSwitchCase, NgSwitchDefault} from '../../index';
+import {ChangeDetectionStrategy} from '@angular/compiler';
 import {Attribute, Component, Directive, TemplateRef, ViewChild} from '@angular/core';
-import {ComponentFixture, TestBed, waitForAsync} from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {expect} from '@angular/private/testing/matchers';
+import {CommonModule, NgSwitch, NgSwitchCase, NgSwitchDefault} from '../../index';
 
 describe('NgSwitch', () => {
   let fixture: ComponentFixture<any>;
@@ -151,6 +152,7 @@ describe('NgSwitch', () => {
         '<li *ngSwitchCase="\'a\'">when a</li>' +
         '<li *ngSwitchDefault>when default</li>' +
         '</ul>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class TestComponent {
       switchValue = 'a';
@@ -232,21 +234,21 @@ describe('NgSwitch', () => {
       detectChangesAndExpectText('when b1;when b2;');
     });
 
-    it('should throw error when ngSwitchCase is used outside of ngSwitch', waitForAsync(() => {
+    it('should throw error when ngSwitchCase is used outside of ngSwitch', () => {
       const template = '<div [ngSwitch]="switchValue"></div>' + '<div *ngSwitchCase="\'a\'"></div>';
 
       expect(() => createTestComponent(template)).toThrowError(
         'NG02000: An element with the "ngSwitchCase" attribute (matching the "NgSwitchCase" directive) must be located inside an element with the "ngSwitch" attribute (matching "NgSwitch" directive)',
       );
-    }));
+    });
 
-    it('should throw error when ngSwitchDefault is used outside of ngSwitch', waitForAsync(() => {
+    it('should throw error when ngSwitchDefault is used outside of ngSwitch', () => {
       const template = '<div [ngSwitch]="switchValue"></div>' + '<div *ngSwitchDefault></div>';
 
       expect(() => createTestComponent(template)).toThrowError(
         'NG02000: An element with the "ngSwitchDefault" attribute (matching the "NgSwitchDefault" directive) must be located inside an element with the "ngSwitch" attribute (matching "NgSwitch" directive)',
       );
-    }));
+    });
 
     it('should support nested NgSwitch on ng-container with ngTemplateOutlet', () => {
       fixture = TestBed.createComponent(ComplexComponent);
@@ -268,6 +270,7 @@ describe('NgSwitch', () => {
   selector: 'test-cmp',
   template: '',
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class TestComponent {
   switchValue: any = null;
@@ -301,6 +304,7 @@ class TestComponent {
     </ng-template>
   `,
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class ComplexComponent {
   @ViewChild('foo', {static: true}) foo!: TemplateRef<any>;

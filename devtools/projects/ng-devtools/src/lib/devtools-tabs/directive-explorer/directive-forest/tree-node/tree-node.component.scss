@@ -38,6 +38,7 @@
   }
 
   .tree-node-info {
+    position: relative;
     display: flex;
     align-items: center;
 
@@ -50,7 +51,9 @@
       padding: 0;
       position: absolute;
       background-color: transparent;
-      margin-left: 3px;
+      margin-left: -$size;
+      top: calc(50% - $size / 2);
+      left: 0;
 
       mat-icon {
         font-size: $size;
@@ -99,8 +102,7 @@
       display: none;
     }
 
-    .console-reference,
-    .on-push {
+    .trait {
       color: var(--color-tree-node-console-ref);
       padding-left: 8px;
       font-style: italic;

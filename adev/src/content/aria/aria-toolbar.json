@@ -155,7 +155,7 @@
           "isRequiredInput": false
         },
         {
-          "name": "values",
+          "name": "value",
           "type": "ModelSignal<V[]>",
           "memberType": "property",
           "memberTags": [
@@ -165,9 +165,9 @@
           ],
           "description": "The values of the selected widgets within the toolbar.",
           "jsdocTags": [],
-          "inputAlias": "values",
+          "inputAlias": "value",
           "isRequiredInput": false,
-          "outputAlias": "valuesChange"
+          "outputAlias": "valueChange"
         }
       ],
       "generics": [
@@ -199,7 +199,7 @@
       "source": {
         "filePath": "/src/aria/toolbar/toolbar.ts",
         "startLine": 47,
-        "endLine": 151
+        "endLine": 133
       }
     },
     {
@@ -384,8 +384,8 @@
       ],
       "source": {
         "filePath": "/src/aria/toolbar/toolbar-widget.ts",
-        "startLine": 42,
-        "endLine": 109
+        "startLine": 47,
+        "endLine": 114
       }
     }
   ],
@@ -503,7 +503,7 @@
       "@angular/aria/toolbar"
     ],
     [
-      "Toolbar.values",
+      "Toolbar.value",
       "@angular/aria/toolbar"
     ],
     [

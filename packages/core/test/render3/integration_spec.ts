@@ -7,7 +7,13 @@
  */
 
 import {CommonModule} from '@angular/common';
-import {Component, Directive, HostBinding, provideZoneChangeDetection} from '../../src/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  Directive,
+  HostBinding,
+  provideZoneChangeDetection,
+} from '../../src/core';
 import {TestBed} from '../../testing';
 
 import {getLContext, readPatchedData} from '../../src/render3/context_discovery';
@@ -558,6 +564,7 @@ describe('sanitization', () => {
     @Component({
       selector: 'sanitize-this',
       template: ` <a [href]="href"></a> `,
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class SanitizationComp {
       href = '';
@@ -611,6 +618,7 @@ describe('sanitization', () => {
       selector: 'sanitize-this',
       imports: [UnsafeUrlHostBindingDir],
       template: ` <a unsafeUrlHostBindingDir>text</a> `,
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class SimpleComp {}
 
@@ -636,6 +644,52 @@ describe('sanitization', () => {
     fixture.detectChanges();
 
     expect(anchor.getAttribute('href')).toEqual('http://foo');
+  });
+
+  it('should throw when binding to animate element with attributeName="href"', () => {
+    @Component({
+      selector: 'test-comp',
+      template: `<svg><animate attributeName="href" [to]="'foo'"></animate></svg>`,
+    })
+    class TestComp {}
+
+    TestBed.configureTestingModule({
+      providers: [provideZoneChangeDetection()],
+    });
+    const fixture = TestBed.createComponent(TestComp);
+    expect(() => fixture.detectChanges()).toThrowError(
+      /Angular has detected that the `to` was applied/,
+    );
+  });
+
+  it('should throw when binding to set element with attributeName="href"', () => {
+    @Component({
+      selector: 'test-comp',
+      template: `<svg><set attributeName="href" [to]="'foo'"></set></svg>`,
+    })
+    class TestComp {}
+
+    TestBed.configureTestingModule({
+      providers: [provideZoneChangeDetection()],
+    });
+    const fixture = TestBed.createComponent(TestComp);
+    expect(() => fixture.detectChanges()).toThrowError(
+      /Angular has detected that the `to` was applied/,
+    );
+  });
+
+  it('should not throw when binding to animate element when attributeName is not href', () => {
+    @Component({
+      selector: 'test-comp',
+      template: `<svg><animate attributeName="display" [to]="'foo'"></animate></svg>`,
+    })
+    class TestComp {}
+
+    TestBed.configureTestingModule({
+      providers: [provideZoneChangeDetection()],
+    });
+    const fixture = TestBed.createComponent(TestComp);
+    expect(() => fixture.detectChanges()).not.toThrow();
   });
 });
 

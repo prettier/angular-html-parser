@@ -7,6 +7,7 @@
  */
 
 import {
+  ControlFlowBlockType,
   DirectiveProfile,
   ElementPosition,
   ElementProfile,
@@ -20,6 +21,7 @@ import {isCustomElement, runOutsideAngular} from '../utils';
 
 import {initializeOrGetDirectiveForestHooks} from '.';
 import {DirectiveForestHooks} from './hooks';
+import {IdentityTracker} from './identity-tracker';
 import {Hooks} from './profiler';
 
 let inProgress = false;
@@ -28,12 +30,18 @@ let eventMap: Map<any, DirectiveProfile>;
 let frameDuration = 0;
 let hooks: Partial<Hooks> = {};
 
+const DIRECTIVE_CONTROL_FLOW: {[key in ControlFlowBlockType]: ElementProfile['type']} = {
+  [ControlFlowBlockType.For]: 'for',
+  [ControlFlowBlockType.Defer]: 'defer',
+};
+
 export const start = (onFrame: (frame: ProfilerFrame) => void): void => {
   if (inProgress) {
     throw new Error('Recording already in progress');
   }
   eventMap = new Map<any, DirectiveProfile>();
   inProgress = true;
+  IdentityTracker.getInstance().setProfilingActive(true);
   hooks = getHooks(onFrame);
   initializeOrGetDirectiveForestHooks().profiler.subscribe(hooks);
 };
@@ -44,6 +52,7 @@ export const stop = (): ProfilerFrame => {
   initializeOrGetDirectiveForestHooks().profiler.unsubscribe(hooks);
   hooks = {};
   inProgress = false;
+  IdentityTracker.getInstance().setProfilingActive(false);
   return result;
 };
 
@@ -292,8 +301,8 @@ const prepareInitialFrame = (source: string, duration: number) => {
       position = directiveForestHooks.getDirectivePosition(node.component.instance);
     } else if (node.directives[0]) {
       position = directiveForestHooks.getDirectivePosition(node.directives[0].instance);
-    } else if (node.defer) {
-      position = directiveForestHooks.getDirectivePosition(node.defer);
+    } else if (node.controlFlowBlock) {
+      position = directiveForestHooks.getDirectivePosition(node.controlFlowBlock);
     }
 
     if (position === undefined) {
@@ -320,7 +329,7 @@ const prepareInitialFrame = (source: string, duration: number) => {
     const result: ElementProfile = {
       children: [],
       directives,
-      type: node.defer ? 'defer' : 'element',
+      type: !node.controlFlowBlock ? 'element' : DIRECTIVE_CONTROL_FLOW[node.controlFlowBlock.type],
     };
     children[position[position.length - 1]] = result;
     node.children.forEach((n) => traverse(n, result.children));

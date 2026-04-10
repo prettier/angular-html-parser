@@ -10,8 +10,9 @@ import {EnvironmentInjector} from '@angular/core';
 import {Observable, of} from 'rxjs';
 import {map} from 'rxjs/operators';
 
-import {Route} from '../models';
+import {PartialMatchRouteSnapshot, Route} from '../models';
 import {runCanMatchGuards} from '../operators/check_guards';
+import {ActivatedRouteSnapshot} from '../router_state';
 import {defaultUrlMatcher, PRIMARY_OUTLET} from '../shared';
 import {UrlSegment, UrlSegmentGroup, UrlSerializer} from '../url_tree';
 
@@ -33,12 +34,30 @@ const noMatch: MatchResult = {
   positionalParamSegments: {},
 };
 
+export function createPreMatchRouteSnapshot(
+  snapshot: ActivatedRouteSnapshot,
+): PartialMatchRouteSnapshot {
+  return {
+    routeConfig: snapshot.routeConfig,
+    url: snapshot.url,
+    params: snapshot.params,
+    queryParams: snapshot.queryParams,
+    fragment: snapshot.fragment,
+    data: snapshot.data,
+    outlet: snapshot.outlet,
+    title: snapshot.title,
+    paramMap: snapshot.paramMap,
+    queryParamMap: snapshot.queryParamMap,
+  };
+}
+
 export function matchWithChecks(
   segmentGroup: UrlSegmentGroup,
   route: Route,
   segments: UrlSegment[],
   injector: EnvironmentInjector,
   urlSerializer: UrlSerializer,
+  createSnapshot: (result: MatchResult) => ActivatedRouteSnapshot,
   abortSignal: AbortSignal,
 ): Observable<MatchResult> {
   const result = match(segmentGroup, route, segments);
@@ -46,12 +65,18 @@ export function matchWithChecks(
     return of(result);
   }
 
+  const currentSnapshot = createPreMatchRouteSnapshot(createSnapshot(result));
   // Only create the Route's `EnvironmentInjector` if it matches the attempted
   // navigation
   injector = getOrCreateRouteInjectorIfNeeded(route, injector);
-  return runCanMatchGuards(injector, route, segments, urlSerializer, abortSignal).pipe(
-    map((v) => (v === true ? result : {...noMatch})),
-  );
+  return runCanMatchGuards(
+    injector,
+    route,
+    segments,
+    urlSerializer,
+    currentSnapshot,
+    abortSignal,
+  ).pipe(map((v) => (v === true ? result : {...noMatch})));
 }
 
 export function match(
@@ -101,13 +126,14 @@ export function split(
   consumedSegments: UrlSegment[],
   slicedSegments: UrlSegment[],
   config: Route[],
+  outlet?: string,
 ): {
   segmentGroup: UrlSegmentGroup;
   slicedSegments: UrlSegment[];
 } {
   if (
     slicedSegments.length > 0 &&
-    containsEmptyPathMatchesWithNamedOutlets(segmentGroup, slicedSegments, config)
+    containsEmptyPathMatchesWithNamedOutlets(segmentGroup, slicedSegments, config, outlet)
   ) {
     const s = new UrlSegmentGroup(
       consumedSegments,
@@ -170,10 +196,24 @@ function containsEmptyPathMatchesWithNamedOutlets(
   segmentGroup: UrlSegmentGroup,
   slicedSegments: UrlSegment[],
   routes: Route[],
+  outlet?: string,
 ): boolean {
-  return routes.some(
-    (r) => emptyPathMatch(segmentGroup, slicedSegments, r) && getOutlet(r) !== PRIMARY_OUTLET,
-  );
+  return routes.some((r) => {
+    // 1. Can this route match as an empty path?
+    const matchesEmpty = emptyPathMatch(segmentGroup, slicedSegments, r);
+    if (!matchesEmpty) return false;
+
+    // 2. Is this a named outlet? (We only pull in empty paths if they are named outlets).
+    const isNamedOutlet = getOutlet(r) !== PRIMARY_OUTLET;
+    if (!isNamedOutlet) return false;
+
+    // 3. Are we already processing this outlet? If so, we ignore it as a pull-in
+    // candidate. For example, if we are evaluating the 'secondary' outlet, we shouldn't
+    // "pull in" an empty 'secondary' group.  We should let standard
+    // segment matching handle it (which looks at the actual characters in the URL).
+    const isSelfEvaluating = outlet !== undefined && getOutlet(r) === outlet;
+    return !isSelfEvaluating;
+  });
 }
 
 function containsEmptyPathMatches(

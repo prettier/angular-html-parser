@@ -18,7 +18,6 @@ export {
 export {compileNgModuleFactory as ɵcompileNgModuleFactory} from './application/application_ngmodule_factory_compiler';
 export {isBoundToModule as ɵisBoundToModule} from './application/application_ref';
 export {injectChangeDetectorRef as ɵinjectChangeDetectorRef} from './change_detection/change_detector_ref';
-export {getDebugNode as ɵgetDebugNode} from './debug/debug_node';
 export {createInjector as ɵcreateInjector} from './di/create_injector';
 export {
   isInjectable as ɵisInjectable,
@@ -55,7 +54,7 @@ export {
   BaseDirectiveDebugMetadata as ɵBaseDirectiveDebugMetadata,
   ComponentDef as ɵComponentDef,
   ComponentType as ɵComponentType,
-  ɵcontrolUpdate,
+  ControlDirectiveHost as ɵControlDirectiveHost,
   CssSelectorList as ɵCssSelectorList,
   ɵDEFER_BLOCK_CONFIG,
   ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
@@ -103,6 +102,7 @@ export {
   ɵɵcontentQuerySignal,
   ɵɵcontrol,
   ɵɵcontrolCreate,
+  ɵɵControlFeature,
   ɵɵdeclareLet,
   ɵɵdefer,
   ɵɵdeferEnableTimerScheduling,
@@ -250,13 +250,6 @@ export {
 } from './render3/index';
 export {CONTAINER_HEADER_OFFSET as ɵCONTAINER_HEADER_OFFSET} from './render3/interfaces/container';
 export {LContext as ɵLContext} from './render3/interfaces/context';
-export {
-  ɵCONTROL,
-  ɵFieldState,
-  ɵFormFieldBindingOptions,
-  ɵFormFieldDirective,
-  ɵInteropControl,
-} from './render3/interfaces/control';
 export {setDocument as ɵsetDocument} from './render3/interfaces/document';
 export {
   compileComponent as ɵcompileComponent,
@@ -287,7 +280,12 @@ export {
 export {compilePipe as ɵcompilePipe} from './render3/jit/pipe';
 export {isNgModule as ɵisNgModule} from './render3/jit/util';
 export {getAsyncClassMetadataFn as ɵgetAsyncClassMetadataFn} from './render3/metadata';
-export {DeferBlockData as ɵDeferBlockData} from './render3/util/defer';
+export {
+  ControlFlowBlockType as ɵControlFlowBlockType,
+  DeferBlockData as ɵDeferBlockData,
+  ForLoopBlockData as ɵForLoopBlockData,
+  ControlFlowBlock as ɵControlFlowBlock,
+} from './render3/util/control_flow_types';
 export {
   FrameworkAgnosticGlobalUtils as ɵFrameworkAgnosticGlobalUtils,
   GlobalDevModeUtils as ɵGlobalDevModeUtils,

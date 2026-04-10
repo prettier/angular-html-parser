@@ -9,7 +9,9 @@
 import {
   AST,
   BindingPipe,
+  ClassPropertyMapping,
   CssSelector,
+  MatchSource,
   ParseSourceFile,
   parseTemplate,
   ParseTemplateOptions,
@@ -30,9 +32,10 @@ import {
 } from '@angular/compiler';
 import {readFileSync} from 'fs';
 import path from 'path';
-import ts from 'typescript';
 import {globSync} from 'tinyglobby';
+import ts from 'typescript';
 
+import {freshCompilationTicket, NgCompiler, NgCompilerHost} from '../../core';
 import {
   absoluteFrom,
   AbsoluteFsPath,
@@ -54,13 +57,11 @@ import {
 } from '../../imports';
 import {NOOP_INCREMENTAL_BUILD, NoopIncrementalBuildStrategy} from '../../incremental';
 import {
-  ClassPropertyMapping,
   CompoundMetadataReader,
   DecoratorInputTransform,
   DirectiveMeta,
   HostDirectivesResolver,
   InputMapping,
-  MatchSource,
   MetadataReaderWithIndex,
   MetaKind,
   NgModuleIndex,
@@ -81,10 +82,12 @@ import {
   ScopeData,
   TypeCheckScopeRegistry,
 } from '../../scope';
+import {sfExtensionData} from '../../shims';
 import {makeProgram, resolveFromRunfiles} from '../../testing';
 import {getRootDirs} from '../../util/src/typescript';
 import {
   OptimizeFor,
+  OutOfBandDiagnosticRecorder,
   ProgramTypeCheckAdapter,
   TemplateContext,
   TemplateDiagnostic,
@@ -92,19 +95,16 @@ import {
   TypeCheckContext,
 } from '../api';
 import {
-  TypeCheckId,
   TypeCheckableDirectiveMeta,
   TypeCheckBlockMetadata,
+  TypeCheckId,
   TypeCheckingConfig,
 } from '../api/api';
+import {DomSchemaChecker} from '../api/schema';
 import {TemplateTypeCheckerImpl} from '../src/checker';
-import {DomSchemaChecker} from '../src/dom';
-import {OutOfBandDiagnosticRecorder} from '../src/oob';
+import {TcbGenericContextBehavior} from '../src/ops/context';
 import {TypeCheckShimGenerator} from '../src/shim';
 import {TypeCheckFile} from '../src/type_check_file';
-import {sfExtensionData} from '../../shims';
-import {freshCompilationTicket, NgCompiler, NgCompilerHost} from '../../core';
-import {TcbGenericContextBehavior} from '../src/ops/context';
 
 export function typescriptLibDts(): TestFile {
   return {
@@ -288,7 +288,6 @@ export const ALL_ENABLED_CONFIG: Readonly<TypeCheckingConfig> = {
   strictLiteralTypes: true,
   enableTemplateTypeChecker: false,
   useInlineTypeConstructors: true,
-  suggestionsForSuboptimalTypeInference: false,
   controlFlowPreventingContentProjection: 'warning',
   unusedStandaloneImports: 'warning',
   allowSignalsInTwoWayBindings: true,
@@ -297,24 +296,23 @@ export const ALL_ENABLED_CONFIG: Readonly<TypeCheckingConfig> = {
 };
 
 // Remove 'ref' from TypeCheckableDirectiveMeta and add a 'selector' instead.
-export interface TestDirective
-  extends Partial<
-    Pick<
-      TypeCheckableDirectiveMeta,
-      Exclude<
-        keyof TypeCheckableDirectiveMeta,
-        | 'ref'
-        | 'coercedInputFields'
-        | 'restrictedInputFields'
-        | 'stringLiteralInputFields'
-        | 'undeclaredInputFields'
-        | 'publicMethods'
-        | 'inputs'
-        | 'outputs'
-        | 'hostDirectives'
-      >
+export interface TestDirective extends Partial<
+  Pick<
+    TypeCheckableDirectiveMeta,
+    Exclude<
+      keyof TypeCheckableDirectiveMeta,
+      | 'ref'
+      | 'coercedInputFields'
+      | 'restrictedInputFields'
+      | 'stringLiteralInputFields'
+      | 'undeclaredInputFields'
+      | 'publicMethods'
+      | 'inputs'
+      | 'outputs'
+      | 'hostDirectives'
     >
-  > {
+  >
+> {
   selector: string | null;
   name: string;
   file?: AbsoluteFsPath;
@@ -346,6 +344,7 @@ export interface TestDirective
     outputs?: string[];
   }[];
   bestGuessOwningModule?: OwningModule | AmbientImport;
+  hasNgFieldDirective?: boolean;
 }
 
 export interface TestPipe {
@@ -356,6 +355,7 @@ export interface TestPipe {
   type: 'pipe';
   code?: string;
   bestGuessOwningModule?: OwningModule | AmbientImport;
+  isGeneric?: boolean;
 }
 
 export type TestDeclaration = TestDirective | TestPipe;
@@ -367,7 +367,10 @@ export function tcb(
   options?: {emitSpans?: boolean},
   templateParserOptions?: ParseTemplateOptions,
 ): string {
-  const codeLines = [`export class Test<T extends string> {}`];
+  const codeLines = [
+    'declare const ɵNgFieldDirective: unique symbol;',
+    `export class Test<T extends string> {}`,
+  ];
 
   (function addCodeLines(currentDeclarations) {
     for (const decl of currentDeclarations) {
@@ -375,7 +378,12 @@ export function tcb(
         addCodeLines(decl.hostDirectives.map((hostDir) => hostDir.directive));
       }
 
-      codeLines.push(decl.code ?? `export class ${decl.name}<T extends string> {}`);
+      codeLines.push(
+        decl.code ??
+          `export class ${decl.name}${decl.type === 'directive' || decl.isGeneric ? '<T extends string>' : ''} { ${
+            (decl as TestDirective).hasNgFieldDirective === true ? '[ɵNgFieldDirective]: any;' : ''
+          } }`,
+      );
     }
   })(declarations);
 
@@ -437,7 +445,6 @@ export function tcb(
     strictLiteralTypes: true,
     enableTemplateTypeChecker: false,
     useInlineTypeConstructors: true,
-    suggestionsForSuboptimalTypeInference: false,
     allowSignalsInTwoWayBindings: true,
     checkTwoWayBoundEvents: true,
     allowDomEventAssertion: true,
@@ -464,7 +471,12 @@ export function tcb(
     TcbGenericContextBehavior.UseEmitter,
   );
 
-  const rendered = env.render(!options.emitSpans /* removeComments */);
+  let rendered = env.render();
+
+  if (!options.emitSpans) {
+    rendered = rendered.replace(/\s+\/\*[\s\S]*?\*\//g, '');
+  }
+
   return rendered.replace(/\s+/g, ' ');
 }
 
@@ -513,6 +525,7 @@ export function setup(
     options?: ts.CompilerOptions;
     inlining?: boolean;
     parseOptions?: ParseTemplateOptions;
+    referenceEmitter?: ReferenceEmitter;
   } = {},
 ): {
   templateTypeChecker: TemplateTypeChecker;
@@ -563,16 +576,18 @@ export function setup(
     host,
     /* moduleResolutionCache */ null,
   );
-  const emitter = new ReferenceEmitter([
-    new LocalIdentifierStrategy(),
-    new AbsoluteModuleStrategy(
-      program,
-      checker,
-      moduleResolver,
-      new TypeScriptReflectionHost(checker),
-    ),
-    new LogicalProjectStrategy(reflectionHost, logicalFs),
-  ]);
+  const emitter =
+    overrides.referenceEmitter ??
+    new ReferenceEmitter([
+      new LocalIdentifierStrategy(),
+      new AbsoluteModuleStrategy(
+        program,
+        checker,
+        moduleResolver,
+        new TypeScriptReflectionHost(checker),
+      ),
+      new LogicalProjectStrategy(reflectionHost, logicalFs),
+    ]);
 
   const fullConfig = {
     ...ALL_ENABLED_CONFIG,
@@ -896,6 +911,7 @@ function getDirectiveMetaFromDeclaration(
     isExplicitlyDeferred: false,
     imports: decl.imports,
     rawImports: null,
+    matchSource: MatchSource.Selector,
     hostDirectives:
       decl.hostDirectives === undefined
         ? null
@@ -1010,7 +1026,7 @@ function parseInputOutputMappingArray(values: string[]) {
   );
 }
 
-export class NoopSchemaChecker implements DomSchemaChecker {
+export class NoopSchemaChecker implements DomSchemaChecker<TemplateDiagnostic> {
   get diagnostics(): ReadonlyArray<TemplateDiagnostic> {
     return [];
   }
@@ -1020,7 +1036,7 @@ export class NoopSchemaChecker implements DomSchemaChecker {
   checkHostElementProperty(): void {}
 }
 
-export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
+export class NoopOobRecorder implements OutOfBandDiagnosticRecorder<TemplateDiagnostic> {
   get diagnostics(): ReadonlyArray<TemplateDiagnostic> {
     return [];
   }
@@ -1029,8 +1045,6 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
   deferredPipeUsedEagerly(id: TypeCheckId, ast: BindingPipe): void {}
   deferredComponentUsedEagerly(id: TypeCheckId, element: TmplAstElement): void {}
   duplicateTemplateVar(): void {}
-  requiresInlineTcb(): void {}
-  requiresInlineTypeConstructors(): void {}
   suboptimalTypeInference(): void {}
   splitTwoWayBinding(): void {}
   missingRequiredInputs(): void {}
@@ -1045,6 +1059,11 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
     target: TmplAstLetDeclaration,
   ): void {}
   conflictingDeclaration(id: TypeCheckId, current: TmplAstLetDeclaration): void {}
+  multipleMatchingComponents(
+    id: TypeCheckId,
+    element: TmplAstElement,
+    componentNames: string[],
+  ): void {}
   missingNamedTemplateDependency(
     id: TypeCheckId,
     node: TmplAstComponent | TmplAstDirective,
@@ -1072,6 +1091,7 @@ export class NoopOobRecorder implements OutOfBandDiagnosticRecorder {
       | TmplAstInteractionDeferredTrigger
       | TmplAstViewportDeferredTrigger,
   ): void {}
+  conflictingHostDirectiveBinding(): void {}
 }
 
 export function createNgCompilerForFile(fileContent: string) {

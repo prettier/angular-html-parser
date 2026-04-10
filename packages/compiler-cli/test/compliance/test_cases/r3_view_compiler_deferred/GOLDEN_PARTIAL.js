@@ -395,9 +395,11 @@ export class MyApp {
         <loading-dep/>
       }
     </div>
-  `, isInline: true, dependencies: [{ kind: "directive", type: EagerDep, selector: "eager-dep" }, { kind: "directive", type: LoadingDep, selector: "loading-dep" }], deferBlockDependencies: [() => [import("./deferred_with_external_deps_lazy").then(m => m.LazyDep)]] });
+  `, isInline: true, dependencies: [{ kind: "directive", type: EagerDep, selector: "eager-dep" }, { kind: "directive", type: LoadingDep, selector: "loading-dep" }], deferBlockDependencies: [() => [/* @ts-ignore */
+                import("./deferred_with_external_deps_lazy").then(m => m.LazyDep)]] });
 }
-i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, resolveDeferredDeps: () => [import("./deferred_with_external_deps_lazy").then(m => m.LazyDep)], resolveMetadata: LazyDep => ({ decorators: [{
+i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, resolveDeferredDeps: () => [/* @ts-ignore */
+        import("./deferred_with_external_deps_lazy").then(m => m.LazyDep)], resolveMetadata: LazyDep => ({ decorators: [{
                 type: Component,
                 args: [{
                         template: `
@@ -927,9 +929,11 @@ export class TestCmp {
 	<cmp-a />
 	<local-dep />
 	}
-`, isInline: true, deferBlockDependencies: [() => [import("./defer_deps_ext").then(m => m.CmpA), LocalDep]] });
+`, isInline: true, deferBlockDependencies: [() => [/* @ts-ignore */
+                import("./defer_deps_ext").then(m => m.CmpA), LocalDep]] });
 }
-i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestCmp, resolveDeferredDeps: () => [import("./defer_deps_ext").then(m => m.CmpA)], resolveMetadata: CmpA => ({ decorators: [{
+i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestCmp, resolveDeferredDeps: () => [/* @ts-ignore */
+        import("./defer_deps_ext").then(m => m.CmpA)], resolveMetadata: CmpA => ({ decorators: [{
                 type: Component,
                 args: [{
                         selector: 'test-cmp',
@@ -1002,9 +1006,11 @@ export class TestCmp {
 	<cmp-a />
 	<local-dep />
 	}
-`, isInline: true, deferBlockDependencies: [() => [import("./defer_default_deps_ext").then(m => m.default), LocalDep]] });
+`, isInline: true, deferBlockDependencies: [() => [/* @ts-ignore */
+                import("./defer_default_deps_ext").then(m => m.default), LocalDep]] });
 }
-i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestCmp, resolveDeferredDeps: () => [import("./defer_default_deps_ext").then(m => m.default)], resolveMetadata: CmpA => ({ decorators: [{
+i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestCmp, resolveDeferredDeps: () => [/* @ts-ignore */
+        import("./defer_default_deps_ext").then(m => m.default)], resolveMetadata: CmpA => ({ decorators: [{
                 type: Component,
                 args: [{
                         selector: 'test-cmp',
@@ -1162,9 +1168,14 @@ export class MyApp {
     @defer {
       <other-lazy-dep/>
     }
-  `, isInline: true, deferBlockDependencies: [() => [import("./deferred_with_duplicate_external_dep_lazy").then(m => m.DuplicateLazyDep)], () => [import("./deferred_with_duplicate_external_dep_lazy").then(m => m.DuplicateLazyDep)], () => [import("./deferred_with_duplicate_external_dep_other").then(m => m.OtherLazyDep)]] });
+  `, isInline: true, deferBlockDependencies: [() => [/* @ts-ignore */
+                import("./deferred_with_duplicate_external_dep_lazy").then(m => m.DuplicateLazyDep)], () => [/* @ts-ignore */
+                import("./deferred_with_duplicate_external_dep_lazy").then(m => m.DuplicateLazyDep)], () => [/* @ts-ignore */
+                import("./deferred_with_duplicate_external_dep_other").then(m => m.OtherLazyDep)]] });
 }
-i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, resolveDeferredDeps: () => [import("./deferred_with_duplicate_external_dep_lazy").then(m => m.DuplicateLazyDep), import("./deferred_with_duplicate_external_dep_other").then(m => m.OtherLazyDep)], resolveMetadata: (DuplicateLazyDep, OtherLazyDep) => ({ decorators: [{
+i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, resolveDeferredDeps: () => [/* @ts-ignore */
+        import("./deferred_with_duplicate_external_dep_lazy").then(m => m.DuplicateLazyDep), /* @ts-ignore */
+        import("./deferred_with_duplicate_external_dep_other").then(m => m.OtherLazyDep)], resolveMetadata: (DuplicateLazyDep, OtherLazyDep) => ({ decorators: [{
                 type: Component,
                 args: [{
                         template: `
@@ -1241,9 +1252,11 @@ export class TestCmp {
     @defer {
       <my-counter-cmp />
     }
-  `, isInline: true, deferBlockDependencies: [() => [import("./deferred_import_alias_index").then(m => m.MyCounterCmp)]] });
+  `, isInline: true, deferBlockDependencies: [() => [/* @ts-ignore */
+                import("./deferred_import_alias_index").then(m => m.MyCounterCmp)]] });
 }
-i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestCmp, resolveDeferredDeps: () => [import("./deferred_import_alias_index").then(m => m.MyCounterCmp)], resolveMetadata: MyCounterCmp => ({ decorators: [{
+i0.ɵɵngDeclareClassMetadataAsync({ minVersion: "18.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: TestCmp, resolveDeferredDeps: () => [/* @ts-ignore */
+        import("./deferred_import_alias_index").then(m => m.MyCounterCmp)], resolveMetadata: MyCounterCmp => ({ decorators: [{
                 type: Component,
                 args: [{
                         selector: 'test-cmp',
@@ -1377,6 +1390,45 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDE
 
 /****************************************************************************************************
  * PARTIAL FILE: deferred_hydrate_on_viewport_with_options.d.ts
+ ****************************************************************************************************/
+import * as i0 from "@angular/core";
+export declare class MyApp {
+    message: string;
+    static ɵfac: i0.ɵɵFactoryDeclaration<MyApp, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<MyApp, "ng-component", never, {}, {}, never, never, true, never>;
+}
+
+/****************************************************************************************************
+ * PARTIAL FILE: deferred_on_idle_with_timeout.js
+ ****************************************************************************************************/
+import { Component } from '@angular/core';
+import * as i0 from "@angular/core";
+export class MyApp {
+    message = 'hello';
+    static ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, deps: [], target: i0.ɵɵFactoryTarget.Component });
+    static ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "0.0.0-PLACEHOLDER", type: MyApp, isStandalone: true, selector: "ng-component", ngImport: i0, template: `
+    @defer (on idle(500ms)) {
+      {{message}}
+    } @placeholder {
+      <p>Placeholder</p>
+    }
+  `, isInline: true });
+}
+i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "0.0.0-PLACEHOLDER", ngImport: i0, type: MyApp, decorators: [{
+            type: Component,
+            args: [{
+                    template: `
+    @defer (on idle(500ms)) {
+      {{message}}
+    } @placeholder {
+      <p>Placeholder</p>
+    }
+  `,
+                }]
+        }] });
+
+/****************************************************************************************************
+ * PARTIAL FILE: deferred_on_idle_with_timeout.d.ts
  ****************************************************************************************************/
 import * as i0 from "@angular/core";
 export declare class MyApp {

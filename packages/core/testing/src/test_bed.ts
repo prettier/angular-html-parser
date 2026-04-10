@@ -172,6 +172,12 @@ export interface TestBed {
   createComponent<T>(component: Type<T>, options?: TestComponentOptions): ComponentFixture<T>;
 
   /**
+   * Returns the most recently created `ComponentFixture`, or throws an error if one has not
+   * yet been created.
+   */
+  getLastFixture<T = unknown>(): ComponentFixture<T>;
+
+  /**
    * Execute any pending effects.
    *
    * @deprecated use `TestBed.tick()` instead
@@ -412,6 +418,10 @@ export class TestBedImpl implements TestBed {
     options?: TestComponentOptions,
   ): ComponentFixture<T> {
     return TestBedImpl.INSTANCE.createComponent(component, options);
+  }
+
+  static getLastFixture<T = unknown>(): ComponentFixture<T> {
+    return TestBedImpl.INSTANCE.getLastFixture();
   }
 
   static resetTestingModule(): TestBed {
@@ -707,6 +717,13 @@ export class TestBedImpl implements TestBed {
     const fixture = ngZone ? ngZone.run(initComponent) : initComponent();
     this._activeFixtures.push(fixture);
     return fixture;
+  }
+
+  getLastFixture<T = unknown>(): ComponentFixture<T> {
+    if (this._activeFixtures.length === 0) {
+      throw new Error('No fixture has been created yet.');
+    }
+    return this._activeFixtures[this._activeFixtures.length - 1];
   }
 
   /**

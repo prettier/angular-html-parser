@@ -24,7 +24,7 @@ import {
 } from '../../index';
 import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
-import {timeout} from '../helpers';
+import {timeout} from '@angular/private/testing';
 
 export const ROUTER_DIRECTIVES = [RouterLink, RouterLinkActive, RouterOutlet];
 
@@ -141,6 +141,20 @@ export class LinkWithState {}
   standalone: false,
 })
 export class DivLinkWithState {}
+
+@Component({
+  selector: 'link-cmp',
+  template: `<a id="link" [routerLink]="['../simple']" [browserUrl]="'/custom'">link</a>`,
+  standalone: false,
+})
+export class LinkWithBrowserUrl {}
+
+@Component({
+  selector: 'div-link-cmp',
+  template: `<div id="link" [routerLink]="['../simple']" [browserUrl]="'/custom'">link</div>`,
+  standalone: false,
+})
+export class DivLinkWithBrowserUrl {}
 
 @Component({
   selector: 'simple-cmp',
@@ -433,6 +447,8 @@ export class LazyComponent {}
     LinkWithQueryParamsAndFragment,
     DivLinkWithState,
     LinkWithState,
+    DivLinkWithBrowserUrl,
+    LinkWithBrowserUrl,
     CollectParamsCmp,
     QueryParamsAndFragmentCmp,
     StringLinkButtonCmp,
@@ -465,6 +481,8 @@ export class LazyComponent {}
     LinkWithQueryParamsAndFragment,
     DivLinkWithState,
     LinkWithState,
+    DivLinkWithBrowserUrl,
+    LinkWithBrowserUrl,
     CollectParamsCmp,
     QueryParamsAndFragmentCmp,
     StringLinkButtonCmp,

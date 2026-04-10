@@ -131,6 +131,10 @@ export interface R3DeclareDirectiveMetadata extends R3PartialDeclaration {
    */
   usesOnChanges?: boolean;
 
+  controlCreate?: {
+    passThroughInput: string | null;
+  };
+
   /**
    * Whether the directive is standalone. Defaults to false.
    */
@@ -218,7 +222,7 @@ export interface R3DeclareComponentMetadata extends R3DeclareDirectiveMetadata {
 
   /**
    * Strategy used for detecting changes in the component.
-   * Defaults to `ChangeDetectionStrategy.Default`.
+   * Defaults to `ChangeDetectionStrategy.OnPush`.
    */
   changeDetection?: ChangeDetectionStrategy;
 

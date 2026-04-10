@@ -6,7 +6,13 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {computeMsgId} from '@angular/compiler';
+import {TestBed} from '@angular/core/testing';
+import {clearTranslations, loadTranslations} from '@angular/localize';
+import {EVENT_MANAGER_PLUGINS} from '@angular/platform-browser';
+import {isNode} from '@angular/private/testing';
 import {
+  ChangeDetectionStrategy,
   Component,
   Directive,
   DoCheck,
@@ -32,14 +38,14 @@ import {
   ɵɵreplaceMetadata,
   ɵɵsetComponentScope,
 } from '../../src/core';
-import {TestBed} from '../../testing';
+import {NUM_ROOT_NODES} from '../../src/hydration/interfaces';
+import {ComponentType} from '../../src/render3';
+import {DEHYDRATED_VIEWS} from '../../src/render3/interfaces/container';
+import {isLContainer} from '../../src/render3/interfaces/type_checks';
+import {HEADER_OFFSET, TVIEW} from '../../src/render3/interfaces/view';
 import {compileComponent} from '../../src/render3/jit/directive';
 import {angularCoreEnv} from '../../src/render3/jit/environment';
-import {clearTranslations, loadTranslations} from '@angular/localize';
-import {computeMsgId} from '@angular/compiler';
-import {EVENT_MANAGER_PLUGINS} from '@angular/platform-browser';
-import {ComponentType} from '../../src/render3';
-import {isNode} from '@angular/private/testing';
+import {getComponentLView} from '../../src/render3/util/discovery_utils';
 
 describe('hot module replacement', () => {
   beforeEach(() => {
@@ -52,6 +58,7 @@ describe('hot module replacement', () => {
     const initialMetadata: Component = {
       selector: 'child-cmp',
       template: 'Hello <strong>{{state}}</strong>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -66,6 +73,8 @@ describe('hot module replacement', () => {
     @Component({
       imports: [ChildCmp],
       template: '<child-cmp/>',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {}
 
@@ -96,6 +105,7 @@ describe('hot module replacement', () => {
     replaceMetadata(ChildCmp, {
       ...initialMetadata,
       template: `Changed <strong>{{state}}</strong>!`,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -117,6 +127,7 @@ describe('hot module replacement', () => {
     const initialMetadata: Component = {
       selector: 'child-cmp',
       template: '<span>ChildCmp (orig)</span><h1>{{ text }}</h1>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -136,6 +147,8 @@ describe('hot module replacement', () => {
           <child-cmp text="C" />
         </main>
       `,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {}
 
@@ -170,6 +183,7 @@ describe('hot module replacement', () => {
         <h2>{{ text }}</h2>
         <div>Extra node!</div>
       `,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -208,6 +222,7 @@ describe('hot module replacement', () => {
     const initialMetadata: Component = {
       selector: 'child-cmp',
       template: 'Base class',
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -216,12 +231,16 @@ describe('hot module replacement', () => {
     @Component({
       selector: 'child-sub-cmp',
       template: 'Sub class',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class ChildSubCmp extends ChildCmp {}
 
     @Component({
       imports: [ChildCmp, ChildSubCmp],
       template: `<child-cmp />|<child-sub-cmp />`,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {}
 
@@ -239,6 +258,7 @@ describe('hot module replacement', () => {
     replaceMetadata(ChildCmp, {
       ...initialMetadata,
       template: `Replaced!`,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -263,6 +283,7 @@ describe('hot module replacement', () => {
       selector: 'child-cmp',
       template: 'Hello <strong>{{state}}</strong>',
       styles: `strong {color: red;}`,
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -277,6 +298,8 @@ describe('hot module replacement', () => {
     @Component({
       imports: [ChildCmp],
       template: '<child-cmp/>',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {}
 
@@ -295,6 +318,7 @@ describe('hot module replacement', () => {
       ...initialMetadata,
       template: `Changed <strong>{{state}}</strong>!`,
       styles: `strong {background: pink;}`,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -313,6 +337,7 @@ describe('hot module replacement', () => {
     const initialMetadata: Component = {
       selector: 'child-cmp',
       template: '<span>{{staticValue}}</span><strong>{{dynamicValue}}</strong>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -324,6 +349,8 @@ describe('hot module replacement', () => {
     @Component({
       imports: [ChildCmp],
       template: `<child-cmp staticValue="1" [dynamicValue]="dynamicValue" />`,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {
       dynamicValue = '1';
@@ -362,6 +389,7 @@ describe('hot module replacement', () => {
           <strong>{{dynamicValue}}</strong>
         </main>
       `,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
     expectHTML(
@@ -395,6 +423,7 @@ describe('hot module replacement', () => {
     const initialMetadata: Component = {
       selector: 'child-cmp',
       template: 'Hello <strong>{{value}}</strong>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -410,6 +439,8 @@ describe('hot module replacement', () => {
           <hr />
         }
       `,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {
       items = [
@@ -438,6 +469,7 @@ describe('hot module replacement', () => {
     replaceMetadata(ChildCmp, {
       ...initialMetadata,
       template: `Changed <strong>{{value}}</strong>!`,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -478,6 +510,7 @@ describe('hot module replacement', () => {
     const initialMetadata: Component = {
       selector: 'child-cmp',
       template: 'Hello <strong>world</strong>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     };
 
     @Component(initialMetadata)
@@ -488,6 +521,8 @@ describe('hot module replacement', () => {
     @Component({
       imports: [ChildCmp],
       template: '<child-cmp/>',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class RootCmp {}
 
@@ -507,6 +542,7 @@ describe('hot module replacement', () => {
     replaceMetadata(ChildCmp, {
       ...initialMetadata,
       template: `Hello <i>Bob</i>!`,
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -528,10 +564,19 @@ describe('hot module replacement', () => {
     // In some cases the AoT compiler produces a `setComponentScope` for non-standalone
     // components. We simulate it here by declaring two components that are not standalone
     // and manually calling `setComponentScope`.
-    @Component({selector: 'child-cmp', template: 'hello', standalone: false})
+    @Component({
+      selector: 'child-cmp',
+      template: 'hello',
+      standalone: false,
+      changeDetection: ChangeDetectionStrategy.Eager,
+    })
     class ChildCmp {}
 
-    @Component({template: 'Initial <child-cmp/>', standalone: false})
+    @Component({
+      template: 'Initial <child-cmp/>',
+      standalone: false,
+      changeDetection: ChangeDetectionStrategy.Eager,
+    })
     class RootCmp {}
 
     ɵɵsetComponentScope(RootCmp as ComponentType<RootCmp>, [ChildCmp], []);
@@ -544,6 +589,7 @@ describe('hot module replacement', () => {
     replaceMetadata(RootCmp, {
       standalone: false,
       template: 'Changed <child-cmp/>',
+      changeDetection: ChangeDetectionStrategy.Eager,
     });
     fixture.detectChanges();
 
@@ -559,6 +605,8 @@ describe('hot module replacement', () => {
       @Component({
         selector: 'child-cmp',
         template: '<span>ChildCmp {{ text }}</span>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class ChildCmp {
         @Input() text = '[empty]';
@@ -572,6 +620,8 @@ describe('hot module replacement', () => {
           <child-cmp text="A"/>
           <child-cmp text="B"/>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -586,6 +636,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ParentCmp],
         template: `<parent-cmp />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -603,6 +655,8 @@ describe('hot module replacement', () => {
           <child-cmp text="C"/>
           <child-cmp text="D"/>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -621,6 +675,8 @@ describe('hot module replacement', () => {
             </span>
           </div>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -635,6 +691,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ParentCmp],
         template: `<parent-cmp />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -655,6 +713,8 @@ describe('hot module replacement', () => {
             <span #ref></span>
           </main>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -681,6 +741,8 @@ describe('hot module replacement', () => {
         selector: 'parent-cmp',
         imports: [DirA, DirB],
         template: `<div #ref dir-a></div>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -695,6 +757,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ParentCmp],
         template: `<parent-cmp />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -709,6 +773,8 @@ describe('hot module replacement', () => {
             <div #ref dir-b></div>
           </section>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -729,6 +795,8 @@ describe('hot module replacement', () => {
         selector: 'parent-cmp',
         imports: [Dir],
         template: `<div #ref dir></div>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -743,6 +811,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ParentCmp],
         template: `<parent-cmp />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -753,6 +823,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ParentCmp, {
         ...initialMetadata,
         template: `<div #ref></div>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -765,6 +837,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'parent-cmp',
         template: `<ng-content/>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -778,6 +852,8 @@ describe('hot module replacement', () => {
             <h2>Projected H2</h2>
           </parent-cmp>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -802,6 +878,8 @@ describe('hot module replacement', () => {
             <ng-content/>
           </section>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -829,6 +907,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'parent-cmp',
         template: `<ng-content/>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -842,6 +922,8 @@ describe('hot module replacement', () => {
             <div two="2">two</div>
           </parent-cmp>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -866,6 +948,8 @@ describe('hot module replacement', () => {
           <section><ng-content select="[two]"/></section>
           <main><ng-content select="[one]"/></main>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -886,6 +970,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ParentCmp, {
         ...initialMetadata,
         template: `<ng-content select="does-not-match"/>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<parent-cmp></parent-cmp>');
@@ -894,6 +980,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ParentCmp, {
         ...initialMetadata,
         template: `<span><ng-content select="[one]"/></span>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -917,6 +1005,8 @@ describe('hot module replacement', () => {
             <div class="default-content">Default content</div>
           </ng-content>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -929,6 +1019,8 @@ describe('hot module replacement', () => {
             <span>Some content</span>
           </parent-cmp>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -951,6 +1043,8 @@ describe('hot module replacement', () => {
             <div class="default-content">Default content</div>
           </ng-content>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expectHTML(
@@ -969,6 +1063,8 @@ describe('hot module replacement', () => {
       @Component({
         template: '',
         selector: 'child-cmp',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class ChildCmp implements OnInit, OnDestroy {
         @Input() text = '[empty]';
@@ -989,6 +1085,8 @@ describe('hot module replacement', () => {
         `,
         imports: [ChildCmp],
         selector: 'parent-cmp',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
       let logs: string[] = [];
 
@@ -1013,6 +1111,8 @@ describe('hot module replacement', () => {
           <parent-cmp text="B" />
         `,
         imports: [ParentCmp],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1036,6 +1136,8 @@ describe('hot module replacement', () => {
           <child-cmp text="D"/>
           <child-cmp text="E"/>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1056,6 +1158,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ParentCmp, {
         ...initialMetadata,
         template: '',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expect(logs).toEqual([
@@ -1072,6 +1176,8 @@ describe('hot module replacement', () => {
       @Component({
         template: '',
         selector: 'child-cmp',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class ChildCmp implements DoCheck {
         @Input() text = '[empty]';
@@ -1085,6 +1191,8 @@ describe('hot module replacement', () => {
         template: `<child-cmp text="A"/>`,
         imports: [ChildCmp],
         selector: 'parent-cmp',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
       let logs: string[] = [];
 
@@ -1098,6 +1206,8 @@ describe('hot module replacement', () => {
       @Component({
         template: `<parent-cmp />`,
         imports: [ParentCmp],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1117,6 +1227,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ParentCmp, {
         ...initialMetadata,
         template: '',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expect(logs).toEqual(['ParentCmp checked']);
@@ -1130,6 +1242,8 @@ describe('hot module replacement', () => {
           <child-cmp text="A"/>
           <child-cmp text="B"/>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expect(logs).toEqual([
@@ -1157,6 +1271,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1174,6 +1290,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: `<child-cmp [value]="value" />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         value = 1;
@@ -1190,6 +1308,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'Changed',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1209,6 +1329,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'Changed!!!',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       fixture.componentInstance.value++;
@@ -1229,6 +1351,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<button (click)="clicked()"></button>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1243,6 +1367,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: `<child-cmp (changed)="onChange()" />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         onChange() {
@@ -1262,6 +1388,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: '<button class="replacement" (click)="clicked()"></button>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1279,6 +1407,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<button (click)="clicked()"></button>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1293,6 +1423,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: `<child-cmp (changed)="onChange()" />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         onChange() {
@@ -1312,6 +1444,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: '<button (click)="clicked()"></button>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1327,7 +1461,10 @@ describe('hot module replacement', () => {
     it('should bind events inside the NgZone after a replacement', () => {
       const calls: {name: string; inZone: boolean}[] = [];
 
-      @Component({template: `<button (click)="clicked()"></button>`})
+      @Component({
+        template: `<button (click)="clicked()"></button>`,
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
       class App {
         clicked() {}
       }
@@ -1356,7 +1493,10 @@ describe('hot module replacement', () => {
       fixture.detectChanges();
       expect(calls).toEqual([{name: 'click', inZone: true}]);
 
-      replaceMetadata(App, {template: '<button class="foo" (click)="clicked()"></button>'});
+      replaceMetadata(App, {
+        template: '<button class="foo" (click)="clicked()"></button>',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
 
       expect(calls).toEqual([
@@ -1373,6 +1513,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1411,6 +1553,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp, DirA, DirB],
         template: `<child-cmp dir-a dir-b />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1423,6 +1567,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'Hello!',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expect(initLog).toEqual(['ChildCmp init', 'DirA init', 'DirB init']);
@@ -1459,6 +1605,8 @@ describe('hot module replacement', () => {
         selector: 'child-cmp',
         template: '',
         hostDirectives: [DirA, DirB],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1475,6 +1623,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1487,6 +1637,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'Hello!',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expect(initLog).toEqual(['DirA init', 'DirB init', 'ChildCmp init']);
@@ -1517,6 +1669,8 @@ describe('hot module replacement', () => {
         selector: 'child-cmp',
         template: '<div dir-a></div>',
         imports: [DirA, DirB],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1529,6 +1683,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1540,6 +1696,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: '<div dir-b></div>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1572,6 +1730,8 @@ describe('hot module replacement', () => {
         template: '<div dir-a></div>',
         imports: [DirA, DirB],
         providers: [{provide: token, useValue: 'provided value'}],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1580,6 +1740,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1590,6 +1752,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: '<div dir-b></div>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1622,6 +1786,8 @@ describe('hot module replacement', () => {
         template: '<div dir-a></div>',
         imports: [DirA, DirB],
         viewProviders: [{provide: token, useValue: 'provided value'}],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1630,6 +1796,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1640,6 +1808,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: '<div dir-b></div>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1658,6 +1828,8 @@ describe('hot module replacement', () => {
         host: {
           '[attr.bar]': 'state',
         },
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1668,6 +1840,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: `<child-cmp [state]="state" [attr.foo]="'The state is ' + state" />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         state = 0;
@@ -1688,7 +1862,11 @@ describe('hot module replacement', () => {
         `<child-cmp foo="The state is 1" bar="1">Hello</child-cmp>`,
       );
 
-      replaceMetadata(ChildCmp, {...initialMetadata, template: `Changed`});
+      replaceMetadata(ChildCmp, {
+        ...initialMetadata,
+        template: `Changed`,
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
       expectHTML(
         fixture.nativeElement,
@@ -1710,6 +1888,8 @@ describe('hot module replacement', () => {
         host: {
           '[class.bar]': 'state',
         },
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1720,6 +1900,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: `<child-cmp class="static" [state]="state" [class.foo]="state" />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         state = false;
@@ -1733,7 +1915,11 @@ describe('hot module replacement', () => {
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, `<child-cmp class="static foo bar">Hello</child-cmp>`);
 
-      replaceMetadata(ChildCmp, {...initialMetadata, template: `Changed`});
+      replaceMetadata(ChildCmp, {
+        ...initialMetadata,
+        template: `Changed`,
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, `<child-cmp class="static foo bar">Changed</child-cmp>`);
 
@@ -1749,6 +1935,8 @@ describe('hot module replacement', () => {
         host: {
           '[style.height]': 'state ? "5px" : "20px"',
         },
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1763,6 +1951,8 @@ describe('hot module replacement', () => {
           [state]="state"
           [style.width]="state ? '3px' : '12px'"
         />`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         state = false;
@@ -1782,7 +1972,11 @@ describe('hot module replacement', () => {
         `<child-cmp style="opacity: 0.5; width: 3px; height: 5px;">Hello</child-cmp>`,
       );
 
-      replaceMetadata(ChildCmp, {...initialMetadata, template: `Changed`});
+      replaceMetadata(ChildCmp, {
+        ...initialMetadata,
+        template: `Changed`,
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
       expectHTML(
         fixture.nativeElement,
@@ -1812,6 +2006,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<span i18n>hello</span>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1820,6 +2016,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1827,7 +2025,11 @@ describe('hot module replacement', () => {
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<child-cmp><span>здравей</span></child-cmp>');
 
-      replaceMetadata(ChildCmp, {...initialMetadata, template: '<strong i18n>goodbye</strong>!'});
+      replaceMetadata(ChildCmp, {
+        ...initialMetadata,
+        template: '<strong i18n>goodbye</strong>!',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<child-cmp><strong>довиждане</strong>!</child-cmp>');
     });
@@ -1838,6 +2040,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<ng-content/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1846,6 +2050,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: `<child-cmp i18n>hello</child-cmp>`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1857,6 +2063,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'Hello translates to <strong><ng-content/></strong>!',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -1879,6 +2087,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<span i18n>Hello {{name}}!</span>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1893,6 +2103,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1900,13 +2112,19 @@ describe('hot module replacement', () => {
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<child-cmp><span>Здравей Frodo!</span></child-cmp>');
 
-      replaceMetadata(ChildCmp, {...initialMetadata, template: '<strong i18n>hello</strong>'});
+      replaceMetadata(ChildCmp, {
+        ...initialMetadata,
+        template: '<strong i18n>hello</strong>',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<child-cmp><strong>здравей</strong></child-cmp>');
 
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: '<main><section i18n>Hello {{name}}!</section></main>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expectHTML(
@@ -1930,6 +2148,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<ng-content/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1938,6 +2158,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp i18n>Hello {{name}}!</child-cmp>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         name = 'Frodo';
@@ -1951,6 +2173,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'The text translates to <strong><ng-content/></strong>!',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expectHTML(
@@ -1981,6 +2205,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<span i18n>{count, select, 10 {ten} 20 {twenty} other {other}}</span>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -1995,6 +2221,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -2002,7 +2230,11 @@ describe('hot module replacement', () => {
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<child-cmp><span>десет</span></child-cmp>');
 
-      replaceMetadata(ChildCmp, {...initialMetadata, template: '<strong i18n>hello</strong>'});
+      replaceMetadata(ChildCmp, {
+        ...initialMetadata,
+        template: '<strong i18n>hello</strong>',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      });
       fixture.detectChanges();
       expectHTML(fixture.nativeElement, '<child-cmp><strong>здравей</strong></child-cmp>');
 
@@ -2010,6 +2242,8 @@ describe('hot module replacement', () => {
         ...initialMetadata,
         template:
           '<main><section i18n>{count, select, 10 {ten} 20 {twenty} other {other}}</section></main>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
       expectHTML(
@@ -2034,6 +2268,8 @@ describe('hot module replacement', () => {
       const initialMetadata: Component = {
         selector: 'child-cmp',
         template: '<ng-content/>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       };
 
       @Component(initialMetadata)
@@ -2042,6 +2278,8 @@ describe('hot module replacement', () => {
       @Component({
         imports: [ChildCmp],
         template: '<child-cmp i18n>{count, select, 10 {ten} 20 {twenty} other {other}}</child-cmp>',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         count = 10;
@@ -2055,6 +2293,8 @@ describe('hot module replacement', () => {
       replaceMetadata(ChildCmp, {
         ...initialMetadata,
         template: 'The text translates to <strong><ng-content/></strong>!',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       });
       fixture.detectChanges();
 
@@ -2073,6 +2313,65 @@ describe('hot module replacement', () => {
         '<child-cmp>The text translates to <strong>двадесет</strong>!</child-cmp>',
       );
     });
+  });
+
+  it('should clean up dehydrated views from LContainers during HMR', () => {
+    const initialMetadata: Component = {
+      selector: 'child-cmp',
+      template: '@if (true) { <div>Initial</div> }',
+    };
+
+    @Component(initialMetadata)
+    class ChildCmp {}
+
+    @Component({
+      imports: [ChildCmp],
+      template: '<child-cmp/>',
+    })
+    class RootCmp {}
+
+    const fixture = TestBed.createComponent(RootCmp);
+    fixture.detectChanges();
+
+    const childEl = fixture.nativeElement.querySelector('child-cmp')!;
+    expectHTML(fixture.nativeElement, '<child-cmp><div>Initial</div></child-cmp>');
+
+    // Simulate SSR dehydrated views by injecting fake dehydrated DOM nodes
+    // into the LContainer's DEHYDRATED_VIEWS slot. During SSR hydration,
+    // Angular stores references to server-rendered DOM in this slot.
+    const childLView = getComponentLView(childEl);
+    const tView = childLView[TVIEW];
+
+    // Create fake dehydrated DOM content that simulates SSR remnants.
+    // Insert before existing content so the node has a nextSibling,
+    // which removeDehydratedView validates in dev mode.
+    const dehydratedNode = document.createElement('div');
+    dehydratedNode.textContent = 'SSR ghost';
+    childEl.insertBefore(dehydratedNode, childEl.firstChild);
+
+    // Find the LContainer created by the @if and inject dehydrated views.
+    for (let i = HEADER_OFFSET; i < tView.bindingStartIndex; i++) {
+      if (isLContainer(childLView[i])) {
+        childLView[i][DEHYDRATED_VIEWS] = [
+          {firstChild: dehydratedNode, data: {[NUM_ROOT_NODES]: 1}},
+        ];
+        break;
+      }
+    }
+
+    // Verify the dehydrated node is present in the DOM.
+    expect(childEl.innerHTML).toContain('SSR ghost');
+
+    // Trigger HMR replacement.
+    replaceMetadata(ChildCmp, {
+      ...initialMetadata,
+      template: '@if (true) { <div>Replaced</div> }',
+    });
+    fixture.detectChanges();
+
+    // After HMR, dehydrated DOM nodes should have been cleaned up — no duplication.
+    expect(childEl.innerHTML).not.toContain('SSR ghost');
+    expectHTML(fixture.nativeElement, '<child-cmp><div>Replaced</div></child-cmp>');
   });
 
   // Testing utilities

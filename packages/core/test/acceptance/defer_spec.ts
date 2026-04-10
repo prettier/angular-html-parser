@@ -7,6 +7,9 @@
  */
 
 import {CommonModule, ɵPLATFORM_BROWSER_ID as PLATFORM_BROWSER_ID} from '@angular/common';
+import {isBrowser} from '@angular/private/testing';
+import {ActivatedRoute, provideRouter, Router, RouterOutlet} from '@angular/router';
+import {Console} from '../../src/console';
 import {
   ApplicationRef,
   Attribute,
@@ -15,38 +18,37 @@ import {
   Component,
   createComponent,
   Directive,
+  ElementRef,
   EnvironmentInjector,
   ErrorHandler,
   inject,
   Injectable,
   InjectionToken,
+  Injector,
   Input,
   NgModule,
   NgZone,
   Pipe,
   PipeTransform,
   PLATFORM_ID,
+  provideZoneChangeDetection,
   QueryList,
+  ɵRuntimeError as RuntimeError,
   Type,
+  ViewChild,
   ViewChildren,
   ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
-  ɵRuntimeError as RuntimeError,
-  Injector,
-  ElementRef,
-  ViewChild,
-  provideZoneChangeDetection,
 } from '../../src/core';
-import {getComponentDef} from '../../src/render3/def_getters';
-import {ComponentFixture, DeferBlockBehavior, fakeAsync, flush, TestBed, tick} from '../../testing';
-import {getInjectorResolutionPath} from '../../src/render3/util/injector_discovery_utils';
-import {ActivatedRoute, provideRouter, Router, RouterOutlet} from '@angular/router';
-import {ChainedInjector} from '../../src/render3/chained_injector';
-import {global} from '../../src/util/global';
+import {IDLE_SERVICE, IdleService, provideIdleServiceWith} from '../../src/defer/idle_service';
+import {IdleScheduler} from '../../src/defer/idle_scheduler';
 import {TimerScheduler} from '../../src/defer/timer_scheduler';
-import {Console} from '../../src/console';
 import {formatRuntimeErrorCode, RuntimeErrorCode} from '../../src/errors';
 import {provideNgReflectAttributes} from '../../src/ng_reflect';
-import {isBrowser} from '@angular/private/testing';
+import {ChainedInjector} from '../../src/render3/chained_injector';
+import {getComponentDef} from '../../src/render3/def_getters';
+import {getInjectorResolutionPath} from '../../src/render3/util/injector_discovery_utils';
+import {global} from '../../src/util/global';
+import {ComponentFixture, DeferBlockBehavior, fakeAsync, flush, TestBed, tick} from '../../testing';
 
 /**
  * Clears all associated directive defs from a given component class.
@@ -163,6 +165,8 @@ function createFixture(template: string) {
   @Component({
     selector: 'nested-cmp',
     template: '{{ block }}',
+
+    changeDetection: ChangeDetectionStrategy.Eager,
   })
   class NestedCmp {
     @Input() block!: string;
@@ -172,6 +176,8 @@ function createFixture(template: string) {
     selector: 'simple-app',
     imports: [NestedCmp],
     template,
+
+    changeDetection: ChangeDetectionStrategy.Eager,
   })
   class MyCmp {
     trigger = false;
@@ -235,6 +241,8 @@ describe('@defer', () => {
     @Component({
       selector: 'my-lazy-cmp',
       template: 'Hi!',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyLazyCmp {}
 
@@ -252,6 +260,8 @@ describe('@defer', () => {
           Failed to load dependencies :(
         }
       `,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyCmp {
       isVisible = false;
@@ -278,6 +288,8 @@ describe('@defer', () => {
     @Component({
       selector: 'my-lazy-cmp',
       template: 'Hi!',
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyLazyCmp {}
 
@@ -290,6 +302,8 @@ describe('@defer', () => {
           <my-lazy-cmp />
         }
       `,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyCmp {
       isVisible = false;
@@ -325,6 +339,8 @@ describe('@defer', () => {
       template: `@defer (when isVisible | test; prefetch when isVisible | test) {
         Hello
       }`,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyCmp {
       isVisible = false;
@@ -387,6 +403,8 @@ describe('@defer', () => {
         }
         <div mode="eager" dirA dirB dirC></div>
       `,
+
+      changeDetection: ChangeDetectionStrategy.Eager,
     })
     class MyCmp {
       isVisible = true;
@@ -412,6 +430,8 @@ describe('@defer', () => {
       @Component({
         selector: 'my-lazy-cmp',
         template: '{{ foo }}',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyLazyCmp {
         foo = 'bar';
@@ -457,6 +477,8 @@ describe('@defer', () => {
             <my-lazy-cmp />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -584,6 +606,8 @@ describe('@defer', () => {
             Defer block #3
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -612,6 +636,8 @@ describe('@defer', () => {
       @Component({
         selector: 'simple-app',
         template: `No defer blocks`,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -635,6 +661,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -652,6 +680,8 @@ describe('@defer', () => {
             Loading
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -699,6 +729,90 @@ describe('@defer', () => {
       // Expect that the loading resources function was not invoked again (counter remains 1).
       expect(loadingFnInvokedTimes).toBe(1);
     });
+
+    it('should trigger change detection when `on idle` is fired without explicit fixture.detectChanges()', async () => {
+      @Component({
+        selector: 'nested-cmp',
+        template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class NestedCmp {
+        @Input() block!: string;
+      }
+
+      @Component({
+        selector: 'root-app',
+        imports: [NestedCmp],
+        template: `
+          @defer (on idle) {
+            <nested-cmp [block]="'primary'" />
+          } @placeholder {
+            Placeholder
+          } @loading {
+            Loading
+          }
+        `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class RootCmp {}
+
+      let loadingFnInvokedTimes = 0;
+      const deferDepsInterceptor = {
+        intercept() {
+          return () => {
+            loadingFnInvokedTimes++;
+            return [dynamicImportOf(NestedCmp)];
+          };
+        },
+      };
+
+      const idleCallbacks: IdleRequestCallback[] = [];
+      const mockRequestIdleCallback = (
+        callback: IdleRequestCallback,
+        options?: IdleRequestOptions,
+      ): number => {
+        idleCallbacks.push(callback);
+        return 1;
+      };
+
+      const nativeRequestIdleCallback = globalThis.requestIdleCallback;
+      const nativeCancelIdleCallback = globalThis.cancelIdleCallback;
+      globalThis.requestIdleCallback = mockRequestIdleCallback;
+      globalThis.cancelIdleCallback = (id: number) => {};
+
+      try {
+        TestBed.configureTestingModule({
+          providers: [
+            ...COMMON_PROVIDERS,
+            {provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor},
+          ],
+        });
+
+        clearDirectiveDefs(RootCmp);
+
+        const fixture = TestBed.createComponent(RootCmp);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.outerHTML).toContain('Placeholder');
+        expect(loadingFnInvokedTimes).toBe(0);
+
+        // Trigger the idle callback
+        expect(idleCallbacks.length).toBe(1);
+        idleCallbacks[0]({timeRemaining: () => 50, didTimeout: false} as IdleDeadline);
+
+        // Ensure that loading function was called
+        expect(loadingFnInvokedTimes).toBe(1);
+
+        // The tick generated from the defer block state change inside the idle scheduler
+        // should have updated the view automatically, showing the loading block.
+        expect(fixture.nativeElement.outerHTML).toContain('Loading');
+      } finally {
+        globalThis.requestIdleCallback = nativeRequestIdleCallback;
+        globalThis.cancelIdleCallback = nativeCancelIdleCallback;
+      }
+    });
   });
 
   describe('directive matching', () => {
@@ -706,6 +820,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -728,6 +844,8 @@ describe('@defer', () => {
             <nested-cmp [block]="'error'" />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -903,6 +1021,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -923,6 +1043,8 @@ describe('@defer', () => {
             <nested-cmp [block]="'error'" />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -969,6 +1091,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'NestedCmp',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {}
 
@@ -984,6 +1108,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -1034,10 +1160,79 @@ describe('@defer', () => {
       expect(reportedErrors[0].message).toContain(`(used in the 'MyCmp' component template)`);
     });
 
+    it('should include detailed failure info in the error message when no `@error` block is defined', async () => {
+      @Component({
+        selector: 'nested-cmp',
+        template: 'NestedCmp',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class NestedCmp {}
+
+      @Component({
+        selector: 'simple-app',
+        imports: [NestedCmp],
+        template: `
+          @defer (when isVisible) {
+            <nested-cmp />
+          } @loading {
+            Loading...
+          } @placeholder {
+            Placeholder
+          }
+        `,
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class MyCmp {
+        isVisible = false;
+      }
+
+      const failedReason = new Error('Failed to load module X');
+      const deferDepsInterceptor = {
+        intercept() {
+          return () => [new Promise((_, reject) => setTimeout(() => reject(failedReason), 0))];
+        },
+      };
+
+      const reportedErrors: Error[] = [];
+      TestBed.configureTestingModule({
+        rethrowApplicationErrors: false,
+        providers: [
+          {
+            provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
+            useValue: deferDepsInterceptor,
+          },
+          {
+            provide: ErrorHandler,
+            useClass: class extends ErrorHandler {
+              override handleError(error: Error) {
+                reportedErrors.push(error);
+              }
+            },
+          },
+        ],
+      });
+
+      const fixture = TestBed.createComponent(MyCmp);
+      fixture.detectChanges();
+
+      fixture.componentInstance.isVisible = true;
+      fixture.detectChanges();
+
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      expect(reportedErrors.length).toBe(1);
+      const errorMsg = reportedErrors[0].message;
+      expect(errorMsg).toContain('NG0750');
+      expect(errorMsg).toContain('Failed to load module X');
+    });
+
     it('should not render `@error` block if loaded component has errors', async () => {
       @Component({
         selector: 'cmp-with-error',
         template: 'CmpWithError',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class CmpWithError {
         constructor() {
@@ -1059,6 +1254,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -1123,6 +1320,8 @@ describe('@defer', () => {
           @Component({
             selector: 'nested-cmp',
             template: 'Rendering {{ block }} block.',
+
+            changeDetection: ChangeDetectionStrategy.Eager,
           })
           class NestedCmp {
             @Input() block!: string;
@@ -1140,6 +1339,8 @@ describe('@defer', () => {
                 Placeholder!
               }
             `,
+
+            changeDetection: ChangeDetectionStrategy.Eager,
           })
           class MyCmp {
             isVisible = false;
@@ -1203,6 +1404,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1225,6 +1428,8 @@ describe('@defer', () => {
             <nested-cmp [block]="'error'" />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -1267,18 +1472,24 @@ describe('@defer', () => {
       @Component({
         selector: 'cmp-a',
         template: 'CmpA',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class CmpA {}
 
       @Component({
         selector: 'cmp-b',
         template: 'CmpB',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class CmpB {}
 
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1302,6 +1513,8 @@ describe('@defer', () => {
             <nested-cmp [block]="'error'" />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         @Input() isVisible = false;
@@ -1322,6 +1535,8 @@ describe('@defer', () => {
             }
           </my-app>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         isVisible = false;
@@ -1373,12 +1588,16 @@ describe('@defer', () => {
       @Component({
         selector: 'cmp-a',
         template: 'CmpA',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class CmpA {}
 
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1400,6 +1619,8 @@ describe('@defer', () => {
             <nested-cmp [block]="'placeholder'" />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         isVisible = false;
@@ -1444,6 +1665,8 @@ describe('@defer', () => {
       @Component({
         selector: 'cmp-a',
         template: 'CmpA',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class CmpA {}
 
@@ -1459,6 +1682,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -1496,17 +1721,31 @@ describe('@defer', () => {
      * Sets up interceptors for when an idle callback is requested
      * and when it's cancelled. This is needed to keep track of calls
      * made to `requestIdleCallback` and `cancelIdleCallback` APIs.
+     *
+     * The mock enforces the per-bucket invariant: for a given timeout
+     * value, at most ONE `requestIdleCallback` should be active at a
+     * time. Different timeout values (buckets) may run concurrently.
      */
     let id = 0;
     let idleCallbacksRequested: number;
     let idleCallbacksInvoked: number;
     let idleCallbacksCancelled: number;
     const onIdleCallbackQueue: Map<number, IdleRequestCallback> = new Map();
+    let capturedOptions: IdleRequestOptions | undefined;
+
+    // Tracks active idle callback counts per serialized options key, enforcing
+    // that each bucket never has more than one concurrent request.
+    const activePerTimeout = new Map<string, number>();
+    // Reverse lookup: callback id → options key (for cleanup in cancel).
+    const idToTimeout = new Map<number, string>();
 
     function resetCounters() {
       idleCallbacksRequested = 0;
       idleCallbacksInvoked = 0;
       idleCallbacksCancelled = 0;
+      capturedOptions = undefined;
+      activePerTimeout.clear();
+      idToTimeout.clear();
     }
     resetCounters();
 
@@ -1520,15 +1759,38 @@ describe('@defer', () => {
       callback: IdleRequestCallback,
       options?: IdleRequestOptions,
     ): number => {
+      capturedOptions = options;
       onIdleCallbackQueue.set(id, callback);
-      expect(idleCallbacksRequested).toBe(0);
       expect(NgZone.isInAngularZone()).toBe(true);
+
+      // Enforce per-bucket invariant: a given options key must not
+      // already have an active requestIdleCallback.
+      const timeoutKey = options?.timeout != null ? `${options.timeout}` : '';
+      const activeCount = activePerTimeout.get(timeoutKey) ?? 0;
+      expect(activeCount)
+        .withContext(
+          `Expected 0 active idle callbacks for key='${timeoutKey}', ` +
+            `but found ${activeCount}. Each options bucket should have at most one.`,
+        )
+        .toBe(0);
+      activePerTimeout.set(timeoutKey, activeCount + 1);
+      idToTimeout.set(id, timeoutKey);
+
       idleCallbacksRequested++;
       return id++;
     };
 
     const mockCancelIdleCallback = (id: number) => {
       onIdleCallbackQueue.delete(id);
+
+      // Decrement per-bucket active count.
+      const timeoutKey = idToTimeout.get(id);
+      if (timeoutKey !== undefined) {
+        const count = activePerTimeout.get(timeoutKey) ?? 0;
+        activePerTimeout.set(timeoutKey, Math.max(0, count - 1));
+        idToTimeout.delete(id);
+      }
+
       idleCallbacksRequested--;
       idleCallbacksCancelled++;
     };
@@ -1560,6 +1822,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1575,6 +1839,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         deferCond = false;
@@ -1639,6 +1905,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1656,6 +1924,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         deferCond = false;
@@ -1717,6 +1987,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1734,6 +2006,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         deferCond = false;
@@ -1783,6 +2057,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1798,6 +2074,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         deferCond = false;
@@ -1813,8 +2091,34 @@ describe('@defer', () => {
         },
       };
 
+      @Injectable({providedIn: 'root'})
+      class CustomIdleService implements IdleService {
+        private callbacks: Array<((deadline?: IdleDeadline) => void) | undefined> = [];
+
+        requestOnIdle(
+          callback: (deadline?: IdleDeadline) => void,
+          options?: IdleRequestOptions,
+        ): number {
+          return this.callbacks.push(callback) - 1;
+        }
+
+        cancelOnIdle(id: number): void {
+          this.callbacks[id] = undefined;
+        }
+
+        trigger(): void {
+          for (const callback of this.callbacks) {
+            callback?.();
+          }
+          this.callbacks.length = 0;
+        }
+      }
+
       TestBed.configureTestingModule({
-        providers: [{provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor}],
+        providers: [
+          {provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor},
+          provideIdleServiceWith(CustomIdleService),
+        ],
       });
 
       clearDirectiveDefs(RootCmp);
@@ -1827,7 +2131,7 @@ describe('@defer', () => {
       // Make sure loading function is not yet invoked.
       expect(loadingFnInvokedTimes).toBe(0);
 
-      triggerIdleCallbacks();
+      TestBed.inject(CustomIdleService).trigger();
       await allPendingDynamicImports();
       fixture.detectChanges();
 
@@ -1858,6 +2162,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1875,6 +2181,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         deferCond = false;
@@ -1933,10 +2241,194 @@ describe('@defer', () => {
       expect(loadingFnInvokedTimes).toBe(1);
     });
 
+    it('should trigger prefetching based on `on idle(<timeout>)` with timeout only once', async () => {
+      @Component({
+        selector: 'nested-cmp',
+        template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class NestedCmp {
+        @Input() block!: string;
+      }
+
+      @Component({
+        selector: 'root-app',
+        imports: [NestedCmp],
+        template: `
+          @for (item of items; track item) {
+            @defer (when deferCond; prefetch on idle(1500)) {
+              <nested-cmp [block]="'primary for \`' + item + '\` with timeout'" />
+            } @placeholder {
+              Placeholder with timeout \`{{ item }}\`
+            }
+          }
+        `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class RootCmp {
+        deferCond = false;
+        items = ['x', 'y', 'z'];
+      }
+
+      let loadingFnInvokedTimes = 0;
+      const deferDepsInterceptor = {
+        intercept() {
+          return () => {
+            loadingFnInvokedTimes++;
+            return [dynamicImportOf(NestedCmp)];
+          };
+        },
+      };
+
+      TestBed.configureTestingModule({
+        providers: [{provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor}],
+      });
+
+      clearDirectiveDefs(RootCmp);
+
+      const fixture = TestBed.createComponent(RootCmp);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.outerHTML).toContain('Placeholder with timeout `x`');
+      expect(fixture.nativeElement.outerHTML).toContain('Placeholder with timeout `y`');
+      expect(fixture.nativeElement.outerHTML).toContain('Placeholder with timeout `z`');
+
+      // Verify that requestIdleCallback was called with timeout for prefetch
+      expect(idleCallbacksRequested).toBe(1);
+      expect(capturedOptions).toBeDefined();
+      expect(capturedOptions!.timeout).toBe(1500);
+
+      // Make sure loading function is not yet invoked.
+      expect(loadingFnInvokedTimes).toBe(0);
+
+      triggerIdleCallbacks();
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      // Expect that the loading resources function was invoked once for prefetch.
+      expect(loadingFnInvokedTimes).toBe(1);
+
+      // Expect that placeholder content is still rendered after prefetch.
+      expect(fixture.nativeElement.outerHTML).toContain('Placeholder with timeout `x`');
+
+      // Trigger main content.
+      fixture.componentInstance.deferCond = true;
+      fixture.detectChanges();
+
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      // Verify primary blocks content with prefetched resources.
+      expect(fixture.nativeElement.outerHTML).toContain(
+        'Rendering primary for `x` with timeout block',
+      );
+      expect(fixture.nativeElement.outerHTML).toContain(
+        'Rendering primary for `y` with timeout block',
+      );
+      expect(fixture.nativeElement.outerHTML).toContain(
+        'Rendering primary for `z` with timeout block',
+      );
+
+      // Expect that the loading resources function was not invoked again (counter remains 1).
+      expect(loadingFnInvokedTimes).toBe(1);
+    });
+
+    it('should support mixed prefetch triggers with and without timeout', async () => {
+      @Component({
+        selector: 'nested-cmp',
+        template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class NestedCmp {
+        @Input() block!: string;
+      }
+
+      @Component({
+        selector: 'root-app',
+        imports: [NestedCmp],
+        template: `
+          @defer (when loadFirst; prefetch on idle) {
+            <nested-cmp [block]="'no-timeout'" />
+          } @placeholder {
+            No Timeout Placeholder
+          }
+
+          @defer (when loadSecond; prefetch on idle(3000)) {
+            <nested-cmp [block]="'with-timeout'" />
+          } @placeholder {
+            With Timeout Placeholder
+          }
+        `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class RootCmp {
+        loadFirst = false;
+        loadSecond = false;
+      }
+
+      let loadingFnInvokedTimes = 0;
+      const deferDepsInterceptor = {
+        intercept() {
+          return () => {
+            loadingFnInvokedTimes++;
+            return [dynamicImportOf(NestedCmp)];
+          };
+        },
+      };
+
+      TestBed.configureTestingModule({
+        providers: [{provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor}],
+      });
+
+      clearDirectiveDefs(RootCmp);
+
+      const fixture = TestBed.createComponent(RootCmp);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.outerHTML).toContain('No Timeout Placeholder');
+      expect(fixture.nativeElement.outerHTML).toContain('With Timeout Placeholder');
+
+      // Verify that idle callbacks were requested (one bucket per distinct timeout)
+      expect(idleCallbacksRequested).toBe(2);
+
+      // Make sure loading function is not yet invoked.
+      expect(loadingFnInvokedTimes).toBe(0);
+
+      triggerIdleCallbacks();
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      // Expect that invoked onIdle trigger for prefetching both blocks
+      expect(loadingFnInvokedTimes).toBe(2);
+
+      // Both placeholders should still be visible after prefetch
+      expect(fixture.nativeElement.outerHTML).toContain('No Timeout Placeholder');
+      expect(fixture.nativeElement.outerHTML).toContain('With Timeout Placeholder');
+
+      // Trigger first block
+      fixture.componentInstance.loadFirst = true;
+      fixture.detectChanges();
+
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      // Verify first block is rendered
+      expect(fixture.nativeElement.outerHTML).toContain(
+        '<nested-cmp ng-reflect-block="no-timeout">Rendering no-timeout block.</nested-cmp>',
+      );
+      expect(fixture.nativeElement.outerHTML).toContain('With Timeout Placeholder');
+    });
+
     it('should trigger fetching based on `on idle` only once', async () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -1954,6 +2446,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         items = ['a', 'b', 'c'];
@@ -2001,10 +2495,95 @@ describe('@defer', () => {
       expect(loadingFnInvokedTimes).toBe(1);
     });
 
+    it('should support `prefetch on idle(3000)` condition with timeout', async () => {
+      @Component({
+        selector: 'nested-cmp',
+        template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class NestedCmp {
+        @Input() block!: string;
+      }
+
+      @Component({
+        selector: 'root-app',
+        imports: [NestedCmp],
+        template: `
+          @defer (when deferCond; prefetch on idle(3000)) {
+            <nested-cmp [block]="'prefetched-with-timeout'" />
+          } @placeholder {
+            Placeholder for prefetch idle timeout test
+          }
+        `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
+      class RootCmp {
+        deferCond = false;
+      }
+
+      let loadingFnInvokedTimes = 0;
+      const deferDepsInterceptor = {
+        intercept() {
+          return () => {
+            loadingFnInvokedTimes++;
+            return [dynamicImportOf(NestedCmp)];
+          };
+        },
+      };
+
+      TestBed.configureTestingModule({
+        providers: [{provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor}],
+      });
+
+      clearDirectiveDefs(RootCmp);
+
+      const fixture = TestBed.createComponent(RootCmp);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.outerHTML).toContain(
+        'Placeholder for prefetch idle timeout test',
+      );
+
+      // Make sure loading function is not yet invoked.
+      expect(loadingFnInvokedTimes).toBe(0);
+
+      triggerIdleCallbacks();
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      // Expect that the loading resources function was invoked once (prefetch).
+      expect(loadingFnInvokedTimes).toBe(1);
+
+      // Expect that placeholder content is still rendered after prefetch.
+      expect(fixture.nativeElement.outerHTML).toContain(
+        'Placeholder for prefetch idle timeout test',
+      );
+
+      // Trigger main content.
+      fixture.componentInstance.deferCond = true;
+      fixture.detectChanges();
+
+      await allPendingDynamicImports();
+      fixture.detectChanges();
+
+      // Verify primary block content with prefetched resources.
+      const primaryBlockHTML = fixture.nativeElement.outerHTML;
+      expect(primaryBlockHTML).toContain(
+        '<nested-cmp ng-reflect-block="prefetched-with-timeout">Rendering prefetched-with-timeout block.</nested-cmp>',
+      );
+
+      // Expect that the loading resources function was not invoked again (counter remains 1).
+      expect(loadingFnInvokedTimes).toBe(1);
+    });
+
     it('should support `prefetch on immediate` condition', async () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -2020,6 +2599,8 @@ describe('@defer', () => {
             Placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         deferCond = false;
@@ -2082,6 +2663,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Primary block content.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -2090,6 +2673,8 @@ describe('@defer', () => {
       @Component({
         selector: 'another-nested-cmp',
         template: 'Nested block component.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class AnotherNestedCmp {}
 
@@ -2115,6 +2700,8 @@ describe('@defer', () => {
             Root block placeholder
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -2176,6 +2763,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -2193,6 +2782,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         items = ['a', 'b', 'c'];
@@ -2241,99 +2832,6 @@ describe('@defer', () => {
       expect(loadingFnInvokedTimes).toBe(1);
     });
 
-    it('should delay nested defer blocks with `on idle` triggers', async () => {
-      @Component({
-        selector: 'nested-cmp',
-        template: 'Primary block content.',
-      })
-      class NestedCmp {
-        @Input() block!: string;
-      }
-
-      @Component({
-        selector: 'another-nested-cmp',
-        template: 'Nested block component.',
-      })
-      class AnotherNestedCmp {}
-
-      @Component({
-        selector: 'root-app',
-        imports: [NestedCmp, AnotherNestedCmp],
-        template: `
-          @defer (on idle; prefetch on idle) {
-            <nested-cmp [block]="'primary for \`' + item + '\`'" />
-            <!--
-              Expecting that nested defer block would be initialized
-              in a subsequent "requestIdleCallback" call.
-            -->
-            @defer (on idle) {
-              <another-nested-cmp />
-            } @placeholder {
-              Nested block placeholder
-            } @loading {
-              Nested block loading
-            }
-          } @placeholder {
-            Root block placeholder
-          }
-        `,
-      })
-      class RootCmp {}
-
-      let loadingFnInvokedTimes = 0;
-      const deferDepsInterceptor = {
-        intercept() {
-          return () => {
-            loadingFnInvokedTimes++;
-            const nextDeferredComponent =
-              loadingFnInvokedTimes === 1 ? NestedCmp : AnotherNestedCmp;
-            return [dynamicImportOf(nextDeferredComponent)];
-          };
-        },
-      };
-
-      TestBed.configureTestingModule({
-        providers: [{provide: ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR, useValue: deferDepsInterceptor}],
-      });
-
-      clearDirectiveDefs(RootCmp);
-
-      const fixture = TestBed.createComponent(RootCmp);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.outerHTML).toContain('Root block placeholder');
-
-      // Make sure loading function is not yet invoked.
-      expect(loadingFnInvokedTimes).toBe(0);
-
-      // Trigger all scheduled callbacks and await all mocked dynamic imports.
-      triggerIdleCallbacks();
-      await allPendingDynamicImports();
-      fixture.detectChanges();
-
-      // Expect that the loading resources function was invoked once.
-      expect(loadingFnInvokedTimes).toBe(1);
-
-      // Verify primary blocks content.
-      expect(fixture.nativeElement.outerHTML).toContain('Primary block content');
-
-      // Verify that nested defer block is in a placeholder mode.
-      expect(fixture.nativeElement.outerHTML).toContain('Nested block placeholder');
-
-      // Expect that the loading resources function was not invoked again (counter remains 1).
-      expect(loadingFnInvokedTimes).toBe(1);
-
-      triggerIdleCallbacks();
-      await allPendingDynamicImports();
-      fixture.detectChanges();
-
-      // Verify that nested defer block now renders the main content.
-      expect(fixture.nativeElement.outerHTML).toContain('Nested block component');
-
-      // We loaded a nested block dependency, expect counter to be 2.
-      expect(loadingFnInvokedTimes).toBe(2);
-    });
-
     it('should clear idle handlers when defer block is triggered', async () => {
       @Component({
         selector: 'root-app',
@@ -2342,6 +2840,8 @@ describe('@defer', () => {
             Hello world!
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         isVisible = false;
@@ -2391,6 +2891,8 @@ describe('@defer', () => {
             </div>
           </div>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2405,7 +2907,11 @@ describe('@defer', () => {
     }));
 
     it('should resolve a trigger on a component outside the defer block', fakeAsync(() => {
-      @Component({selector: 'some-comp', template: '<button></button>'})
+      @Component({
+        selector: 'some-comp',
+        template: '<button></button>',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
       class SomeComp {}
 
       @Component({
@@ -2425,6 +2931,8 @@ describe('@defer', () => {
             </div>
           </div>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2453,6 +2961,8 @@ describe('@defer', () => {
             </div>
           </button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2483,6 +2993,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         cond = true;
@@ -2499,7 +3011,11 @@ describe('@defer', () => {
     }));
 
     it('should resolve a trigger that is on a component in a parent embedded view', fakeAsync(() => {
-      @Component({selector: 'some-comp', template: '<button></button>'})
+      @Component({
+        selector: 'some-comp',
+        template: '<button></button>',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
       class SomeComp {}
 
       @Component({
@@ -2519,6 +3035,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         cond = true;
@@ -2548,6 +3066,8 @@ describe('@defer', () => {
             </div>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2562,7 +3082,11 @@ describe('@defer', () => {
     }));
 
     it('should resolve a trigger that is a component inside the placeholder', fakeAsync(() => {
-      @Component({selector: 'some-comp', template: '<button></button>'})
+      @Component({
+        selector: 'some-comp',
+        template: '<button></button>',
+        changeDetection: ChangeDetectionStrategy.Eager,
+      })
       class SomeComp {}
 
       @Component({
@@ -2579,6 +3103,8 @@ describe('@defer', () => {
             </div>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2605,6 +3131,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2634,6 +3162,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2657,6 +3187,8 @@ describe('@defer', () => {
             <button>Placeholder</button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2686,6 +3218,8 @@ describe('@defer', () => {
             </div>
           </div>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2716,6 +3250,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2737,6 +3273,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2765,6 +3303,8 @@ describe('@defer', () => {
             <button #trigger></button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         renderBlock = true;
@@ -2795,6 +3335,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         renderBlock = true;
@@ -2825,6 +3367,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2854,6 +3398,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         // We need a `when` trigger here so that `on idle` doesn't get added automatically.
@@ -2900,6 +3446,8 @@ describe('@defer', () => {
             <button></button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         // We need a `when` trigger here so that `on idle` doesn't get added automatically.
@@ -2954,6 +3502,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -2982,6 +3532,8 @@ describe('@defer', () => {
             <button>Placeholder</button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3019,6 +3571,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3046,6 +3600,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3080,6 +3636,8 @@ describe('@defer', () => {
             <button #trigger></button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         renderBlock = true;
@@ -3116,6 +3674,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         renderBlock = true;
@@ -3150,6 +3710,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         // We need a `when` trigger here so that `on idle` doesn't get added automatically.
@@ -3202,6 +3764,8 @@ describe('@defer', () => {
             <button></button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         // We need a `when` trigger here so that `on idle` doesn't get added automatically.
@@ -3245,6 +3809,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -3262,6 +3828,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         items = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
@@ -3337,6 +3905,8 @@ describe('@defer', () => {
             placeholder[top]
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {}
 
@@ -3372,6 +3942,8 @@ describe('@defer', () => {
       @Component({
         selector: 'nested-cmp',
         template: 'Rendering {{ block }} block.',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class NestedCmp {
         @Input() block!: string;
@@ -3389,6 +3961,8 @@ describe('@defer', () => {
             }
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         shouldTrigger = false;
@@ -3469,6 +4043,8 @@ describe('@defer', () => {
             Hello world!
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         isVisible = false;
@@ -3599,6 +4175,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3623,6 +4201,8 @@ describe('@defer', () => {
             <button>Placeholder</button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3650,6 +4230,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3693,6 +4275,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3715,6 +4299,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3744,6 +4330,8 @@ describe('@defer', () => {
             <button #trigger></button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         renderBlock = true;
@@ -3775,6 +4363,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         renderBlock = true;
@@ -3808,6 +4398,8 @@ describe('@defer', () => {
             Two
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3843,6 +4435,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         // We need a `when` trigger here so that `on idle` doesn't get added automatically.
@@ -3890,6 +4484,8 @@ describe('@defer', () => {
             <button></button>
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         // We need a `when` trigger here so that `on idle` doesn't get added automatically.
@@ -3936,7 +4532,8 @@ describe('@defer', () => {
                 @placeholder {<button>p{{item}} </button>}
               }
            `,
-      })
+      
+        changeDetection: ChangeDetectionStrategy.Eager,})
       class MyCmp {
         items = [1, 2, 3, 4, 5, 6];
       }
@@ -3974,6 +4571,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -3995,6 +4594,8 @@ describe('@defer', () => {
           }
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -4029,6 +4630,8 @@ describe('@defer', () => {
 
           <button #trigger></button>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {}
 
@@ -4065,6 +4668,8 @@ describe('@defer', () => {
           <button #trigger></button>
           <div #prefetchTrigger></div>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -4112,6 +4717,8 @@ describe('@defer', () => {
           <button #trigger></button>
           <div #prefetchTrigger></div>
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         isVisible = false;
@@ -4178,12 +4785,16 @@ describe('@defer', () => {
         selector: 'parent-cmp',
         template: '<ng-content />',
         providers: [{provide: TokenA, useValue: 'TokenA.ParentCmp'}],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class ParentCmp {}
 
       @Component({
         selector: 'child-cmp',
         template: 'Token A: {{ parentTokenA }} | Token B: {{ parentTokenB }}',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class ChildCmp {
         parentTokenA = inject(TokenA);
@@ -4201,6 +4812,8 @@ describe('@defer', () => {
         `,
         imports: [ChildCmp, ParentCmp],
         providers: [{provide: TokenB, useValue: 'TokenB.RootCmp'}],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class RootCmp {
         isVisible = true;
@@ -4252,6 +4865,8 @@ describe('@defer', () => {
           selector: 'lazy',
           imports: [MyModule],
           template: ` Lazy Component! Token: {{ token }} `,
+
+          changeDetection: ChangeDetectionStrategy.Eager,
         })
         class Lazy {
           token = inject(TokenA);
@@ -4264,6 +4879,8 @@ describe('@defer', () => {
               <lazy />
             }
           `,
+
+          changeDetection: ChangeDetectionStrategy.Eager,
         })
         class Dialog {}
 
@@ -4271,6 +4888,8 @@ describe('@defer', () => {
           selector: 'app-root',
           providers: [{provide: TokenA, useValue: 'TokenA from RootCmp'}],
           template: ` <div #container></div> `,
+
+          changeDetection: ChangeDetectionStrategy.Eager,
         })
         class RootCmp {
           injector = inject(Injector);
@@ -4342,6 +4961,8 @@ describe('@defer', () => {
         selector: 'chart',
         template: 'Service:{{ svc.id }}|TokenA:{{ tokenA }}',
         standalone: false,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Chart {
         svc = inject(Service);
@@ -4359,6 +4980,8 @@ describe('@defer', () => {
         selector: 'chart-collection',
         template: '<chart />',
         imports: [ChartsModule],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class ChartCollectionComponent {}
 
@@ -4373,6 +4996,8 @@ describe('@defer', () => {
         `,
         imports: [ChartCollectionComponent],
         providers: [{provide: TokenA, useValue: 'MyCmp.A'}],
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class MyCmp {
         items = [1, 2, 3];
@@ -4434,6 +5059,8 @@ describe('@defer', () => {
       @Component({
         imports: [RouterOutlet],
         template: '<router-outlet />',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class App {}
 
@@ -4441,6 +5068,8 @@ describe('@defer', () => {
         selector: 'another-child',
         imports: [CommonModule, MyModuleA],
         template: 'another child: {{route.snapshot.url[0]}} | token: {{tokenA}}',
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class AnotherChild {
         route = inject(ActivatedRoute);
@@ -4458,6 +5087,8 @@ describe('@defer', () => {
             <another-child />
           }
         `,
+
+        changeDetection: ChangeDetectionStrategy.Eager,
       })
       class Child {
         route = inject(ActivatedRoute);
@@ -4516,5 +5147,306 @@ describe('@defer', () => {
       expect(app.nativeElement.innerHTML).toContain('child: b | token: root');
       expect(app.nativeElement.innerHTML).toContain('another child: b | token: nested');
     });
+  });
+});
+
+describe('IdleScheduler', () => {
+  let scheduler: IdleScheduler;
+  let customIdleService: CustomIdleService;
+
+  class CustomIdleService implements IdleService {
+    requestOnIdleSpy = jasmine.createSpy('requestOnIdleFn');
+
+    requestOnIdle(
+      callback: (deadline?: IdleDeadline) => void,
+      options?: IdleRequestOptions,
+    ): number {
+      return this.requestOnIdleSpy(callback, options);
+    }
+
+    cancelOnIdle(id: number): void {}
+  }
+
+  beforeEach(() => {
+    customIdleService = new CustomIdleService();
+    TestBed.configureTestingModule({
+      providers: [{provide: IDLE_SERVICE, useValue: customIdleService}],
+    });
+    scheduler = TestBed.inject(IdleScheduler);
+  });
+
+  afterEach(() => {
+    scheduler.ngOnDestroy();
+  });
+
+  it('should execute all callbacks when there is enough time', () => {
+    let capturedCb: ((deadline: any) => void) | null = null;
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any) => {
+      ricCount++;
+      capturedCb = cb;
+      return 100 + ricCount;
+    });
+
+    const cb1 = jasmine.createSpy('cb1');
+    const cb2 = jasmine.createSpy('cb2');
+
+    scheduler.add(cb1);
+    scheduler.add(cb2);
+
+    expect(ricCount).toBe(1);
+    expect(capturedCb).not.toBeNull();
+
+    const deadline = {
+      didTimeout: false,
+      timeRemaining: () => 10,
+    };
+
+    const previousCb = capturedCb!;
+    capturedCb = null;
+    previousCb(deadline);
+
+    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb2).toHaveBeenCalledTimes(1);
+
+    expect(ricCount).toBe(1); // No more scheduled
+    expect(capturedCb).toBeNull();
+  });
+
+  it('should split callbacks across requestIdleCallback invocations when deadline is reached', () => {
+    let capturedCb: ((deadline: any) => void) | null = null;
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any) => {
+      ricCount++;
+      capturedCb = cb;
+      return 100 + ricCount;
+    });
+
+    const cb1 = jasmine.createSpy('cb1');
+    const cb2 = jasmine.createSpy('cb2');
+    const cb3 = jasmine.createSpy('cb3');
+
+    scheduler.add(cb1);
+    scheduler.add(cb2);
+    scheduler.add(cb3);
+
+    expect(ricCount).toBe(1);
+    expect(capturedCb).not.toBeNull();
+
+    let timeRemainingCalls = 0;
+    let deadline = {
+      didTimeout: false,
+      timeRemaining: () => {
+        timeRemainingCalls++;
+        // 1st check (after cb1): return 10
+        // 2nd check (after cb2): return 0 -> should break
+        return timeRemainingCalls === 1 ? 10 : 0;
+      },
+    };
+
+    let previousCb = capturedCb!;
+    capturedCb = null;
+    previousCb(deadline);
+
+    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb2).toHaveBeenCalledTimes(1);
+    expect(cb3).toHaveBeenCalledTimes(0); // Did not run yet
+
+    expect(ricCount).toBe(2); // A new idle callback was scheduled
+    expect(capturedCb).not.toBeNull(); // with a new cb
+
+    // Invoke the second callback, this time with plenty of time
+    deadline = {
+      didTimeout: false,
+      timeRemaining: () => 10,
+    };
+
+    previousCb = capturedCb!;
+    capturedCb = null;
+    previousCb(deadline);
+
+    expect(cb3).toHaveBeenCalledTimes(1); // Now it ran
+
+    expect(ricCount).toBe(2); // No more idle callbacks scheduled
+    expect(capturedCb).toBeNull();
+  });
+
+  it('should ignore time remaining if didTimeout is true', () => {
+    let capturedCb: ((deadline: any) => void) | null = null;
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any) => {
+      ricCount++;
+      capturedCb = cb;
+      return 100 + ricCount;
+    });
+
+    const cb1 = jasmine.createSpy('cb1');
+    const cb2 = jasmine.createSpy('cb2');
+
+    scheduler.add(cb1);
+    scheduler.add(cb2);
+
+    expect(ricCount).toBe(1);
+    expect(capturedCb).not.toBeNull();
+
+    const deadline = {
+      didTimeout: true,
+      timeRemaining: () => 0, // Even with 0 time, didTimeout should force execution
+    };
+
+    const previousCb = capturedCb!;
+    capturedCb = null;
+    previousCb(deadline);
+
+    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb2).toHaveBeenCalledTimes(1);
+
+    expect(ricCount).toBe(1); // No more idle callbacks scheduled
+    expect(capturedCb).toBeNull();
+  });
+
+  it('should fallback properly if deadline is not passed in (setTimeout shim)', () => {
+    let capturedCb: ((deadline: any) => void) | null = null;
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any) => {
+      ricCount++;
+      capturedCb = cb;
+      return 100 + ricCount;
+    });
+
+    // Test with undefined (empty arguments, typical of setTimeout)
+    let cb1 = jasmine.createSpy('cb1');
+    scheduler.add(cb1);
+    capturedCb!(undefined);
+    expect(cb1).toHaveBeenCalledTimes(1);
+  });
+
+  it('should pass timeout option to idleService.requestOnIdle', () => {
+    let capturedOptions: any = undefined;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any, options: any) => {
+      capturedOptions = options;
+      return 1;
+    });
+
+    scheduler.add(jasmine.createSpy('cb'), {timeout: 500});
+
+    expect(customIdleService.requestOnIdleSpy).toHaveBeenCalledTimes(1);
+    expect(capturedOptions).toEqual({timeout: 500});
+  });
+
+  it('should not pass timeout option when timeout is not specified', () => {
+    let capturedOptions: any = 'NOT_CALLED';
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any, options: any) => {
+      capturedOptions = options;
+      return 1;
+    });
+
+    scheduler.add(jasmine.createSpy('cb'));
+
+    expect(customIdleService.requestOnIdleSpy).toHaveBeenCalledTimes(1);
+    expect(capturedOptions).toBeUndefined();
+  });
+
+  it('should create independent buckets for different timeouts', () => {
+    let capturedCbs: Array<(deadline: any) => void> = [];
+    let capturedOptions: any[] = [];
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any, options: any) => {
+      ricCount++;
+      capturedCbs.push(cb);
+      capturedOptions.push(options);
+      return 100 + ricCount;
+    });
+
+    const cb1 = jasmine.createSpy('cb1');
+    const cb2 = jasmine.createSpy('cb2');
+
+    // First callback with 1000ms timeout
+    scheduler.add(cb1, {timeout: 1000});
+    expect(ricCount).toBe(1);
+    expect(capturedOptions[0]).toEqual({timeout: 1000});
+
+    // Second callback with 200ms timeout → separate bucket, separate requestIdleCallback
+    scheduler.add(cb2, {timeout: 200});
+    expect(ricCount).toBe(2);
+    expect(capturedOptions[1]).toEqual({timeout: 200});
+
+    // Fire the 200ms bucket first (browser would call this sooner)
+    capturedCbs[1]({didTimeout: true, timeRemaining: () => 0});
+    expect(cb2).toHaveBeenCalledTimes(1);
+    expect(cb1).toHaveBeenCalledTimes(0); // Not in this bucket
+
+    // Fire the 1000ms bucket
+    capturedCbs[0]({didTimeout: true, timeRemaining: () => 0});
+    expect(cb1).toHaveBeenCalledTimes(1);
+  });
+
+  it('should batch callbacks with the same timeout into one bucket', () => {
+    let capturedCb: ((deadline: any) => void) | null = null;
+    let capturedOptions: any[] = [];
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any, options: any) => {
+      ricCount++;
+      capturedCb = cb;
+      capturedOptions.push(options);
+      return 100 + ricCount;
+    });
+
+    const cb1 = jasmine.createSpy('cb1');
+    const cb2 = jasmine.createSpy('cb2');
+
+    // Both callbacks with the same 500ms timeout → same bucket
+    scheduler.add(cb1, {timeout: 500});
+    scheduler.add(cb2, {timeout: 500});
+    expect(ricCount).toBe(1); // Only one requestIdleCallback
+    expect(capturedOptions[0]).toEqual({timeout: 500});
+
+    // Fire the bucket — both should run
+    capturedCb!({didTimeout: true, timeRemaining: () => 0});
+    expect(cb1).toHaveBeenCalledTimes(1);
+    expect(cb2).toHaveBeenCalledTimes(1);
+  });
+
+  it('should keep no-timeout bucket independent from timeout buckets', () => {
+    let capturedCbs: Array<(deadline: any) => void> = [];
+    let capturedOptions: any[] = [];
+    let ricCount = 0;
+
+    customIdleService.requestOnIdleSpy.and.callFake((cb: any, options: any) => {
+      ricCount++;
+      capturedCbs.push(cb);
+      capturedOptions.push(options);
+      return 100 + ricCount;
+    });
+
+    const cb1 = jasmine.createSpy('cb1');
+    const cb2 = jasmine.createSpy('cb2');
+
+    // No timeout
+    scheduler.add(cb1);
+    expect(ricCount).toBe(1);
+    expect(capturedOptions[0]).toBeUndefined();
+
+    // With 300ms timeout → separate bucket
+    scheduler.add(cb2, {timeout: 300});
+    expect(ricCount).toBe(2);
+    expect(capturedOptions[1]).toEqual({timeout: 300});
+
+    // Fire the 300ms bucket
+    capturedCbs[1]({didTimeout: true, timeRemaining: () => 0});
+    expect(cb2).toHaveBeenCalledTimes(1);
+    expect(cb1).toHaveBeenCalledTimes(0);
+
+    // Fire the no-timeout bucket
+    capturedCbs[0]({didTimeout: false, timeRemaining: () => 10});
+    expect(cb1).toHaveBeenCalledTimes(1);
   });
 });

@@ -6,24 +6,10 @@ By default, deferred content loads when the browser is idle. You can, however, c
 
 Deferrable views offer two types of loading trigger:
 
-<div class="docs-table docs-scroll-track-transparent">
-  <table>
-    <tr>
-      <td><code>on</code></td>
-      <td>
-        A trigger condition using a trigger from the list of built-in triggers.<br/>
-        For example: <code>@defer (on viewport)</code>
-      </td>
-    </tr>
-    <tr>
-      <td><code>when</code></td>
-      <td>
-        A condition as an expression which is evaluated for truthiness. When the expression is truthy, the placeholder is swapped with the lazily loaded content.<br/>
-        For example: <code>@defer (when customizedCondition)</code>
-      </td>
-    </tr>
-  </table>
-</div>
+| Trigger | Description                                                                                                                                                                                                    |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `on`    | A trigger condition using a trigger from the list of built-in triggers.<br/>For example: `@defer (on viewport)`                                                                                                |
+| `when`  | A condition as an expression which is evaluated for truthiness. When the expression is truthy, the placeholder is swapped with the lazily loaded content.<br/>For example: `@defer (when customizedCondition)` |
 
 If the `when` condition evaluates to `false`, the `defer` block is not reverted back to the placeholder. The swap is a one-time operation.
 
@@ -63,9 +49,8 @@ Next, update the template to include a button with the label "Show all comments"
 <button type="button" #showComments>Show all comments</button>
 
 @defer (on hover) {
-<article-comments />
+  <article-comments />
 } @placeholder (minimum 1s) {
-
   <p>Placeholder for comments</p>
 } @loading (minimum 1s; after 500ms) {
   <p>Loading comments...</p>
@@ -85,9 +70,8 @@ Update the `@defer` block in the template to use the `on interaction` trigger. P
 <button type="button" #showComments>Show all comments</button>
 
 @defer (on hover; on interaction(showComments)) {
-<article-comments />
+  <article-comments />
 } @placeholder (minimum 1s) {
-
   <p>Placeholder for comments</p>
 } @loading (minimum 1s; after 500ms) {
   <p>Loading comments...</p>

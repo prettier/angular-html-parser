@@ -6,15 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
-} from '@angular/core';
+import {Component, computed, inject, input, output, signal} from '@angular/core';
 import {MatIcon} from '@angular/material/icon';
 import {MatMenu, MatMenuItem, MatMenuTrigger} from '@angular/material/menu';
 import {MatSlideToggle} from '@angular/material/slide-toggle';
@@ -42,6 +34,7 @@ import {TabUpdate} from './tab-update/index';
 import {Settings} from '../application-services/settings';
 import {SUPPORTED_APIS} from '../application-providers/supported_apis';
 import {ButtonComponent} from '../shared/button/button.component';
+import {APP_DATA} from '../application-providers/app_data';
 
 type Tab = 'Components' | 'Profiler' | 'Router Tree' | 'Injector Tree' | 'Transfer State';
 
@@ -67,7 +60,6 @@ type Tab = 'Components' | 'Profiler' | 'Router Tree' | 'Injector Tree' | 'Transf
     ButtonComponent,
   ],
   providers: [TabUpdate],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DevToolsTabsComponent {
   public readonly frameManager = inject(FrameManager);
@@ -77,14 +69,13 @@ export class DevToolsTabsComponent {
   protected readonly settings = inject(Settings);
   protected readonly applicationEnvironment = inject(ApplicationEnvironment);
   protected readonly supportedApis = inject(SUPPORTED_APIS);
+  protected readonly appData = inject(APP_DATA);
 
-  protected readonly isHydrationEnabled = input(false);
   readonly frameSelected = output<Frame>();
 
   readonly inspectorRunning = signal(false);
 
   protected readonly showCommentNodes = this.settings.showCommentNodes;
-  protected readonly routerGraphEnabled = this.settings.routerGraphEnabled;
   protected readonly timingAPIEnabled = this.settings.timingAPIEnabled;
   protected readonly signalGraphEnabled = () => this.supportedApis().signals;
   protected readonly transferStateEnabled = this.settings.transferStateEnabled;
@@ -104,7 +95,7 @@ export class DevToolsTabsComponent {
     if (supportedApis.dependencyInjection) {
       tabs.push('Injector Tree');
     }
-    if (this.routerGraphEnabled() && this.routes().length > 0) {
+    if (supportedApis.routes && this.routes().length > 0) {
       tabs.push('Router Tree');
     }
     if (supportedApis.transferState && this.transferStateEnabled()) {
@@ -118,15 +109,6 @@ export class DevToolsTabsComponent {
     (window.chrome?.devtools as any)?.performance?.onProfilingStarted,
   );
   protected readonly TOP_LEVEL_FRAME_ID = TOP_LEVEL_FRAME_ID;
-
-  protected readonly angularVersion = input<string | undefined>();
-  readonly majorAngularVersion = computed(() => {
-    const version = this.angularVersion();
-    if (!version) {
-      return -1;
-    }
-    return parseInt(version.toString().split('.')[0], 10);
-  });
 
   protected readonly extensionVersion = signal('dev-build');
 
@@ -195,13 +177,6 @@ export class DevToolsTabsComponent {
     this.timingAPIEnabled()
       ? this.messageBus.emit('enableTimingAPI')
       : this.messageBus.emit('disableTimingAPI');
-  }
-
-  protected setRouterGraph(enabled: boolean): void {
-    this.routerGraphEnabled.set(enabled);
-    if (!enabled) {
-      this.activeTab.set('Components');
-    }
   }
 
   protected setTransferStateTab(enabled: boolean): void {

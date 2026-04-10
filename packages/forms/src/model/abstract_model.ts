@@ -31,6 +31,7 @@ import {
   hasValidator,
   removeValidators,
   toObservable,
+  Validators,
 } from '../validators';
 import type {FormArray} from './form_array';
 import type {FormGroup} from './form_group';
@@ -502,6 +503,9 @@ export abstract class AbstractControl<
   /** @internal */
   _updateOn?: FormHooks;
 
+  /** @internal */
+  _hasRequired = signal(false);
+
   private _parent: FormGroup | FormArray | null = null;
   private _asyncValidationSubscription: any;
 
@@ -550,7 +554,8 @@ export abstract class AbstractControl<
    * with a key-value pair for each member of the group.
    * * For a disabled `FormGroup`, the values of all controls as an object
    * with a key-value pair for each member of the group.
-   * * For a `FormArray`, the values of enabled controls as an array.
+   * * For an enabled `FormArray`, the values of enabled controls as an array.
+   * * For a disabled `FormArray`, the values of all controls as an array.
    *
    */
   public readonly value!: TValue;
@@ -581,6 +586,7 @@ export abstract class AbstractControl<
   }
   set validator(validatorFn: ValidatorFn | null) {
     this._rawValidators = this._composedValidatorFn = validatorFn;
+    this._updateHasRequiredValidator();
   }
 
   /**
@@ -653,7 +659,7 @@ export abstract class AbstractControl<
    * false otherwise.
    */
   get pending(): boolean {
-    return this.status == PENDING;
+    return this.status === PENDING;
   }
 
   /**
@@ -997,8 +1003,8 @@ export abstract class AbstractControl<
     this.touched = true;
 
     const sourceControl = opts.sourceControl ?? this;
-    if (this._parent && !opts.onlySelf) {
-      this._parent.markAsTouched({...opts, sourceControl});
+    if (!opts.onlySelf) {
+      this._parent?.markAsTouched({...opts, sourceControl});
     }
 
     if (changed && opts.emitEvent !== false) {
@@ -1087,8 +1093,8 @@ export abstract class AbstractControl<
       control.markAsUntouched({onlySelf: true, emitEvent: opts.emitEvent, sourceControl});
     });
 
-    if (this._parent && !opts.onlySelf) {
-      this._parent._updateTouched(opts, sourceControl);
+    if (!opts.onlySelf) {
+      this._parent?._updateTouched(opts, sourceControl);
     }
 
     if (changed && opts.emitEvent !== false) {
@@ -1131,8 +1137,8 @@ export abstract class AbstractControl<
     this.pristine = false;
 
     const sourceControl = opts.sourceControl ?? this;
-    if (this._parent && !opts.onlySelf) {
-      this._parent.markAsDirty({...opts, sourceControl});
+    if (!opts.onlySelf) {
+      this._parent?.markAsDirty({...opts, sourceControl});
     }
 
     if (changed && opts.emitEvent !== false) {
@@ -1184,8 +1190,8 @@ export abstract class AbstractControl<
       control.markAsPristine({onlySelf: true, emitEvent: opts.emitEvent});
     });
 
-    if (this._parent && !opts.onlySelf) {
-      this._parent._updatePristine(opts, sourceControl);
+    if (!opts.onlySelf) {
+      this._parent?._updatePristine(opts, sourceControl);
     }
 
     if (changed && opts.emitEvent !== false) {
@@ -1230,8 +1236,8 @@ export abstract class AbstractControl<
       (this.statusChanges as EventEmitter<FormControlStatus>).emit(this.status);
     }
 
-    if (this._parent && !opts.onlySelf) {
-      this._parent.markAsPending({...opts, sourceControl});
+    if (!opts.onlySelf) {
+      this._parent?.markAsPending({...opts, sourceControl});
     }
   }
 
@@ -1321,12 +1327,12 @@ export abstract class AbstractControl<
     opts: {onlySelf?: boolean; emitEvent?: boolean; skipPristineCheck?: boolean},
     sourceControl: AbstractControl,
   ): void {
-    if (this._parent && !opts.onlySelf) {
-      this._parent.updateValueAndValidity(opts);
+    if (!opts.onlySelf) {
+      this._parent?.updateValueAndValidity(opts);
       if (!opts.skipPristineCheck) {
-        this._parent._updatePristine({}, sourceControl);
+        this._parent?._updatePristine({}, sourceControl);
       }
-      this._parent._updateTouched({}, sourceControl);
+      this._parent?._updateTouched({}, sourceControl);
     }
   }
 
@@ -1415,8 +1421,8 @@ export abstract class AbstractControl<
       (this.statusChanges as EventEmitter<FormControlStatus>).emit(this.status);
     }
 
-    if (this._parent && !opts.onlySelf) {
-      this._parent.updateValueAndValidity({...opts, sourceControl});
+    if (!opts.onlySelf) {
+      this._parent?.updateValueAndValidity({...opts, sourceControl});
     }
   }
 
@@ -1604,7 +1610,7 @@ export abstract class AbstractControl<
    */
   getError(errorCode: string, path?: Array<string | number> | string): any {
     const control = path ? this.get(path) : this;
-    return control && control.errors ? control.errors[errorCode] : null;
+    return control?.errors ? control.errors[errorCode] : null;
   }
 
   /**
@@ -1729,8 +1735,8 @@ export abstract class AbstractControl<
     const changed = this.pristine !== newPristine;
     this.pristine = newPristine;
 
-    if (this._parent && !opts.onlySelf) {
-      this._parent._updatePristine(opts, changedControl);
+    if (!opts.onlySelf) {
+      this._parent?._updatePristine(opts, changedControl);
     }
 
     if (changed) {
@@ -1743,8 +1749,8 @@ export abstract class AbstractControl<
     this.touched = this._anyControlsTouched();
     this._events.next(new TouchedChangeEvent(this.touched, changedControl));
 
-    if (this._parent && !opts.onlySelf) {
-      this._parent._updateTouched(opts, changedControl);
+    if (!opts.onlySelf) {
+      this._parent?._updateTouched(opts, changedControl);
     }
   }
 
@@ -1768,8 +1774,7 @@ export abstract class AbstractControl<
    * @internal
    */
   private _parentMarkedDirty(onlySelf?: boolean): boolean {
-    const parentDirty = this._parent && this._parent.dirty;
-    return !onlySelf && !!parentDirty && !this._parent!._anyControlsDirty();
+    return !onlySelf && !!this._parent?.dirty && !this._parent!._anyControlsDirty();
   }
 
   /** @internal */
@@ -1785,6 +1790,7 @@ export abstract class AbstractControl<
   private _assignValidators(validators: ValidatorFn | ValidatorFn[] | null): void {
     this._rawValidators = Array.isArray(validators) ? validators.slice() : validators;
     this._composedValidatorFn = coerceToValidator(this._rawValidators);
+    this._updateHasRequiredValidator();
   }
 
   /**
@@ -1795,5 +1801,9 @@ export abstract class AbstractControl<
   private _assignAsyncValidators(validators: AsyncValidatorFn | AsyncValidatorFn[] | null): void {
     this._rawAsyncValidators = Array.isArray(validators) ? validators.slice() : validators;
     this._composedAsyncValidatorFn = coerceToAsyncValidator(this._rawAsyncValidators);
+  }
+
+  private _updateHasRequiredValidator(): void {
+    untracked(() => this._hasRequired.set(this.hasValidator(Validators.required)));
   }
 }

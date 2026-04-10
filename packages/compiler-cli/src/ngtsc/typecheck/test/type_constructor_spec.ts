@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 import ts from 'typescript';
+import {ClassPropertyMapping} from '@angular/compiler';
 
 import {
   absoluteFrom,
@@ -23,7 +24,7 @@ import {
   Reference,
   ReferenceEmitter,
 } from '../../imports';
-import {ClassPropertyMapping, InputMapping} from '../../metadata';
+import {InputMapping} from '../../metadata';
 import {NOOP_PERF_RECORDER} from '../../perf';
 import {TsCreateProgramDriver, UpdateMode} from '../../program_driver';
 import {isNamedClassDeclaration, TypeScriptReflectionHost} from '../../reflection';
@@ -38,6 +39,7 @@ import {
 import {DirectiveSourceManager} from '../src/source';
 import {TypeCheckFile} from '../src/type_check_file';
 import {ALL_ENABLED_CONFIG} from '../testing';
+import {TcbInputMapping} from '../api';
 
 runInEachFileSystem(() => {
   describe('ngtsc typechecking', () => {
@@ -64,7 +66,7 @@ runInEachFileSystem(() => {
         /* reflector */ null!,
         host,
       );
-      const sf = file.render(false /* removeComments */);
+      const sf = file.render();
       expect(sf).toContain('export const IS_A_MODULE = true;');
     });
 
@@ -123,7 +125,6 @@ TestClass.ngTypeCtor({value: 'test'});
             body: true,
             fields: {
               inputs: ClassPropertyMapping.fromMappedObject<InputMapping>({value: 'value'}),
-              queries: [],
             },
             coercedInputFields: new Set(),
           },
@@ -179,7 +180,6 @@ TestClass.ngTypeCtor({value: 'test'});
             body: true,
             fields: {
               inputs: ClassPropertyMapping.fromMappedObject<InputMapping>({value: 'value'}),
-              queries: ['queryField'],
             },
             coercedInputFields: new Set(),
           },
@@ -245,34 +245,27 @@ TestClass.ngTypeCtor({value: 'test'});
             fnName: 'ngTypeCtor',
             body: true,
             fields: {
-              inputs: ClassPropertyMapping.fromMappedObject<InputMapping>({
-                foo: 'foo',
-                bar: 'bar',
+              inputs: ClassPropertyMapping.fromMappedObject<TcbInputMapping>({
+                foo: {
+                  classPropertyName: 'foo',
+                  bindingPropertyName: 'foo',
+                  required: false,
+                  isSignal: false,
+                },
+                bar: {
+                  classPropertyName: 'bar',
+                  bindingPropertyName: 'bar',
+                  required: false,
+                  isSignal: false,
+                },
                 baz: {
                   classPropertyName: 'baz',
                   bindingPropertyName: 'baz',
                   required: false,
                   isSignal: false,
-                  transform: {
-                    type: new Reference(
-                      ts.factory.createUnionTypeNode([
-                        ts.factory.createKeywordTypeNode(ts.SyntaxKind.BooleanKeyword),
-                        ts.factory.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
-                      ]),
-                    ),
-                    node: ts.factory.createFunctionDeclaration(
-                      undefined,
-                      undefined,
-                      undefined,
-                      undefined,
-                      [],
-                      undefined,
-                      undefined,
-                    ),
-                  },
+                  transformType: 'boolean | string',
                 },
               }),
-              queries: [],
             },
             coercedInputFields: new Set(['bar', 'baz']),
           },

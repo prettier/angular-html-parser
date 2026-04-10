@@ -10,8 +10,8 @@ import {getSystemPath, normalize, virtualFs} from '@angular-devkit/core';
 import {TempScopedNodeJsSyncHost} from '@angular-devkit/core/node/testing';
 import {HostTree} from '@angular-devkit/schematics';
 import {SchematicTestRunner, UnitTestTree} from '@angular-devkit/schematics/testing/index.js';
-import {resolve} from 'node:path';
 import {rmSync} from 'node:fs';
+import {resolve} from 'node:path';
 
 describe('inject migration', () => {
   let runner: SchematicTestRunner;
@@ -334,33 +334,6 @@ describe('inject migration', () => {
     ]);
   });
 
-  it('should migrate an aliased decorator to use inject()', async () => {
-    writeFile(
-      '/dir.ts',
-      [
-        `import { Directive as NgDirective } from '@angular/core';`,
-        `import { Foo } from 'foo';`,
-        ``,
-        `@NgDirective()`,
-        `class MyDir {`,
-        `  constructor(private foo: Foo) {}`,
-        `}`,
-      ].join('\n'),
-    );
-
-    await runMigration();
-
-    expect(tree.readContent('/dir.ts').split('\n')).toEqual([
-      `import { Directive as NgDirective, inject } from '@angular/core';`,
-      `import { Foo } from 'foo';`,
-      ``,
-      `@NgDirective()`,
-      `class MyDir {`,
-      `  private foo = inject(Foo);`,
-      `}`,
-    ]);
-  });
-
   it('should only migrate classes in the specified directory', async () => {
     writeFile(
       '/should-migrate/dir.ts',
@@ -406,6 +379,76 @@ describe('inject migration', () => {
       ``,
       `@Directive()`,
       `class MyOtherDir {`,
+      `  constructor(private foo: Foo) {}`,
+      `}`,
+    ]);
+  });
+
+  it('should migrate files present in other workspace projects', async () => {
+    writeFile('/tsconfig.json', '{}');
+
+    // Multiple projects...
+    writeFile(
+      '/angular.json',
+      JSON.stringify({
+        version: 1,
+        projects: {
+          app: {root: '', architect: {build: {options: {tsConfig: './tsconfig.json'}}}},
+          lib: {root: 'lib', architect: {build: {options: {tsConfig: './lib/tsconfig.json'}}}},
+        },
+      }),
+    );
+
+    // The lib tsconfig includes only its own folder so the second program does see the file.
+    writeFile('/lib/tsconfig.json', JSON.stringify({include: ['**/*.ts']}));
+
+    // File that should be migrated exists only under the second project's folder.
+    writeFile(
+      '/lib/should-migrate/dir.ts',
+      [
+        `import { Directive } from '@angular/core';`,
+        `import { Foo } from 'foo';`,
+        ``,
+        `@Directive()`,
+        `class MyDir {`,
+        `  constructor(private foo: Foo) {}`,
+        `}`,
+      ].join('\n'),
+    );
+
+    // Unrelated file outside the specified path should remain unchanged.
+    writeFile(
+      '/other.ts',
+      [
+        `import { Directive } from '@angular/core';`,
+        `import { Foo } from 'foo';`,
+        ``,
+        `@Directive()`,
+        `class Other {`,
+        `  constructor(private foo: Foo) {}`,
+        `}`,
+      ].join('\n'),
+    );
+
+    // Files should be migrated under the path
+    await runMigration({path: 'lib/should-migrate'});
+
+    expect(tree.readContent('/lib/should-migrate/dir.ts').split('\n')).toEqual([
+      `import { Directive, inject } from '@angular/core';`,
+      `import { Foo } from 'foo';`,
+      ``,
+      `@Directive()`,
+      `class MyDir {`,
+      `  private foo = inject(Foo);`,
+      `}`,
+    ]);
+
+    expect(tree.readContent('/other.ts').split('\n')).toEqual([
+      `import { Directive } from '@angular/core';`,
+      `import { Foo } from 'foo';`,
+      ``,
+      `@Directive()`,
+      `class Other {`,
       `  constructor(private foo: Foo) {}`,
       `}`,
     ]);

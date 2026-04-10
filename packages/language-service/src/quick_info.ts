@@ -111,8 +111,9 @@ export class QuickInfoBuilder {
       case SymbolKind.SelectorlessDirective:
         return this.getQuickInfoForSelectorlessSymbol(symbol);
       case SymbolKind.Expression:
-      case SymbolKind.Directive:
         return this.getQuickInfoAtTcbLocation(symbol.tcbLocation);
+      case SymbolKind.Directive:
+        return this.getQuickInfoForDirectiveSymbol(symbol);
     }
   }
 
@@ -144,31 +145,38 @@ export class QuickInfoBuilder {
       DisplayInfoKind.ELEMENT,
       getTextSpanOfNode(templateNode),
       undefined /* containerName */,
-      this.typeChecker.typeToString(symbol.tsType),
+      this.typeChecker.typeToString(
+        this.compiler.getTemplateTypeChecker().getTypeOfSymbol(symbol)!,
+      ),
     );
   }
 
-  private getQuickInfoForVariableSymbol(symbol: VariableSymbol): ts.QuickInfo {
-    const info = this.getQuickInfoFromTypeDefAtLocation(symbol.initializerLocation);
-    return createQuickInfo(
-      symbol.declaration.name,
-      DisplayInfoKind.VARIABLE,
-      getTextSpanOfNode(this.node),
-      undefined /* containerName */,
-      this.typeChecker.typeToString(symbol.tsType),
-      info?.documentation,
-      info?.tags,
-    );
+  private getQuickInfoForVariableSymbol(symbol: VariableSymbol): ts.QuickInfo | undefined {
+    const quickInfo = this.getQuickInfoAtTcbLocation(symbol.localVarLocation);
+    if (quickInfo === undefined || quickInfo.displayParts === undefined) {
+      return quickInfo;
+    }
+
+    for (const part of quickInfo.displayParts) {
+      if (part.kind === 'localName') {
+        part.text = symbol.declaration.name;
+        break;
+      }
+    }
+
+    return updateQuickInfoKind(quickInfo, DisplayInfoKind.VARIABLE);
   }
 
   private getQuickInfoForLetDeclarationSymbol(symbol: LetDeclarationSymbol): ts.QuickInfo {
-    const info = this.getQuickInfoFromTypeDefAtLocation(symbol.initializerLocation);
+    const info = this.getQuickInfoAtTcbLocation(symbol.localVarLocation);
     return createQuickInfo(
       symbol.declaration.name,
       DisplayInfoKind.LET,
       getTextSpanOfNode(this.node),
       undefined /* containerName */,
-      this.typeChecker.typeToString(symbol.tsType),
+      this.typeChecker.typeToString(
+        this.compiler.getTemplateTypeChecker().getTypeOfSymbol(symbol)!,
+      ),
       info?.documentation,
       info?.tags,
     );
@@ -181,21 +189,25 @@ export class QuickInfoBuilder {
       DisplayInfoKind.REFERENCE,
       getTextSpanOfNode(this.node),
       undefined /* containerName */,
-      this.typeChecker.typeToString(symbol.tsType),
+      this.typeChecker.typeToString(
+        this.compiler.getTemplateTypeChecker().getTypeOfSymbol(symbol)!,
+      ),
       info?.documentation,
       info?.tags,
     );
   }
 
   private getQuickInfoForPipeSymbol(symbol: PipeSymbol): ts.QuickInfo | undefined {
-    if (symbol.tsSymbol !== null) {
+    if (this.compiler.getTemplateTypeChecker().getTsSymbolOfSymbol(symbol) !== null) {
       const quickInfo = this.getQuickInfoAtTcbLocation(symbol.tcbLocation);
       return quickInfo === undefined
         ? undefined
         : updateQuickInfoKind(quickInfo, DisplayInfoKind.PIPE);
     } else {
       return createQuickInfo(
-        this.typeChecker.typeToString(symbol.classSymbol.tsType),
+        this.typeChecker.typeToString(
+          this.compiler.getTemplateTypeChecker().getTypeOfSymbol(symbol.classSymbol)!,
+        ),
         DisplayInfoKind.PIPE,
         getTextSpanOfNode(this.node),
       );
@@ -226,12 +238,17 @@ export class QuickInfoBuilder {
     const kind = dir.isComponent ? DisplayInfoKind.COMPONENT : DisplayInfoKind.DIRECTIVE;
     const info = this.getQuickInfoFromTypeDefAtLocation(dir.tcbLocation);
     let containerName: string | undefined;
-    if (ts.isClassDeclaration(dir.tsSymbol.valueDeclaration) && dir.ngModule !== null) {
+    const tsSymbol = this.compiler.getTemplateTypeChecker().getTsSymbolOfSymbol(dir);
+    if (
+      tsSymbol?.valueDeclaration &&
+      ts.isClassDeclaration(tsSymbol.valueDeclaration) &&
+      dir.ngModule !== null
+    ) {
       containerName = dir.ngModule.name.getText();
     }
 
     return createQuickInfo(
-      this.typeChecker.typeToString(dir.tsType),
+      this.typeChecker.typeToString(this.compiler.getTemplateTypeChecker().getTypeOfSymbol(dir)!),
       kind,
       getTextSpanOfNode(this.node),
       containerName,
@@ -251,7 +268,9 @@ export class QuickInfoBuilder {
     const info = this.getQuickInfoFromTypeDefAtLocation(symbol.tcbLocation);
 
     return createQuickInfo(
-      this.typeChecker.typeToString(symbol.tsType),
+      this.typeChecker.typeToString(
+        this.compiler.getTemplateTypeChecker().getTypeOfSymbol(symbol)!,
+      ),
       kind,
       getTextSpanOfNode(this.node),
       undefined,

@@ -52,12 +52,19 @@ export {publishFacade} from './jit_compiler_facade';
 export * from './ml_parser/ast';
 export * from './ml_parser/html_parser';
 export * from './ml_parser/html_tags';
+export {
+  ClassPropertyMapping,
+  ClassPropertyName,
+  InputOrOutput,
+  BindingPropertyName,
+} from './property_mapping';
+export {MatchSource} from './render3/view/t2_api';
 export {LexerRange} from './ml_parser/lexer';
 export {ParseTreeResult, TreeError} from './ml_parser/parser';
 export * from './ml_parser/tags';
 export {TokenType as LexerTokenType} from './ml_parser/tokens';
 export * from './ml_parser/xml_parser';
-export {EmitterVisitorContext} from './output/abstract_emitter';
+export {EmitterVisitorContext, AbstractEmitterVisitor} from './output/abstract_emitter';
 export {
   ArrayType,
   ArrowFunctionExpr,
@@ -169,6 +176,7 @@ export {
   SwitchBlock as TmplAstSwitchBlock,
   SwitchBlockCase as TmplAstSwitchBlockCase,
   SwitchBlockCaseGroup as TmplAstSwitchBlockCaseGroup,
+  SwitchExhaustiveCheck as TmplAstSwitchExhaustiveCheck,
   Template as TmplAstTemplate,
   Text as TmplAstText,
   TextAttribute as TmplAstTextAttribute,

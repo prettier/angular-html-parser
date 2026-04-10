@@ -149,12 +149,12 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler, O
     }
 
     switch (source) {
-      case NotificationSource.MarkAncestorsForTraversal: {
+      case NotificationSource.MarkAncestorsForTraversal:
+      case NotificationSource.DeferBlockStateUpdate: {
         this.appRef.dirtyFlags |= ApplicationRefDirtyFlags.ViewTreeTraversal;
         break;
       }
       case NotificationSource.DebugApplyChanges:
-      case NotificationSource.DeferBlockStateUpdate:
       case NotificationSource.MarkForCheck:
       case NotificationSource.Listener:
       case NotificationSource.SetInput: {
@@ -331,6 +331,8 @@ export class ChangeDetectionSchedulerImpl implements ChangeDetectionScheduler, O
 /**
  * Provides change detection without ZoneJS for the application bootstrapped using
  * `bootstrapApplication`.
+ *
+ * NOTE: Zoneless is enabled by default in Angular v21+. Ensure `provideZoneChangeDetection` is not used to override this default.
  *
  * This function allows you to configure the application to not use the state/state changes of
  * ZoneJS to schedule change detection in the application. This will work when ZoneJS is not present

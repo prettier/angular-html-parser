@@ -12,6 +12,7 @@ import {
   R3TargetBinder,
   SelectorMatcher,
   TmplAstElement,
+  MatchSource,
 } from '@angular/compiler';
 import ts from 'typescript';
 
@@ -127,6 +128,9 @@ runInEachFileSystem(() => {
       const analysis = analyzeDirective(program, 'TestDir');
       const matcher = new SelectorMatcher<T2DirectiveMeta[]>();
       const dirMeta: T2DirectiveMeta = {
+        ref: {
+          key: 'TestDir',
+        },
         exportAs: null,
         inputs: analysis.inputs,
         outputs: analysis.outputs,
@@ -137,6 +141,7 @@ runInEachFileSystem(() => {
         animationTriggerNames: null,
         ngContentSelectors: null,
         preserveWhitespaces: false,
+        matchSource: MatchSource.Selector,
       };
       matcher.addSelectables(CssSelector.parse('[dir]'), [dirMeta]);
 

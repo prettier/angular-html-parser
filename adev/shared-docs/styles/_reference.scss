@@ -51,7 +51,7 @@
     }
 
     .docs-reference-category {
-      color: var(--gray-400);
+      color: var(--quaternary-contrast);
       font-size: 0.875rem;
       font-weight: 500;
       line-height: 1.4rem;
@@ -260,7 +260,7 @@
           background-color: var(--septenary-contrast);
         }
 
-        &:focus {
+        &:focus-visible {
           background-color: var(--senary-contrast);
 
           span {
@@ -425,6 +425,14 @@
 
       .docs-ref-content {
         padding: 1rem 0;
+
+        .docs-ref-option-and-description {
+          .docs-reference-option {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+        }
 
         &:not(:first-child) {
           border-block-start: 1px solid var(--senary-contrast);

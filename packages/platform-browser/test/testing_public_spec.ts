@@ -8,9 +8,9 @@
 
 import {ResourceLoader} from '@angular/compiler';
 import {
+  ChangeDetectionStrategy,
   Compiler,
   Component,
-  ComponentFactoryResolver,
   CUSTOM_ELEMENTS_SCHEMA,
   Directive,
   Inject,
@@ -21,8 +21,8 @@ import {
   NgModule,
   Optional,
   Pipe,
-  TransferState,
   SkipSelf,
+  TransferState,
   Type,
 } from '@angular/core';
 import {
@@ -34,8 +34,8 @@ import {
   waitForAsync,
   withModule,
 } from '@angular/core/testing';
-import {expect} from '@angular/private/testing/matchers';
 import {isBrowser} from '@angular/private/testing';
+import {expect} from '@angular/private/testing/matchers';
 
 // Services, and components for the tests.
 
@@ -72,6 +72,7 @@ class ParentComp {}
   selector: 'my-if-comp',
   template: `MyIf(<span *ngIf="showMore">More</span>)`,
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 @Injectable()
 class MyIfComp {
@@ -522,16 +523,6 @@ describe('public testing API', () => {
     });
 
     describe('overriding providers', () => {
-      describe('in core', () => {
-        it('ComponentFactoryResolver', () => {
-          const componentFactoryMock = jasmine.createSpyObj('componentFactory', [
-            'resolveComponentFactory',
-          ]);
-          TestBed.overrideProvider(ComponentFactoryResolver, {useValue: componentFactoryMock});
-          expect(TestBed.inject(ComponentFactoryResolver)).toEqual(componentFactoryMock);
-        });
-      });
-
       describe('in NgModules', () => {
         it('should support useValue', () => {
           TestBed.configureTestingModule({
@@ -1103,6 +1094,29 @@ Did you run and wait for 'resolveComponentResources()'?`);
       componentFixture.detectChanges();
       expect(componentFixture.nativeElement).toHaveText('injected value: mocked out value');
     }));
+
+    describe('getLastFixture', () => {
+      it('should return the last created fixture', () => {
+        const fixture = TestBed.createComponent(ChildComp);
+        expect(TestBed.getLastFixture()).toBe(fixture);
+      });
+
+      it('should throw if no fixture has been created', () => {
+        expect(() => TestBed.getLastFixture()).toThrowError('No fixture has been created yet.');
+      });
+
+      it('should return the last fixture when multiple fixtures are present', () => {
+        TestBed.createComponent(ChildComp);
+        const parentFixture = TestBed.createComponent(ParentComp);
+        expect(TestBed.getLastFixture()).toBe(parentFixture);
+      });
+
+      it('should clear the fixture after reset', () => {
+        TestBed.createComponent(ChildComp);
+        TestBed.resetTestingModule();
+        expect(() => TestBed.getLastFixture()).toThrowError('No fixture has been created yet.');
+      });
+    });
   });
   describe('using alternate components', () => {
     beforeEach(() => {

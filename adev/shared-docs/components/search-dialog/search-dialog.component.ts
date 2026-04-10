@@ -8,7 +8,6 @@
 
 import {
   afterNextRender,
-  ChangeDetectionStrategy,
   Component,
   DestroyRef,
   effect,
@@ -36,7 +35,6 @@ import {TextField} from '../text-field/text-field.component';
 
 @Component({
   selector: 'docs-search-dialog',
-  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     ClickOutside,
     TextField,
@@ -95,9 +93,6 @@ export class SearchDialog {
         if (!this.dialog().nativeElement.open) {
           this.dialog().nativeElement.showModal?.();
         }
-        // We want to select the pre-existing text on opening
-        // In order to change the search input with minimal user interaction.
-        this.searchForm().focusBoundControl();
       },
     });
 

@@ -26,7 +26,7 @@ describe('Viewing component metadata', () => {
     });
 
     it('should display change detection strategy', () => {
-      cy.contains('ng-component-metadata', 'Change Detection Strategy: Default');
+      cy.contains('ng-component-metadata', 'Change Detection Strategy: OnPush');
     });
   });
 
@@ -40,7 +40,7 @@ describe('Viewing component metadata', () => {
     });
 
     it('should display change detection strategy', () => {
-      cy.contains('ng-component-metadata', 'Change Detection Strategy: Default');
+      cy.contains('ng-component-metadata', 'Change Detection Strategy: OnPush');
     });
 
     it('should display correct set of inputs', () => {
@@ -57,7 +57,7 @@ describe('Viewing component metadata', () => {
 
     it('should display correct set of properties', () => {
       cy.contains('.mat-accordion-content#Properties', 'Properties');
-      cy.contains('.mat-accordion-content#Properties mat-tree-node:first span:first', 'elementRef');
+      cy.contains('.mat-accordion-content#Properties mat-tree-node:first span:first', 'demoRsrc');
       cy.contains('.mat-accordion-content#Properties mat-tree-node:last span:first', 'zippy');
     });
   });

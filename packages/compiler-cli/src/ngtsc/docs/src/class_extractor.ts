@@ -6,17 +6,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {InputOrOutput} from '@angular/compiler';
 import ts from 'typescript';
 
 import {Reference} from '../../imports';
-import {
-  DirectiveMeta,
-  InputMapping,
-  InputOrOutput,
-  MetadataReader,
-  NgModuleMeta,
-  PipeMeta,
-} from '../../metadata';
+import {DirectiveMeta, InputMapping, MetadataReader, PipeMeta} from '../../metadata';
 
 import {
   ClassEntry,
@@ -166,7 +160,6 @@ class NgModuleExtractor extends ClassExtractor {
   constructor(
     declaration: {name: ts.Identifier} & ts.ClassDeclaration,
     protected reference: Reference,
-    private metadata: NgModuleMeta,
     typeChecker: ts.TypeChecker,
   ) {
     super(declaration, typeChecker);
@@ -199,7 +192,7 @@ export function extractClass(
   } else if (pipeMetadata) {
     extractor = new PipeExtractor(classDeclaration, ref, pipeMetadata, typeChecker);
   } else if (ngModuleMetadata) {
-    extractor = new NgModuleExtractor(classDeclaration, ref, ngModuleMetadata, typeChecker);
+    extractor = new NgModuleExtractor(classDeclaration, ref, typeChecker);
   } else {
     extractor = new ClassExtractor(classDeclaration, typeChecker);
   }

@@ -40,7 +40,7 @@ describe('type check blocks diagnostics', () => {
       // statement, which would wrap it into parenthesis that clutter the expected output.
       const TEMPLATE = '{{ m({foo: a, bar: b}) }}';
       expect(tcbWithSpans(TEMPLATE)).toContain(
-        '(this).m /*3,4*/({ "foo" /*6,9*/: ((this).a /*11,12*/) /*11,12*/, "bar" /*14,17*/: ((this).b /*19,20*/) /*19,20*/ } /*5,21*/) /*3,22*/',
+        '((this).m /*3,4*/(({ "foo" /*6,9*/: ((this).a /*11,12*/) /*11,12*/, "bar" /*14,17*/: ((this).b /*19,20*/) /*19,20*/ } /*5,21*/)) /*3,22*/)',
       );
     });
 
@@ -49,7 +49,7 @@ describe('type check blocks diagnostics', () => {
       // statement, which would wrap it into parenthesis that clutter the expected output.
       const TEMPLATE = '{{ m({a, b}) }}';
       expect(tcbWithSpans(TEMPLATE)).toContain(
-        '((this).m /*3,4*/({ "a" /*6,7*/: ((this).a /*6,7*/) /*6,7*/, "b" /*9,10*/: ((this).b /*9,10*/) /*9,10*/ } /*5,11*/) /*3,12*/)',
+        '((this).m /*3,4*/(({ "a" /*6,7*/: ((this).a /*6,7*/) /*6,7*/, "b" /*9,10*/: ((this).b /*9,10*/) /*9,10*/ } /*5,11*/)) /*3,12*/)',
       );
     });
 
@@ -140,22 +140,20 @@ describe('type check blocks diagnostics', () => {
 
     it('should annotate safe property access', () => {
       const TEMPLATE = `{{ a?.b }}`;
-      expect(tcbWithSpans(TEMPLATE)).toContain(
-        '(0 as any ? (((this).a /*3,4*/) /*3,4*/)!.b /*6,7*/ : undefined) /*3,7*/',
-      );
+      expect(tcbWithSpans(TEMPLATE)).toContain('((((this).a /*3,4*/) /*3,4*/)?.b /*6,7*/ /*3,7*/');
     });
 
     it('should annotate safe method calls', () => {
       const TEMPLATE = `{{ a?.method(b) }}`;
       expect(tcbWithSpans(TEMPLATE)).toContain(
-        '((0 as any ? (0 as any ? (((this).a /*3,4*/) /*3,4*/)!.method /*6,12*/ : undefined) /*3,12*/!(((this).b /*13,14*/) /*13,14*/) : undefined) /*3,15*/)',
+        '((0 as any ? (((this).a /*3,4*/) /*3,4*/)?.method /*6,12*/ /*3,12*/!(((this).b /*13,14*/) /*13,14*/) : undefined) /*3,15*/)',
       );
     });
 
     it('should annotate safe keyed reads', () => {
       const TEMPLATE = `{{ a?.[0] }}`;
       expect(tcbWithSpans(TEMPLATE)).toContain(
-        '(0 as any ? (((this).a /*3,4*/) /*3,4*/)![0 /*7,8*/] /*3,9*/ : undefined) /*3,9*/',
+        '((((this).a /*3,4*/) /*3,4*/)?.[0 /*7,8*/] /*3,9*/)',
       );
     });
 

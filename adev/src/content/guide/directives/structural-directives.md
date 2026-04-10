@@ -31,7 +31,7 @@ Structural directives can be applied directly on an element by prefixing the dir
 You can use this with `SelectDirective` as follows:
 
 ```angular-html
-<p *select="let data from source">The data is: {{data}}</p>
+<p *select="let data; from: source">The data is: {{ data }}</p>
 ```
 
 This example shows the flexibility of structural directive shorthand syntax, which is sometimes called _microsyntax_.
@@ -40,11 +40,11 @@ When used in this way, only the structural directive and its bindings are applie
 
 ```angular-html
 <!-- Shorthand syntax: -->
-<p class="data-view" *select="let data from source">The data is: {{data}}</p>
+<p class="data-view" *select="let data; from: source">The data is: {{ data }}</p>
 
 <!-- Long-form syntax: -->
 <ng-template select let-data [selectFrom]="source">
-  <p class="data-view">The data is: {{data}}</p>
+  <p class="data-view">The data is: {{ data }}</p>
 </ng-template>
 ```
 
@@ -56,7 +56,7 @@ The second piece of syntax is a key-expression pair, `from source`. `from` is a 
 
 ## One structural directive per element
 
-You can only apply one structural directive per element when using the shorthand syntax. This is because there is only one `<ng-template>` element onto which that directive gets unwrapped. Multiple directives would require multiple nested `<ng-template>`, and it's unclear which directive should be first. `<ng-container>` can be used when to create wrapper layers when multiple structural directives need to be applied around the same physical DOM element or component, which allows the user to define the nested structure.
+You can only apply one structural directive per element when using the shorthand syntax. This is because there is only one `<ng-template>` element onto which that directive gets unwrapped. Multiple directives would require multiple nested `<ng-template>`, and it's unclear which directive should be first. `<ng-container>` can be used to create wrapper layers when multiple structural directives need to be applied around the same physical DOM element or component, which allows the user to define the nested structure.
 
 ## Creating a structural directive
 

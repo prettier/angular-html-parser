@@ -6,19 +6,16 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {ChangeDetectionStrategy, Component, inject, signal} from '@angular/core';
-import {Step, RECOMMENDATIONS, ApplicationComplexity} from './recommendations';
 import {Clipboard} from '@angular/cdk/clipboard';
-import {CdkMenuModule} from '@angular/cdk/menu';
-import {MatCheckboxModule} from '@angular/material/checkbox';
-import {MatInputModule} from '@angular/material/input';
-import {MatCardModule} from '@angular/material/card';
-import {MatGridListModule} from '@angular/material/grid-list';
-import {MatButtonToggleModule} from '@angular/material/button-toggle';
+import {CdkMenu, CdkMenuItem, CdkMenuTrigger} from '@angular/cdk/menu';
+import {Component, inject, signal} from '@angular/core';
 import {IconComponent} from '@angular/docs';
+import {MatButtonToggle, MatButtonToggleGroup} from '@angular/material/button-toggle';
+import {MatCheckbox} from '@angular/material/checkbox';
+import {MatSnackBar} from '@angular/material/snack-bar';
 import {ActivatedRoute, Router} from '@angular/router';
 import {marked} from 'marked';
-import {MatSnackBar} from '@angular/material/snack-bar';
+import {ApplicationComplexity, RECOMMENDATIONS, Step} from './recommendations';
 
 interface Option {
   id: keyof Step;
@@ -33,15 +30,14 @@ const isWindows = typeof window !== 'undefined' && window.navigator.userAgent.in
   templateUrl: './update.component.html',
   styleUrl: './update.component.scss',
   imports: [
-    MatCheckboxModule,
-    MatInputModule,
-    MatCardModule,
-    MatGridListModule,
-    MatButtonToggleModule,
-    CdkMenuModule,
+    MatCheckbox,
+    MatButtonToggleGroup,
+    MatButtonToggle,
+    CdkMenuTrigger,
+    CdkMenu,
+    CdkMenuItem,
     IconComponent,
   ],
-  changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(click)': 'copyCode($event)',
   },
@@ -111,7 +107,7 @@ export default class UpdateComponent {
   ];
   protected from = this.versions.find((version) => version.name === '20.0')!;
   protected to = this.versions.find((version) => version.name === '21.0')!;
-  protected futureVersion = 2100;
+  protected futureVersion = 2200;
 
   protected readonly steps: Step[] = RECOMMENDATIONS;
 

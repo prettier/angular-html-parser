@@ -15,8 +15,8 @@ Let's start with a minimal implementation and add features as needed.
 A basic custom input only needs to implement the `FormValueControl` interface and define the required `value` model signal.
 
 ```angular-ts
-import { Component, model } from '@angular/core';
-import { FormValueControl } from '@angular/forms/signals';
+import {Component, model} from '@angular/core';
+import {FormValueControl} from '@angular/forms/signals';
 
 @Component({
   selector: 'app-basic-input',
@@ -45,28 +45,23 @@ A checkbox-style control needs two things:
 2. Provide a `checked` model signal
 
 ```angular-ts
-import { Component, model, ChangeDetectionStrategy } from '@angular/core';
-import { FormCheckboxControl } from '@angular/forms/signals';
+import {Component, model, ChangeDetectionStrategy} from '@angular/core';
+import {FormCheckboxControl} from '@angular/forms/signals';
 
 @Component({
   selector: 'app-basic-toggle',
   template: `
-    <button
-      type="button"
-      [class.active]="checked()"
-      (click)="toggle()"
-    >
+    <button type="button" [class.active]="checked()" (click)="toggle()">
       <span class="toggle-slider"></span>
     </button>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BasicToggle implements FormCheckboxControl {
   /** Whether the toggle is checked */
   checked = model<boolean>(false);
 
   toggle() {
-    this.checked.update(val => !val);
+    this.checked.update((val) => !val);
   }
 }
 ```
@@ -76,15 +71,15 @@ export class BasicToggle implements FormCheckboxControl {
 Once you've created a control, you can use it anywhere you would use a built-in input by adding the `FormField` directive to it:
 
 ```angular-ts
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
-import { BasicInput } from './basic-input';
-import { BasicToggle } from './basic-toggle';
+import {Component, signal, ChangeDetectionStrategy} from '@angular/core';
+import {form, FormField, required} from '@angular/forms/signals';
+import {BasicInput} from './basic-input';
+import {BasicToggle} from './basic-toggle';
 
 @Component({
   imports: [FormField, BasicInput, BasicToggle],
   template: `
-    <form>
+    <form novalidate>
       <label>
         Email
         <app-basic-input [formField]="registrationForm.email" />
@@ -95,25 +90,19 @@ import { BasicToggle } from './basic-toggle';
         <app-basic-toggle [formField]="registrationForm.acceptTerms" />
       </label>
 
-      <button
-        type="submit"
-        [disabled]="registrationForm().invalid()"
-      >
-        Register
-      </button>
+      <button type="submit" [disabled]="registrationForm().invalid()">Register</button>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Registration {
   registrationModel = signal({
     email: '',
-    acceptTerms: false
+    acceptTerms: false,
   });
 
   registrationForm = form(this.registrationModel, (schemaPath) => {
-    required(schemaPath.email, { message: 'Email is required' });
-    required(schemaPath.acceptTerms, { message: 'You must accept the terms' });
+    required(schemaPath.email, {message: 'Email is required'});
+    required(schemaPath.acceptTerms, {message: 'You must accept the terms'});
   });
 }
 ```
@@ -213,30 +202,29 @@ The "[Adding state signals](#adding-state-signals)" section below shows how to i
 The `[formField]` directive detects which interface your control implements and automatically binds the appropriate signals:
 
 ```angular-ts
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
-import { CustomInput } from './custom-input';
-import { CustomToggle } from './custom-toggle';
+import {Component, signal, ChangeDetectionStrategy} from '@angular/core';
+import {form, FormField, required} from '@angular/forms/signals';
+import {CustomInput} from './custom-input';
+import {CustomToggle} from './custom-toggle';
 
 @Component({
   selector: 'app-my-form',
   imports: [FormField, CustomInput, CustomToggle],
   template: `
-    <form>
+    <form novalidate>
       <app-custom-input [formField]="userForm.username" />
       <app-custom-toggle [formField]="userForm.subscribe" />
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MyForm {
   formModel = signal({
     username: '',
-    subscribe: false
+    subscribe: false,
   });
 
   userForm = form(this.formModel, (schemaPath) => {
-    required(schemaPath.username, { message: 'Username is required' });
+    required(schemaPath.username, {message: 'Username is required'});
   });
 }
 ```
@@ -257,9 +245,13 @@ The minimal controls shown above work, but they don't respond to form state. You
 Here's a comprehensive example that implements common state properties:
 
 ```angular-ts
-import { Component, model, input, ChangeDetectionStrategy } from '@angular/core';
-import { FormValueControl } from '@angular/forms/signals';
-import type { ValidationError, DisabledReason } from '@angular/forms/signals';
+import {Component, model, input, ChangeDetectionStrategy} from '@angular/core';
+import {
+  FormValueControl,
+  WithOptionalFieldTree,
+  ValidationError,
+  DisabledReason,
+} from '@angular/forms/signals';
 
 @Component({
   selector: 'app-stateful-input',
@@ -295,7 +287,6 @@ import type { ValidationError, DisabledReason } from '@angular/forms/signals';
       </div>
     }
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StatefulInput implements FormValueControl<string> {
   // Required
@@ -310,35 +301,34 @@ export class StatefulInput implements FormValueControl<string> {
   readonly = input<boolean>(false);
   hidden = input<boolean>(false);
   invalid = input<boolean>(false);
-  errors = input<readonly ValidationError.WithField[]>([]);
+  errors = input<readonly WithOptionalFieldTree<ValidationError>[]>([]);
 }
 ```
 
 As a result, you can use the control with validation and state management:
 
 ```angular-ts
-import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { form, FormField, required, email } from '@angular/forms/signals';
-import { StatefulInput } from './stateful-input';
+import {Component, signal, ChangeDetectionStrategy} from '@angular/core';
+import {form, FormField, required, email} from '@angular/forms/signals';
+import {StatefulInput} from './stateful-input';
 
 @Component({
   imports: [FormField, StatefulInput],
   template: `
-    <form>
+    <form novalidate>
       <label>
         Email
         <app-stateful-input [formField]="loginForm.email" />
       </label>
     </form>
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login {
-  loginModel = signal({ email: '' });
+  loginModel = signal({email: ''});
 
   loginForm = form(this.loginModel, (schemaPath) => {
-    required(schemaPath.email, { message: 'Email is required' });
-    email(schemaPath.email, { message: 'Enter a valid email address' });
+    required(schemaPath.email, {message: 'Email is required'});
+    email(schemaPath.email, {message: 'Enter a valid email address'});
   });
 }
 ```
@@ -356,8 +346,9 @@ Controls sometimes display values differently than the form model stores them - 
 Use `linkedSignal()` (from `@angular/core`) to transform the model value for display, and handle input events to parse user input back to the storage format:
 
 ```angular-ts
-import { ChangeDetectionStrategy, Component, linkedSignal, model } from '@angular/core';
-import { FormValueControl } from '@angular/forms/signals';
+import {formatCurrency} from '@angular/common';
+import {ChangeDetectionStrategy, Component, linkedSignal, model} from '@angular/core';
+import {FormValueControl} from '@angular/forms/signals';
 
 @Component({
   selector: 'app-currency-input',
@@ -369,14 +360,13 @@ import { FormValueControl } from '@angular/forms/signals';
       (blur)="updateModel()"
     />
   `,
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CurrencyInput implements FormValueControl<number> {
   // Stores numeric value (1234.56)
   readonly value = model.required<number>();
 
   // Stores display value ("1,234.56")
-  readonly displayValue = linkedSignal(() => formatCurrency(this.value()));
+  readonly displayValue = linkedSignal(() => formatCurrency(this.value(), 'en', 'USD'));
 
   // Update the model from the display value.
   updateModel() {
@@ -384,14 +374,9 @@ export class CurrencyInput implements FormValueControl<number> {
   }
 }
 
-// Converts a number to a currency string (e.g. 1234.56 -> "1,234.56").
-function formatCurrency(value: number) {
-  return value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-}
-
-// Converts a currency string to a number (e.g. "1,234.56" -> 1234.56).
-function parseCurrency(value: string) {
-  return parseFloat(value.replace(/,/g, ''));
+// Converts a currency string to a number (e.g. "USD1,234.56" -> 1234.56).
+function parseCurrency(value: string): number {
+  return parseFloat(value.replace(/^[^\d-]+/, '').replace(/,/g, ''));
 }
 ```
 
@@ -416,7 +401,7 @@ When you add `min()` and `max()` validation rules to the schema, the FormField d
 
 IMPORTANT: Don't implement validation logic in your control. Define validation rules in the form schema and let your control display the results:
 
-```typescript
+```ts {avoid}
 // Avoid: Validation in control
 export class BadControl implements FormValueControl<string> {
   value = model<string>('');
@@ -424,7 +409,9 @@ export class BadControl implements FormValueControl<string> {
     return this.value().length >= 8;
   } // Don't do this!
 }
+```
 
+```ts {prefer}
 // Good: Validation in schema, control displays results
 accountForm = form(this.accountModel, (schemaPath) => {
   minLength(schemaPath.password, 8, {message: 'Password must be at least 8 characters'});

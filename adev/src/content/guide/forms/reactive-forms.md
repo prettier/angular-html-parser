@@ -379,6 +379,26 @@ The `@for` block iterates over each form control instance provided by the aliase
 
 Each time a new alias instance is added, the new form array instance is provided its control based on the index. This lets you track each individual control when calculating the status and value of the root control.
 
+NOTE: In zoneless applications, mutating a reactive forms model (for example calling `FormArray.push()`) does not automatically schedule component change detection. If your template depends on structural model changes such as `aliases.controls`, make sure the component notifies Angular to run change detection, for example by bridging a forms observable to `ChangeDetectorRef.markForCheck()`:
+
+```ts
+import {ChangeDetectorRef, Component, inject} from '@angular/core';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
+
+@Component({
+  /* ... */
+})
+export class ProfileEditor {
+  private readonly cdr = inject(ChangeDetectorRef);
+
+  constructor() {
+    this.profileForm.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.cdr.markForCheck());
+  }
+}
+```
+
 </docs-step>
 
 ### Using `FormArrayDirective` for top-level form arrays
@@ -387,25 +407,21 @@ You can bind a `FormArray` directly to a `<form>` element by using the `FormArra
 This is useful when the form does not use a top-level `FormGroup`, and the array itself represents the full form model.
 
 ```angular-ts
-import { Component } from '@angular/core';
-import { FormArray, FormControl } from '@angular/forms';
+import {Component} from '@angular/core';
+import {FormArray, FormControl} from '@angular/forms';
 
 @Component({
   selector: 'form-array-example',
   template: `
     <form [formArray]="form">
       @for (control of form.controls; track $index) {
-        <input [formControlName]="$index">
+        <input [formControlName]="$index" />
       }
     </form>
   `,
 })
 export class FormArrayExampleComponent {
-  controls = [
-    new FormControl('fish'),
-    new FormControl('cat'),
-    new FormControl('dog'),
-  ];
+  controls = [new FormControl('fish'), new FormControl('cat'), new FormControl('dog')];
 
   form = new FormArray(this.controls);
 }
@@ -640,6 +656,8 @@ updatePostalCodeValidator(country: string) {
   postal.updateValueAndValidity({ onlySelf: true, emitEvent: false });
 }
 ```
+
+HELPFUL: For dynamically managing validators at runtime, see the [Managing validators dynamically in reactive forms](guide/forms/form-validation#managing-validators-dynamically-in-reactive-forms) section in the Form Validation guide.
 
 ## Utility functions for narrowing form control types
 

@@ -24,6 +24,7 @@ import {
   bootstrapApplication,
   provideClientHydration,
   withEventReplay,
+  withNoIncrementalHydration,
 } from '@angular/platform-browser';
 
 import {EventPhase} from '@angular/core/primitives/event-dispatch';
@@ -662,7 +663,9 @@ describe('event replay', () => {
         onClick() {}
       }
 
-      const html = await ssr(SimpleComponent, {});
+      const html = await ssr(SimpleComponent, {
+        hydrationFeatures: () => [withNoIncrementalHydration()],
+      });
       const ssrContents = getAppContents(html);
 
       // Expect that there are no JSAction artifacts in the HTML
@@ -792,11 +795,11 @@ describe('event replay', () => {
       // Eventually it should be empty again.
       // Since `invokeRegisteredReplayListeners` triggers hydration directly and pushes to queue.
 
-      // We can inspect the queue if we want.
-      // But mainly we want to ensure no crash and cleanup happens.
-
       // wait for replay
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const start = Date.now();
+      while (queue.length > 0 && Date.now() - start < 1_000) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
       expect(queue.length).toBe(0);
     });
 

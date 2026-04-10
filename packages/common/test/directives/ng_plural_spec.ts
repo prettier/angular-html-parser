@@ -6,10 +6,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {CommonModule, NgLocalization, NgPlural, NgPluralCase} from '../../index';
+import {ChangeDetectionStrategy} from '@angular/compiler';
 import {Component, Injectable} from '@angular/core';
-import {ComponentFixture, TestBed, waitForAsync} from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 import {expect} from '@angular/private/testing/matchers';
+import {CommonModule, NgLocalization, NgPlural, NgPluralCase} from '../../index';
 
 describe('ngPlural', () => {
   let fixture: ComponentFixture<any>;
@@ -18,7 +19,7 @@ describe('ngPlural', () => {
     return fixture.componentInstance;
   }
 
-  function detectChangesAndExpectText<T>(text: string): void {
+  function detectChangesAndExpectText(text: string): void {
     fixture.changeDetectorRef.markForCheck();
     fixture.detectChanges();
     expect(fixture.nativeElement).toHaveText(text);
@@ -36,7 +37,7 @@ describe('ngPlural', () => {
     });
   });
 
-  it('should display the template according to the exact value', waitForAsync(() => {
+  it('should display the template according to the exact value', () => {
     const template =
       '<ul [ngPlural]="switchValue">' +
       '<ng-template ngPluralCase="=0"><li>you have no messages.</li></ng-template>' +
@@ -50,9 +51,9 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 1;
     detectChangesAndExpectText('you have one message.');
-  }));
+  });
 
-  it('should display the template according to the exact numeric value', waitForAsync(() => {
+  it('should display the template according to the exact numeric value', () => {
     const template =
       '<div>' +
       '<ul [ngPlural]="switchValue">' +
@@ -67,11 +68,11 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 1;
     detectChangesAndExpectText('you have one message.');
-  }));
+  });
 
   // https://github.com/angular/angular/issues/9868
   // https://github.com/angular/angular/issues/9882
-  it('should not throw when ngPluralCase contains expressions', waitForAsync(() => {
+  it('should not throw when ngPluralCase contains expressions', () => {
     const template =
       '<ul [ngPlural]="switchValue">' +
       '<ng-template ngPluralCase="=0"><li>{{ switchValue }}</li></ng-template>' +
@@ -81,9 +82,9 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 0;
     expect(() => fixture.detectChanges()).not.toThrow();
-  }));
+  });
 
-  it('should be applicable to <ng-container> elements', waitForAsync(() => {
+  it('should be applicable to <ng-container> elements', () => {
     const template =
       '<ng-container [ngPlural]="switchValue">' +
       '<ng-template ngPluralCase="=0">you have no messages.</ng-template>' +
@@ -97,9 +98,9 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 1;
     detectChangesAndExpectText('you have one message.');
-  }));
+  });
 
-  it('should display the template according to the category', waitForAsync(() => {
+  it('should display the template according to the category', () => {
     const template =
       '<ul [ngPlural]="switchValue">' +
       '<ng-template ngPluralCase="few"><li>you have a few messages.</li></ng-template>' +
@@ -113,9 +114,9 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 8;
     detectChangesAndExpectText('you have many messages.');
-  }));
+  });
 
-  it('should default to other when no matches are found', waitForAsync(() => {
+  it('should default to other when no matches are found', () => {
     const template =
       '<ul [ngPlural]="switchValue">' +
       '<ng-template ngPluralCase="few"><li>you have a few messages.</li></ng-template>' +
@@ -126,9 +127,9 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 100;
     detectChangesAndExpectText('default message.');
-  }));
+  });
 
-  it('should prioritize value matches over category matches', waitForAsync(() => {
+  it('should prioritize value matches over category matches', () => {
     const template =
       '<ul [ngPlural]="switchValue">' +
       '<ng-template ngPluralCase="few"><li>you have a few messages.</li></ng-template>' +
@@ -142,7 +143,7 @@ describe('ngPlural', () => {
 
     getComponent().switchValue = 3;
     detectChangesAndExpectText('you have a few messages.');
-  }));
+  });
 
   it('should be available as a standalone directive', () => {
     @Component({
@@ -184,6 +185,7 @@ class TestLocalization extends NgLocalization {
   selector: 'test-cmp',
   template: '',
   standalone: false,
+  changeDetection: ChangeDetectionStrategy.Eager,
 })
 class TestComponent {
   switchValue: number | null = null;

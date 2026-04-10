@@ -10,25 +10,40 @@ import {
   APP_ID,
   ApplicationRef,
   Component,
+  ɵDEHYDRATED_BLOCK_REGISTRY as DEHYDRATED_BLOCK_REGISTRY,
   destroyPlatform,
+  ɵgetDocument as getDocument,
   inject,
   Input,
-  NgZone,
+  ɵJSACTION_BLOCK_ELEMENT_MAP as JSACTION_BLOCK_ELEMENT_MAP,
+  ɵJSACTION_EVENT_CONTRACT as JSACTION_EVENT_CONTRACT,
+  PendingTasks,
   PLATFORM_ID,
   Provider,
   QueryList,
+  ɵresetIncrementalHydrationEnabledWarnedForTests as resetIncrementalHydrationEnabledWarnedForTests,
   signal,
+  ɵTimerScheduler as TimerScheduler,
   ViewChildren,
   ɵDEFER_BLOCK_DEPENDENCY_INTERCEPTOR,
-  ɵDEHYDRATED_BLOCK_REGISTRY as DEHYDRATED_BLOCK_REGISTRY,
-  ɵJSACTION_BLOCK_ELEMENT_MAP as JSACTION_BLOCK_ELEMENT_MAP,
-  ɵJSACTION_EVENT_CONTRACT as JSACTION_EVENT_CONTRACT,
-  ɵgetDocument as getDocument,
-  ɵresetIncrementalHydrationEnabledWarnedForTests as resetIncrementalHydrationEnabledWarnedForTests,
-  ɵTimerScheduler as TimerScheduler,
-  provideZoneChangeDetection,
 } from '@angular/core';
 
+import {
+  DOCUMENT,
+  isPlatformServer,
+  Location,
+  ɵPLATFORM_BROWSER_ID as PLATFORM_BROWSER_ID,
+  PlatformLocation,
+} from '@angular/common';
+import {MockPlatformLocation} from '@angular/common/testing';
+import {TestBed} from '@angular/core/testing';
+import {
+  provideClientHydration,
+  withEventReplay,
+  withIncrementalHydration,
+  withNoIncrementalHydration,
+} from '@angular/platform-browser';
+import {provideRouter, RouterLink, RouterOutlet, Routes} from '@angular/router';
 import {getAppContents, prepareEnvironmentAndHydrate, resetTViewsFor} from './dom_utils';
 import {
   clearConsole,
@@ -41,20 +56,6 @@ import {
   verifyNodeWasNotHydrated,
   withDebugConsole,
 } from './hydration_utils';
-import {
-  isPlatformServer,
-  Location,
-  PlatformLocation,
-  ɵPLATFORM_BROWSER_ID as PLATFORM_BROWSER_ID,
-} from '@angular/common';
-import {
-  provideClientHydration,
-  withEventReplay,
-  withIncrementalHydration,
-} from '@angular/platform-browser';
-import {TestBed} from '@angular/core/testing';
-import {provideRouter, RouterLink, RouterOutlet, Routes} from '@angular/router';
-import {MockPlatformLocation} from '@angular/common/testing';
 
 /**
  * Emulates a dynamic import promise.
@@ -1117,6 +1118,7 @@ describe('platform-server partial hydration integration', () => {
           root = null;
           rootMargin = null!;
           thresholds = null!;
+          scrollMargin = '';
 
           observedElements = new Set<Element>();
           private elementsInView = new Set<Element>();
@@ -1384,6 +1386,10 @@ describe('platform-server partial hydration integration', () => {
          * Sets up interceptors for when an idle callback is requested
          * and when it's cancelled. This is needed to keep track of calls
          * made to `requestIdleCallback` and `cancelIdleCallback` APIs.
+         *
+         * The mock enforces the per-bucket invariant: for a given timeout
+         * value, at most ONE `requestIdleCallback` should be active at a
+         * time
          */
         let id = 0;
         let idleCallbacksRequested: number;
@@ -1391,10 +1397,16 @@ describe('platform-server partial hydration integration', () => {
         let idleCallbacksCancelled: number;
         const onIdleCallbackQueue: Map<number, IdleRequestCallback> = new Map();
 
+        // Tracks active idle callback counts per serialized options key.
+        const activePerTimeout = new Map<string, number>();
+        const idToTimeout = new Map<number, string>();
+
         function resetCounters() {
           idleCallbacksRequested = 0;
           idleCallbacksInvoked = 0;
           idleCallbacksCancelled = 0;
+          activePerTimeout.clear();
+          idToTimeout.clear();
         }
         resetCounters();
 
@@ -1409,14 +1421,35 @@ describe('platform-server partial hydration integration', () => {
           options?: IdleRequestOptions,
         ): number => {
           onIdleCallbackQueue.set(id, callback);
-          expect(idleCallbacksRequested).toBe(0);
-          expect(NgZone.isInAngularZone()).toBe(true);
+
+          // Enforce per-bucket invariant: a given options key must not
+          // already have an active requestIdleCallback.
+          const optionsKey = options?.timeout != null ? `${options.timeout}` : '';
+          const activeCount = activePerTimeout.get(optionsKey) ?? 0;
+          expect(activeCount)
+            .withContext(
+              `Expected 0 active idle callbacks for key='${optionsKey}', ` +
+                `but found ${activeCount}. Each options bucket should have at most one.`,
+            )
+            .toBe(0);
+          activePerTimeout.set(optionsKey, activeCount + 1);
+          idToTimeout.set(id, optionsKey);
+
           idleCallbacksRequested++;
           return id++;
         };
 
         const mockCancelIdleCallback = (id: number) => {
           onIdleCallbackQueue.delete(id);
+
+          // Decrement per-bucket active count.
+          const optionsKey = idToTimeout.get(id);
+          if (optionsKey !== undefined) {
+            const count = activePerTimeout.get(optionsKey) ?? 0;
+            activePerTimeout.set(optionsKey, Math.max(0, count - 1));
+            idToTimeout.delete(id);
+          }
+
           idleCallbacksRequested--;
           idleCallbacksCancelled++;
         };
@@ -1469,10 +1502,7 @@ describe('platform-server partial hydration integration', () => {
           }
 
           const appId = 'custom-app-id';
-          const providers = [
-            {provide: APP_ID, useValue: appId},
-            provideZoneChangeDetection() as any,
-          ];
+          const providers = [{provide: APP_ID, useValue: appId}];
           const hydrationFeatures = () => [withIncrementalHydration()];
 
           const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
@@ -1501,6 +1531,80 @@ describe('platform-server partial hydration integration', () => {
           const appHostNode = compRef.location.nativeElement;
 
           expect(appHostNode.outerHTML).toContain('<article>');
+
+          triggerIdleCallbacks();
+          await allPendingDynamicImports();
+          appRef.tick();
+
+          expect(appHostNode.outerHTML).toContain('<span id="test">start</span>');
+
+          const testElement = doc.getElementById('test')!;
+          const clickEvent2 = new CustomEvent('click');
+          testElement.dispatchEvent(clickEvent2);
+
+          appRef.tick();
+
+          expect(appHostNode.outerHTML).toContain('<span id="test">end</span>');
+        });
+
+        it('idle with timeout', async () => {
+          @Component({
+            selector: 'app',
+            template: `
+              <main (click)="fnA()">
+                @defer (hydrate on idle(2500)) {
+                  <article>
+                    defer block rendered with timeout!
+                    <span id="test" (click)="fnB()">{{ value() }}</span>
+                  </article>
+                } @placeholder {
+                  <span>Outer block placeholder</span>
+                }
+              </main>
+            `,
+          })
+          class SimpleComponent {
+            value = signal('start');
+            fnA() {}
+            fnB() {
+              this.value.set('end');
+            }
+          }
+
+          const appId = 'custom-app-id';
+          const providers = [{provide: APP_ID, useValue: appId}];
+          const hydrationFeatures = () => [withIncrementalHydration()];
+
+          const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
+          const ssrContents = getAppContents(html);
+
+          // <main> uses "eager" `custom-app-id` namespace.
+          expect(ssrContents).toContain('<main jsaction="click:;');
+          // <div>s inside a defer block have `d0` as a namespace.
+          expect(ssrContents).toContain('<article>');
+          // Outer defer block is rendered.
+          expect(ssrContents).toContain('defer block rendered with timeout');
+
+          // Internal cleanup before we do server->client transition in this test.
+          resetTViewsFor(SimpleComponent);
+
+          ////////////////////////////////
+          const doc = getDocument();
+          const appRef = await prepareEnvironmentAndHydrate(doc, html, SimpleComponent, {
+            envProviders: [...providers, {provide: PLATFORM_ID, useValue: 'browser'}],
+            hydrationFeatures,
+          });
+          const compRef = getComponentRef<SimpleComponent>(appRef);
+          appRef.tick();
+          await appRef.whenStable();
+
+          const appHostNode = compRef.location.nativeElement;
+
+          expect(appHostNode.outerHTML).toContain('<article>');
+
+          // Verify that requestIdleCallback was called: one for default prefetch on idle,
+          // one for hydrate on idle(2500) — each timeout value gets its own bucket.
+          expect(idleCallbacksRequested).toBe(2);
 
           triggerIdleCallbacks();
           await allPendingDynamicImports();
@@ -2029,6 +2133,12 @@ describe('platform-server partial hydration integration', () => {
   });
 
   describe('control flow', () => {
+    let pollingInterval: ReturnType<typeof setInterval>;
+
+    afterEach(() => {
+      if (pollingInterval !== undefined) clearInterval(pollingInterval);
+    });
+
     it('should support hydration for all items in a for loop', async () => {
       @Component({
         selector: 'app',
@@ -2062,10 +2172,36 @@ describe('platform-server partial hydration integration', () => {
           this.value.set('end');
         }
         registry = inject(DEHYDRATED_BLOCK_REGISTRY);
+        private readonly doc = inject(DOCUMENT);
+
+        constructor() {
+          // TODO: Understand why this is needed to get the full rendering of the HTML
+          // Without it, bindings aren't properly rendered in SSR and the test fails.
+          // There was no issue with the zone based scheduler.
+          const pendingTasks = inject(PendingTasks);
+          pendingTasks.run(
+            () =>
+              new Promise<void>((resolve) => {
+                pollingInterval = setInterval(() => {
+                  const el = this.doc.getElementById('item-1');
+                  if (el && el.textContent?.includes('defer block 1 rendered')) {
+                    clearInterval(pollingInterval);
+                    resolve();
+                  }
+                }, 10);
+
+                // Fallback timeout to prevent indefinite hanging
+                setTimeout(() => {
+                  clearInterval(pollingInterval);
+                  resolve();
+                }, 1000);
+              }),
+          );
+        }
       }
 
       const appId = 'custom-app-id';
-      const providers = [{provide: APP_ID, useValue: appId}, provideZoneChangeDetection() as any];
+      const providers = [{provide: APP_ID, useValue: appId}];
       const hydrationFeatures = () => [withIncrementalHydration()];
 
       const html = await ssr(SimpleComponent, {envProviders: providers, hydrationFeatures});
@@ -2863,7 +2999,7 @@ describe('platform-server partial hydration integration', () => {
   });
 
   describe('misconfiguration', () => {
-    it('should log a warning when `withIncrementalHydration()` is missing in SSR setup', async () => {
+    it('should log a warning when incremental hydration is disabled in SSR setup', async () => {
       @Component({
         selector: 'app',
         template: `
@@ -2877,8 +3013,8 @@ describe('platform-server partial hydration integration', () => {
       const appId = 'custom-app-id';
       const providers = [{provide: APP_ID, useValue: appId}];
 
-      // Empty list, `withIncrementalHydration()` is not included intentionally.
-      const hydrationFeatures = () => [];
+      // Explicitly disabled using withNoIncrementalHydration()
+      const hydrationFeatures = () => [withNoIncrementalHydration()];
       const consoleSpy = spyOn(console, 'warn');
       resetIncrementalHydrationEnabledWarnedForTests();
 
@@ -2887,7 +3023,7 @@ describe('platform-server partial hydration integration', () => {
       expect(consoleSpy).toHaveBeenCalledWith(jasmine.stringMatching('NG0508'));
     });
 
-    it('should log a warning when `withIncrementalHydration()` is missing in hydration setup', async () => {
+    it('should log a warning when incremental hydration is disabled in hydration setup', async () => {
       @Component({
         selector: 'app',
         template: `
@@ -2916,8 +3052,8 @@ describe('platform-server partial hydration integration', () => {
       const doc = getDocument();
       await prepareEnvironmentAndHydrate(doc, html, SimpleComponent, {
         envProviders: [...providers, {provide: PLATFORM_ID, useValue: 'browser'}],
-        // Empty list, `withIncrementalHydration()` is not included intentionally.
-        hydrationFeatures: () => [],
+        // Explicitly disabled using withNoIncrementalHydration()
+        hydrationFeatures: () => [withNoIncrementalHydration()],
       });
 
       expect(consoleSpy).toHaveBeenCalledTimes(1);

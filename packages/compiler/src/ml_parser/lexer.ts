@@ -337,6 +337,14 @@ class _Tokenizer {
       }
     }
 
+    if (startToken.parts[0] === 'default never' && this._attemptCharCode(chars.$SEMICOLON)) {
+      this._beginToken(TokenType.BLOCK_OPEN_END);
+      this._endToken([]);
+      this._beginToken(TokenType.BLOCK_CLOSE);
+      this._endToken([]);
+      return;
+    }
+
     if (this._attemptCharCode(chars.$LBRACE)) {
       this._beginToken(TokenType.BLOCK_OPEN_END);
       this._endToken([]);
@@ -833,6 +841,28 @@ class _Tokenizer {
     return [prefix, name];
   }
 
+  private _consumeSingleLineComment() {
+    this._attemptCharCodeUntilFn((code) => chars.isNewLine(code) || code === chars.$EOF);
+    this._attemptCharCodeUntilFn(isNotWhitespace);
+  }
+
+  private _consumeMultiLineComment() {
+    this._attemptCharCodeUntilFn((code) => {
+      if (code === chars.$EOF) {
+        return true;
+      }
+      if (code === chars.$STAR) {
+        const next = this._cursor.clone();
+        next.advance();
+        return next.peek() === chars.$SLASH;
+      }
+      return false;
+    });
+    if (this._attemptStr('*/')) {
+      this._attemptCharCodeUntilFn(isNotWhitespace);
+    }
+  }
+
   private _consumeTagOpen(start: CharacterCursor) {
     let tagName: string;
     let prefix: string;
@@ -870,7 +900,21 @@ class _Tokenizer {
         this._attemptCharCodeUntilFn(isNotWhitespace);
       }
 
-      while (!isAttributeTerminator(this._cursor.peek())) {
+      while (true) {
+        if (this._attemptStr('//')) {
+          this._consumeSingleLineComment();
+          continue;
+        }
+
+        if (this._attemptStr('/*')) {
+          this._consumeMultiLineComment();
+          continue;
+        }
+
+        if (isAttributeTerminator(this._cursor.peek())) {
+          break;
+        }
+
         if (this._selectorlessEnabled && this._cursor.peek() === chars.$AT) {
           const start = this._cursor.clone();
           const nameStart = start.clone();
@@ -1507,7 +1551,12 @@ function isDigitEntityEnd(code: number): boolean {
 }
 
 function isNamedEntityEnd(code: number): boolean {
-  return code === chars.$SEMICOLON || code === chars.$EOF || !chars.isAsciiLetter(code);
+  // Named entities may contain digits (e.g. &sup1;, &frac12;, &blk34;).
+  return (
+    code === chars.$SEMICOLON ||
+    code === chars.$EOF ||
+    !(chars.isAsciiLetter(code) || chars.isDigit(code))
+  );
 }
 
 function isExpansionCaseStart(peek: number): boolean {

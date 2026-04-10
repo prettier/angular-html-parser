@@ -45,7 +45,7 @@ You can use `animate.leave` to animate elements as they _leave_ the DOM. You can
 
 When the animation completes, Angular automatically removes the animated element from the DOM.
 
-NOTE: When using multiple keyframe animations or transition properties on a an element, Angular waits to remove the element only _after_ the longest of those animations has completed.
+NOTE: When using multiple keyframe animations or transition properties on an element, Angular waits to remove the element only _after_ the longest of those animations has completed.
 
 `animate.leave` can also be used with signals, and other bindings. You can use `animate.leave` with a single class or multiple classes. Either specify it as a simple string with spaces or a string array.
 
@@ -53,6 +53,16 @@ NOTE: When using multiple keyframe animations or transition properties on a an e
     <docs-code header="leave-binding.ts" path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-binding.ts" />
     <docs-code header="leave-binding.html" path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-binding.html" />
     <docs-code header="leave-binding.css" path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-binding.css"/>
+</docs-code-multifile>
+
+### Element removal order
+
+There is some nuance to how `animate.leave` animations are run and when an animation will occur. `animate.leave` works if it is placed on the element that is being removed, and if `animate.leave` is placed on an element that is a _descendent_ of the element being removed, those child animations will happen _before_ the parent node is removed from the DOM. This ensures that you can confidently animate away child elements without the parent node disappearing prematurely.
+
+<docs-code-multifile preview path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-parent.ts">
+    <docs-code header="leave.ts" path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-parent.ts" />
+    <docs-code header="leave.html" path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-parent.html" />
+    <docs-code header="leave.css" path="adev/src/content/examples/animations/src/app/enter-and-leave/leave-parent.css"/>
 </docs-code-multifile>
 
 ## Event Bindings, Functions, and Third-party Libraries

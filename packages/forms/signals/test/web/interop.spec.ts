@@ -7,6 +7,7 @@
  */
 
 import {
+  ChangeDetectionStrategy,
   Component,
   Directive,
   inject,
@@ -17,7 +18,13 @@ import {
   viewChild,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
-import {ControlValueAccessor, NG_VALUE_ACCESSOR, NgControl} from '@angular/forms';
+import {
+  ControlValueAccessor,
+  DefaultValueAccessor,
+  NG_VALUE_ACCESSOR,
+  NgControl,
+  ReactiveFormsModule,
+} from '@angular/forms';
 import {
   debounce,
   disabled,
@@ -35,7 +42,7 @@ import {
   requiredError,
   validateAsync,
   ValidationError,
-  WithOptionalField,
+  WithOptionalFieldTree,
 } from '@angular/forms/signals';
 
 describe('ControlValueAccessor', () => {
@@ -56,9 +63,11 @@ describe('ControlValueAccessor', () => {
       />
     `,
     providers: [{provide: NG_VALUE_ACCESSOR, useExisting: CustomControl, multi: true}],
+    changeDetection: ChangeDetectionStrategy.Eager,
   })
   class CustomControl implements ControlValueAccessor {
     value = '';
+    writeCount = 0;
     disabled = false;
 
     private onChangeFn?: (value: string) => void;
@@ -66,6 +75,7 @@ describe('ControlValueAccessor', () => {
 
     writeValue(newValue: string): void {
       this.value = newValue;
+      this.writeCount++;
     }
 
     registerOnChange(fn: (value: string) => void): void {
@@ -128,6 +138,31 @@ describe('ControlValueAccessor', () => {
       input.dispatchEvent(new Event('input'));
     });
     expect(fixture.componentInstance.f().value()).toBe('typing');
+  });
+
+  it('should not write back to CVA on view change', () => {
+    @Component({
+      imports: [CustomControl, FormField],
+      template: `<custom-control [formField]="f" />`,
+    })
+    class TestCmp {
+      readonly f = form(signal('test'));
+      readonly control = viewChild.required(CustomControl);
+    }
+
+    const fixture = act(() => TestBed.createComponent(TestCmp));
+    const control = fixture.componentInstance.control();
+    const input = fixture.nativeElement.querySelector('input');
+
+    expect(control.writeCount).toBe(1); // Initial write
+
+    act(() => {
+      input.value = 'typing';
+      input.dispatchEvent(new Event('input'));
+    });
+
+    expect(fixture.componentInstance.f().value()).toBe('typing');
+    expect(control.writeCount).toBe(1); // Should still be 1 (No write-back!)
   });
 
   it('should support debounce', async () => {
@@ -344,6 +379,25 @@ describe('ControlValueAccessor', () => {
     expect(() => fixture.componentInstance.disabled.set(true)).not.toThrowError(/NG0600/);
   });
 
+  it('should pick custom CVA over default CVA when both are present', () => {
+    @Component({
+      selector: 'app-root',
+      // Import ReactiveFormsModule to provide the non-standalone DefaultValueAccessor directive.
+      // The selector for DefaultValueAccessor matches `[ngDefaultControl]`.
+      imports: [FormField, CustomControl, ReactiveFormsModule],
+      template: `<custom-control [formField]="f" ngDefaultControl />`,
+    })
+    class App {
+      f = form<string>(signal(''));
+    }
+
+    const fixture = act(() => TestBed.createComponent(App));
+    const customControlInstance = fixture.debugElement.children[0].injector.get(CustomControl);
+
+    act(() => fixture.componentInstance.f().value.set('updated'));
+    expect(customControlInstance.writeCount).toBe(2); // 1 initial + 1 update
+  });
+
   describe('properties', () => {
     describe('disabled', () => {
       it('should bind to directive input', () => {
@@ -451,7 +505,8 @@ describe('ControlValueAccessor', () => {
       it('should bind to directive input', () => {
         @Directive({selector: '[testDir]'})
         class TestDir {
-          readonly disabledReasons = input.required<readonly WithOptionalField<DisabledReason>[]>();
+          readonly disabledReasons =
+            input.required<readonly WithOptionalFieldTree<DisabledReason>[]>();
         }
 
         @Component({
@@ -484,7 +539,7 @@ describe('ControlValueAccessor', () => {
       it('should bind to directive input', () => {
         @Directive({selector: '[testDir]'})
         class TestDir {
-          readonly errors = input.required<readonly WithOptionalField<ValidationError>[]>();
+          readonly errors = input.required<readonly WithOptionalFieldTree<ValidationError>[]>();
         }
 
         @Component({

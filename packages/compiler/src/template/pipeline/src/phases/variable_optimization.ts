@@ -7,6 +7,7 @@
  */
 
 import * as o from '../../../../output/output_ast';
+import {CONTEXT_NAME} from '../../../../render3/view/util';
 import * as ir from '../../ir';
 import {CompilationJob} from '../compilation';
 
@@ -50,16 +51,9 @@ export function optimizeVariables(job: CompilationJob): void {
     }
 
     for (const expr of unit.functions) {
-      optimizeVariablesInOpList(expr.ops, job.compatibility, null);
+      optimizeVariablesInOpList(expr.ops, null);
+      optimizeSaveRestoreView(expr.ops);
     }
-
-    // Note that we skip over arrow function operations, because they are considered
-    // separate boundaries that should not influence the surrounding create/update
-    // operations. This is a side-effect of not being able to control which nested
-    // ops `visitExpressionsInOp` will visit. Without this logic, variable references
-    // inside the arrow function can throw off usage counting for things like view references.
-    optimizeVariablesInOpList(unit.create, job.compatibility, skipArrowFunctionOps);
-    optimizeVariablesInOpList(unit.update, job.compatibility, skipArrowFunctionOps);
 
     for (const op of unit.create) {
       if (
@@ -68,11 +62,20 @@ export function optimizeVariables(job: CompilationJob): void {
         op.kind === ir.OpKind.AnimationListener ||
         op.kind === ir.OpKind.TwoWayListener
       ) {
-        optimizeVariablesInOpList(op.handlerOps, job.compatibility, skipArrowFunctionOps);
+        optimizeVariablesInOpList(op.handlerOps, skipArrowFunctionOps);
+        optimizeSaveRestoreView(op.handlerOps);
       } else if (op.kind === ir.OpKind.RepeaterCreate && op.trackByOps !== null) {
-        optimizeVariablesInOpList(op.trackByOps, job.compatibility, skipArrowFunctionOps);
+        optimizeVariablesInOpList(op.trackByOps, skipArrowFunctionOps);
       }
     }
+
+    // Note that we skip over arrow function operations, because they are considered
+    // separate boundaries that should not influence the surrounding create/update
+    // operations. This is a side-effect of not being able to control which nested
+    // ops `visitExpressionsInOp` will visit. Without this logic, variable references
+    // inside the arrow function can throw off usage counting for things like view references.
+    optimizeVariablesInOpList(unit.create, skipArrowFunctionOps);
+    optimizeVariablesInOpList(unit.update, skipArrowFunctionOps);
   }
 }
 
@@ -174,7 +177,6 @@ function inlineAlwaysInlineVariables(ops: ir.OpList<ir.CreateOp | ir.UpdateOp>):
  */
 function optimizeVariablesInOpList(
   ops: ir.OpList<ir.CreateOp | ir.UpdateOp>,
-  compatibility: ir.CompatibilityMode,
   predicate: ExpressionPredicate | null,
 ): void {
   const varDecls = new Map<ir.XrefId, ir.VariableOp<ir.CreateOp | ir.UpdateOp>>();
@@ -298,10 +300,7 @@ function optimizeVariablesInOpList(
 
       // Is the variable used in this operation?
       if (opInfo.variablesUsed.has(candidate)) {
-        if (
-          compatibility === ir.CompatibilityMode.TemplateDefinitionBuilder &&
-          !allowConservativeInlining(decl, targetOp)
-        ) {
+        if (!allowConservativeInlining(decl, targetOp)) {
           // We're in conservative mode, and this variable is not eligible for inlining into the
           // target operation in this mode.
           break;
@@ -548,7 +547,7 @@ function allowConservativeInlining(
   // that behavior here.
   switch (decl.variable.kind) {
     case ir.SemanticVariableKind.Identifier:
-      if (decl.initializer instanceof o.ReadVarExpr && decl.initializer.name === 'ctx') {
+      if (decl.initializer instanceof o.ReadVarExpr && decl.initializer.name === CONTEXT_NAME) {
         // Although TemplateDefinitionBuilder is cautious about inlining, we still want to do so
         // when the variable is the context, to imitate its behavior with aliases in control flow
         // blocks. This quirky behavior will become dead code once compatibility mode is no longer
@@ -561,5 +560,33 @@ function allowConservativeInlining(
       return target.kind === ir.OpKind.Variable;
     default:
       return true;
+  }
+}
+
+/**
+ * After variables have been optimized in nested ops (e.g. handlers or functions), we may end up
+ * with `saveView`/`restoreView` calls that aren't necessary since all the references to the view
+ * were optimized away. This function removes the ops related to the view restoration.
+ */
+function optimizeSaveRestoreView(ops: ir.OpList<ir.UpdateOp>): void {
+  const head = ops.head.next;
+  const tail = ops.tail.prev;
+
+  // We can only optimize if we have two ops:
+  // 1. A call to `restoreView`.
+  // 2. A return statement with a `resetView` in it.
+  if (
+    head !== null &&
+    tail !== null &&
+    head.next === tail &&
+    head.kind === ir.OpKind.Statement &&
+    head.statement instanceof o.ExpressionStatement &&
+    head.statement.expr instanceof ir.RestoreViewExpr &&
+    tail.kind === ir.OpKind.Statement &&
+    tail.statement instanceof o.ReturnStatement &&
+    tail.statement.value instanceof ir.ResetViewExpr
+  ) {
+    ir.OpList.remove<ir.UpdateOp>(head);
+    tail.statement.value = tail.statement.value.expr;
   }
 }

@@ -29,7 +29,7 @@ import {
 } from '@angular/platform-browser';
 ...
 
-bootstrapApplication(AppComponent, {
+bootstrapApplication(App, {
   providers: [provideClientHydration()]
 });
 ```
@@ -41,9 +41,9 @@ import {provideClientHydration} from '@angular/platform-browser';
 import {NgModule} from '@angular/core';
 
 @NgModule({
-  declarations: [AppComponent],
-  exports: [AppComponent],
-  bootstrap: [AppComponent],
+  declarations: [App],
+  exports: [App],
+  bootstrap: [App],
   providers: [provideClientHydration()],
 })
 export class AppModule {}
@@ -92,7 +92,9 @@ Event replay supports _native browser events_, for example `click`, `mouseover`,
 
 ---
 
-This feature ensures a consistent user experience, preventing user actions performed before Hydration from being ignored. NOTE: if you have [incremental hydration](guide/incremental-hydration) enabled, event replay is automatically enabled under the hood.
+This feature ensures a consistent user experience, preventing user actions performed before Hydration from being ignored.
+
+NOTE: If you have [incremental hydration](guide/incremental-hydration) enabled, event replay is automatically enabled under the hood.
 
 ## Constraints
 
@@ -140,7 +142,7 @@ Providing a custom or a "noop" Zone.js implementation may lead to a different ti
 
 ## Errors
 
-There are several hydration related errors you may encounter ranging from node mismatches to cases when the `ngSkipHydration` was used on an invalid host node. The most common error case that may occur is due to direct DOM manipulation using native APIs that results in hydration being unable to find or match the expected DOM tree structure on the client that was rendered by the server. The other case you may encounter this type of error was mentioned in the [Valid HTML structure](#valid-html-structure) section earlier. So, make sure the HTML in your templates are using valid structure, and you'll avoid that error case.
+There are several hydration related errors you may encounter ranging from node mismatches to cases when the `ngSkipHydration` was used on an invalid host node. The most common error case that may occur is due to direct DOM manipulation using native APIs that results in hydration being unable to find or match the expected DOM tree structure on the client that was rendered by the server. The other case you may encounter this type of error was mentioned in the [Valid HTML structure](#valid-html-structure) section earlier. So, make sure the HTML in your templates is using valid structure, and you'll avoid that error case.
 
 For a full reference on hydration related errors, visit the [Errors Reference Guide](/errors).
 
@@ -183,7 +185,7 @@ import {provideStabilityDebugging} from '@angular/core';
 import {bootstrapApplication} from '@angular/platform-browser';
 import 'zone.js/plugins/task-tracking'; // Use if you have Zone.js with `provideZoneChangeDetection`
 
-bootstrapApplication(AppComponent, {
+bootstrapApplication(App, {
   providers: [provideStabilityDebugging()],
 });
 ```
@@ -206,7 +208,7 @@ import {
 } from '@angular/platform-browser';
 ...
 
-bootstrapApplication(AppComponent, {
+bootstrapApplication(App, {
   providers: [provideClientHydration(withI18nSupport())]
 });
 ```

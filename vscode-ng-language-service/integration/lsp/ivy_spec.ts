@@ -112,6 +112,37 @@ describe('Angular language server', () => {
     expect(diagnostics[0].relatedInformation![0].location.uri).toBe(FOO_COMPONENT_URI);
   });
 
+  it('should not publish duplicate diagnostics for the same @let warning', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @let a = 100;
+    <div [style]="{'padding': '20px'}"></div>
+  \`,
+})
+export class AppComponent {}`,
+    );
+
+    const diagnostics = await getDiagnosticsForFile(client, APP_COMPONENT);
+    const letDiagnostics = diagnostics.filter((d) => d.message.includes('@let a is declared'));
+
+    expect(letDiagnostics.length).toBeGreaterThan(0);
+
+    const uniqueKeys = new Set(
+      letDiagnostics.map(
+        (d) =>
+          `${d.message}|${d.code}|${d.range.start.line}:${d.range.start.character}-${d.range.end.line}:${d.range.end.character}`,
+      ),
+    );
+    expect(uniqueKeys.size).toBe(letDiagnostics.length);
+  });
+
   it('should support request cancellation', async () => {
     openTextDocument(client, APP_COMPONENT);
     // Send a request and immediately cancel it
@@ -285,6 +316,904 @@ export class AppComponent {
     expect(response).toContain({startLine: 26, endLine: 27}); // loading
     expect(response).toContain({startLine: 30, endLine: 31}); // for
     expect(response).toContain({startLine: 32, endLine: 33}); // empty
+  });
+
+  it('provides document symbols for TypeScript files (default: filtered to components)', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component, Input, Output, EventEmitter} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: '<div>{{name}}</div>',
+})
+export class AppComponent {
+  name = 'Angular';
+
+  constructor() {}
+
+  greet(): string {
+    return 'Hello, ' + this.name;
+  }
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+    expect(Array.isArray(response)).toBe(true);
+    // Only component classes with templates are shown, without TypeScript children (methods, properties)
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    expect(appComponentSymbol).toBeDefined();
+    expect(appComponentSymbol!.kind).toBe(lsp.SymbolKind.Class);
+    // Class should only have template children, not TypeScript symbols
+    expect(appComponentSymbol!.children).toBeDefined();
+    // Should have (template) container with template symbols
+    const templateSymbol = appComponentSymbol!.children!.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+    expect(templateSymbol!.kind).toBe(lsp.SymbolKind.Namespace);
+    // Should NOT have TypeScript method/property children
+    const nameSymbol = appComponentSymbol!.children!.find((c) => c.name === 'name');
+    expect(nameSymbol).toBeUndefined();
+    const constructorSymbol = appComponentSymbol!.children!.find((c) => c.name === 'constructor');
+    expect(constructorSymbol).toBeUndefined();
+    const greetSymbol = appComponentSymbol!.children!.find((c) => c.name === 'greet');
+    expect(greetSymbol).toBeUndefined();
+  });
+
+  it('handles multiple components in a single file', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'first-comp',
+  template: '<h1>First</h1>',
+})
+export class FirstComponent {
+  value = 1;
+}
+
+@Component({
+  selector: 'second-comp',
+  template: '<h2>Second</h2>',
+})
+export class SecondComponent {
+  value = 2;
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+    expect(Array.isArray(response)).toBe(true);
+    // Both components should be present
+    const firstSymbol = response.find((s) => s.name === 'FirstComponent');
+    expect(firstSymbol).toBeDefined();
+    expect(firstSymbol!.kind).toBe(lsp.SymbolKind.Class);
+    const firstTemplateSymbol = firstSymbol!.children!.find((c) => c.name === '(template)');
+    expect(firstTemplateSymbol).toBeDefined();
+
+    const secondSymbol = response.find((s) => s.name === 'SecondComponent');
+    expect(secondSymbol).toBeDefined();
+    expect(secondSymbol!.kind).toBe(lsp.SymbolKind.Class);
+    const secondTemplateSymbol = secondSymbol!.children!.find((c) => c.name === '(template)');
+    expect(secondTemplateSymbol).toBeDefined();
+
+    // Neither should have TypeScript property children by default
+    const firstValue = firstSymbol!.children!.find((c) => c.name === 'value');
+    expect(firstValue).toBeUndefined();
+    const secondValue = secondSymbol!.children!.find((c) => c.name === 'value');
+    expect(secondValue).toBeUndefined();
+  });
+
+  it('returns empty symbols for TypeScript files without Angular templates', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+// A regular TypeScript file with no Angular components
+export interface User {
+  name: string;
+  age: number;
+}
+
+export function greet(user: User): string {
+  return 'Hello, ' + user.name;
+}
+
+export class UserService {
+  private users: User[] = [];
+
+  addUser(user: User): void {
+    this.users.push(user);
+  }
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+    expect(Array.isArray(response)).toBe(true);
+    // With default filtering, no symbols should be returned for non-Angular files
+    // (TypeScript LS handles these files instead)
+    expect(response.length).toBe(0);
+  });
+
+  it('provides document symbols for Angular templates with control flow', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @if (showContent) {
+      <div class="container">
+        <router-outlet></router-outlet>
+      </div>
+    } @else {
+      <p>No content</p>
+    }
+
+    @for (item of items; track item) {
+      <span #itemRef>{{ item }}</span>
+    } @empty {
+      <p>No items</p>
+    }
+
+    @let message = 'Hello';
+    <ng-content select="header"></ng-content>
+  \`,
+})
+export class AppComponent {
+  showContent = true;
+  items = [1, 2, 3];
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    expect(Array.isArray(response)).toBe(true);
+
+    // Should contain the class symbol
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    expect(appComponentSymbol).toBeDefined();
+    expect(appComponentSymbol!.kind).toBe(lsp.SymbolKind.Class);
+
+    // The class should have a (template) child containing Angular template symbols
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+    expect(templateSymbol!.kind).toBe(lsp.SymbolKind.Namespace);
+    expect(templateSymbol!.children).toBeDefined();
+
+    // Check for @if block (now shows actual expression)
+    const ifSymbol = templateSymbol!.children!.find((c) => c.name === '@if (showContent)');
+    expect(ifSymbol).toBeDefined();
+    expect(ifSymbol!.kind).toBe(lsp.SymbolKind.Struct); // Control flow → Struct
+
+    // Check for @else block
+    const elseSymbol = templateSymbol!.children!.find((c) => c.name === '@else');
+    expect(elseSymbol).toBeDefined();
+
+    // Check for @for block (now shows actual expression)
+    const forSymbol = templateSymbol!.children!.find((c) => c.name === '@for (item of items)');
+    expect(forSymbol).toBeDefined();
+    expect(forSymbol!.kind).toBe(lsp.SymbolKind.Array); // @for loop → Array
+
+    // Check for @let declaration
+    const letSymbol = templateSymbol!.children!.find((c) => c.name === '@let message');
+    expect(letSymbol).toBeDefined();
+    expect(letSymbol!.kind).toBe(lsp.SymbolKind.Variable);
+
+    // Check for ng-content
+    const ngContentSymbol = templateSymbol!.children!.find((c) => c.name.includes('ng-content'));
+    expect(ngContentSymbol).toBeDefined();
+  });
+
+  it('provides document symbols for external HTML template files', async () => {
+    openTextDocument(
+      client,
+      FOO_TEMPLATE,
+      `
+@if (condition) {
+  <div>
+    <router-outlet name="primary"></router-outlet>
+  </div>
+}
+
+@for (item of items; track item) {
+  <span #ref>{{ item }}</span>
+} @empty {
+  <p>Empty</p>
+}
+
+@defer {
+  <heavy-component></heavy-component>
+} @placeholder {
+  <p>Loading...</p>
+}
+`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: FOO_TEMPLATE_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    expect(Array.isArray(response)).toBe(true);
+
+    // External templates should have template symbols at the root level
+    // Check for @if block (now shows actual expression)
+    const ifSymbol = response.find((s) => s.name === '@if (condition)');
+    expect(ifSymbol).toBeDefined();
+    expect(ifSymbol!.kind).toBe(lsp.SymbolKind.Struct); // Control flow → Struct
+
+    // Check for @for block (now shows actual expression)
+    const forSymbol = response.find((s) => s.name === '@for (item of items)');
+    expect(forSymbol).toBeDefined();
+
+    // Check for @defer block
+    const deferSymbol = response.find((s) => s.name === '@defer');
+    expect(deferSymbol).toBeDefined();
+    expect(deferSymbol!.children).toBeDefined();
+
+    // @defer should have @placeholder as a child
+    const placeholderSymbol = deferSymbol!.children!.find((c) => c.name === '@placeholder');
+    expect(placeholderSymbol).toBeDefined();
+  });
+
+  it('provides document symbols for @else if branches', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @if (status === 'active') {
+      <p>Active</p>
+    } @else if (status === 'pending') {
+      <p>Pending</p>
+    } @else if (status === 'error') {
+      <p>Error</p>
+    } @else {
+      <p>Unknown</p>
+    }
+  \`,
+})
+export class AppComponent {
+  status = 'active';
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for @if block
+    const ifSymbol = templateSymbol!.children!.find((c) =>
+      c.name.startsWith("@if (status === 'active')"),
+    );
+    expect(ifSymbol).toBeDefined();
+
+    // Check for @else if blocks (should show actual condition)
+    const elseIfPending = templateSymbol!.children!.find((c) =>
+      c.name.includes("@else if (status === 'pending')"),
+    );
+    expect(elseIfPending).toBeDefined();
+
+    const elseIfError = templateSymbol!.children!.find((c) =>
+      c.name.includes("@else if (status === 'error')"),
+    );
+    expect(elseIfError).toBeDefined();
+
+    // Check for @else block
+    const elseSymbol = templateSymbol!.children!.find((c) => c.name === '@else');
+    expect(elseSymbol).toBeDefined();
+  });
+
+  it('provides document symbols for @switch with case fall-through', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @switch (color) {
+      @case ('red') {
+        <p>Red color</p>
+      }
+      @case ('green') {
+        <p>Green color</p>
+      }
+      @default {
+        <p>Unknown color</p>
+      }
+    }
+  \`,
+})
+export class AppComponent {
+  color = 'red';
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for @switch block (should show actual expression)
+    const switchSymbol = templateSymbol!.children!.find((c) => c.name === '@switch (color)');
+    expect(switchSymbol).toBeDefined();
+    expect(switchSymbol!.children).toBeDefined();
+
+    // Check for @case blocks (should show actual case values)
+    const caseRed = switchSymbol!.children!.find((c) => c.name.includes("@case ('red')"));
+    expect(caseRed).toBeDefined();
+
+    const caseGreen = switchSymbol!.children!.find((c) => c.name.includes("@case ('green')"));
+    expect(caseGreen).toBeDefined();
+
+    // Check for @default
+    const defaultCase = switchSymbol!.children!.find((c) => c.name === '@default');
+    expect(defaultCase).toBeDefined();
+  });
+
+  it('provides document symbols for @for with context variables', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @for (item of items; track item.id; let i = $index; let first = $first; let last = $last) {
+      <div>{{ i }}: {{ item.name }}</div>
+    } @empty {
+      <div>No items</div>
+    }
+  \`,
+})
+export class AppComponent {
+  items = [{id: 1, name: 'A'}, {id: 2, name: 'B'}];
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for @for block (shows loop variable and collection)
+    const forSymbol = templateSymbol!.children!.find((c) => c.name.includes('@for (item of'));
+    expect(forSymbol).toBeDefined();
+    expect(forSymbol!.children).toBeDefined();
+
+    // Check for loop item variable
+    const itemVar = forSymbol!.children!.find((c) => c.name === 'let item');
+    expect(itemVar).toBeDefined();
+
+    // Check for context variables (aliased)
+    const indexVar = forSymbol!.children!.find((c) => c.name === 'let i');
+    expect(indexVar).toBeDefined();
+
+    const firstVar = forSymbol!.children!.find((c) => c.name === 'let first');
+    expect(firstVar).toBeDefined();
+
+    const lastVar = forSymbol!.children!.find((c) => c.name === 'let last');
+    expect(lastVar).toBeDefined();
+
+    // Check for @empty block
+    const emptySymbol = forSymbol!.children!.find((c) => c.name === '@empty');
+    expect(emptySymbol).toBeDefined();
+  });
+
+  it('provides document symbols for @if/@else-if expression aliases', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @if (user$ | async; as user) {
+      <p>Welcome, {{ user.name }}</p>
+    }
+  \`,
+})
+export class AppComponent {
+  user$ = of({name: 'Test'});
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for @if block with alias (shows expression and alias)
+    const ifSymbol = templateSymbol!.children!.find(
+      (c) => c.name.includes('@if') && c.name.includes('as user'),
+    );
+    expect(ifSymbol).toBeDefined();
+    expect(ifSymbol!.children).toBeDefined();
+
+    // Check for alias variable
+    const aliasVar = ifSymbol!.children!.find((c) => c.name === 'as user');
+    expect(aliasVar).toBeDefined();
+  });
+
+  it('provides document symbols for @defer with triggers', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  template: \`
+    @defer (on viewport) {
+      <p>Loaded</p>
+    } @placeholder {
+      <p>Placeholder</p>
+    } @loading {
+      <p>Loading...</p>
+    } @error {
+      <p>Error!</p>
+    }
+  \`,
+})
+export class AppComponent {
+  value = 'test';
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    expect(appComponentSymbol).toBeDefined();
+
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for @defer block with trigger info
+    const deferSymbol = templateSymbol!.children!.find((c) => c.name.includes('@defer'));
+    expect(deferSymbol).toBeDefined();
+    expect(deferSymbol!.name).toContain('on viewport');
+    expect(deferSymbol!.children).toBeDefined();
+
+    // Check for @placeholder
+    const placeholderSymbol = deferSymbol!.children!.find((c) => c.name.includes('@placeholder'));
+    expect(placeholderSymbol).toBeDefined();
+
+    // Check for @loading
+    const loadingSymbol = deferSymbol!.children!.find((c) => c.name.includes('@loading'));
+    expect(loadingSymbol).toBeDefined();
+
+    // Check for @error
+    const errorSymbol = deferSymbol!.children!.find((c) => c.name === '@error');
+    expect(errorSymbol).toBeDefined();
+  });
+
+  it('provides document symbols for *ngFor structural directive', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
+
+@Component({
+  selector: 'my-app',
+  standalone: true,
+  imports: [CommonModule],
+  template: \`
+    <ul>
+      <li *ngFor="let item of items; let i = index; let isFirst = first">
+        {{ i }}: {{ item }}
+      </li>
+    </ul>
+  \`,
+})
+export class AppComponent {
+  items = ['a', 'b', 'c'];
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Find the <ul> element
+    const ulSymbol = templateSymbol!.children!.find((c) => c.name === '<ul>');
+    expect(ulSymbol).toBeDefined();
+
+    // Check for *ngFor directive (should show like control flow)
+    const ngForSymbol = ulSymbol!.children!.find((c) => c.name.includes('*ngFor'));
+    expect(ngForSymbol).toBeDefined();
+    expect(ngForSymbol!.name).toContain('let item of');
+
+    // Check for let- variables as children
+    expect(ngForSymbol!.children).toBeDefined();
+    const itemVar = ngForSymbol!.children!.find((c) => c.name === 'let item');
+    expect(itemVar).toBeDefined();
+
+    const indexVar = ngForSymbol!.children!.find((c) => c.name === 'let i');
+    expect(indexVar).toBeDefined();
+
+    const firstVar = ngForSymbol!.children!.find((c) => c.name === 'let isFirst');
+    expect(firstVar).toBeDefined();
+  });
+
+  it('provides document symbols for *ngIf structural directive', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+import {CommonModule} from '@angular/common';
+
+@Component({
+  selector: 'my-app',
+  standalone: true,
+  imports: [CommonModule],
+  template: \`
+    <div *ngIf="isVisible; else notVisible">
+      Visible content
+    </div>
+    <ng-template #notVisible>
+      <p>Not visible</p>
+    </ng-template>
+  \`,
+})
+export class AppComponent {
+  isVisible = true;
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for *ngIf directive (should show the condition)
+    const ngIfSymbol = templateSymbol!.children!.find((c) => c.name.includes('*ngIf'));
+    expect(ngIfSymbol).toBeDefined();
+    expect(ngIfSymbol!.name).toContain('isVisible');
+
+    // Check for ng-template with reference
+    const ngTemplateSymbol = templateSymbol!.children!.find((c) => c.name === '<ng-template>');
+    expect(ngTemplateSymbol).toBeDefined();
+
+    // Check for the #notVisible reference
+    const notVisibleRef = ngTemplateSymbol!.children!.find((c) => c.name === '#notVisible');
+    expect(notVisibleRef).toBeDefined();
+  });
+
+  it('provides document symbols for custom structural directive let/as microsyntax', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component, Directive, Input} from '@angular/core';
+
+@Directive({
+  selector: '[myDir]',
+  standalone: true,
+})
+export class MyDir<T = unknown> {
+  @Input() myDir: T | null = null;
+  @Input() myDirOf: readonly T[] | null = null;
+  @Input() myDirTrackBy: ((index: number, value: T) => unknown) | null = null;
+}
+
+@Component({
+  selector: 'my-app',
+  standalone: true,
+  imports: [MyDir],
+  template: \
+    '<ng-container *myDir="let item of [1,2,3] as items; trackBy: track; index as i">{{ item }}{{ items.length }}{{ i }}</ng-container>',
+})
+export class AppComponent {
+  track = (index: number) => index;
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    const myDirSymbol = templateSymbol!.children!.find((c) => c.name.includes('*myDir'));
+    expect(myDirSymbol).toBeDefined();
+
+    const childNames = myDirSymbol!.children?.map((c) => c.name) ?? [];
+    expect(childNames).toContain('let item');
+    expect(childNames).toContain('as items');
+    expect(childNames).toContain('as i');
+  });
+
+  it('provides document symbols for @if with expression alias', async () => {
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  standalone: true,
+  template: \`
+    @if (user; as currentUser) {
+      <div>Hello, {{ currentUser.name }}!</div>
+    } @else if (guestName; as name) {
+      <div>Welcome, {{ name }}!</div>
+    } @else {
+      <div>Anonymous</div>
+    }
+  \`,
+})
+export class AppComponent {
+  user = { name: 'John' };
+  guestName = '';
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Check for @if block with alias
+    const ifSymbol = templateSymbol!.children!.find(
+      (c) => c.name.includes('@if') && c.name.includes('currentUser'),
+    );
+    expect(ifSymbol).toBeDefined();
+    expect(ifSymbol!.name).toContain('as currentUser');
+
+    // The alias should appear exactly once as a child
+    const currentUserAliases = ifSymbol!.children!.filter((c) => c.name === 'as currentUser');
+    expect(currentUserAliases.length).toBe(1);
+
+    // Check for @else if block with alias
+    const elseIfSymbol = templateSymbol!.children!.find(
+      (c) => c.name.includes('@else if') && c.name.includes('name'),
+    );
+    expect(elseIfSymbol).toBeDefined();
+    expect(elseIfSymbol!.name).toContain('as name');
+
+    // The alias should appear exactly once
+    const nameAliases = elseIfSymbol!.children!.filter((c) => c.name === 'as name');
+    expect(nameAliases.length).toBe(1);
+
+    // Check for @else block (no alias)
+    const elseSymbol = templateSymbol!.children!.find((c) => c.name === '@else');
+    expect(elseSymbol).toBeDefined();
+  });
+
+  it('provides document symbols for nested @if with alias inside @for', async () => {
+    // Test case similar to user's template structure
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'my-app',
+  standalone: true,
+  template: \`
+    @for (category of categories; track category.name) {
+      <div class="category">
+        @for (test of category.tests; track test.name; let i = $index) {
+          @if (!test.passed; as tr) {
+            <div class="failed">{{ tr }}</div>
+          }
+        }
+      </div>
+    }
+  \`,
+})
+export class AppComponent {
+  categories = [
+    { name: 'Category 1', tests: [{ name: 'Test 1', passed: true }, { name: 'Test 2', passed: false }] }
+  ];
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    const appComponentSymbol = response.find((s) => s.name === 'AppComponent');
+    const templateSymbol = appComponentSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+
+    // Find the outer @for - name is "@for (category of categories)"
+    const outerForSymbol = templateSymbol!.children!.find(
+      (c) => c.name.startsWith('@for') && c.name.includes('category'),
+    );
+    expect(outerForSymbol).toBeDefined();
+
+    // Find the <div> inside outer @for
+    const divSymbol = outerForSymbol!.children!.find((c) => c.name === '<div>');
+    expect(divSymbol).toBeDefined();
+
+    // Find nested @for inside <div> - name is "@for (test of category.tests)"
+    const nestedForSymbol = divSymbol!.children!.find(
+      (c) => c.name.startsWith('@for') && c.name.includes('test of'),
+    );
+    expect(nestedForSymbol).toBeDefined();
+
+    // Check for 'let test' and 'let i' (explicit alias for $index)
+    const testVar = nestedForSymbol!.children!.filter((c) => c.name === 'let test');
+    expect(testVar.length).toBe(1);
+    const indexVar = nestedForSymbol!.children!.filter((c) => c.name === 'let i');
+    expect(indexVar.length).toBe(1);
+
+    // Find @if with alias inside nested @for - name is "@if (!test.passed; as tr)"
+    const ifSymbol = nestedForSymbol!.children!.find(
+      (c) => c.name.startsWith('@if') && c.name.includes('as tr'),
+    );
+    expect(ifSymbol).toBeDefined();
+
+    // The 'tr' alias should appear exactly once
+    const trAliases = ifSymbol!.children!.filter((c) => c.name === 'as tr');
+    expect(trAliases.length).toBe(1);
+  });
+
+  it('provides document symbols for component without "Component" suffix', async () => {
+    // Test that components like "NxWelcome" (without "Component" suffix) still get template symbols
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'app-welcome',
+  template: \`
+    @if (title) {
+      <span>{{ title }}</span>
+    }
+  \`,
+})
+export class Welcome {
+  title = 'Hello';
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    // Should contain the class symbol
+    const welcomeSymbol = response.find((s) => s.name === 'Welcome');
+    expect(welcomeSymbol).toBeDefined();
+    expect(welcomeSymbol!.kind).toBe(lsp.SymbolKind.Class);
+
+    // The class should have a (template) child containing Angular template symbols
+    const templateSymbol = welcomeSymbol!.children?.find((c) => c.name === '(template)');
+    expect(templateSymbol).toBeDefined();
+    expect(templateSymbol!.kind).toBe(lsp.SymbolKind.Namespace);
+
+    // Check for @if block
+    const ifSymbol = templateSymbol!.children!.find((c) => c.name === '@if (title)');
+    expect(ifSymbol).toBeDefined();
+  });
+
+  it('provides document symbols for multiple components in one file', async () => {
+    // Test that files with multiple components (common in tests/storybooks) work correctly
+    openTextDocument(
+      client,
+      APP_COMPONENT,
+      `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'app-button',
+  template: \`<button>{{ label }}</button>\`,
+})
+export class ButtonComponent {
+  label = 'Click me';
+}
+
+@Component({
+  selector: 'app-input',
+  template: \`<input [placeholder]="hint" />\`,
+})
+export class InputComponent {
+  hint = 'Type here';
+}`,
+    );
+    const response = (await client.sendRequest(lsp.DocumentSymbolRequest.type, {
+      textDocument: {
+        uri: APP_COMPONENT_URI,
+      },
+    })) as lsp.DocumentSymbol[];
+
+    // Should contain both class symbols
+    const buttonSymbol = response.find((s) => s.name === 'ButtonComponent');
+    expect(buttonSymbol).toBeDefined();
+    expect(buttonSymbol!.kind).toBe(lsp.SymbolKind.Class);
+
+    const inputSymbol = response.find((s) => s.name === 'InputComponent');
+    expect(inputSymbol).toBeDefined();
+    expect(inputSymbol!.kind).toBe(lsp.SymbolKind.Class);
+
+    // ButtonComponent should have its own (template) with <button>
+    const buttonTemplate = buttonSymbol!.children?.find((c) => c.name === '(template)');
+    expect(buttonTemplate).toBeDefined();
+    const buttonElement = buttonTemplate!.children!.find((c) => c.name === '<button>');
+    expect(buttonElement).toBeDefined();
+
+    // InputComponent should have its own (template) with <input>
+    const inputTemplate = inputSymbol!.children?.find((c) => c.name === '(template)');
+    expect(inputTemplate).toBeDefined();
+    const inputElement = inputTemplate!.children!.find((c) => c.name === '<input>');
+    expect(inputElement).toBeDefined();
   });
 
   describe('signature help', () => {
@@ -612,36 +1541,6 @@ export class AppComponent {
     expect(response).toBeNull();
   });
 
-  it('should handle apps where standalone is not enabled by default (pre v19)', async () => {
-    await initServer({angularCoreVersion: '18.0.0'});
-    const moduleFile = join(PROJECT_PATH, 'app/app.module.ts');
-
-    // Update component to not specify standalone explicitly. This should be interpreted as
-    // false in pre-v19 projects. The component is already declared in AppModule, and there should
-    // be no diagnostics.
-    openTextDocument(
-      client,
-      APP_COMPONENT,
-      `
-      import {Component, EventEmitter, Input, Output} from '@angular/core';
-
-      @Component({
-        selector: 'my-app',
-        template: '<h1>Hello {{name}}</h1>',
-        // standalone: false, // standalone is implicitly false
-      })
-      export class AppComponent {
-        name = 'Angular';
-        @Input() appInput = '';
-        @Output() appOutput = new EventEmitter<string>();
-      }
-      `,
-    );
-    openTextDocument(client, APP_COMPONENT_MODULE);
-    const diagnostics = await getDiagnosticsForFile(client, moduleFile);
-    expect(diagnostics.length).toBe(0);
-  });
-
   it('should provide a "go to component" codelens', async () => {
     openTextDocument(client, FOO_TEMPLATE);
     const codeLensResponse = await client.sendRequest(lsp.CodeLensRequest.type, {
@@ -659,6 +1558,833 @@ export class AppComponent {
     );
     expect(codeLensResolveResponse).toBeDefined();
     expect(codeLensResolveResponse?.command?.title).toEqual('Go to component');
+  });
+
+  describe('inlay hints', () => {
+    it('should provide TypeScript inlay hints for component class', async () => {
+      openTextDocument(client, APP_COMPONENT);
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 20, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // The server should respond (may be empty if TS inlay hints are disabled,
+      // but the request itself should succeed)
+      expect(response).toBeDefined();
+      // response can be null or empty array if TS has no hints to show
+      // The important thing is that the request doesn't fail
+    });
+
+    it('should handle inlay hints for external template', async () => {
+      openTextDocument(client, FOO_TEMPLATE);
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 10, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // For HTML templates, we currently don't provide Angular-specific hints
+      // (that's a future enhancement), but the request should succeed
+      expect(response).toBeDefined();
+    });
+
+    it('should provide parameter name hints for all @HostListener mapped arguments', async () => {
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+          languageId: 'typescript',
+          version: 1,
+          text: `
+import {Component, HostListener} from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  template: '',
+  standalone: false,
+})
+export class AppComponent {
+  @HostListener('click', ['$event', '$event.target'])
+  onClick2(tedt: PointerEvent, targets: EventTarget | null) {}
+}
+`,
+        },
+      });
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 30, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      const labels = (response ?? []).map((h) =>
+        typeof h.label === 'string' ? h.label : h.label.map((part) => part.value).join(''),
+      );
+      expect(labels).toContain('tedt:');
+      expect(labels).toContain('targets:');
+    });
+
+    it('should provide HostListener type hints for all mapped arguments including second arg', async () => {
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+          languageId: 'typescript',
+          version: 1,
+          text: `
+import {Directive, HostListener} from '@angular/core';
+
+@Directive({
+  selector: '[myDir]',
+  standalone: false,
+})
+export class MyDir {
+  @HostListener('keydown', ['$event', '$event.target'])
+  onHostKey(event: KeyboardEvent, target: EventTarget | null) {}
+}
+`,
+        },
+      });
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 30, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      const labels = (response ?? []).map((h) =>
+        typeof h.label === 'string' ? h.label : h.label.map((part) => part.value).join(''),
+      );
+      expect(labels.some((l) => l.includes('KeyboardEvent'))).toBeTrue();
+
+      const targetHint = (response ?? []).find((h) => {
+        const label =
+          typeof h.label === 'string' ? h.label : h.label.map((part) => part.value).join('');
+        return label.includes('EventTarget | null');
+      });
+      expect(targetHint).toBeDefined();
+
+      // Ensure the EventTarget hint is attached to the second mapped argument (`$event.target`).
+      const hostListenerLine = "  @HostListener('keydown', ['$event', '$event.target'])";
+      const secondArgStart = hostListenerLine.indexOf('$event.target');
+      expect(targetHint!.position.line).toBe(8);
+      expect(targetHint!.position.character).toBeGreaterThanOrEqual(secondArgStart);
+    });
+
+    it('should provide array literal parameter name hints in TypeScript templates', async () => {
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+          languageId: 'typescript',
+          version: 1,
+          text: `
+import {Component} from '@angular/core';
+
+@Component({
+  selector: 'app-root',
+  template: '{{ sum([1, 2, 3]) }}',
+  standalone: false,
+})
+export class AppComponent {
+  sum(values: number[]): number {
+    return values.reduce((acc, n) => acc + n, 0);
+  }
+}
+`,
+        },
+      });
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 30, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      const labels = (response ?? []).map((h) =>
+        typeof h.label === 'string' ? h.label : h.label.map((part) => part.value).join(''),
+      );
+      expect(labels).toContain('values:');
+    });
+
+    it('should resolve inlay hints', async () => {
+      openTextDocument(client, APP_COMPONENT);
+
+      // First get some hints
+      const hints = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: APP_COMPONENT_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 20, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // If we have any hints, try to resolve one
+      if (hints && hints.length > 0) {
+        const resolved = await client.sendRequest(lsp.InlayHintResolveRequest.type, hints[0]);
+        expect(resolved).toBeDefined();
+        // Resolved hint should have at least the same position
+        expect(resolved.position).toEqual(hints[0].position);
+      }
+    });
+
+    it('should return inlay hints response for external template', async () => {
+      // Use existing foo.component.html which has a simple template
+      openTextDocument(client, FOO_TEMPLATE);
+
+      // First verify diagnostics work (confirms Angular LS is working)
+      const diagnostics = await getDiagnosticsForFile(client, FOO_TEMPLATE);
+      expect(diagnostics).toBeDefined();
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 10, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // The InlayHint request should succeed (response is null or array)
+      // For external templates, we may not have hints yet if the feature
+      // isn't fully implemented, but the request shouldn't fail
+      // Check that response is either null or an array (not undefined)
+      expect(response === null || Array.isArray(response)).toBe(true);
+    });
+
+    it('should provide Angular inlay hints for @if alias', async () => {
+      // Create a component with @if and alias
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@if (title; as result) {
+  <div>{{ result }}</div>
+}`,
+        },
+      });
+
+      // Wait for diagnostics to ensure the file is processed
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Should have at least one hint for the @if alias
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+      expect(response!.length).toBeGreaterThan(0);
+
+      // Find the alias hint - should show the type (string for title)
+      const aliasHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('string');
+      });
+      expect(aliasHint).toBeDefined();
+    });
+
+    it('should provide inlay hints for pipe output types in template expressions', async () => {
+      // Use existing foo.component.html which has a pipe: {{title | uppercase}}
+      openTextDocument(client, FOO_TEMPLATE);
+
+      // Wait for diagnostics to ensure the file is processed
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      // Now try inlay hints
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 10, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Should have at least one hint for the pipe
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+      expect(response!.length).toBeGreaterThan(0);
+
+      // Find the pipe hint - should show the output type of uppercase pipe
+      const pipeHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('string');
+      });
+      expect(pipeHint).toBeDefined();
+    });
+
+    it('should provide inlay hints for @for loop variables', async () => {
+      // Create a template with @for loop
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@for (item of [1, 2, 3]; track item; let idx = $index) {
+  <div>{{ item }} at {{ idx }}</div>
+}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Should have hints for the loop variable and possibly context variables
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+      expect(response!.length).toBeGreaterThan(0);
+
+      // Find hint for the loop item (should be number)
+      const itemHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('number');
+      });
+      expect(itemHint).toBeDefined();
+    });
+
+    it('should provide inlay hints for multiple @let declarations', async () => {
+      // Create a template with @let declaration
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@let doubled = 2 * 2;
+<div>{{ doubled }}</div>`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Should have a hint for the @let declaration
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+      expect(response!.length).toBeGreaterThan(0);
+
+      // The hint should show number type for the multiplication result
+      const letHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('number');
+      });
+      expect(letHint).toBeDefined();
+    });
+
+    it('should provide inlay hints for event parameter types', async () => {
+      // Create a template with event binding using $event
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `<button (click)="onClick($event)">Click me</button>`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // The hint might be present if the implementation supports it
+      expect(response === null || Array.isArray(response)).toBe(true);
+
+      // If hints are returned, check for MouseEvent or Event type
+      if (response && response.length > 0) {
+        const eventHint = response.find((h) => {
+          const label =
+            typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+          return label.includes('MouseEvent') || label.includes('Event');
+        });
+        // Event hint is optional - some configurations might not enable it
+        if (eventHint) {
+          expect(eventHint.position).toBeDefined();
+        }
+      }
+    });
+
+    it('should provide inlay hints for structural directive let variables', async () => {
+      // Create a template with ngFor structural directive (let-item pattern)
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `<ng-template ngFor let-item [ngForOf]="[1, 2, 3]" let-i="index">
+  <div>{{ item }} at {{ i }}</div>
+</ng-template>`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Hints should be returned for let variables
+      expect(response === null || Array.isArray(response)).toBe(true);
+
+      // If hints are returned, check for number type hints
+      if (response && response.length > 0) {
+        const numberHint = response.find((h) => {
+          const label =
+            typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+          return label.includes('number');
+        });
+        // Number hint expected for the item and index
+        expect(numberHint).toBeDefined();
+      }
+    });
+
+    it('should provide inlay hints for pipes in property bindings', async () => {
+      // Create a template with pipe in property binding
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `<div [title]="title | uppercase">Hover me</div>`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Should have a hint for the pipe output
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+      expect(response!.length).toBeGreaterThan(0);
+
+      // Find the pipe hint - should show string type
+      const pipeHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('string');
+      });
+      expect(pipeHint).toBeDefined();
+    });
+
+    it('should provide inlay hints for chained pipes', async () => {
+      // Create a template with chained pipes
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `{{ title | uppercase | lowercase }}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      // Should have hints for each pipe in the chain
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+      // At least 2 hints for 2 pipes
+      expect(response!.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should not produce duplicate inlay hints for @for loop variables', async () => {
+      // Regression test: TmplAstRecursiveVisitor visits variables twice
+      // (once in visitForLoopBlock, once via visitVariable) which caused duplicates
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@for (item of [1, 2, 3]; track item; let idx = $index) {
+  {{ item }}
+}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Count hints with ': number' - there should be exactly 2:
+      // one for 'item' and one for 'idx'
+      const numberHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': number';
+      });
+
+      // Should have exactly 2 number hints, not 4+ (which would happen with duplicates)
+      expect(numberHints.length).toBe(2);
+    });
+
+    it('should not produce duplicate inlay hints for @if alias', async () => {
+      // Regression test: @if alias was being visited twice causing duplicate hints
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@if (title; as myTitle) {
+  {{ myTitle }}
+}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Count hints with ': string' - there should be exactly 1 for 'myTitle'
+      const stringHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': string';
+      });
+
+      // Should have exactly 1 string hint, not 2 (which would happen with duplicates)
+      expect(stringHints.length).toBe(1);
+    });
+
+    it('should provide inlay hints for @else if alias', async () => {
+      // @else if also supports the 'as' alias syntax
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@if (false) {
+  never
+} @else if (title; as elseIfAlias) {
+  {{ elseIfAlias }}
+}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 10, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Should have a hint for the @else if alias
+      const stringHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': string';
+      });
+
+      // Should have exactly 1 string hint for 'elseIfAlias'
+      expect(stringHints.length).toBe(1);
+    });
+
+    it('should provide inlay hints for @let declarations', async () => {
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `@let greeting = title;
+@let doubled = 2 * 2;
+{{ greeting }} {{ doubled }}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Should have hints for both @let declarations
+      const stringHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': string';
+      });
+      const numberHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': number';
+      });
+
+      expect(stringHints.length).toBe(1); // greeting: string
+      expect(numberHints.length).toBe(1); // doubled: number
+    });
+
+    it('should provide inlay hints for pipe output types', async () => {
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `{{ title | uppercase }}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 1, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Should have a hint for the pipe output type
+      const pipeHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('string');
+      });
+
+      expect(pipeHints.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should provide inlay hints for template reference variables', async () => {
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `<input #myInput>
+<div #myDiv>content</div>
+{{ myInput.value }} {{ myDiv.textContent }}`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 5, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Should have hints for #myInput (HTMLInputElement) and #myDiv (HTMLDivElement)
+      const inputHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('HTMLInputElement');
+      });
+      const divHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('HTMLDivElement');
+      });
+
+      expect(inputHint).toBeDefined();
+      expect(divHint).toBeDefined();
+
+      // Interactive hints should carry location metadata for type label parts.
+      expect(inputHint).toBeDefined();
+      if (inputHint && Array.isArray(inputHint.label)) {
+        const typePart = inputHint.label.find((part) => part.value.includes('HTMLInputElement'));
+        expect(typePart?.location).toBeDefined();
+        expect(typePart?.location?.uri).toContain('lib.dom');
+      }
+    });
+
+    it('should provide inlay hints for structural directive variables (*ngFor)', async () => {
+      // Use a template with *ngFor that uses a simple string array
+      client.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+          languageId: 'html',
+          version: 1,
+          text: `<div *ngFor="let char of title; let idx = index">{{ char }} {{ idx }}</div>`,
+        },
+      });
+
+      await getDiagnosticsForFile(client, FOO_TEMPLATE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: FOO_TEMPLATE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 2, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).toBeDefined();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Should have hints for 'char' (string) and 'idx' (number)
+      const charHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': string';
+      });
+      const idxHint = response!.find((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label === ': number';
+      });
+
+      expect(charHint).toBeDefined();
+      expect(idxHint).toBeDefined();
+    });
+
+    it('should provide inlay hints for host event bindings', async () => {
+      const HIGHLIGHT_DIRECTIVE = join(PROJECT_PATH, 'app', 'highlight.directive.ts');
+      const HIGHLIGHT_DIRECTIVE_URI = pathToFileURL(HIGHLIGHT_DIRECTIVE).toString();
+
+      openTextDocument(client, HIGHLIGHT_DIRECTIVE);
+      await getDiagnosticsForFile(client, HIGHLIGHT_DIRECTIVE);
+
+      const response = (await client.sendRequest(lsp.InlayHintRequest.type, {
+        textDocument: {
+          uri: HIGHLIGHT_DIRECTIVE_URI,
+        },
+        range: {
+          start: {line: 0, character: 0},
+          end: {line: 30, character: 0},
+        },
+      })) as lsp.InlayHint[] | null;
+
+      expect(response).not.toBeNull();
+      expect(Array.isArray(response)).toBe(true);
+
+      // Should have event type hints for the $event parameter in host event handlers
+      // Note: click events are PointerEvent in modern browsers, mouseenter is MouseEvent
+      const eventHints = response!.filter((h) => {
+        const label = typeof h.label === 'string' ? h.label : h.label.map((l) => l.value).join('');
+        return label.includes('MouseEvent') || label.includes('PointerEvent');
+      });
+
+      // Should have at least 2 event type hints (one for click=PointerEvent, one for mouseenter=MouseEvent)
+      expect(eventHints.length).toBeGreaterThanOrEqual(2);
+    });
   });
 
   it('detects an Angular project', async () => {
@@ -696,15 +2422,17 @@ export class AppComponent {
               {
                 'newText': '\nimport { BarComponent } from "./bar.component";',
                 'range': {
-                  'start': {'line': 5, 'character': 45},
-                  'end': {'line': 5, 'character': 45},
+                  // Line numbers adjusted for HighlightDirective import
+                  'start': {'line': 6, 'character': 57},
+                  'end': {'line': 6, 'character': 57},
                 },
               },
               {
                 'newText': 'imports: [CommonModule, PostModule, BarComponent]',
                 'range': {
-                  'start': {'line': 8, 'character': 2},
-                  'end': {'line': 8, 'character': 37},
+                  // Line numbers adjusted for HighlightDirective import
+                  'start': {'line': 9, 'character': 2},
+                  'end': {'line': 9, 'character': 37},
                 },
               },
             ],

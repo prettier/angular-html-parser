@@ -148,7 +148,7 @@ default-src 'self'; style-src 'self' 'nonce-randomNonceGoesHere'; script-src 'se
 
 When serving your Angular application, the server should include a randomly-generated nonce in the HTTP header for each request.
 You must provide this nonce to Angular so that the framework can render `<style>` elements.
-You can set the nonce for Angular in one of two ways:
+You can set the nonce for Angular in one of the following ways:
 
 1. Set the `autoCsp` option to `true` the [workspace configuration](reference/configs/workspace-config#extra-build-and-test-options).
 1. Set the `ngCspNonce` attribute on the root application element as `<app ngCspNonce="randomNonceGoesHere"></app>`. Use this approach if you have access to server-side templating that can add the nonce both to the header and the `index.html` when constructing the response.
@@ -172,6 +172,10 @@ bootstrapApplication(AppComponent, {
 
 Always ensure that the nonces you provide are <strong>unique per request</strong> and that they are not predictable or guessable.
 If an attacker can predict future nonces, they can circumvent the protections offered by CSP.
+
+Generating a nonce at the origin server is generally discouraged when using a CDN, as responses are frequently cached. If the server generates a nonce and the CDN caches that HTML response, every subsequent visitor receives the same "unique" value, allowing an attacker to discover the static value and bypass CSP protections.
+
+To maintain the "one-time-use" integrity of a nonce, it should ideally be generated at the Edge layer (e.g., CDN) just before the content is delivered to the user.
 
 </docs-callout>
 
@@ -362,6 +366,72 @@ Servers can prevent an attack by prefixing all JSON responses to make them non-e
 Angular's `HttpClient` library recognizes this convention and automatically strips the string `")]}',\n"` from all responses before further parsing.
 
 For more information, see the XSSI section of this [Google web security blog post](https://security.googleblog.com/2011/05/website-security-for-webmasters.html).
+
+## Preventing Server-Side Request Forgery (SSRF)
+
+Angular includes strict validation for `Host`, `X-Forwarded-Host`, `X-Forwarded-Proto`, `X-Forwarded-Prefix` and `X-Forwarded-Port` headers in the request handling pipeline to prevent header-based [Server-Side Request Forgery (SSRF)](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/SSRF).
+
+The validation rules are:
+
+- `Host` and `X-Forwarded-Host` headers are validated against a strict allowlist and cannot contain path separators.
+- `X-Forwarded-Port` header must be numeric.
+- `X-Forwarded-Proto` header must be `http` or `https`.
+- `X-Forwarded-Prefix` header must not start with `\` or multiple `/` or contain `.`, `..` path segments.
+
+Invalid or disallowed headers now trigger an error log. Requests with unrecognized hostnames will result in a Client-Side Rendered (CSR) page if `allowedHosts` is defined; if not, a `400 Bad Request` is issued. Note that in a future major release, all unrecognized hostnames will default to a `400 Bad Request` regardless of `allowedHosts` settings.
+
+NOTE: Most cloud providers and CDN providers perform automatic validation of these headers before a request ever reaches the application origin. This inherent filtering significantly reduces the practical attack surface.
+
+### Configuring allowed hosts
+
+To allow specific hostnames, you need to add them to the allowlist. This is critical for ensuring your application works correctly and securely when deployed. The patterns support wildcards for flexible hostname matching.
+
+You can configure the `allowedHosts` option in your `angular.json`:
+
+```json {hideCopy}
+{
+  // ...
+  "projects": {
+    "your-project-name": {
+      // ...
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "security": {
+              "allowedHosts": [
+                "example.com",
+                "*.example.com" // allows all subdomains of example.com
+              ]
+            }
+            // ... other options
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+You can also configure `allowedHosts` when initializing the application engine:
+
+```typescript
+const appEngine = new AngularAppEngine({
+  allowedHosts: ['example.com', '*.trusted-example.com'],
+});
+
+const nodeAppEngine = new AngularNodeAppEngine({
+  allowedHosts: ['example.com', '*.trusted-example.com'],
+});
+```
+
+For the Node.js variant `AngularNodeAppEngine`, you can also provide `NG_ALLOWED_HOSTS` (comma-separated list) environment variable for authorizing hosts.
+
+```bash {hideDollar}
+export NG_ALLOWED_HOSTS="example.com,*.trusted-example.com"
+```
+
+IMPORTANT: You can use `*` as a value in `allowedHosts` to allow all hostnames, though this is generally discouraged and presents a security risk. Accepting any host header can expose your application to host header injection and [Server-Side Request Forgery (SSRF)](https://developer.mozilla.org/en-US/docs/Web/Security/Attacks/SSRF) attacks. This configuration should only be used when validation for `Host` and `X-Forwarded-Host` headers is performed in another layer, such as a load balancer or reverse proxy. For better security, we recommend using an explicit list of allowed hosts whenever possible. See [GHSA-x288-3778-4hhx](https://github.com/angular/angular-cli/security/advisories/GHSA-x288-3778-4hhx) for more details.
 
 ## Auditing Angular applications
 

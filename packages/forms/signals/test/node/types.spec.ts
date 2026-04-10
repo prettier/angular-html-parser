@@ -7,7 +7,16 @@
  */
 
 import {signal, WritableSignal} from '@angular/core';
-import {FieldTree, form, required, schema, SchemaFn} from '../../public_api';
+import {
+  FieldTree,
+  form,
+  provideSignalFormsConfig,
+  ReadonlyFieldState,
+  required,
+  schema,
+  SchemaFn,
+  validate,
+} from '../../public_api';
 
 interface Order {
   id: string;
@@ -88,6 +97,15 @@ function typeVerificationOnlyDoNotRunMe() {
       form(signal<RecursiveType>([5]));
     });
 
+    it('should allow property access on generic type unions', () => {
+      // Validates that uninstantiated generic unions can still access shared
+      // fields via naked conditional distribution in FieldTree
+      function testGeneric<T extends {a: 1} | {a: 1; b: 2}>(f: FieldTree<T>) {
+        const x: FieldTree<1> = f.a;
+        return x;
+      }
+    });
+
     it('should allow ReadonlyArray in model and be iterable', () => {
       interface Order {
         readonly products: readonly string[];
@@ -111,6 +129,39 @@ function typeVerificationOnlyDoNotRunMe() {
         const p: FieldTree<string> = product;
         p().value();
       }
+    });
+
+    it('should allow assigning FieldState to ReadonlyFieldState', () => {
+      const pizzaOrder: WritableSignal<PizzaOrder> = null!;
+      const f = form(pizzaOrder);
+      const readonlyState: ReadonlyFieldState<PizzaOrder> = f();
+      readonlyState.value();
+    });
+
+    it('should prevent writing to field value through context in a validation rule', () => {
+      schema<PizzaOrder>((p) => {
+        validate(p.id, (ctx) => {
+          // @ts-expect-error
+          ctx.value.set('new value');
+          // @ts-expect-error
+          ctx.state.value.set('new value');
+          // @ts-expect-error
+          ctx.stateOf(p.details).value.set({total: 0});
+          return null;
+        });
+      });
+    });
+
+    it('should prevent writing to field value through context in a signal provider', () => {
+      provideSignalFormsConfig({
+        classes: {
+          'my-class': (binding) => {
+            // @ts-expect-error
+            binding.state().value.set('new value');
+            return true;
+          },
+        },
+      });
     });
   });
 }

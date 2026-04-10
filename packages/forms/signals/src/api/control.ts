@@ -7,8 +7,8 @@
  */
 
 import {InputSignal, InputSignalWithTransform, ModelSignal, OutputRef} from '@angular/core';
-import type {FormFieldBindingOptions} from './form_field_directive';
-import {ValidationError, type WithOptionalField} from './rules/validation/validation_errors';
+import type {FormFieldBindingOptions} from '../directive/form_field';
+import type {ValidationError, WithOptionalFieldTree} from './rules/validation/validation_errors';
 import type {DisabledReason} from './types';
 
 /**
@@ -23,8 +23,8 @@ export interface FormUiControl {
    * automatically bind errors from the bound field to this input.
    */
   readonly errors?:
-    | InputSignal<readonly WithOptionalField<ValidationError>[]>
-    | InputSignalWithTransform<readonly WithOptionalField<ValidationError>[], unknown>;
+    | InputSignal<readonly ValidationError.WithOptionalFieldTree[]>
+    | InputSignalWithTransform<readonly ValidationError.WithOptionalFieldTree[], unknown>;
   /**
    * An input to receive the disabled status for the field. If implemented, the `Field` directive
    * will automatically bind the disabled status from the bound field to this input.
@@ -35,8 +35,8 @@ export interface FormUiControl {
    * directive will automatically bind the disabled reason from the bound field to this input.
    */
   readonly disabledReasons?:
-    | InputSignal<readonly WithOptionalField<DisabledReason>[]>
-    | InputSignalWithTransform<readonly WithOptionalField<DisabledReason>[], unknown>;
+    | InputSignal<readonly WithOptionalFieldTree<DisabledReason>[]>
+    | InputSignalWithTransform<readonly WithOptionalFieldTree<DisabledReason>[], unknown>;
   /**
    * An input to receive the readonly status for the field. If implemented, the `Field` directive
    * will automatically bind the readonly status from the bound field to this input.
@@ -61,11 +61,7 @@ export interface FormUiControl {
    * An input to receive the touched status for the field. If implemented, the `Field` directive
    * will automatically bind the touched status from the bound field to this input.
    */
-  readonly touched?:
-    | ModelSignal<boolean>
-    | InputSignal<boolean>
-    | InputSignalWithTransform<boolean, unknown>
-    | OutputRef<boolean>;
+  readonly touched?: InputSignal<boolean> | InputSignalWithTransform<boolean, unknown>;
   /**
    * An input to receive the dirty status for the field. If implemented, the `Field` directive
    * will automatically bind the dirty status from the bound field to this input.
@@ -117,12 +113,16 @@ export interface FormUiControl {
     | InputSignal<readonly RegExp[]>
     | InputSignalWithTransform<readonly RegExp[], unknown>;
   /**
+   * An output to emit when the control is touched.
+   */
+  readonly touch?: OutputRef<void>;
+  /**
    * Focuses the UI control.
    *
    * If the focus method is not implemented, Signal Forms will attempt to focus the host element
    * when asked to focus this control.
    */
-  focus?(): void;
+  focus?(options?: FocusOptions): void;
 }
 
 // Verify that `FormUiControl` implements `FormFieldBindingOptions`.
@@ -175,6 +175,7 @@ export interface FormValueControl<TValue> extends FormUiControl {
  * @category control
  * @experimental 21.0.0
  */
+// TODO: should we make this generic extends `boolean | null` so people can use `null` for parse error?
 export interface FormCheckboxControl extends FormUiControl {
   /**
    * The checked is the only required property in this contract. A component that wants to integrate

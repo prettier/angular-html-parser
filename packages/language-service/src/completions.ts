@@ -65,6 +65,7 @@ import {
   findTightestNode,
   getCodeActionToImportTheDirectiveDeclaration,
   standaloneTraitOrNgModule,
+  getClassDeclarationFromSymbolReference,
 } from './utils/ts_utils';
 import {filterAliasImports, isBoundEventWithSyntheticHandler, isWithin} from './utils';
 
@@ -426,7 +427,7 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
       ) {
         const symbol = this.templateTypeChecker.getSymbolOfNode(this.node.receiver, this.component);
         if (symbol?.kind === SymbolKind.Expression) {
-          const type = symbol.tsType;
+          const type = this.templateTypeChecker.getTypeOfSymbol(symbol)!;
           const nonNullableType = this.typeChecker.getNonNullableType(type);
           if (type !== nonNullableType && replacementSpan !== undefined) {
             // Shift the start location back one so it includes the `.` of the property access.
@@ -660,6 +661,7 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
         this.tsLS,
         this.typeChecker,
         symbol,
+        this.templateTypeChecker,
       );
       return {
         kind: unsafeCastDisplayInfoKindToScriptElementKind(kind),
@@ -706,10 +708,10 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
         node,
         this.component,
       ) as TemplateDeclarationSymbol | null;
-      if (symbol === null || symbol.tsSymbol === null) {
+      if (symbol === null || this.templateTypeChecker.getTsSymbolOfSymbol(symbol) === null) {
         return undefined;
       }
-      return symbol.tsSymbol;
+      return this.templateTypeChecker.getTsSymbolOfSymbol(symbol)!;
     } else {
       return this.tsLS.getCompletionEntrySymbol(
         componentContext.tcbPath,
@@ -771,9 +773,9 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
         directive.tsCompletionEntryInfos.length > 0
       ) {
         directiveCompletionDetailMap.set(tag, {
-          fileName: directive.ref.node.getSourceFile().fileName,
-          entryName: directive.tsSymbol.name,
-          pos: directive.ref.node.getStart(),
+          fileName: directive.ref.filePath,
+          entryName: directive.ref.name,
+          pos: directive.ref.position,
           attrKind: null,
 
           // The Angular LS only supports displaying one directive at a time when
@@ -895,7 +897,10 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
     }
 
     const directive = tagMap.get(entryName)!;
-    return directive?.tsSymbol;
+    const decl = getClassDeclarationFromSymbolReference(this.tsLS, directive.ref);
+
+    if (!decl || !ts.isClassDeclaration(decl)) return undefined;
+    return decl.name ? this.typeChecker.getSymbolAtLocation(decl.name) : undefined;
   }
 
   private isAnimationCompletion(): this is ElementAnimationCompletionBuilder {
@@ -1118,9 +1123,9 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
         completion.directive.tsCompletionEntryInfos.length > 0
       ) {
         directiveCompletionDetailMap.set(key, {
-          fileName: completion.directive.ref.node.getSourceFile().fileName,
-          entryName: completion.directive.tsSymbol.name,
-          pos: completion.directive.ref.node.getStart(),
+          fileName: completion.directive.ref.filePath,
+          entryName: completion.directive.ref.name,
+          pos: completion.directive.ref.position,
           attrKind: completion.kind,
 
           // The Angular LS only supports displaying one directive at a time when
@@ -1233,6 +1238,7 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
           name,
           directive,
           templateTypeChecker,
+          this.tsLS,
         );
       }
     }
@@ -1274,6 +1280,7 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
           directive,
           classPropertyName,
           this.typeChecker,
+          this.tsLS,
         );
         if (propertySymbol === null) {
           break;
@@ -1293,7 +1300,7 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
           this.typeChecker,
           propertySymbol,
           kind,
-          directive.tsSymbol.name,
+          directive.ref.name,
         );
         if (info === null) {
           break;
@@ -1374,6 +1381,7 @@ export class CompletionBuilder<N extends TmplAstNode | AST> {
         'directive' in completion ? completion.directive : null,
         'classPropertyName' in completion ? completion.classPropertyName : null,
         this.typeChecker,
+        this.tsLS,
       ) ?? undefined
     );
   }
@@ -1534,12 +1542,14 @@ function getClassPropertyNameFromDirective(
   attrName: string,
   directive: PotentialDirective | null,
   templateTypeChecker: TemplateTypeChecker,
+  ls?: ts.LanguageService,
 ): string | null {
   if (directive === null || attrKind === null) {
     return null;
   }
-  const dirNode = directive.ref.node;
-  if (!ts.isClassDeclaration(dirNode)) {
+  const dirNode = ls ? getClassDeclarationFromSymbolReference(ls, directive.ref) : null;
+
+  if (!dirNode || !ts.isClassDeclaration(dirNode)) {
     return null;
   }
   const meta = templateTypeChecker.getDirectiveMetadata(dirNode);

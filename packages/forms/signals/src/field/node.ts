@@ -6,8 +6,15 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {computed, linkedSignal, type Signal, untracked, type WritableSignal} from '@angular/core';
-import type {FormField} from '../api/form_field_directive';
+import {
+  computed,
+  linkedSignal,
+  type Signal,
+  untracked,
+  type WritableSignal,
+  type Resource,
+  type WritableResource,
+} from '@angular/core';
 import {
   MAX,
   MAX_LENGTH,
@@ -16,9 +23,17 @@ import {
   MIN_LENGTH,
   PATTERN,
   REQUIRED,
+  IS_ASYNC_VALIDATION_RESOURCE,
 } from '../api/rules/metadata';
 import type {ValidationError} from '../api/rules/validation/validation_errors';
-import type {DisabledReason, FieldContext, FieldState, FieldTree} from '../api/types';
+import type {
+  DisabledReason,
+  FieldContext,
+  FieldState,
+  FieldTree,
+  MarkAsTouchedOptions,
+} from '../api/types';
+import type {FormField} from '../directive/form_field';
 import {DYNAMIC} from '../schema/logic';
 import {LogicNode} from '../schema/logic_node';
 import {FieldPathNode} from '../schema/path_node';
@@ -58,6 +73,7 @@ export class FieldNode implements FieldState<unknown> {
   readonly nodeState: FieldNodeState;
   readonly submitState: FieldSubmitState;
   readonly fieldAdapter: FieldAdapter;
+  readonly controlValue: WritableSignal<unknown>;
 
   private _context: FieldContext<unknown> | undefined = undefined;
   get context(): FieldContext<unknown> {
@@ -78,10 +94,14 @@ export class FieldNode implements FieldState<unknown> {
     this.nodeState = this.fieldAdapter.createNodeState(this, options);
     this.metadataState = new FieldMetadataState(this);
     this.submitState = new FieldSubmitState(this);
+    this.controlValue = this.controlValueSignal();
+    // We eagerly create metadata at the end of construction so that the node is fully constructed
+    // before metadata creation logic runs (which may access other states on the node).
+    this.metadataState.runMetadataCreateLifecycle();
   }
 
-  focusBoundControl(): void {
-    this.getBindingForFocus()?.focus();
+  focusBoundControl(options?: FocusOptions): void {
+    this.getBindingForFocus()?.focus(options);
   }
 
   /**
@@ -92,11 +112,19 @@ export class FieldNode implements FieldState<unknown> {
    * the first one in the DOM. If no focusable bindings exist on this node, it will return the
    * first focusable binding in the DOM for any descendant node of this one.
    */
-  private getBindingForFocus(): (FormField<unknown> & {focus: VoidFunction}) | undefined {
+  private getBindingForFocus():
+    | (FormField<unknown> & {focus: (options?: FocusOptions) => void})
+    | undefined {
     // First try to focus one of our own bindings.
     const own = this.formFieldBindings()
-      .filter((b): b is FormField<unknown> & {focus: VoidFunction} => b.focus !== undefined)
-      .reduce(firstInDom<FormField<unknown> & {focus: VoidFunction}>, undefined);
+      .filter(
+        (b): b is FormField<unknown> & {focus: (options?: FocusOptions) => void} =>
+          b.focus !== undefined,
+      )
+      .reduce(
+        firstInDom<FormField<unknown> & {focus: (options?: FocusOptions) => void}>,
+        undefined,
+      );
     if (own) return own;
     // Fallback to focusing the bound control for one of our children.
     return this.structure
@@ -120,6 +148,10 @@ export class FieldNode implements FieldState<unknown> {
     },
   });
 
+  get fieldTree(): FieldTree<unknown> {
+    return this.fieldProxy;
+  }
+
   get logicNode(): LogicNode {
     return this.structure.logic;
   }
@@ -128,20 +160,19 @@ export class FieldNode implements FieldState<unknown> {
     return this.structure.value;
   }
 
-  private _controlValue = linkedSignal(() => this.value());
-  get controlValue(): Signal<unknown> {
-    return this._controlValue.asReadonly();
-  }
-
   get keyInParent(): Signal<string | number> {
     return this.structure.keyInParent;
   }
 
-  get errors(): Signal<ValidationError.WithField[]> {
+  get errors(): Signal<ValidationError.WithFieldTree[]> {
     return this.validationState.errors;
   }
 
-  get errorSummary(): Signal<ValidationError.WithField[]> {
+  get parseErrors(): Signal<ValidationError.WithFormField[]> {
+    return this.validationState.parseErrors;
+  }
+
+  get errorSummary(): Signal<ValidationError.WithFieldTree[]> {
     return this.validationState.errorSummary;
   }
 
@@ -221,17 +252,32 @@ export class FieldNode implements FieldState<unknown> {
     return this.metadataState.get(key);
   }
 
+  getError(kind: string): ValidationError.WithFieldTree | undefined {
+    return this.errors().find((e) => e.kind === kind);
+  }
+
   hasMetadata(key: MetadataKey<any, any, any>): boolean {
     return this.metadataState.has(key);
   }
 
-  /**
-   * Marks this specific field as touched.
-   */
-  markAsTouched(): void {
+  markAsTouched(options?: MarkAsTouchedOptions): void {
+    untracked(() => {
+      this.markAsTouchedInternal(options);
+      this.flushSync();
+    });
+  }
+
+  markAsTouchedInternal(options?: MarkAsTouchedOptions): void {
+    if (this.validationState.shouldSkipValidation()) {
+      return;
+    }
     this.nodeState.markAsTouched();
-    this.pendingSync()?.abort();
-    this.sync();
+    if (options?.skipDescendants) {
+      return;
+    }
+    for (const child of this.structure.children()) {
+      child.markAsTouchedInternal();
+    }
   }
 
   /**
@@ -239,6 +285,20 @@ export class FieldNode implements FieldState<unknown> {
    */
   markAsDirty(): void {
     this.nodeState.markAsDirty();
+  }
+
+  /**
+   * Marks this specific field as pristine.
+   */
+  markAsPristine(): void {
+    this.nodeState.markAsPristine();
+  }
+
+  /**
+   * Marks this specific field as untouched.
+   */
+  markAsUntouched(): void {
+    this.nodeState.markAsUntouched();
   }
 
   /**
@@ -266,13 +326,46 @@ export class FieldNode implements FieldState<unknown> {
   }
 
   /**
-   * Sets the control value of the field. This value may be debounced before it is synchronized with
-   * the field's {@link value} signal, depending on the debounce configuration.
+   * Reloads all asynchronous validators for this field and its descendants.
    */
-  setControlValue(newValue: unknown): void {
-    this._controlValue.set(newValue);
-    this.markAsDirty();
-    this.debounceSync();
+  reloadValidation(): void {
+    untracked(() => this._reloadValidation());
+  }
+
+  private _reloadValidation(): void {
+    const keys = this.logicNode.logic.getMetadataKeys();
+    for (const key of keys) {
+      if (key[IS_ASYNC_VALIDATION_RESOURCE]) {
+        const resource = this.metadata(key)! as Resource<unknown> &
+          Partial<Pick<WritableResource<unknown>, 'reload'>>;
+        resource.reload?.();
+      }
+    }
+
+    for (const child of this.structure.children()) {
+      child._reloadValidation();
+    }
+  }
+
+  /**
+   * Creates a linked signal that initiates a {@link debounceSync} when set.
+   */
+  private controlValueSignal(): WritableSignal<unknown> {
+    const controlValue = linkedSignal(this.value);
+    const {set, update} = controlValue;
+
+    controlValue.set = (newValue) => {
+      set(newValue);
+      this.markAsDirty();
+      this.debounceSync();
+    };
+    controlValue.update = (updateFn) => {
+      update(updateFn);
+      this.markAsDirty();
+      this.debounceSync();
+    };
+
+    return controlValue;
   }
 
   /**
@@ -283,17 +376,30 @@ export class FieldNode implements FieldState<unknown> {
   }
 
   /**
+   * If there is a pending sync, abort it and sync immediately.
+   */
+  private flushSync() {
+    const pending = this.pendingSync();
+    if (pending && !pending.signal.aborted) {
+      pending.abort();
+      this.sync();
+    }
+  }
+
+  /**
    * Initiates a debounced {@link sync}.
    *
    * If a debouncer is configured, the synchronization will occur after the debouncer resolves. If
-   * no debouncer is configured, the synchronization happens immediately. If {@link setControlValue}
-   * is called again while a debounce is pending, the previous debounce operation is aborted in
-   * favor of the new one.
+   * no debouncer is configured, the synchronization happens immediately. If {@link controlValue} is
+   * updated again while a debounce is pending, the previous debounce operation is aborted in favor
+   * of the new one.
    */
   private async debounceSync() {
-    this.pendingSync()?.abort();
+    const debouncer = untracked(() => {
+      this.pendingSync()?.abort();
+      return this.nodeState.debouncer();
+    });
 
-    const debouncer = this.nodeState.debouncer();
     if (debouncer) {
       const controller = new AbortController();
       const promise = debouncer(controller.signal);

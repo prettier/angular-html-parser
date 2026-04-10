@@ -239,8 +239,7 @@ export class NavigationStateManager extends StateManager {
       // initiated outside the router, we do need to replace it with a router-triggered navigation
       // to add the router-specific state.
       (navigationEvent &&
-        (navigationEvent.navigationType === 'traverse' ||
-          navigationEvent.navigationType === 'reload') &&
+        navigationEvent.navigationType === 'traverse' &&
         this.eventAndRouterDestinationsMatch(navigationEvent, transition))
     ) {
       return;
@@ -388,7 +387,10 @@ export class NavigationStateManager extends StateManager {
   private handleNavigate(event: NavigateEvent) {
     // If the event cannot be intercepted (e.g., cross-origin, or some browser-internal
     // navigations), let the browser handle it.
-    if (!event.canIntercept) {
+    // We also do not convert reload navigation events to SPA navigations. Intercepting
+    // would prevent the generally expected hard refresh. If an application wants special
+    // handling for reloads, they can implement it in their own `navigate` event listener.
+    if (!event.canIntercept || event.navigationType === 'reload') {
       return;
     }
 
@@ -461,7 +463,12 @@ export class NavigationStateManager extends StateManager {
       >((resolve) => {
         // The `precommitHandler` option is not in the standard DOM types yet
         (interceptOptions as any).precommitHandler = (controller: any) => {
-          resolve(controller.redirect.bind(controller));
+          if (this.navigation.transition?.navigationType === 'traverse') {
+            // TODO(atscott): Figure out correct behavior for redirecting traversals
+            resolve(() => {});
+          } else {
+            resolve(controller.redirect.bind(controller));
+          }
           return precommitHandlerPromise;
         };
       });
@@ -541,9 +548,7 @@ export class NavigationStateManager extends StateManager {
     return (
       this.precommitHandlerSupported &&
       // Cannot defer commit if not cancelable by the Navigation API's rules.
-      event.cancelable &&
-      // Deferring a traversal commit is currently problematic or not fully supported.
-      event.navigationType !== 'traverse'
+      event.cancelable
     );
   }
 }
@@ -559,7 +564,7 @@ export class NavigationStateManager extends StateManager {
  * overall success/failure.
  */
 function handleResultRejections(result: NavigationResult): NavigationResult {
-  result.finished.catch(() => {});
-  result.committed.catch(() => {});
+  result.finished?.catch(() => {});
+  result.committed?.catch(() => {});
   return result;
 }

@@ -112,6 +112,11 @@ export abstract class AbstractLogic<TReturn, TValue = TReturn> {
       : other.fns;
     this.fns.push(...fns);
   }
+
+  /** Checks if any logic rules are registered in this instance. */
+  hasRules(): boolean {
+    return this.fns.length > 0;
+  }
 }
 
 /** Logic that combines its individual logic function results with logical OR. */
@@ -254,11 +259,11 @@ export class LogicContainer {
   /** Logic that determines if the field is read-only. */
   readonly readonly: BooleanOrLogic;
   /** Logic that produces synchronous validation errors for the field. */
-  readonly syncErrors: ArrayMergeIgnoreLogic<ValidationError.WithField, null>;
+  readonly syncErrors: ArrayMergeIgnoreLogic<ValidationError.WithFieldTree, null>;
   /** Logic that produces synchronous validation errors for the field's subtree. */
-  readonly syncTreeErrors: ArrayMergeIgnoreLogic<ValidationError.WithField, null>;
+  readonly syncTreeErrors: ArrayMergeIgnoreLogic<ValidationError.WithFieldTree, null>;
   /** Logic that produces asynchronous validation results (errors or 'pending'). */
-  readonly asyncErrors: ArrayMergeIgnoreLogic<ValidationError.WithField | 'pending', null>;
+  readonly asyncErrors: ArrayMergeIgnoreLogic<ValidationError.WithFieldTree | 'pending', null>;
   /** A map of metadata keys to the `AbstractLogic` instances that compute their values. */
   private readonly metadata = new Map<
     MetadataKey<unknown, unknown, unknown>,
@@ -274,16 +279,37 @@ export class LogicContainer {
     this.hidden = new BooleanOrLogic(predicates);
     this.disabledReasons = new ArrayMergeLogic(predicates);
     this.readonly = new BooleanOrLogic(predicates);
-    this.syncErrors = ArrayMergeIgnoreLogic.ignoreNull<ValidationError.WithField>(predicates);
-    this.syncTreeErrors = ArrayMergeIgnoreLogic.ignoreNull<ValidationError.WithField>(predicates);
-    this.asyncErrors = ArrayMergeIgnoreLogic.ignoreNull<ValidationError.WithField | 'pending'>(
+    this.syncErrors = ArrayMergeIgnoreLogic.ignoreNull<ValidationError.WithFieldTree>(predicates);
+    this.syncTreeErrors =
+      ArrayMergeIgnoreLogic.ignoreNull<ValidationError.WithFieldTree>(predicates);
+    this.asyncErrors = ArrayMergeIgnoreLogic.ignoreNull<ValidationError.WithFieldTree | 'pending'>(
       predicates,
+    );
+  }
+
+  /**
+   * Checks whether this container has any logic rules registered in any of its categories.
+   * @returns True if at least one logic rule exists.
+   */
+  hasAnyLogic(): boolean {
+    return (
+      this.hidden.hasRules() ||
+      this.disabledReasons.hasRules() ||
+      this.readonly.hasRules() ||
+      this.syncErrors.hasRules() ||
+      this.syncTreeErrors.hasRules() ||
+      this.asyncErrors.hasRules() ||
+      this.metadata.size > 0
     );
   }
 
   /** Checks whether there is logic for the given metadata key. */
   hasMetadata(key: MetadataKey<any, any, any>) {
     return this.metadata.has(key);
+  }
+
+  hasMetadataKeys(): boolean {
+    return this.metadata.size > 0;
   }
 
   /**

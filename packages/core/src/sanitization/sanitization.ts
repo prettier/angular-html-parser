@@ -214,8 +214,16 @@ export function ɵɵtrustConstantResourceUrl(url: TemplateStringsArray): Trusted
 }
 
 // Define sets outside the function for O(1) lookups and memory efficiency
-const SRC_RESOURCE_TAGS = new Set(['embed', 'frame', 'iframe', 'media', 'script']);
-const HREF_RESOURCE_TAGS = new Set(['base', 'link', 'script']);
+const RESOURCE_MAP: Record<string, Record<string, true | undefined> | undefined> = {
+  'embed': {'src': true},
+  'frame': {'src': true},
+  'iframe': {'src': true},
+  'media': {'src': true},
+  'script': {'src': true, 'href': true, 'xlink:href': true},
+  'base': {'href': true},
+  'link': {'href': true},
+  'object': {'data': true, 'codebase': true},
+};
 
 /**
  * Detects which sanitizer to use for URL property, based on tag name and prop name.
@@ -225,10 +233,7 @@ const HREF_RESOURCE_TAGS = new Set(['base', 'link', 'script']);
  * If tag and prop names don't match Resource URL schema, use URL sanitizer.
  */
 export function getUrlSanitizer(tag: string, prop: string) {
-  const isResource =
-    (prop === 'src' && SRC_RESOURCE_TAGS.has(tag)) ||
-    (prop === 'href' && HREF_RESOURCE_TAGS.has(tag)) ||
-    (prop === 'xlink:href' && tag === 'script');
+  const isResource = RESOURCE_MAP[tag]?.[prop] === true;
 
   return isResource ? ɵɵsanitizeResourceUrl : ɵɵsanitizeUrl;
 }
@@ -277,25 +282,36 @@ function getSanitizer(): Sanitizer | null {
   return lView && lView[ENVIRONMENT].sanitizer;
 }
 
-const attributeName: ReadonlySet<string> = new Set(['attributename']);
+/**
+ * Set of attributes that are sensitive and should be sanitized.
+ */
+const SECURITY_SENSITIVE_ATTRIBUTE_NAMES: ReadonlySet<string> = new Set(['href', 'xlink:href']);
 
 /**
  * @remarks Keep this in sync with DOM Security Schema.
  * @see [SECURITY_SCHEMA](../../../compiler/src/schema/dom_security_schema.ts)
  */
-const SECURITY_SENSITIVE_ELEMENTS: Readonly<Record<string, ReadonlySet<string>>> = {
-  'iframe': new Set([
-    'sandbox',
-    'allow',
-    'allowfullscreen',
-    'referrerpolicy',
-    'csp',
-    'fetchpriority',
-  ]),
-  'animate': attributeName,
-  'set': attributeName,
-  'animatemotion': attributeName,
-  'animatetransform': attributeName,
+const SECURITY_SENSITIVE_ELEMENTS: Record<
+  string,
+  Record<string, true | undefined | ReadonlySet<string>> | undefined
+> = {
+  'iframe': {
+    'sandbox': true,
+    'allow': true,
+    'allowfullscreen': true,
+    'referrerpolicy': true,
+    'csp': true,
+    'fetchpriority': true,
+  },
+  'animate': {
+    'attributename': true,
+    'to': SECURITY_SENSITIVE_ATTRIBUTE_NAMES,
+    'values': SECURITY_SENSITIVE_ATTRIBUTE_NAMES,
+    'from': SECURITY_SENSITIVE_ATTRIBUTE_NAMES,
+  },
+  'set': {'attributename': true, 'to': SECURITY_SENSITIVE_ATTRIBUTE_NAMES},
+  'animatemotion': {'attributename': true},
+  'animatetransform': {'attributename': true},
 };
 
 /**
@@ -305,14 +321,11 @@ const SECURITY_SENSITIVE_ELEMENTS: Readonly<Record<string, ReadonlySet<string>>>
  * @param tagName The name of the tag.
  * @param attributeName The name of the attribute.
  */
-export function ɵɵvalidateAttribute(
-  value: unknown,
-  tagName: string,
-  attributeName: string,
-): unknown {
+export function ɵɵvalidateAttribute<T = any>(value: T, tagName: string, attributeName: string): T {
   const lowerCaseTagName = tagName.toLowerCase();
   const lowerCaseAttrName = attributeName.toLowerCase();
-  if (!SECURITY_SENSITIVE_ELEMENTS[lowerCaseTagName]?.has(lowerCaseAttrName)) {
+  const validationConfig = SECURITY_SENSITIVE_ELEMENTS[lowerCaseTagName]?.[lowerCaseAttrName];
+  if (!validationConfig) {
     return value;
   }
 
@@ -325,6 +338,26 @@ export function ɵɵvalidateAttribute(
   if (lowerCaseTagName === 'iframe') {
     const element = getNativeByTNode(tNode, lView) as RElement;
     enforceIframeSecurity(element as HTMLIFrameElement);
+  }
+
+  if (typeof validationConfig !== 'boolean') {
+    const element = getNativeByTNode(tNode, lView) as SVGAnimateElement;
+    const attributeNameValue = element.getAttribute('attributeName');
+
+    if (attributeNameValue && validationConfig.has(attributeNameValue.toLowerCase())) {
+      const errorMessage =
+        ngDevMode &&
+        `Angular has detected that the \`${attributeName}\` was applied ` +
+          `as a binding to the <${tagName}> element${getTemplateLocationDetails(lView)}. ` +
+          `For security reasons, the \`${attributeName}\` can be set on the <${tagName}> element ` +
+          `as a static attribute only when the "attributeName" is set to \'${attributeNameValue}\'. \n` +
+          `To fix this, switch the \`${attributeNameValue}\` binding to a static attribute ` +
+          `in a template or in host bindings section.`;
+
+      throw new RuntimeError(RuntimeErrorCode.UNSAFE_ATTRIBUTE_BINDING, errorMessage);
+    }
+
+    return value;
   }
 
   const errorMessage =

@@ -20,6 +20,7 @@ import type {
   ɵProviderRecord as ProviderRecord,
 } from '@angular/core';
 import {
+  ChangeDetection,
   ComponentExplorerViewQuery,
   DirectiveMetadata,
   DirectivePosition,
@@ -59,6 +60,15 @@ let injectorId = 0;
 export function getInjectorId() {
   return `${injectorId++}`;
 }
+
+const INTERNAL_TOKENS = [
+  'ElementRef',
+  'Renderer2',
+  'ViewContainerRef',
+  'DestroyRef',
+  'ChangeDetectorRef',
+  'Injector',
+];
 
 export function getInjectorMetadata(
   injector: Injector,
@@ -216,7 +226,7 @@ const enum DirectiveMetadataKey {
   INPUTS = 'inputs',
   OUTPUTS = 'outputs',
   ENCAPSULATION = 'encapsulation',
-  ON_PUSH = 'onPush',
+  CHANGE_DETECTION = 'changeDetection',
 }
 
 // Gets directive metadata. For newer versions of Angular (v12+) it uses
@@ -237,7 +247,7 @@ const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
           inputs: meta.inputs,
           outputs: meta.outputs,
           encapsulation: meta.encapsulation,
-          onPush: meta.changeDetection === ChangeDetectionStrategy.OnPush,
+          changeDetection: meta.changeDetection,
         };
       }
       case Framework.ACX: {
@@ -248,7 +258,7 @@ const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
           inputs: meta.inputs,
           outputs: meta.outputs,
           encapsulation: meta.encapsulation,
-          onPush: meta.changeDetection === AcxChangeDetectionStrategy.OnPush,
+          changeDetection: meta.changeDetection,
         };
       }
       case Framework.Wiz: {
@@ -279,19 +289,33 @@ const getDirectiveMetadata = (dir: any): DirectiveMetadata => {
     inputs: safelyGrabMetadata(DirectiveMetadataKey.INPUTS),
     outputs: safelyGrabMetadata(DirectiveMetadataKey.OUTPUTS),
     encapsulation: safelyGrabMetadata(DirectiveMetadataKey.ENCAPSULATION),
-    onPush: safelyGrabMetadata(DirectiveMetadataKey.ON_PUSH),
+    changeDetection: safelyGrabMetadata(DirectiveMetadataKey.CHANGE_DETECTION),
   };
 };
 
-export function isOnPushDirective(dir: any): boolean {
+export function getDirectiveCdStrategy(dir: any): ChangeDetection | undefined {
   const metadata = getDirectiveMetadata(dir.instance);
+
   switch (metadata.framework) {
     case Framework.Angular:
-      return Boolean(metadata.onPush);
+      switch (metadata.changeDetection) {
+        case ChangeDetectionStrategy.OnPush:
+          return 'ng-on-push';
+        case ChangeDetectionStrategy.Eager:
+          return 'ng-eager';
+      }
+
     case Framework.ACX:
-      return Boolean(metadata.onPush);
+      switch (metadata.changeDetection) {
+        case AcxChangeDetectionStrategy.Default:
+          return 'acx-default';
+        case AcxChangeDetectionStrategy.OnPush:
+          return 'acx-on-push';
+      }
+
     case Framework.Wiz:
-      return false;
+      return undefined;
+
     default:
       throw new Error(`Unknown framework: "${(metadata as {framework: string}).framework}".`);
   }
@@ -398,7 +422,7 @@ const getDependenciesForDirective = (
 
 const valueToLabel = (value: any): string => {
   if (isInjectionToken(value)) {
-    return `InjectionToken(${value['_desc']})`;
+    return value.toString();
   }
 
   if (typeof value === 'object') {
@@ -468,7 +492,7 @@ export function serializeProviderRecord(
   index: number,
   hasImportPath = false,
 ): SerializedProviderRecord {
-  let type: 'type' | 'class' | 'value' | 'factory' | 'existing' = 'type';
+  let type: 'type' | 'class' | 'value' | 'factory' | 'existing' | 'internal' = 'type';
   let multi = false;
 
   if (typeof providerRecord.provider === 'object') {
@@ -484,6 +508,10 @@ export function serializeProviderRecord(
 
     if (providerRecord.provider.multi !== undefined) {
       multi = providerRecord.provider.multi;
+    }
+  } else if (typeof providerRecord.provider === 'function') {
+    if (INTERNAL_TOKENS.includes((providerRecord.token as Type<any>).name)) {
+      type = 'internal';
     }
   }
 
@@ -676,7 +704,7 @@ export const queryDirectiveForest = (
     }
     forest = node.children;
   }
-  if (node?.defer) {
+  if (node?.controlFlowBlock) {
     return null;
   }
   return node;

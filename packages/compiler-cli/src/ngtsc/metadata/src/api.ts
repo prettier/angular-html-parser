@@ -11,13 +11,15 @@ import {
   Expression,
   SchemaMetadata,
   ExternalReference,
+  MatchSource,
+  ClassPropertyName,
+  InputOrOutput,
+  ClassPropertyMapping,
 } from '@angular/compiler';
 import ts from 'typescript';
 
 import {Reference} from '../../imports';
 import {ClassDeclaration} from '../../reflection';
-
-import {ClassPropertyMapping, ClassPropertyName, InputOrOutput} from './property_mapping';
 
 /**
  * Metadata collected for an `NgModule`.
@@ -132,17 +134,6 @@ export enum MetaKind {
   Directive,
   Pipe,
   NgModule,
-}
-
-/**
- * Possible ways that a directive can be matched.
- */
-export enum MatchSource {
-  /** The directive was matched by its selector. */
-  Selector,
-
-  /** The directive was applied as a host directive. */
-  HostDirective,
 }
 
 /** Metadata for a single input mapping. */

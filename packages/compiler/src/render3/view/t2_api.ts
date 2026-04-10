@@ -7,6 +7,7 @@
  */
 
 import {AST} from '../../expression_parser/ast';
+import {ClassPropertyMapping} from '../../property_mapping';
 import {
   BoundAttribute,
   BoundEvent,
@@ -58,6 +59,18 @@ export type TemplateEntity = Reference | Variable | LetDeclaration;
 /** Nodes that can have directives applied to them. */
 export type DirectiveOwner = Element | Template | Component | Directive | HostElement;
 
+/** Information about a host directive binding that was exposed under conflicting aliases. */
+export interface ConflictingHostDirectiveBinding<DirectiveT> {
+  /** Metadata of the directive that the binding belongs to. */
+  directive: DirectiveT;
+  /** Name of the class member that the binding would write into. */
+  classPropertyName: string;
+  /** Aliases that caused the conflict. */
+  conflictingAliases: Set<string>;
+  /** Type of the binding. */
+  kind: 'input' | 'output';
+}
+
 /*
  * t2 is the replacement for the `TemplateDefinitionBuilder`. It handles the operations of
  * analyzing Angular templates, extracting semantic info, and ultimately producing a template
@@ -79,16 +92,6 @@ export interface Target<DirectiveT> {
 }
 
 /**
- * A data structure which can indicate whether a given property name is present or not.
- *
- * This is used to represent the set of inputs or outputs present on a directive, and allows the
- * binder to query for the presence of a mapping for property names.
- */
-export interface InputOutputPropertySet {
-  hasBindingPropertyName(propertyName: string): boolean;
-}
-
-/**
  * A data structure which captures the animation trigger names that are statically resolvable
  * and whether some names could not be statically evaluated.
  */
@@ -107,6 +110,14 @@ export interface DirectiveMeta {
    */
   name: string;
 
+  /** Reference to the directive declaration site. */
+  ref: {
+    /** Key that uniquely identifies the reference. */
+    key: string;
+
+    // Normally we have some more fields here depending on where the reference originated from.
+  };
+
   /** The selector for the directive or `null` if there isn't one. */
   selector: string | null;
 
@@ -120,14 +131,14 @@ export interface DirectiveMeta {
    *
    * Goes from property names to field names.
    */
-  inputs: InputOutputPropertySet;
+  inputs: ClassPropertyMapping;
 
   /**
    * Set of outputs which this directive claims.
    *
    * Goes from property names to field names.
    */
-  outputs: InputOutputPropertySet;
+  outputs: ClassPropertyMapping;
 
   /**
    * Name under which the directive is exported, if any (exportAs in Angular).
@@ -156,6 +167,20 @@ export interface DirectiveMeta {
    * Only includes the legacy animation names.
    */
   animationTriggerNames: LegacyAnimationTriggerNames | null;
+
+  /** Tracks how the directive was matched. */
+  matchSource: MatchSource;
+}
+
+/**
+ * Possible ways that a directive can be matched.
+ */
+export enum MatchSource {
+  /** The directive was matched by its selector. */
+  Selector,
+
+  /** The directive was applied as a host directive. */
+  HostDirective,
 }
 
 /**
@@ -282,4 +307,12 @@ export interface BoundTarget<DirectiveT extends DirectiveMeta> {
    * @param name Name of the component/directive.
    */
   referencedDirectiveExists(name: string): boolean;
+
+  /**
+   * Returns any cases of conflicting host bindings that were detected during directive matching.
+   * @param node Node for which to look up the conflicting bindings.
+   */
+  getConflictingHostDirectiveBindings(
+    node: DirectiveOwner,
+  ): ConflictingHostDirectiveBinding<DirectiveT>[] | null;
 }

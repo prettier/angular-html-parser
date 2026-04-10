@@ -25,7 +25,12 @@ import ts from 'typescript';
 import {ErrorCode, ExtendedTemplateDiagnosticName} from '../../../../diagnostics';
 import {NgTemplateDiagnostic, SymbolKind, TypeCheckableDirectiveMeta} from '../../../api';
 import {isSignalReference} from '../../../src/symbol_util';
-import {TemplateCheckFactory, TemplateCheckWithVisitor, TemplateContext} from '../../api';
+import {
+  TemplateCheckFactory,
+  TemplateCheckWithVisitor,
+  TemplateContext,
+  formatExtendedError,
+} from '../../api';
 
 /** Names of known signal instance properties. */
 const SIGNAL_INSTANCE_PROPERTIES = new Set(['set', 'update', 'asReadonly']);
@@ -163,13 +168,21 @@ function buildDiagnosticForSignal(
   node: PropertyRead,
   component: ts.ClassDeclaration,
 ): Array<NgTemplateDiagnostic<ErrorCode.INTERPOLATED_SIGNAL_NOT_INVOKED>> {
-  // check for `{{ mySignal }}`
   const symbol = ctx.templateTypeChecker.getSymbolOfNode(node, component);
-  if (symbol !== null && symbol.kind === SymbolKind.Expression && isSignalReference(symbol)) {
+  if (
+    symbol !== null &&
+    symbol.kind === SymbolKind.Expression &&
+    isSignalReference(symbol, ctx.templateTypeChecker)
+  ) {
     const templateMapping = ctx.templateTypeChecker.getSourceMappingAtTcbLocation(
       symbol.tcbLocation,
     )!;
-    const errorString = `${node.name} is a function and should be invoked: ${node.name}()`;
+
+    const errorString = formatExtendedError(
+      ErrorCode.INTERPOLATED_SIGNAL_NOT_INVOKED,
+      `${node.name} is a function and should be invoked: ${node.name}()}`,
+    );
+
     const diagnostic = ctx.makeTemplateDiagnostic(templateMapping.span, errorString);
     return [diagnostic];
   }
@@ -182,19 +195,31 @@ function buildDiagnosticForSignal(
   if (!isFunctionInstanceProperty(node.name) && !isSignalInstanceProperty(node.name)) {
     return [];
   }
+
+  // If the receiver is not a PropertyRead, it means it's not a simple property access
+  // (e.g., it could be a MethodCall like `mySignal().set`). In that case, we assume
+  // it was invoked and skip the warning.
+  if (!(node.receiver instanceof PropertyRead)) {
+    return [];
+  }
+
   const symbolOfReceiver = ctx.templateTypeChecker.getSymbolOfNode(node.receiver, component);
   if (
     symbolOfReceiver !== null &&
     symbolOfReceiver.kind === SymbolKind.Expression &&
-    isSignalReference(symbolOfReceiver)
+    isSignalReference(symbolOfReceiver, ctx.templateTypeChecker)
   ) {
     const templateMapping = ctx.templateTypeChecker.getSourceMappingAtTcbLocation(
       symbolOfReceiver.tcbLocation,
     )!;
 
-    const errorString = `${
-      (node.receiver as PropertyRead).name
-    } is a function and should be invoked: ${(node.receiver as PropertyRead).name}()`;
+    const errorString = formatExtendedError(
+      ErrorCode.INTERPOLATED_SIGNAL_NOT_INVOKED,
+      `${
+        (node.receiver as PropertyRead).name
+      } is a function and should be invoked: ${(node.receiver as PropertyRead).name}()`,
+    );
+
     const diagnostic = ctx.makeTemplateDiagnostic(templateMapping.span, errorString);
     return [diagnostic];
   }

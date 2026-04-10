@@ -14,6 +14,7 @@ import {
   Symbol,
   SymbolKind,
   TcbLocation,
+  TemplateTypeChecker,
   VariableSymbol,
 } from '@angular/compiler-cli/src/ngtsc/typecheck/api';
 import ts from 'typescript';
@@ -57,6 +58,7 @@ export function getSymbolDisplayInfo(
   tsLS: ts.LanguageService,
   typeChecker: ts.TypeChecker,
   symbol: ReferenceSymbol | VariableSymbol | LetDeclarationSymbol,
+  templateTypeChecker: TemplateTypeChecker,
 ): DisplayInfo {
   let kind: DisplayInfoKind;
   if (symbol.kind === SymbolKind.Reference) {
@@ -75,12 +77,12 @@ export function getSymbolDisplayInfo(
     symbol.declaration.name,
     kind,
     /* containerName */ undefined,
-    typeChecker.typeToString(symbol.tsType),
+    typeChecker.typeToString(templateTypeChecker.getTypeOfSymbol(symbol)!),
   );
   const quickInfo =
     symbol.kind === SymbolKind.Reference
       ? getQuickInfoFromTypeDefAtLocation(tsLS, symbol.targetLocation)
-      : getQuickInfoFromTypeDefAtLocation(tsLS, symbol.initializerLocation);
+      : getQuickInfoFromTypeDefAtLocation(tsLS, symbol.localVarLocation);
   return {
     kind,
     displayParts,
@@ -164,17 +166,11 @@ export function getDirectiveDisplayInfo(
   dir: PotentialDirective,
 ): DisplayInfo {
   const kind = dir.isComponent ? DisplayInfoKind.COMPONENT : DisplayInfoKind.DIRECTIVE;
-  const decl = dir.tsSymbol.declarations.find(ts.isClassDeclaration);
-  if (decl === undefined || decl.name === undefined) {
-    return {
-      kind,
-      displayParts: [],
-      documentation: [],
-      tags: undefined,
-    };
-  }
+  const filePath = dir.ref.filePath;
+  const position = dir.ref.position;
+  const name = dir.ref.name;
 
-  const res = tsLS.getQuickInfoAtPosition(decl.getSourceFile().fileName, decl.name.getStart());
+  const res = tsLS.getQuickInfoAtPosition(filePath, position);
   if (res === undefined) {
     return {
       kind,
@@ -184,12 +180,7 @@ export function getDirectiveDisplayInfo(
     };
   }
 
-  const displayParts = createDisplayParts(
-    dir.tsSymbol.name,
-    kind,
-    dir.ngModule?.name?.text,
-    undefined,
-  );
+  const displayParts = createDisplayParts(name, kind, dir.ngModule?.name?.text, undefined);
 
   return {
     kind,

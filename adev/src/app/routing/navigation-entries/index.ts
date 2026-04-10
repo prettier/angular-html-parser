@@ -341,6 +341,12 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             path: 'guide/di/di-in-action',
             contentPath: 'guide/di/di-in-action',
           },
+          {
+            label: 'Debugging and troubleshooting DI',
+            path: 'guide/di/debugging-and-troubleshooting-di',
+            contentPath: 'guide/di/debugging-and-troubleshooting-di',
+            status: 'new',
+          },
         ],
       },
       {
@@ -356,6 +362,11 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             label: 'Define routes',
             path: 'guide/routing/define-routes',
             contentPath: 'guide/routing/define-routes',
+          },
+          {
+            label: 'Route Loading Strategies',
+            path: 'guide/routing/loading-strategies',
+            contentPath: 'guide/routing/loading-strategies',
           },
           {
             label: 'Show routes with Outlets',
@@ -479,6 +490,20 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             status: 'new',
           },
           {
+            label: 'Form logic',
+            path: 'guide/forms/signals/form-logic',
+            contentPath: 'guide/forms/signals/form-logic',
+            category: 'Signal Forms',
+            status: 'new',
+          },
+          {
+            label: 'Async operations',
+            path: 'guide/forms/signals/async-operations',
+            contentPath: 'guide/forms/signals/async-operations',
+            category: 'Signal Forms',
+            status: 'new',
+          },
+          {
             label: 'Custom controls',
             path: 'guide/forms/signals/custom-controls',
             contentPath: 'guide/forms/signals/custom-controls',
@@ -493,7 +518,7 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             status: 'new',
           },
           {
-            label: 'Migrating from Legacy Forms',
+            label: 'Migrating from Reactive Forms',
             path: 'guide/forms/signals/migration',
             contentPath: 'guide/forms/signals/migration',
             category: 'Signal Forms',
@@ -635,6 +660,7 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             path: 'guide/routing/testing',
             contentPath: 'guide/routing/testing',
             status: 'new',
+            isCrossReferenced: true,
           },
           {
             label: 'Debugging tests',
@@ -838,6 +864,7 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             label: 'Route transition animations',
             path: 'guide/routing/route-transition-animations',
             contentPath: 'guide/routing/route-transition-animations',
+            isCrossReferenced: true,
           },
         ],
       },
@@ -850,7 +877,6 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
   },
   {
     label: 'Build with AI',
-    status: 'new',
     children: [
       {
         label: 'Get Started',
@@ -863,9 +889,10 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         contentPath: 'ai/develop-with-ai',
       },
       {
-        label: 'Design Patterns',
-        path: 'ai/design-patterns',
-        contentPath: 'ai/design-patterns',
+        label: 'Agent Skills',
+        path: 'ai/agent-skills',
+        contentPath: 'ai/agent-skills',
+        status: 'new',
       },
       {
         label: 'Angular CLI MCP Server setup',
@@ -876,6 +903,11 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         label: 'Angular AI Tutor',
         path: 'ai/ai-tutor',
         contentPath: 'ai/ai-tutor',
+      },
+      {
+        label: 'Design Patterns',
+        path: 'ai/design-patterns',
+        contentPath: 'ai/design-patterns',
       },
     ],
   },
@@ -1057,33 +1089,78 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
       },
       {
         label: 'Performance',
+        preserveOtherCategoryOrder: true,
         children: [
+          {
+            label: 'Overview',
+            path: 'best-practices/performance',
+            contentPath: 'best-practices/performance/overview',
+          },
+
+          // Loading Performance
+          {
+            label: 'Lazy-loaded routes',
+            path: 'best-practices/performance/lazy-loaded-routes',
+            contentPath: 'guide/routing/loading-strategies',
+            category: 'Loading Performance',
+          },
+          {
+            label: 'Deferred loading with @defer',
+            path: 'best-practices/performance/defer',
+            contentPath: 'guide/templates/defer',
+            category: 'Loading Performance',
+          },
+          {
+            label: 'Image optimization',
+            path: 'best-practices/performance/image-optimization',
+            contentPath: 'guide/image-optimization',
+            category: 'Loading Performance',
+          },
+          {
+            label: 'Server-side rendering',
+            path: 'best-practices/performance/ssr',
+            contentPath: 'guide/ssr',
+            category: 'Loading Performance',
+          },
+
+          // Runtime Performance
           {
             label: 'Overview',
             path: 'best-practices/runtime-performance',
             contentPath: 'best-practices/runtime-performance/overview',
+            category: 'Runtime Performance',
           },
           {
-            label: 'Zone pollution',
-            path: 'best-practices/zone-pollution',
-            contentPath: 'best-practices/runtime-performance/zone-pollution',
+            label: 'Zoneless',
+            path: 'guide/zoneless',
+            contentPath: 'guide/zoneless',
+            category: 'Runtime Performance',
           },
           {
             label: 'Slow computations',
             path: 'best-practices/slow-computations',
             contentPath: 'best-practices/runtime-performance/slow-computations',
+            category: 'Runtime Performance',
           },
           {
             label: 'Skipping component subtrees',
             path: 'best-practices/skipping-subtrees',
             contentPath: 'best-practices/runtime-performance/skipping-subtrees',
+            category: 'Runtime Performance',
           },
           {
-            label: 'Profiling with the Chrome DevTools',
+            label: 'Zone pollution',
+            path: 'best-practices/zone-pollution',
+            contentPath: 'best-practices/runtime-performance/zone-pollution',
+            category: 'Runtime Performance',
+          },
+
+          {
+            label: 'Chrome DevTools profiling',
             path: 'best-practices/profiling-with-chrome-devtools',
             contentPath: 'best-practices/runtime-performance/profiling-with-chrome-devtools',
+            category: 'Runtime Performance',
           },
-          {label: 'Zoneless', path: 'guide/zoneless', contentPath: 'guide/zoneless'},
         ],
       },
       {

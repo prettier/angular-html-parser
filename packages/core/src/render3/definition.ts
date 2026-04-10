@@ -35,8 +35,7 @@ import type {
   ViewQueriesFunction,
 } from './interfaces/definition';
 import {InputFlags} from './interfaces/input_flags';
-import type {TAttributes, TConstantsOrFactory} from './interfaces/node';
-import {CssSelectorList} from './interfaces/projection';
+import type {TAttributes} from './interfaces/node';
 import {stringifyCSSSelectorList} from './node_selector_matcher';
 import {StandaloneService} from './standalone_service';
 
@@ -98,18 +97,15 @@ import {StandaloneService} from './standalone_service';
  *  - The reason why this API and `outputs` API is not the same is that `NgOnChanges` has
  *    inconsistent behavior in that it uses declared names rather than minified or public.
  */
-type DirectiveInputs<T> = {
-  [P in keyof T]?:  // Basic case. Mapping minified name to public name.
-    | string
-    // Complex input when there are flags, or differing public name and declared name, or there
-    // is a transform. Such inputs are not as common, so the array form is only generated then.
-    | [
-        flags: InputFlags,
-        publicName: string,
-        declaredName?: string,
-        transform?: InputTransformFunction,
-      ];
-};
+type DirectiveInputs = Record<
+  string,
+  // Basic case. Mapping minified name to public name.
+  | string
+  // Complex input when there are flags, or differing public name and declared name, or there
+  // is a transform. Such inputs are not as common, so the array form is only generated then.
+  | [flags: number, publicName: string, declaredName?: string, transform?: InputTransformFunction]
+  | undefined
+>;
 
 interface DirectiveDefinition<T> {
   /**
@@ -118,12 +114,12 @@ interface DirectiveDefinition<T> {
   type: Type<T>;
 
   /** The selectors that will be used to match nodes to this directive. */
-  selectors?: CssSelectorList;
+  selectors?: (string | number)[][];
 
   /**
    * A map of input names.
    */
-  inputs?: DirectiveInputs<T>;
+  inputs?: DirectiveInputs;
 
   /**
    * A map of output names.
@@ -135,7 +131,7 @@ interface DirectiveDefinition<T> {
    * This allows the render to re-construct the minified and non-minified names
    * of properties.
    */
-  outputs?: {[P in keyof T]?: string};
+  outputs?: Record<string, string | undefined>;
 
   /**
    * A list of optional features to apply.
@@ -270,7 +266,7 @@ interface ComponentDefinition<T> extends Omit<DirectiveDefinition<T>, 'features'
    * Constants for the nodes in the component's view.
    * Includes attribute arrays, local definition arrays etc.
    */
-  consts?: TConstantsOrFactory;
+  consts?: any[] | (() => any[]);
 
   /**
    * An array of `ngContent[selector]` values that were found in the template.
@@ -353,7 +349,7 @@ export function ɵɵdefineComponent<T>(
       template: componentDefinition.template,
       consts: componentDefinition.consts || null,
       ngContentSelectors: componentDefinition.ngContentSelectors,
-      onPush: componentDefinition.changeDetection === ChangeDetectionStrategy.OnPush,
+      onPush: componentDefinition.changeDetection !== ChangeDetectionStrategy.Eager,
       directiveDefs: null!, // assigned in noSideEffects
       pipeDefs: null!, // assigned in noSideEffects
       dependencies: (baseDef.standalone && componentDefinition.dependencies) || null,
@@ -419,7 +415,7 @@ export function ɵɵdefineNgModule<T>(def: {
 
   /** Unique ID for the module that is used with `getModuleFactory`. */
   id?: string | null;
-}): unknown {
+}): NgModuleDef<T> {
   return noSideEffects(() => {
     const res: NgModuleDef<T> = {
       type: def.type,
@@ -608,8 +604,8 @@ export function ɵɵdefinePipe<T>(pipeDef: {
    * Whether the pipe is standalone.
    */
   standalone?: boolean;
-}): unknown {
-  return <PipeDef<T>>{
+}): PipeDef<T> {
+  return {
     type: pipeDef.type,
     name: pipeDef.name,
     factory: null,
@@ -642,6 +638,8 @@ function getNgDirectiveDef<T>(directiveDefinition: DirectiveDefinition<T>): Dire
     setInput: null,
     resolveHostDirectives: null,
     hostDirectives: null,
+    controlDef: null,
+    signalFormsInputPresence: null,
     inputs: parseAndConvertInputsForDefinition(directiveDefinition.inputs, declaredInputs),
     outputs: parseAndConvertOutputsForDefinition(directiveDefinition.outputs),
     debugInfo: null,

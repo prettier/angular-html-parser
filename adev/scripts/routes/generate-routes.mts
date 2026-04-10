@@ -6,7 +6,8 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {ALL_ITEMS} from '../../src/app/routing/navigation-entries';
+import {ALL_ITEMS} from '../../src/app/routing/navigation-entries/index.js';
+import {getIdFromHeading} from '../../shared-docs/pipeline/shared/heading.mjs';
 import {NavigationItem} from '@angular/docs';
 import {writeFileSync, readFileSync} from 'fs';
 import {join, resolve} from 'path';
@@ -72,11 +73,3 @@ function main() {
 }
 
 main();
-
-// TODO: refactor so this function is shared with the generation pipeline (adev/shared-docs/pipeline/shared/marked/transformations/heading.mts)
-function getIdFromHeading(heading: string): string {
-  return heading
-    .toLowerCase()
-    .replace(/\s|\//g, '-') // replace spaces and slashes with dashes
-    .replace(/[^\p{L}\d\-]/gu, ''); // only keep letters, digits & dashes
-}

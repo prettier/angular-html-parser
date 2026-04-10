@@ -8,7 +8,6 @@
 
 import {ConstantPool} from '../../constant_pool';
 import * as core from '../../core';
-import {CssSelector} from '../../directive_matching';
 import * as o from '../../output/output_ast';
 import {ParseError, ParseSourceSpan} from '../../parse_util';
 import {ShadowCss} from '../../shadow_css';
@@ -17,7 +16,7 @@ import {emitHostBindingFunction, emitTemplateFn, transform} from '../../template
 import {ingestComponent, ingestHostBinding} from '../../template/pipeline/src/ingest';
 import {BindingParser} from '../../template_parser/binding_parser';
 import {Identifiers as R3} from '../r3_identifiers';
-import {R3CompiledExpression, typeWithParameters} from '../util';
+import {R3CompiledExpression, tsIgnoreComment, typeWithParameters} from '../util';
 
 import {
   DeclarationListEmitMode,
@@ -148,6 +147,11 @@ function addFeatures(
   if (meta.lifecycle.usesOnChanges) {
     features.push(o.importExpr(R3.NgOnChangesFeature));
   }
+  if (meta.controlCreate !== null) {
+    features.push(
+      o.importExpr(R3.ControlFeature).callFn([o.literal(meta.controlCreate.passThroughInput)]),
+    );
+  }
   if ('externalStyles' in meta && meta.externalStyles?.length) {
     const externalStyleNodes = meta.externalStyles.map((externalStyle) => o.literal(externalStyle));
     features.push(
@@ -188,28 +192,6 @@ export function compileComponentFromMetadata(
 ): R3CompiledExpression {
   const definitionMap = baseDirectiveFields(meta, constantPool, bindingParser);
   addFeatures(definitionMap, meta);
-
-  const selector = meta.selector && CssSelector.parse(meta.selector);
-  const firstSelector = selector && selector[0];
-
-  // e.g. `attr: ["class", ".my.app"]`
-  // This is optional an only included if the first selector of a component specifies attributes.
-  if (firstSelector) {
-    const selectorAttributes = firstSelector.getAttrs();
-    if (selectorAttributes.length) {
-      definitionMap.set(
-        'attrs',
-        constantPool.getConstLiteral(
-          o.literalArr(
-            selectorAttributes.map((value) =>
-              value != null ? o.literal(value) : o.literal(undefined),
-            ),
-          ),
-          /* forceShared */ true,
-        ),
-      );
-    }
-  }
 
   // e.g. `template: function MyComponent_Template(_ctx, _cm) {...}`
   const templateTypeName = meta.name;
@@ -334,7 +316,7 @@ export function compileComponentFromMetadata(
   if (meta.changeDetection !== null) {
     if (
       typeof meta.changeDetection === 'number' &&
-      meta.changeDetection !== core.ChangeDetectionStrategy.Default
+      meta.changeDetection !== core.ChangeDetectionStrategy.OnPush
     ) {
       // changeDetection is resolved during analysis. Only set it if not the default.
       definitionMap.set('changeDetection', o.literal(meta.changeDetection));
@@ -532,38 +514,42 @@ function createHostBindingsFunction(
   return emitHostBindingFunction(hostJob);
 }
 
-const HOST_REG_EXP = /^(?:\[([^\]]+)\])|(?:\(([^\)]+)\))$/;
-// Represents the groups in the above regex.
-const enum HostBindingGroup {
-  // group 1: "prop" from "[prop]", or "attr.role" from "[attr.role]", or @anim from [@anim]
-  Binding = 1,
-
-  // group 2: "event" from "(event)"
-  Event = 2,
-}
-
 // Defines Host Bindings structure that contains attributes, listeners, and properties,
 // parsed from the `host` object defined for a Type.
 export interface ParsedHostBindings {
-  attributes: {[key: string]: o.Expression};
-  listeners: {[key: string]: string};
-  properties: {[key: string]: string};
+  attributes: Record<string, o.Expression>;
+  listeners: Record<string, string>;
+  properties: Record<string, string>;
   specialAttributes: {styleAttr?: string; classAttr?: string};
 }
 
 export function parseHostBindings(host: {
   [key: string]: string | o.Expression;
 }): ParsedHostBindings {
-  const attributes: {[key: string]: o.Expression} = {};
-  const listeners: {[key: string]: string} = {};
-  const properties: {[key: string]: string} = {};
+  const attributes: Record<string, o.Expression> = {};
+  const listeners: Record<string, string> = {};
+  const properties: Record<string, string> = {};
   const specialAttributes: {styleAttr?: string; classAttr?: string} = {};
 
   for (const key of Object.keys(host)) {
     const value = host[key];
-    const matches = key.match(HOST_REG_EXP);
 
-    if (matches === null) {
+    if (key.startsWith('(') && key.endsWith(')')) {
+      if (typeof value !== 'string') {
+        // TODO(alxhub): make this a diagnostic.
+        throw new Error(`Event binding must be string`);
+      }
+      listeners[key.slice(1, -1)] = value;
+    } else if (key.startsWith('[') && key.endsWith(']')) {
+      if (typeof value !== 'string') {
+        // TODO(alxhub): make this a diagnostic.
+        throw new Error(`Property binding must be string`);
+      }
+      // synthetic properties (the ones that have a `@` as a prefix)
+      // are still treated the same as regular properties. Therefore
+      // there is no point in storing them in a separate map.
+      properties[key.slice(1, -1)] = value;
+    } else {
       switch (key) {
         case 'class':
           if (typeof value !== 'string') {
@@ -586,21 +572,6 @@ export function parseHostBindings(host: {
             attributes[key] = value;
           }
       }
-    } else if (matches[HostBindingGroup.Binding] != null) {
-      if (typeof value !== 'string') {
-        // TODO(alxhub): make this a diagnostic.
-        throw new Error(`Property binding must be string`);
-      }
-      // synthetic properties (the ones that have a `@` as a prefix)
-      // are still treated the same as regular properties. Therefore
-      // there is no point in storing them in a separate map.
-      properties[matches[HostBindingGroup.Binding]] = value;
-    } else if (matches[HostBindingGroup.Event] != null) {
-      if (typeof value !== 'string') {
-        // TODO(alxhub): make this a diagnostic.
-        throw new Error(`Event binding must be string`);
-      }
-      listeners[matches[HostBindingGroup.Event]] = value;
     }
   }
 
@@ -764,7 +735,13 @@ export function compileDeferResolverFunction(
         );
 
         // Dynamic import, e.g. `import('./a').then(...)`.
-        const importExpr = new o.DynamicImportExpr(dep.importPath!).prop('then').callFn([innerFn]);
+        const importExpr = new o.DynamicImportExpr(dep.importPath!)
+          .prop('then')
+          .callFn([innerFn], undefined, undefined, [
+            // Necessary, because we might not generate extensions for the path
+            // and TS may try to enforce it based on the compiler options.
+            tsIgnoreComment(),
+          ]);
         depExpressions.push(importExpr);
       } else {
         // Non-deferrable symbol, just use a reference to the type. Note that it's important to
@@ -782,7 +759,13 @@ export function compileDeferResolverFunction(
       );
 
       // Dynamic import, e.g. `import('./a').then(...)`.
-      const importExpr = new o.DynamicImportExpr(importPath).prop('then').callFn([innerFn]);
+      const importExpr = new o.DynamicImportExpr(importPath)
+        .prop('then')
+        .callFn([innerFn], undefined, undefined, [
+          // Necessary, because we might not generate extensions for the path
+          // and TS may try to enforce it based on the compiler options.
+          tsIgnoreComment(),
+        ]);
       depExpressions.push(importExpr);
     }
   }

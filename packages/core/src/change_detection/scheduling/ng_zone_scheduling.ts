@@ -24,14 +24,14 @@ import {performanceMarkFeature} from '../../util/performance';
 import {NgZone} from '../../zone';
 import {InternalNgZoneOptions} from '../../zone/ng_zone';
 
-import {
-  ChangeDetectionScheduler,
-  ZONELESS_ENABLED,
-  SCHEDULE_IN_ROOT_ZONE,
-} from './zoneless_scheduling';
-import {SCHEDULE_IN_ROOT_ZONE_DEFAULT} from './flags';
 import {INTERNAL_APPLICATION_ERROR_HANDLER} from '../../error_handler';
 import {OnDestroy} from '../lifecycle_hooks';
+import {SCHEDULE_IN_ROOT_ZONE_DEFAULT} from './flags';
+import {
+  ChangeDetectionScheduler,
+  SCHEDULE_IN_ROOT_ZONE,
+  ZONELESS_ENABLED,
+} from './zoneless_scheduling';
 
 @Injectable({providedIn: 'root'})
 export class NgZoneChangeDetectionScheduler implements OnDestroy {
@@ -134,10 +134,10 @@ export function internalProvideZoneChangeDetection({
  * Provides `NgZone`-based change detection for the application bootstrapped using
  * `bootstrapApplication`.
  *
- * `NgZone` is already provided in applications by default. This provider allows you to configure
- * options like `eventCoalescing` in the `NgZone`.
- * This provider is not available for `platformBrowser().bootstrapModule`, which uses
- * `BootstrapOptions` instead.
+ * Add this provider to use `NgZone`/ZoneJS-based change detection and configure options like
+ * `eventCoalescing` in the `NgZone`.
+ *
+ * If you need this provider function in an NgModule-based application, pass it as `applicationProviders` to `bootstrapModule()`.
  *
  * @usageNotes
  * ```ts

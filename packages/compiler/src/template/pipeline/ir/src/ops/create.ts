@@ -1382,6 +1382,8 @@ interface DeferTriggerWithTargetBase extends DeferTriggerBase {
 
 interface DeferIdleTrigger extends DeferTriggerBase {
   kind: DeferTriggerKind.Idle;
+
+  timeout: number | null;
 }
 
 interface DeferImmediateTrigger extends DeferTriggerBase {
@@ -1964,7 +1966,11 @@ export interface ControlCreateOp extends Op<CreateOp> {
 
 /** Creates a {@link ControlCreateOp}. */
 export function createControlCreateOp(sourceSpan: ParseSourceSpan): ControlCreateOp {
-  return {kind: OpKind.ControlCreate, sourceSpan, ...NEW_OP};
+  return {
+    kind: OpKind.ControlCreate,
+    sourceSpan,
+    ...NEW_OP,
+  };
 }
 
 /**

@@ -6,11 +6,11 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {platform} from 'node:os';
+import ts from 'typescript';
 import {NgtscProgram} from '../../src/ngtsc/program';
 import {CompilerOptions} from '../../src/transformers/api';
 import {createCompilerHost} from '../../src/transformers/compiler_host';
-import {platform} from 'node:os';
-import ts from 'typescript';
 
 import {ErrorCode, ngErrorCode} from '../../src/ngtsc/diagnostics';
 import {absoluteFrom} from '../../src/ngtsc/file_system';
@@ -162,7 +162,7 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toContain('Dep.ɵprov =');
       expect(jsContents).toContain('Service.ɵprov =');
       expect(jsContents).toContain(
-        'Service.ɵfac = function Service_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep)); };',
+        'Service.ɵfac = function Service_Factory(__ngFactoryType__) { /* @ts-ignore */\nreturn new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep)); };',
       );
       expect(jsContents).toContain("providedIn: 'root' })");
       expect(jsContents).not.toContain('__decorate');
@@ -494,7 +494,9 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toContain(
         'factory: function Service_Factory(__ngFactoryType__) { let __ngConditionalFactory__ = null; if (__ngFactoryType__) {',
       );
-      expect(jsContents).toContain('return new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep));');
+      expect(jsContents).toContain(
+        '/* @ts-ignore */\nreturn new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep));',
+      );
       expect(jsContents).toContain(
         '__ngConditionalFactory__ = ((dep) => new Service(dep))(i0.ɵɵinject(Dep));',
       );
@@ -532,7 +534,9 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toContain(
         'factory: function Service_Factory(__ngFactoryType__) { let __ngConditionalFactory__ = null; if (__ngFactoryType__) {',
       );
-      expect(jsContents).toContain('return new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep));');
+      expect(jsContents).toContain(
+        '/* @ts-ignore */\nreturn new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep));',
+      );
       expect(jsContents).toContain(
         '__ngConditionalFactory__ = ((dep) => new Service(dep))(i0.ɵɵinject(Dep, 10));',
       );
@@ -569,7 +573,7 @@ runInEachFileSystem((os: string) => {
       expect(jsContents).toContain('Service.ɵprov =');
       expect(jsContents).toContain('Mod.ɵmod =');
       expect(jsContents).toContain(
-        'Service.ɵfac = function Service_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep)); };',
+        'Service.ɵfac = function Service_Factory(__ngFactoryType__) { /* @ts-ignore */\nreturn new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep)); };',
       );
       expect(jsContents).toContain('providedIn: i0.forwardRef(() => Mod) })');
       expect(jsContents).not.toContain('__decorate');
@@ -626,7 +630,7 @@ runInEachFileSystem((os: string) => {
 
       expect(jsContents).toContain(
         `Service.ɵfac = function Service_Factory(__ngFactoryType__) { ` +
-          `return new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep), i0.ɵɵinject(OptionalDep, 8)); };`,
+          `/* @ts-ignore */\nreturn new (__ngFactoryType__ || Service)(i0.ɵɵinject(Dep), i0.ɵɵinject(OptionalDep, 8)); };`,
       );
     });
 
@@ -1049,7 +1053,7 @@ runInEachFileSystem((os: string) => {
 
         it('should still perform schema checks in embedded views', () => {
           env.tsconfig({
-            'fullTemplateTypeCheck': false,
+            'strictTemplates': false,
             'annotateForClosureCompiler': true,
           });
           env.write(
@@ -1446,7 +1450,7 @@ runInEachFileSystem((os: string) => {
         class DirectiveA {}
 
         @Component({
-          selector: 'comp',
+          selector: 'comp-a',
           template: '...',
           standalone: false,
         })
@@ -1467,7 +1471,7 @@ runInEachFileSystem((os: string) => {
         class DirectiveB {}
 
         @Component({
-          selector: 'comp',
+          selector: 'comp-b',
           template: '...',
           standalone: false,
         })
@@ -1477,7 +1481,8 @@ runInEachFileSystem((os: string) => {
           selector: 'app',
           template: \`
             <div dir></div>
-            <comp></comp>
+            <comp-a></comp-a>
+            <comp-b></comp-b>
           \`,
           standalone: false,
         })
@@ -1552,7 +1557,7 @@ runInEachFileSystem((os: string) => {
         class DirectiveA {}
 
         @Component({
-          selector: 'comp',
+          selector: 'comp-a',
           template: '...',
           standalone: false,
         })
@@ -1573,7 +1578,7 @@ runInEachFileSystem((os: string) => {
         class DirectiveB {}
 
         @Component({
-          selector: 'comp',
+          selector: 'comp-b',
           template: '...',
           standalone: false,
         })
@@ -1591,7 +1596,8 @@ runInEachFileSystem((os: string) => {
           selector: 'app',
           template: \`
             <div dir></div>
-            <comp></comp>
+            <comp-a></comp-a>
+            <comp-b></comp-b>
           \`,
           standalone: false,
         })
@@ -5123,7 +5129,7 @@ runInEachFileSystem((os: string) => {
       env.driveMain();
       const jsContents = env.getContents('test.js');
       expect(jsContents).toContain(
-        `FooCmp.ɵfac = function FooCmp_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || FooCmp)(i0.ɵɵinjectAttribute("test"), i0.ɵɵdirectiveInject(i0.ChangeDetectorRef), i0.ɵɵdirectiveInject(i0.ElementRef), i0.ɵɵdirectiveInject(i0.Injector), i0.ɵɵdirectiveInject(i0.Renderer2), i0.ɵɵdirectiveInject(i0.TemplateRef), i0.ɵɵdirectiveInject(i0.ViewContainerRef)); }`,
+        `FooCmp.ɵfac = function FooCmp_Factory(__ngFactoryType__) { /* @ts-ignore */\nreturn new (__ngFactoryType__ || FooCmp)(i0.ɵɵinjectAttribute("test"), i0.ɵɵdirectiveInject(i0.ChangeDetectorRef), i0.ɵɵdirectiveInject(i0.ElementRef), i0.ɵɵdirectiveInject(i0.Injector), i0.ɵɵdirectiveInject(i0.Renderer2), i0.ɵɵdirectiveInject(i0.TemplateRef), i0.ɵɵdirectiveInject(i0.ViewContainerRef)); }`,
       );
     });
 
@@ -5981,7 +5987,7 @@ runInEachFileSystem((os: string) => {
       expect(messageText).toContain("Value is of type 'string'.");
     });
 
-    it('should handle `changeDetection` field', () => {
+    it('should handle `changeDetection` field with the "default" value: OnPush', () => {
       env.write(
         `test.ts`,
         `
@@ -5997,7 +6003,27 @@ runInEachFileSystem((os: string) => {
 
       env.driveMain();
       const jsContents = env.getContents('test.js');
-      expect(jsContents).toContain('changeDetection: 0');
+      // because this default value is implicit
+      expect(jsContents).not.toContain('changeDetection: 0');
+    });
+
+    it('should handle `changeDetection` field', () => {
+      env.write(
+        `test.ts`,
+        `
+      import {Component, ChangeDetectionStrategy} from '@angular/core';
+      @Component({
+        selector: 'comp-a',
+        template: '...',
+        changeDetection: ChangeDetectionStrategy.Eager
+      })
+      class CompA {}
+    `,
+      );
+
+      env.driveMain();
+      const jsContents = env.getContents('test.js');
+      expect(jsContents).toContain('changeDetection: 1');
     });
 
     it('should throw if `changeDetection` contains invalid value', () => {
@@ -6168,7 +6194,7 @@ runInEachFileSystem((os: string) => {
       const jsContents = env.getContents('test.js');
 
       expect(jsContents).toContain(
-        'function Base_Factory(__ngFactoryType__) { return new (__ngFactoryType__ || Base)(i0.ɵɵinject(Dep)); }',
+        'function Base_Factory(__ngFactoryType__) { /* @ts-ignore */\nreturn new (__ngFactoryType__ || Base)(i0.ɵɵinject(Dep)); }',
       );
       expect(jsContents).toContain(
         '(() => { let ɵChild_BaseFactory; return function Child_Factory(__ngFactoryType__) { return (ɵChild_BaseFactory || (ɵChild_BaseFactory = i0.ɵɵgetInheritedFactory(Child)))(__ngFactoryType__ || Child); }; })();',
@@ -7326,8 +7352,8 @@ runInEachFileSystem((os: string) => {
       `,
       ];
 
-      cases.forEach((template) => {
-        it('should not throw', () => {
+      cases.forEach((template, index) => {
+        it(`should not throw [id=${index}]`, () => {
           env.write('test.ts', getComponentScript(template));
           const errors = env.driveDiagnostics();
           expect(errors.length).toBe(0);
@@ -7641,7 +7667,7 @@ runInEachFileSystem((os: string) => {
         expect(diags[1].messageText).toBe('NgModule "import" field contains a cycle');
       });
 
-      it('should report if an NgModule imports itself via a forwardRef', () => {
+      it('should report if an NgModule imports itself via a forwardRef (nested)', () => {
         env.write(
           'test.ts',
           `
@@ -10788,6 +10814,56 @@ runInEachFileSystem((os: string) => {
       expect(codes).toEqual([ngErrorCode(ErrorCode.NGMODULE_BOOTSTRAP_IS_STANDALONE)]);
     });
 
+    [true, false].forEach((strictTemplates) => {
+      it(`[strictTemplates: ${strictTemplates}] should compile a component with a complex generic`, () => {
+        env.tsconfig({strictTemplates});
+        env.write(
+          'test.ts',
+          `
+          import {Component} from '@angular/core';
+
+          @Component({
+            selector: 'app-root',
+            template: '',
+          })
+          export class App<
+            T extends object = object,
+            TOptions extends { [K in keyof T]?: T[K] } = object
+          > {}
+        `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(0);
+      });
+
+      // See #67704.
+      it(`[strictTemplates: ${strictTemplates}] should compile a directive with a generic that has type parameters`, () => {
+        env.tsconfig({strictTemplates});
+        env.write(
+          'test.ts',
+          `
+            import {Directive} from '@angular/core';
+
+            type Foo<T> = {prop: T};
+
+            @Directive({
+              host: {
+                '[class.some-class]': 'foo || bar' // Only necessary to enable type checking.
+              },
+            })
+            export class TestDir<T, U = T extends Foo<infer V> ? V : never> {
+              foo?: T;
+              bar?: U;
+            }
+        `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(0);
+      });
+    });
+
     describe('InjectorDef emit optimizations for standalone', () => {
       it('should not filter components out of NgModule.imports', () => {
         env.write(
@@ -11443,6 +11519,30 @@ runInEachFileSystem((os: string) => {
         );
         expect(diags[2].messageText).toContain(
           `The pipe 'TestPipe' appears in 'imports', but is not standalone`,
+        );
+      });
+
+      it('should not recurse when a non-standalone component is both declared and imported', () => {
+        env.write(
+          '/test.ts',
+          `
+            import {Component, NgModule} from '@angular/core';
+
+            @Component({standalone: false, template: ''})
+            export class TestComp {}
+
+            @NgModule({
+              declarations: [TestComp],
+              imports: [TestComp],
+            })
+            export class TestModule {}
+          `,
+        );
+
+        const diags = env.driveDiagnostics();
+        expect(diags.length).toBe(1);
+        expect(diags[0].messageText).toContain(
+          `The component 'TestComp' appears in 'imports', but is not standalone`,
         );
       });
     });

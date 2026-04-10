@@ -43,6 +43,7 @@ import {
   TmplAstSwitchBlock,
   TmplAstSwitchBlockCase,
   TmplAstSwitchBlockCaseGroup,
+  TmplAstSwitchExhaustiveCheck,
   TmplAstTemplate,
   TmplAstText,
   TmplAstTextAttribute,
@@ -409,20 +410,14 @@ interface TcbNodesInfoForTemplate {
  *
  */
 export function getTcbNodesOfTemplateAtPosition(
-  typeCheckInfo: TypeCheckInfo,
+  templateNodes: TmplAstNode[],
   position: number,
-  compiler: NgCompiler,
+  tcb: tss.Node,
 ): TcbNodesInfoForTemplate | null {
-  const target = getTargetAtPosition(typeCheckInfo.nodes, position);
+  const target = getTargetAtPosition(templateNodes, position);
   if (target === null) {
     return null;
   }
-
-  const tcb = compiler.getTemplateTypeChecker().getTypeCheckBlock(typeCheckInfo.declaration);
-  if (tcb === null) {
-    return null;
-  }
-
   const tcbNodes: (tss.Node | null)[] = [];
   if (target.context.kind === TargetNodeKind.RawExpression) {
     const targetNode = target.context.node;
@@ -662,6 +657,9 @@ class TemplateTargetVisitor implements TmplAstVisitor {
     this.visitBinding(block.expression);
     this.visitAll(block.groups);
     this.visitAll(block.unknownBlocks);
+    if (block.exhaustiveCheck) {
+      this.visit(block.exhaustiveCheck);
+    }
   }
 
   visitSwitchBlockCase(block: TmplAstSwitchBlockCase) {
@@ -671,6 +669,10 @@ class TemplateTargetVisitor implements TmplAstVisitor {
   visitSwitchBlockCaseGroup(block: TmplAstSwitchBlockCaseGroup) {
     this.visitAll(block.cases);
     this.visitAll(block.children);
+  }
+
+  visitSwitchExhaustiveCheck(block: TmplAstSwitchExhaustiveCheck) {
+    block.expression && this.visitBinding(block.expression);
   }
 
   visitForLoopBlock(block: TmplAstForLoopBlock) {

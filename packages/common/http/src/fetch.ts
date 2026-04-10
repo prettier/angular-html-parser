@@ -8,11 +8,10 @@
 
 import {
   DestroyRef,
+  ɵformatRuntimeError as formatRuntimeError,
   inject,
   Injectable,
-  InjectionToken,
   NgZone,
-  ɵformatRuntimeError as formatRuntimeError,
 } from '@angular/core';
 import {Observable, Observer} from 'rxjs';
 import {RuntimeErrorCode} from './errors';
@@ -36,14 +35,6 @@ import type {} from 'zone.js';
 const XSSI_PREFIX = /^\)\]\}',?\n/;
 
 /**
- * An internal injection token to reference `FetchBackend` implementation
- * in a tree-shakable way.
- */
-export const FETCH_BACKEND = new InjectionToken<FetchBackend>(
-  typeof ngDevMode === 'undefined' || ngDevMode ? 'FETCH_BACKEND' : '',
-);
-
-/**
  * Uses `fetch` to send requests to a backend server.
  *
  * This `FetchBackend` requires the support of the
@@ -54,7 +45,7 @@ export const FETCH_BACKEND = new InjectionToken<FetchBackend>(
  *
  * @publicApi
  */
-@Injectable()
+@Injectable({providedIn: 'root'})
 export class FetchBackend implements HttpBackend {
   // We use an arrow function to always reference the current global implementation of `fetch`.
   // This is helpful for cases when the global `fetch` implementation is modified by external code,

@@ -7,8 +7,8 @@
  */
 
 import {NgTemplateOutlet} from '@angular/common';
-import {ChangeDetectionStrategy, Component, inject, input, output} from '@angular/core';
-import {MatTooltipModule} from '@angular/material/tooltip';
+import {Component, inject, input, output} from '@angular/core';
+import {MatTooltip} from '@angular/material/tooltip';
 import {RouterLink, RouterLinkActive} from '@angular/router';
 import {NavigationItem} from '../../interfaces/index';
 import {IsActiveNavigationItem} from '../../pipes';
@@ -23,11 +23,10 @@ import {IconComponent} from '../icon/icon.component';
     IconComponent,
     IsActiveNavigationItem,
     NgTemplateOutlet,
-    MatTooltipModule,
+    MatTooltip,
   ],
   templateUrl: './navigation-list.component.html',
   styleUrls: ['./navigation-list.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavigationList {
   readonly navigationItems = input.required<NavigationItem[]>();
@@ -40,6 +39,7 @@ export class NavigationList {
   readonly linkClicked = output<void>();
 
   private readonly navigationState = inject(NavigationState);
+  private readonly crossCategoryOrigin = this.navigationState.crossCategoryOrigin;
 
   readonly activeItem = this.navigationState.activeNavigationItem;
 
@@ -51,10 +51,19 @@ export class NavigationList {
     ) {
       return;
     }
+    const prevParentItem = this.crossCategoryOrigin();
+    if (prevParentItem) {
+      this.crossCategoryOrigin.set(undefined);
+      this.navigationState.toggleItem(prevParentItem);
+      return;
+    }
     this.navigationState.toggleItem(item);
   }
 
-  emitClickOnLink(): void {
+  emitClickOnLink(item: NavigationItem): void {
+    if (item.isCrossReferenced) {
+      this.crossCategoryOrigin.set(item.parent);
+    }
     this.linkClicked.emit();
   }
 

@@ -19,7 +19,7 @@ import {
 import {TestBed} from '@angular/core/testing';
 import {FormControl} from '@angular/forms';
 import {compatForm} from '../../compat';
-import {FormField, form, type FieldTree} from '../../public_api';
+import {FormField, form, type Field, type FieldTree} from '../../public_api';
 
 describe('FieldState focus behavior', () => {
   it('should focus a native control', async () => {
@@ -45,12 +45,14 @@ describe('FieldState focus behavior', () => {
     @Component({
       selector: 'custom-control',
       host: {'tabindex': '-1'},
-      template: '',
+      template: '<input #input />',
     })
     class CustomControl {
       readonly value = model<string>();
+      readonly input = viewChild.required<ElementRef<HTMLInputElement>>('input');
       focus() {
         focusCalled = true;
+        this.input().nativeElement.focus();
       }
     }
 
@@ -68,6 +70,41 @@ describe('FieldState focus behavior', () => {
     await act(() => fixture.componentInstance.f().focusBoundControl());
     expect(focusCalled).toBeTrue();
     expect(document.activeElement).not.toBe(customControl);
+    expect(document.activeElement).toBe(customControl.querySelector('input'));
+  });
+
+  it('should delegate focus behavior to a custom control composed with a FormField', async () => {
+    let focusCalled = false;
+
+    @Component({
+      selector: 'custom-control',
+      hostDirectives: [{directive: FormField, inputs: ['formField']}],
+      template: '<input #input />',
+    })
+    class CustomControl {
+      readonly value = model<string>();
+      readonly input = viewChild.required<ElementRef<HTMLInputElement>>('input');
+      focus() {
+        focusCalled = true;
+        this.input().nativeElement.focus();
+      }
+    }
+
+    @Component({
+      imports: [CustomControl],
+      template: `<custom-control [formField]="f" />`,
+    })
+    class TestCmp {
+      readonly f = form(signal(''));
+    }
+
+    const fixture = await act(() => TestBed.createComponent(TestCmp));
+    const customControl = fixture.nativeElement.firstChild as HTMLInputElement;
+
+    await act(() => fixture.componentInstance.f().focusBoundControl());
+    expect(focusCalled).toBeTrue();
+    expect(document.activeElement).not.toBe(customControl);
+    expect(document.activeElement).toBe(customControl.querySelector('input'));
   });
 
   it('should directly focus a custom control that has no custom focus logic', async () => {
@@ -174,7 +211,7 @@ describe('FieldState focus behavior', () => {
       template: ``,
     })
     class CustomControl {
-      formField = input.required<FieldTree<string>>();
+      formField = input.required<Field<string>>();
     }
 
     @Component({
@@ -198,7 +235,7 @@ describe('FieldState focus behavior', () => {
       template: `<input #input />`,
     })
     class CustomControl {
-      formField = input.required<FieldTree<string>>();
+      formField = input.required<Field<string>>();
       input = viewChild.required<ElementRef<HTMLInputElement>>('input');
 
       constructor() {
@@ -222,6 +259,53 @@ describe('FieldState focus behavior', () => {
 
     await act(() => fixture.componentInstance.f().focusBoundControl());
     expect(document.activeElement).toBe(nativeInput);
+  });
+
+  it('should pass focus options to native control', async () => {
+    @Component({
+      imports: [FormField],
+      template: `<input [formField]="f" />`,
+    })
+    class TestCmp {
+      readonly f = form(signal(''));
+    }
+
+    const fixture = await act(() => TestBed.createComponent(TestCmp));
+    const input = fixture.nativeElement.firstChild as HTMLInputElement;
+
+    const focusSpy = spyOn(input, 'focus');
+
+    await act(() => fixture.componentInstance.f().focusBoundControl({preventScroll: true}));
+    expect(focusSpy).toHaveBeenCalledWith({preventScroll: true});
+  });
+
+  it('should pass focus options to custom control with focus method', async () => {
+    let receivedOptions: FocusOptions | undefined;
+
+    @Component({
+      selector: 'custom-control',
+      host: {'tabindex': '-1'},
+      template: '',
+    })
+    class CustomControl {
+      readonly value = model<string>();
+      focus(options?: FocusOptions) {
+        receivedOptions = options;
+      }
+    }
+
+    @Component({
+      imports: [FormField, CustomControl],
+      template: `<custom-control [formField]="f" />`,
+    })
+    class TestCmp {
+      readonly f = form(signal(''));
+    }
+
+    const fixture = await act(() => TestBed.createComponent(TestCmp));
+
+    await act(() => fixture.componentInstance.f().focusBoundControl({preventScroll: true}));
+    expect(receivedOptions).toEqual({preventScroll: true});
   });
 });
 

@@ -19,7 +19,8 @@ ts_project(
     tsconfig = {
         "compilerOptions": {
             "target": "ES2022",
-            "moduleResolution": "node",
+            "module": "nodenext",
+            "moduleResolution": "nodenext",
             "types": ["node"],
             "rootDir": ".",
             "skipLibCheck": True,
@@ -28,6 +29,7 @@ ts_project(
     deps = [
         "//adev:node_modules/@angular/docs",
         "//adev:node_modules/@types/node",
+        "//adev/shared-docs/pipeline/shared:heading",
         "//adev/src/app/routing/navigation-entries",
         "//adev/src/content/reference/errors:route-nav-items",
         "//adev/src/content/reference/extended-diagnostics:route-nav-items",

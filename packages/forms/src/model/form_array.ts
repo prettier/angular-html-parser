@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {ɵWritable as Writable} from '@angular/core';
+import {untracked, ɵWritable as Writable} from '@angular/core';
 
 import {AsyncValidatorFn, ValidatorFn} from '../directives/validators';
 
@@ -54,7 +54,8 @@ export type ɵFormArrayRawValue<T extends AbstractControl<any>> = ɵTypedOrUntyp
  *
  * A `FormArray` aggregates the values of each child `FormControl` into an array.
  * It calculates its status by reducing the status values of its children. For example, if one of
- * the controls in a `FormArray` is invalid, the entire array becomes invalid.
+ * the controls in a `FormArray` is invalid, the entire array becomes invalid. Similarly, if all
+ * controls in a `FormArray` are disabled, the entire array becomes disabled.
  *
  * `FormArray` accepts one generic argument, which is the type of the controls inside.
  * If you need a heterogenous array, use {@link UntypedFormArray}.
@@ -321,12 +322,14 @@ export class FormArray<TControl extends AbstractControl<any> = any> extends Abst
       emitEvent?: boolean;
     } = {},
   ): void {
-    assertAllValuesPresent(this, false, value);
-    value.forEach((newValue: any, index: number) => {
-      assertControlPresent(this, false, index);
-      this.at(index).setValue(newValue, {onlySelf: true, emitEvent: options.emitEvent});
+    untracked(() => {
+      assertAllValuesPresent(this, false, value);
+      value.forEach((newValue: any, index: number) => {
+        assertControlPresent(this, false, index);
+        this.at(index).setValue(newValue, {onlySelf: true, emitEvent: options.emitEvent});
+      });
+      this.updateValueAndValidity(options);
     });
-    this.updateValueAndValidity(options);
   }
 
   /**
