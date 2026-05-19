@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {computed, Injectable, ɵRuntimeError as RuntimeError, Signal} from '@angular/core';
+import {computed, ɵRuntimeError as RuntimeError, Service, Signal} from '@angular/core';
 
 import {RuntimeErrorCode} from './errors';
 import type {Router} from './router';
@@ -417,7 +417,7 @@ export function mapChildrenIntoArray<T>(
  *
  * @publicApi
  */
-@Injectable({providedIn: 'root', useFactory: () => new DefaultUrlSerializer()})
+@Service({factory: () => new DefaultUrlSerializer()})
 export abstract class UrlSerializer {
   /** Parse a url into a `UrlTree` */
   abstract parse(url: string): UrlTree;
@@ -615,7 +615,11 @@ class UrlParser {
   }
 
   parseRootSegment(): UrlSegmentGroup {
-    this.consumeOptional('/');
+    // Consume all leading slashes. Multiple consecutive leading slashes (e.g. `///path`)
+    // are not meaningful and would otherwise produce a `//path`-style serialized URL,
+    // which browsers interpret as protocol-relative (resolving to a different origin)
+    // and reject with a SecurityError when passed to `history.pushState`/`replaceState`.
+    while (this.consumeOptional('/')) {}
 
     if (this.remaining === '' || this.peekStartsWith('?') || this.peekStartsWith('#')) {
       return new UrlSegmentGroup([], {});

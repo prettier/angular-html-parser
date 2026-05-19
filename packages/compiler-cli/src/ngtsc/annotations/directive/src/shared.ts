@@ -7,6 +7,8 @@
  */
 
 import {
+  ArrowFunctionExpr,
+  ClassPropertyMapping,
   createMayBeForwardRefExpression,
   emitDistinctChangesOnlyDefaultValue,
   Expression,
@@ -14,6 +16,11 @@ import {
   ExternalReference,
   ForwardRefHandling,
   getSafePropertyAccessString,
+  HostBindingDecorator,
+  HostListenerDecorator,
+  HostObjectLiteralBinding,
+  InputOrOutput,
+  literal,
   LiteralArrayExpr,
   literalMap,
   MaybeForwardRefExpression,
@@ -22,16 +29,13 @@ import {
   parseHostBindings,
   R3DirectiveMetadata,
   R3HostDirectiveMetadata,
+  R3Identifiers,
   R3InputMetadata,
   R3QueryMetadata,
   R3Reference,
+  SourceNode,
   verifyHostBindings,
-  R3Identifiers,
-  ArrowFunctionExpr,
   WrappedNodeExpr,
-  literal,
-  ClassPropertyMapping,
-  InputOrOutput,
 } from '@angular/compiler';
 import ts from 'typescript';
 
@@ -92,13 +96,6 @@ import {tryParseSignalInputMapping} from './input_function';
 import {tryParseSignalModelMapping} from './model_function';
 import {tryParseInitializerBasedOutput} from './output_function';
 import {tryParseSignalQueryFromInitializer} from './query_functions';
-import {
-  HostObjectLiteralBinding,
-  HostListenerDecorator,
-  HostBindingDecorator,
-  SourceNode,
-  StaticSourceNode,
-} from '../../../typecheck/src/host_bindings';
 
 const EMPTY_OBJECT: {[key: string]: string} = {};
 
@@ -140,6 +137,7 @@ export function extractDirectiveMetadata(
   strictStandalone: boolean,
   implicitStandaloneValue: boolean,
   emitDeclarationOnly: boolean,
+  legacyOptionalChaining: boolean,
 ):
   | {
       jitForced: false;
@@ -460,6 +458,7 @@ export function extractDirectiveMetadata(
     hostDirectives:
       hostDirectives?.map((hostDir) => toHostDirectiveMetadata(hostDir, sourceFile, refEmitter)) ||
       null,
+    legacyOptionalChaining,
   };
   return {
     jitForced: false,

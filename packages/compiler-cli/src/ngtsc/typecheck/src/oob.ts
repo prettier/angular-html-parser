@@ -11,8 +11,11 @@ import {
   AST,
   BindingPipe,
   BindingType,
+  OutOfBandDiagnosticCategory,
+  OutOfBandDiagnosticRecorder,
   ParseSourceSpan,
   PropertyRead,
+  TcbDirectiveMetadata,
   TmplAstBoundAttribute,
   TmplAstBoundEvent,
   TmplAstComponent,
@@ -30,17 +33,12 @@ import {
   TmplAstTextAttribute,
   TmplAstVariable,
   TmplAstViewportDeferredTrigger,
+  TypeCheckId,
 } from '@angular/compiler';
 import ts from 'typescript';
 
 import {ErrorCode, ngErrorCode} from '../../diagnostics';
-import {
-  OutOfBadDiagnosticCategory,
-  OutOfBandDiagnosticRecorder,
-  TcbDirectiveMetadata,
-  TemplateDiagnostic,
-  TypeCheckId,
-} from '../api';
+import {TemplateDiagnostic} from '../api';
 import {makeTemplateDiagnostic} from '../diagnostics';
 
 import {TypeCheckSourceResolver} from './tcb_util';
@@ -422,7 +420,7 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
 
   controlFlowPreventingContentProjection(
     id: TypeCheckId,
-    category: OutOfBadDiagnosticCategory,
+    category: OutOfBandDiagnosticCategory,
     projectionNode: TmplAstElement | TmplAstTemplate,
     componentName: string,
     slotSelector: string,
@@ -727,11 +725,11 @@ export class OutOfBandDiagnosticRecorderImpl implements OutOfBandDiagnosticRecor
   }
 }
 
-function translateCategory(category: OutOfBadDiagnosticCategory): ts.DiagnosticCategory {
+function translateCategory(category: OutOfBandDiagnosticCategory): ts.DiagnosticCategory {
   switch (category) {
-    case OutOfBadDiagnosticCategory.Error:
+    case OutOfBandDiagnosticCategory.Error:
       return ts.DiagnosticCategory.Error;
-    case OutOfBadDiagnosticCategory.Warning:
+    case OutOfBandDiagnosticCategory.Warning:
       return ts.DiagnosticCategory.Warning;
   }
 }

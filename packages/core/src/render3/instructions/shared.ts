@@ -12,10 +12,8 @@ import {hasSkipHydrationAttrOnRElement} from '../../hydration/skip_hydration';
 import {PRESERVE_HOST_CONTENT, PRESERVE_HOST_CONTENT_DEFAULT} from '../../hydration/tokens';
 import {processTextNodeMarkersBeforeHydration} from '../../hydration/utils';
 import {ViewEncapsulation} from '../../metadata/view';
-import {
-  validateAgainstEventAttributes,
-  validateAgainstEventProperties,
-} from '../../sanitization/sanitization';
+import {validateAgainstEventProperties} from '../../sanitization/sanitization';
+
 import {assertIndexInRange, assertNotSame} from '../../util/assert';
 import {escapeCommentText} from '../../util/dom';
 import {normalizeDebugBindingName, normalizeDebugBindingValue} from '../../ng_reflect';
@@ -23,6 +21,7 @@ import {stringify} from '../../util/stringify';
 import {assertFirstCreatePass, assertHasParent, assertLView} from '../assert';
 import {attachPatchData} from '../context_discovery';
 import {getNodeInjectable, getOrCreateNodeInjectorForNode} from '../di';
+import {RuntimeError, RuntimeErrorCode} from '../../errors';
 import {throwMultipleComponentError} from '../errors';
 import {ComponentDef, ComponentTemplate, DirectiveDef, RenderFlags} from '../interfaces/definition';
 import {
@@ -182,6 +181,12 @@ export function locateHostElement(
     encapsulation === ViewEncapsulation.ShadowDom ||
     encapsulation === ViewEncapsulation.ExperimentalIsolatedShadowDom;
   const rootElement = renderer.selectRootElement(elementOrSelector, preserveContent);
+  if (rootElement.tagName.toLowerCase() === 'script') {
+    throw new RuntimeError(
+      RuntimeErrorCode.UNSAFE_VALUE_IN_SCRIPT,
+      ngDevMode && `"<script>" tag is not allowed as a component host element.`,
+    );
+  }
   applyRootElementTransform(rootElement as HTMLElement);
   return rootElement;
 }
@@ -296,7 +301,9 @@ export function setDomProperty<T>(
     const element = getNativeByTNode(tNode, lView) as RElement | RComment;
 
     if (ngDevMode) {
-      validateAgainstEventProperties(propName);
+      if (lView[TVIEW].firstUpdatePass) {
+        validateAgainstEventProperties(propName);
+      }
       if (!isPropertyValid(element, propName, tNode.value, lView[TVIEW].schemas)) {
         handleUnknownPropertyError(propName, tNode.value, tNode.type, lView);
       }
@@ -506,7 +513,6 @@ export function elementAttributeInternal(
 ) {
   if (ngDevMode) {
     assertNotSame(value, NO_CHANGE as any, 'Incoming value should never be NO_CHANGE.');
-    validateAgainstEventAttributes(name);
     assertTNodeType(
       tNode,
       TNodeType.Element,
@@ -514,6 +520,7 @@ export function elementAttributeInternal(
         `Host bindings are not valid on ng-container or ng-template.`,
     );
   }
+
   const element = getNativeByTNode(tNode, lView) as RElement;
   setElementAttribute(lView[RENDERER], element, namespace, tNode.value, name, value, sanitizer);
 }

@@ -13,13 +13,13 @@ import {
   TmplAstNode,
   TmplAstTextAttribute,
 } from '@angular/compiler';
-import {NgCompiler} from '@angular/compiler-cli/src/ngtsc/core';
 import {
   DirectiveSymbol,
   DomBindingSymbol,
   ElementSymbol,
   InputBindingSymbol,
   LetDeclarationSymbol,
+  NgCompiler,
   OutputBindingSymbol,
   PipeSymbol,
   ReferenceSymbol,
@@ -29,15 +29,18 @@ import {
   SymbolKind,
   TcbLocation,
   VariableSymbol,
-} from '@angular/compiler-cli/src/ngtsc/typecheck/api';
+} from '@angular/compiler-cli';
+
 import ts from 'typescript';
 
 import {DisplayInfoKind, SYMBOL_PUNC, SYMBOL_SPACE, SYMBOL_TEXT} from './utils/display_parts';
 import {
   createDollarAnyQuickInfo,
+  createDollarSafeNavigationMigration,
   createNgTemplateQuickInfo,
   createQuickInfoForBuiltIn,
   isDollarAny,
+  isDollarSafeNavigationMigration,
 } from './quick_info_built_ins';
 import {TemplateTarget} from './template_target';
 import {
@@ -83,6 +86,18 @@ export class QuickInfoBuilder {
     // at the entire call in order to figure out if it's a call to `$any`.
     if (this.parent !== null && isDollarAny(this.parent) && this.parent.receiver === this.node) {
       return createDollarAnyQuickInfo(this.parent);
+    }
+
+    if (isDollarSafeNavigationMigration(this.node)) {
+      return createDollarSafeNavigationMigration(this.node);
+    }
+
+    if (
+      this.parent !== null &&
+      isDollarSafeNavigationMigration(this.parent) &&
+      this.parent.receiver === this.node
+    ) {
+      return createDollarSafeNavigationMigration(this.parent);
     }
 
     return undefined;

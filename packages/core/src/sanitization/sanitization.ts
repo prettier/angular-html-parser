@@ -220,6 +220,7 @@ const RESOURCE_MAP: Record<string, Record<string, true | undefined> | undefined>
   'iframe': {'src': true},
   'media': {'src': true},
   'script': {'src': true, 'href': true, 'xlink:href': true},
+  ':svg:script': {'src': true, 'href': true, 'xlink:href': true},
   'base': {'href': true},
   'link': {'href': true},
   'object': {'data': true, 'codebase': true},
@@ -233,7 +234,7 @@ const RESOURCE_MAP: Record<string, Record<string, true | undefined> | undefined>
  * If tag and prop names don't match Resource URL schema, use URL sanitizer.
  */
 export function getUrlSanitizer(tag: string, prop: string) {
-  const isResource = RESOURCE_MAP[tag]?.[prop] === true;
+  const isResource = RESOURCE_MAP[tag.toLowerCase()]?.[prop.toLowerCase()] === true;
 
   return isResource ? ɵɵsanitizeResourceUrl : ɵɵsanitizeUrl;
 }
@@ -268,15 +269,6 @@ export function validateAgainstEventProperties(name: string) {
   }
 }
 
-export function validateAgainstEventAttributes(name: string) {
-  if (name.toLowerCase().startsWith('on')) {
-    const errorMessage =
-      `Binding to event attribute '${name}' is disallowed for security reasons, ` +
-      `please use (${name.slice(2)})=...`;
-    throw new RuntimeError(RuntimeErrorCode.INVALID_EVENT_BINDING, errorMessage);
-  }
-}
-
 function getSanitizer(): Sanitizer | null {
   const lView = getLView();
   return lView && lView[ENVIRONMENT].sanitizer;
@@ -291,7 +283,7 @@ const SECURITY_SENSITIVE_ATTRIBUTE_NAMES: ReadonlySet<string> = new Set(['href',
  * @remarks Keep this in sync with DOM Security Schema.
  * @see [SECURITY_SCHEMA](../../../compiler/src/schema/dom_security_schema.ts)
  */
-const SECURITY_SENSITIVE_ELEMENTS: Record<
+export const SECURITY_SENSITIVE_ELEMENTS: Record<
   string,
   Record<string, true | undefined | ReadonlySet<string>> | undefined
 > = {
@@ -303,15 +295,15 @@ const SECURITY_SENSITIVE_ELEMENTS: Record<
     'csp': true,
     'fetchpriority': true,
   },
-  'animate': {
+  ':svg:animate': {
     'attributename': true,
     'to': SECURITY_SENSITIVE_ATTRIBUTE_NAMES,
     'values': SECURITY_SENSITIVE_ATTRIBUTE_NAMES,
     'from': SECURITY_SENSITIVE_ATTRIBUTE_NAMES,
   },
-  'set': {'attributename': true, 'to': SECURITY_SENSITIVE_ATTRIBUTE_NAMES},
-  'animatemotion': {'attributename': true},
-  'animatetransform': {'attributename': true},
+  ':svg:set': {'attributename': true, 'to': SECURITY_SENSITIVE_ATTRIBUTE_NAMES},
+  ':svg:animatemotion': {'attributename': true},
+  ':svg:animatetransform': {'attributename': true},
 };
 
 /**
@@ -324,37 +316,47 @@ const SECURITY_SENSITIVE_ELEMENTS: Record<
 export function ɵɵvalidateAttribute<T = any>(value: T, tagName: string, attributeName: string): T {
   const lowerCaseTagName = tagName.toLowerCase();
   const lowerCaseAttrName = attributeName.toLowerCase();
-  const validationConfig = SECURITY_SENSITIVE_ELEMENTS[lowerCaseTagName]?.[lowerCaseAttrName];
-  if (!validationConfig) {
-    return value;
-  }
 
-  const tNode = getSelectedTNode()!;
-  if (tNode.type !== TNodeType.Element) {
+  // Leverage tNode.namespace if active, otherwise check both namespaced and base variants.
+  const tNode = getSelectedTNode();
+  const fullTagName =
+    lowerCaseTagName[0] !== ':' && tNode?.namespace
+      ? `:${tNode.namespace}:${lowerCaseTagName}`
+      : lowerCaseTagName;
+
+  const validationConfig = SECURITY_SENSITIVE_ELEMENTS[fullTagName]?.[lowerCaseAttrName];
+
+  if (!validationConfig) {
     return value;
   }
 
   const lView = getLView();
   if (lowerCaseTagName === 'iframe') {
-    const element = getNativeByTNode(tNode, lView) as RElement;
-    enforceIframeSecurity(element as HTMLIFrameElement);
+    if (tNode?.type === TNodeType.Element) {
+      const element = getNativeByTNode(tNode, lView) as RElement;
+      enforceIframeSecurity(element as HTMLIFrameElement);
+    }
   }
 
+  const displayTagName = tagName[0] === ':' ? tagName.split(':').pop()! : tagName;
+
   if (typeof validationConfig !== 'boolean') {
-    const element = getNativeByTNode(tNode, lView) as SVGAnimateElement;
-    const attributeNameValue = element.getAttribute('attributeName');
+    if (tNode?.type === TNodeType.Element) {
+      const element = getNativeByTNode(tNode, lView) as SVGAnimateElement;
+      const attributeNameValue = element.getAttribute('attributeName');
 
-    if (attributeNameValue && validationConfig.has(attributeNameValue.toLowerCase())) {
-      const errorMessage =
-        ngDevMode &&
-        `Angular has detected that the \`${attributeName}\` was applied ` +
-          `as a binding to the <${tagName}> element${getTemplateLocationDetails(lView)}. ` +
-          `For security reasons, the \`${attributeName}\` can be set on the <${tagName}> element ` +
-          `as a static attribute only when the "attributeName" is set to \'${attributeNameValue}\'. \n` +
-          `To fix this, switch the \`${attributeNameValue}\` binding to a static attribute ` +
-          `in a template or in host bindings section.`;
+      if (attributeNameValue && validationConfig.has(attributeNameValue.toLowerCase())) {
+        const errorMessage =
+          ngDevMode &&
+          `Angular has detected that the \`${attributeName}\` was applied ` +
+            `as a binding to the <${displayTagName}> element${getTemplateLocationDetails(lView)}. ` +
+            `For security reasons, the \`${attributeName}\` can be set on the <${displayTagName}> element ` +
+            `as a static attribute only when the "attributeName" is set to \'${attributeNameValue}\'. \n` +
+            `To fix this, switch the \`${attributeNameValue}\` binding to a static attribute ` +
+            `in a template or in host bindings section.`;
 
-      throw new RuntimeError(RuntimeErrorCode.UNSAFE_ATTRIBUTE_BINDING, errorMessage);
+        throw new RuntimeError(RuntimeErrorCode.UNSAFE_ATTRIBUTE_BINDING, errorMessage);
+      }
     }
 
     return value;
@@ -363,8 +365,8 @@ export function ɵɵvalidateAttribute<T = any>(value: T, tagName: string, attrib
   const errorMessage =
     ngDevMode &&
     `Angular has detected that the \`${attributeName}\` was applied ` +
-      `as a binding to the <${tagName}> element${getTemplateLocationDetails(lView)}. ` +
-      `For security reasons, the \`${attributeName}\` can be set on the <${tagName}> element ` +
+      `as a binding to the <${displayTagName}> element${getTemplateLocationDetails(lView)}. ` +
+      `For security reasons, the \`${attributeName}\` can be set on the <${displayTagName}> element ` +
       `as a static attribute only. \n` +
       `To fix this, switch the \`${attributeName}\` binding to a static attribute ` +
       `in a template or in host bindings section.`;

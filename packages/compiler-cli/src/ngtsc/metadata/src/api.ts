@@ -15,6 +15,7 @@ import {
   ClassPropertyName,
   InputOrOutput,
   ClassPropertyMapping,
+  TemplateGuardMeta,
 } from '@angular/compiler';
 import ts from 'typescript';
 
@@ -250,6 +251,14 @@ export interface DirectiveMeta extends T2DirectiveMeta, DirectiveTypeCheckMeta {
   imports: Reference<ClassDeclaration>[] | null;
 
   /**
+   * For standalone components, the list of imported foreign components.
+   *
+   * Note that while a foreign import is not likely to be a class, this type is used
+   * because it includes the expected identifier we'll need, making further code simpler.
+   */
+  foreignImports: Reference<ClassDeclaration>[] | null;
+
+  /**
    * Node declaring the `imports` of a standalone component. Used to produce diagnostics.
    */
   rawImports: ts.Expression | null;
@@ -330,25 +339,6 @@ export interface HostDirectiveMetaForGlobalMode extends HostDirectiveMeta {
  */
 export interface HostDirectiveMetaForLocalMode extends HostDirectiveMeta {
   directive: Expression;
-}
-
-/**
- * Metadata that describes a template guard for one of the directive's inputs.
- */
-export interface TemplateGuardMeta {
-  /**
-   * The input name that this guard should be applied to.
-   */
-  inputName: string;
-
-  /**
-   * Represents the type of the template guard.
-   *
-   * - 'invocation' means that a call to the template guard function is emitted so that its return
-   *   type can result in narrowing of the input type.
-   * - 'binding' means that the input binding expression itself is used as template guard.
-   */
-  type: 'invocation' | 'binding';
 }
 
 /**

@@ -17,9 +17,10 @@ import {
   LiteralArray,
   LiteralMap,
   LiteralPrimitive,
-  SafeCall,
   ParsedEventType,
   PropertyRead,
+  RecursiveAstVisitor,
+  SafeCall,
   SpreadElement,
   TemplateLiteral,
   TmplAstBoundAttribute,
@@ -31,30 +32,30 @@ import {
   TmplAstIfBlockBranch,
   TmplAstLetDeclaration,
   TmplAstNode,
+  TmplAstRecursiveVisitor,
+  TmplAstReference,
   TmplAstSwitchBlock,
   TmplAstTextAttribute,
   TmplAstVariable,
-  TmplAstReference,
-  tmplAstVisitAll,
-  RecursiveAstVisitor,
-  TmplAstRecursiveVisitor,
   Unary,
+  tmplAstVisitAll,
 } from '@angular/compiler';
-import {NgCompiler} from '@angular/compiler-cli/src/ngtsc/core';
 import {
-  SymbolKind,
-  VariableSymbol,
-  PipeSymbol,
-  OutputBindingSymbol,
-  InputBindingSymbol,
-  LetDeclarationSymbol,
-  ReferenceSymbol,
   DomBindingSymbol,
   ElementSymbol,
   ExpressionSymbol,
-} from '@angular/compiler-cli/src/ngtsc/typecheck/api';
-import {TemplateTypeChecker} from '@angular/compiler-cli/src/ngtsc/typecheck/api/checker';
-import {findFirstMatchingNode} from '@angular/compiler-cli/src/ngtsc/typecheck/src/comments';
+  InputBindingSymbol,
+  LetDeclarationSymbol,
+  NgCompiler,
+  OutputBindingSymbol,
+  PipeSymbol,
+  ReferenceSymbol,
+  SymbolKind,
+  TemplateTypeChecker,
+  VariableSymbol,
+} from '@angular/compiler-cli';
+
+import {findFirstMatchingNode} from '@angular/compiler-cli/private/hybrid_analysis';
 import ts from 'typescript';
 
 import {TypeCheckInfo} from './utils';

@@ -19,7 +19,7 @@ import {
 import {findMatchingDehydratedView, locateDehydratedViewsInContainer} from '../hydration/views';
 import {Type} from '../interface/type';
 import {assertNodeInjector} from '../render3/assert';
-import {ComponentFactory as R3ComponentFactory} from '../render3/component_ref';
+import {ComponentFactory} from '../render3/component_ref';
 import {getComponentDef} from '../render3/def_getters';
 import {getParentInjectorLocation, NodeInjector} from '../render3/di';
 import {nativeInsertBefore} from '../render3/dom_node_manipulation';
@@ -79,6 +79,7 @@ import {createElementRef, ElementRef} from './element_ref';
 import {NgModuleRef} from './ng_module_factory';
 import {TemplateRef} from './template_ref';
 import {EmbeddedViewRef, ViewRef} from './view_ref';
+import {registerSpecialProvider} from '../render3/debug/special_providers';
 
 /**
  * Represents a container where one or more views can be attached to a component.
@@ -292,6 +293,10 @@ export abstract class ViewContainerRef {
   static __NG_ELEMENT_ID__: () => ViewContainerRef = injectViewContainerRef;
 }
 
+if (typeof ngDevMode === 'undefined' || ngDevMode) {
+  registerSpecialProvider(ViewContainerRef);
+}
+
 /**
  * Creates a ViewContainerRef and stores it on the injector. Or, if the ViewContainerRef
  * already exists, retrieves the existing ViewContainerRef.
@@ -461,7 +466,7 @@ class R3ViewContainerRef extends ViewContainerRef {
     directives = options.directives;
     bindings = options.bindings;
 
-    const componentFactory = new R3ComponentFactory(getComponentDef(componentType)!);
+    const componentFactory = new ComponentFactory(getComponentDef(componentType)!);
     const contextInjector = injector || this.parentInjector;
 
     // If an `NgModuleRef` is not provided explicitly, try retrieving it from the DI tree.

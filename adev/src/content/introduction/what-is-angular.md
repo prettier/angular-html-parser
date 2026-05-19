@@ -51,7 +51,7 @@
     Angular CLI's `ng update` runs automated code transformations that automatically handle routine breaking changes, dramatically simplifying major version updates. Keeping up with the latest version keeps your app as fast and secure as possible.
   </docs-card>
   <docs-card title="Language Service" href="tools/language-service" link="Language Service" iconImgSrc="adev/src/assets/icons/language-service.svg">
-    Angular's IDE language services powers code completion, navigation, refactoring, and real-time diagnostics in your favorite editor.
+    Angular's IDE language service powers code completion, navigation, refactoring, and real-time diagnostics in your favorite editor.
   </docs-card>
 </docs-card-container>
 
@@ -108,7 +108,7 @@
   <docs-card title="Partnering with other Google technologies" titleIconName="sensors">
     <p>Angular partners closely with other Google technologies and teams to improve the web.</p>
     <p>Our ongoing partnership with Chrome’s Aurora actively explores improvements to user experience across the web, developing built-in performance optimizations like <code>NgOptimizedImage</code> and improvements to Angular’s Core Web Vitals.</p>
-    <p>We are also working with <a href="https://firebase.google.com/">Firebase</a>, <a href="https://www.tensorflow.org/">Tensorflow</a>, <a href="https://flutter.dev/">Flutter</a>, <a href="https://m3.material.io/">Material Design</a>, and <a href="https://cloud.google.com/">Google Cloud</a> to ensure we provide meaningful integrations across the developer workflow.</p>
+    <p>We are also working with <a href="https://firebase.google.com/" target="_blank">Firebase</a>, <a href="https://www.tensorflow.org/" target="_blank">Tensorflow</a>, <a href="https://flutter.dev/" target="_blank">Flutter</a>, <a href="https://m3.material.io/" target="_blank">Material Design</a>, and <a href="https://cloud.google.com/" target="_blank">Google Cloud</a> to ensure we provide meaningful integrations across the developer workflow.</p>
   </docs-card>
 </docs-card-container>
 

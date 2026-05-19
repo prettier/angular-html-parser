@@ -36,8 +36,10 @@
 | `NG0951`  | [Child query result is required but no value is available](errors/NG0951)            |
 | `NG0955`  | [Track expression resulted in duplicated keys for a given collection](errors/NG0955) |
 | `NG0956`  | [Tracking expression caused re-creation of the DOM structure](errors/NG0956)         |
+| `NG01002` | [Missing Control Value](errors/NG01002)                                              |
 | `NG01101` | [Wrong Async Validator Return Type](errors/NG01101)                                  |
 | `NG01203` | [Missing value accessor](errors/NG01203)                                             |
+| `NG01902` | [Orphan field in signal forms](errors/NG01902)                                       |
 | `NG02200` | [Missing Iterable Differ](errors/NG02200)                                            |
 | `NG02800` | [JSONP support in HttpClient configuration](errors/NG02800)                          |
 | `NG02802` | [Headers not transferred by HttpTransferCache](errors/NG02802)                       |
@@ -57,3 +59,4 @@
 | `NG8002` | [Invalid Attribute](errors/NG8002)                         |
 | `NG8003` | [Missing Reference Target](errors/NG8003)                  |
 | `NG8023` | [Multiple Components Match Same Element](errors/NG8023)    |
+| `NG8024` | [Conflicting Host Directive Binding](errors/NG8024)        |

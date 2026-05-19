@@ -53,8 +53,8 @@ import {
   tmplAstVisitAll,
   TmplAstVisitor,
 } from '@angular/compiler';
-import {NgCompiler} from '@angular/compiler-cli/src/ngtsc/core';
-import {findFirstMatchingNode} from '@angular/compiler-cli/src/ngtsc/typecheck/src/comments';
+import {NgCompiler} from '@angular/compiler-cli';
+import {findFirstMatchingNode} from '@angular/compiler-cli/private/hybrid_analysis';
 import tss from 'typescript';
 
 import {
@@ -679,7 +679,7 @@ class TemplateTargetVisitor implements TmplAstVisitor {
     this.visit(block.item);
     this.visitAll(block.contextVariables);
     this.visitBinding(block.expression);
-    this.visitBinding(block.trackBy);
+    block.trackBy && this.visitBinding(block.trackBy);
     this.visitAll(block.children);
     block.empty && this.visit(block.empty);
   }

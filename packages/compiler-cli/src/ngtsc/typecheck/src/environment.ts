@@ -6,23 +6,23 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import ts from 'typescript';
-
-import {ReferenceEmitter} from '../../imports';
-import {ReflectionHost} from '../../reflection';
-import {ImportManager} from '../../translator';
 import {
   TcbDirectiveMetadata,
+  TcbExpr,
   TcbPipeMetadata,
   TcbReferenceKey,
-  TcbReferenceMetadata,
   TypeCheckingConfig,
   TypeCtorMetadata,
-} from '../api';
+} from '@angular/compiler';
+import ts from 'typescript';
+import {AbsoluteFsPath} from '../../file_system';
+
+import {ReferenceEmitter} from '../../imports';
+
+import {ImportManager} from '../../translator';
 
 import {ReferenceEmitEnvironment} from './reference_emit_environment';
 import {generateTypeCtorDeclarationFn} from './type_constructor';
-import {declareVariable, TcbExpr} from './ops/codegen';
 
 /**
  * A context which hosts one or more Type Check Blocks (TCBs).
@@ -47,14 +47,17 @@ export class Environment extends ReferenceEmitEnvironment {
   private pipeInsts = new Map<TcbReferenceKey, string>();
   protected pipeInstStatements: TcbExpr[] = [];
 
+  copiedSourceOriginPath?: AbsoluteFsPath;
+
   constructor(
     readonly config: TypeCheckingConfig,
     importManager: ImportManager,
     refEmitter: ReferenceEmitter,
-    reflector: ReflectionHost,
     contextFile: ts.SourceFile,
+    copiedSourceOriginPath?: AbsoluteFsPath,
   ) {
-    super(importManager, refEmitter, reflector, contextFile);
+    super(importManager, refEmitter, contextFile);
+    this.copiedSourceOriginPath = copiedSourceOriginPath;
   }
 
   /**
@@ -105,9 +108,8 @@ export class Environment extends ReferenceEmitEnvironment {
 
     const pipeType = this.referenceTcbValue(pipe.ref);
     const pipeInstId = `_pipe${this.nextIds.pipeInst++}`;
-
     this.pipeInsts.set(pipe.ref.key, pipeInstId);
-    this.pipeInstStatements.push(declareVariable(new TcbExpr(pipeInstId), pipeType));
+    this.pipeInstStatements.push(new TcbExpr(`var ${pipeInstId} = null! as ${pipeType.print()}`));
     return new TcbExpr(pipeInstId);
   }
 

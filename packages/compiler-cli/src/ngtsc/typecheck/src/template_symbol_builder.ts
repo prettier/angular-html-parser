@@ -31,6 +31,7 @@ import {
   TmplAstTemplate,
   TmplAstTextAttribute,
   TmplAstVariable,
+  TypeCheckingConfig,
 } from '@angular/compiler';
 import ts from 'typescript';
 
@@ -57,7 +58,6 @@ import {
   SymbolReference,
   TcbLocation,
   TemplateSymbol,
-  TypeCheckingConfig,
   VariableSymbol,
 } from '../api';
 import {findAllMatchingNodes, findFirstMatchingNode, readDirectiveIdFromComment} from './comments';
@@ -67,7 +67,6 @@ import {isAccessExpression, isDirectiveDeclaration} from './ts_util';
 export interface SymbolDirectiveMeta {
   getSymbolReference(): SymbolReference;
   getNgModule(): ClassDeclaration | null;
-  getReferenceTargetNode(): ts.ClassDeclaration | null;
   matchSource: MatchSource;
   isComponent: boolean;
   selector: string | null;
@@ -597,10 +596,7 @@ export class SymbolBuilder {
         referenceVarLocation: referenceVarTcbLocation,
       };
     } else {
-      const targetNode = target.directive.getReferenceTargetNode();
-      if (targetNode === null) {
-        return null;
-      }
+      const targetNode = target.directive.getSymbolReference();
 
       return {
         kind: SymbolKind.Reference,
@@ -846,85 +842,4 @@ function unwrapSignalInputWriteTAccessor(expr: ts.LeftHandSideExpression): null 
     fieldExpr: expr.expression,
     typeExpr: expr,
   };
-}
-
-/**
- * Checks whether two directive declarations are the same.
- *
- * This function accounts for the fact that TypeScript might return different `ClassDeclaration`
- * instances for the same file, such as when resolving `ExternalExpr` imports from `tcb_adapter`s
- * `NoAliasing` emit flag.
- */
-function isSameDirectiveDeclaration(
-  a: ts.ClassDeclaration | ClassDeclaration,
-  b: ts.ClassDeclaration | ClassDeclaration,
-): boolean {
-  if (a === b) {
-    return true;
-  }
-  const aName = a.name?.text;
-  const bName = b.name?.text;
-  return (
-    aName !== undefined &&
-    bName !== undefined &&
-    aName === bName &&
-    a.getSourceFile().fileName === b.getSourceFile().fileName
-  );
-}
-
-/**
- * Looks for a class declaration in the original source file that matches a given directive
- * from the type check source file.
- *
- * @param originalSourceFile The original source where the runtime code resides
- * @param directiveDeclarationInTypeCheckSourceFile The directive from the type check source file
- */
-function findMatchingDirective(
-  originalSourceFile: ts.SourceFile,
-  directiveDeclarationInTypeCheckSourceFile: ts.ClassDeclaration,
-): ts.ClassDeclaration | null {
-  const className = directiveDeclarationInTypeCheckSourceFile.name?.text ?? '';
-  // We build an index of the class declarations with the same name
-  // To then compare the indexes to confirm we found the right class declaration
-  const ogClasses = collectClassesWithName(originalSourceFile, className);
-  const typecheckClasses = collectClassesWithName(
-    directiveDeclarationInTypeCheckSourceFile.getSourceFile(),
-    className,
-  );
-
-  return ogClasses[typecheckClasses.indexOf(directiveDeclarationInTypeCheckSourceFile)] ?? null;
-}
-
-/**
- * Builds a list of class declarations of a given name
- * Is used as a index based reference to compare class declarations
- * between the typecheck source file and the original source file
- */
-function collectClassesWithName(
-  sourceFile: ts.SourceFile,
-  className: string,
-): ts.ClassDeclaration[] {
-  const classes: ts.ClassDeclaration[] = [];
-  function visit(node: ts.Node) {
-    if (ts.isClassDeclaration(node) && node.name?.text === className) {
-      classes.push(node);
-    }
-    ts.forEachChild(node, visit);
-  }
-  sourceFile.forEachChild(visit);
-
-  return classes;
-}
-
-function extractNameFromTypeNode(node: ts.Node): string | null {
-  if (ts.isTypeQueryNode(node)) {
-    let expr = node.exprName;
-    while (ts.isQualifiedName(expr)) expr = expr.right;
-    if (ts.isIdentifier(expr)) return expr.text;
-  } else if (ts.isTypeReferenceNode(node)) {
-    let typeName = node.typeName;
-    while (ts.isQualifiedName(typeName)) typeName = typeName.right;
-    if (ts.isIdentifier(typeName)) return typeName.text;
-  }
-  return null;
 }

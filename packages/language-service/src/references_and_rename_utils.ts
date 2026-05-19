@@ -14,33 +14,35 @@ import {
   SafePropertyRead,
   TmplAstBoundAttribute,
   TmplAstBoundEvent,
+  TmplAstComponent,
+  TmplAstDirective,
+  TmplAstElement,
   TmplAstLetDeclaration,
   TmplAstNode,
-  TmplAstElement,
+  TmplAstRecursiveVisitor,
   TmplAstReference,
   TmplAstTextAttribute,
   TmplAstVariable,
-  TmplAstComponent,
-  TmplAstDirective,
-  TmplAstRecursiveVisitor,
   tmplAstVisitAll,
 } from '@angular/compiler';
-import {NgCompiler} from '@angular/compiler-cli/src/ngtsc/core';
-import {absoluteFrom} from '@angular/compiler-cli/src/ngtsc/file_system';
-import {DirectiveMeta, PipeMeta} from '@angular/compiler-cli/src/ngtsc/metadata';
 import {
+  absoluteFrom,
+  DirectiveMeta,
   DirectiveSymbol,
+  NgCompiler,
+  PipeMeta,
   SelectorlessComponentSymbol,
   SelectorlessDirectiveSymbol,
   Symbol,
   SymbolKind,
   TcbLocation,
   TemplateTypeChecker,
-} from '@angular/compiler-cli/src/ngtsc/typecheck/api';
+} from '@angular/compiler-cli';
+
 import {
   ExpressionIdentifier,
   hasExpressionIdentifier,
-} from '@angular/compiler-cli/src/ngtsc/typecheck/src/comments';
+} from '@angular/compiler-cli/private/hybrid_analysis';
 import ts from 'typescript';
 
 import {getTargetAtPosition, TargetNodeKind} from './template_target';

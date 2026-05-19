@@ -1,7 +1,5 @@
 <docs-decorative-header title="Forms with signals" imgSrc="adev/src/assets/images/signals.svg"> </docs-decorative-header>
 
-IMPORTANT: Signal Forms are [experimental](/reference/releases#experimental). The API may change in future releases. Avoid using experimental APIs in production applications without understanding the risks.
-
 Signal Forms manage form state using Angular signals to provide automatic synchronization between your data model and the UI with Angular Signals.
 
 This guide walks you through the core concepts to create forms with Signal Forms. Here's how it works:
@@ -269,3 +267,7 @@ To learn more about Signal Forms and how it works, check out the in-depth guides
 - [Form models](guide/forms/signals/models) - Creating and managing form data with signals
 - [Field state management](guide/forms/signals/field-state-management) - Working with validation state, interaction tracking, and field visibility
 - [Validation](guide/forms/signals/validation) - Built-in validators, custom validation rules, and async validation
+
+<docs-pill-row>
+  <docs-pill title="Modular design with dependency injection" href="essentials/dependency-injection" />
+</docs-pill-row>

@@ -30,6 +30,7 @@ import {
   TmplAstReference,
   TmplAstTemplate,
   TmplAstTextAttribute,
+  TypeCheckingConfig,
   WrappedNodeExpr,
 } from '@angular/compiler';
 
@@ -51,7 +52,7 @@ import {
   PipeMeta,
 } from '../../metadata';
 import {PerfCheckpoint, PerfEvent, PerfPhase, PerfRecorder} from '../../perf';
-import {ProgramDriver, UpdateMode} from '../../program_driver';
+import {ProgramDriver, UpdateMode, InliningMode} from '../../program_driver';
 import {
   ClassDeclaration,
   DeclarationNode,
@@ -88,6 +89,7 @@ import {
   PotentialImportKind,
   PotentialImportMode,
   PotentialPipe,
+  ReferenceSymbol,
   ProgramTypeCheckAdapter,
   SelectorlessComponentSymbol,
   SelectorlessDirectiveSymbol,
@@ -100,13 +102,11 @@ import {
   TemplateTypeChecker,
   TsCompletionEntryInfo,
   TypeCheckableDirectiveMeta,
-  TypeCheckingConfig,
 } from '../api';
 import {makeTemplateDiagnostic} from '../diagnostics';
 
 import {CompletionEngine} from './completion';
 import {
-  InliningMode,
   ShimTypeCheckingData,
   TypeCheckData,
   TypeCheckContextImpl,
@@ -118,6 +118,7 @@ import {DirectiveSourceManager} from './source';
 import {findTypeCheckBlock, getSourceMapping, TypeCheckSourceResolver} from './tcb_util';
 import {SymbolBuilder, SymbolDirectiveMeta, SymbolBoundTarget} from './template_symbol_builder';
 import {findAllMatchingNodes} from './comments';
+import {TCB_FUNCTION_PREFIX} from './type_check_file';
 
 export class TypeCheckableDirectiveMetaAdapter implements SymbolDirectiveMeta {
   constructor(
@@ -285,6 +286,7 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
    * destroyed and replaced.
    */
   private elementTagCache = new Map<ts.ClassDeclaration, Map<string, PotentialDirective | null>>();
+  private generatedRangeCache = new WeakMap<ts.SourceFile, ts.TextRange[]>();
 
   private isComplete = false;
   private priorResultsAdopted = false;
@@ -363,12 +365,15 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
 
     const typeChecker = this.programDriver.getProgram().getTypeChecker();
 
+    if ('kind' in symbol && symbol.kind === SymbolKind.Directive) {
+      const tsSymbol = this.getTsSymbolOfReference(symbol.ref, typeChecker);
+      if (tsSymbol) return tsSymbol;
+    }
+
     if ('kind' in symbol && symbol.kind === SymbolKind.Reference) {
-      if (ts.isClassDeclaration(symbol.target as ts.Node)) {
-        const targetNode = symbol.target as ts.ClassDeclaration;
-        const tsSymbol = typeChecker.getSymbolAtLocation(targetNode.name ?? targetNode);
-        if (tsSymbol) return tsSymbol;
-      }
+      const tsSymbol = this.getTsSymbolOfReference(symbol.target, typeChecker);
+      if (tsSymbol) return tsSymbol;
+
       if (ts.isCallExpression(node)) {
         return null;
       }
@@ -408,6 +413,38 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
 
     // Fall back to the type's symbol.
     return tsSymbol ?? typeChecker.getTypeAtLocation(node).symbol ?? null;
+  }
+
+  private getTsSymbolOfReference(
+    target: SymbolReference | TmplAstElement | TmplAstTemplate,
+    typeChecker: ts.TypeChecker,
+  ): ts.Symbol | null {
+    if (!target || !('filePath' in target)) {
+      return null;
+    }
+
+    const sf = this.programDriver.getProgram().getSourceFile(target.filePath);
+    if (!sf) {
+      return null;
+    }
+
+    const visit = (node: ts.Node): ts.ClassDeclaration | null => {
+      if (node.pos <= target.position && target.position < node.end) {
+        if (ts.isClassDeclaration(node)) {
+          return node;
+        }
+        return ts.forEachChild(node, visit) ?? null;
+      }
+      return null;
+    };
+
+    const classDecl = ts.forEachChild(sf, visit) ?? null;
+    if (!classDecl) {
+      return null;
+    }
+
+    const nameNode = classDecl.name ?? classDecl;
+    return typeChecker.getSymbolAtLocation(nameNode) ?? null;
   }
 
   getTemplate(component: ts.ClassDeclaration, optimizeFor?: OptimizeFor): TmplAstNode[] | null {
@@ -560,6 +597,51 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
     this.ensureAllShimsForAllFiles();
   }
 
+  private getGeneratedCodeRanges(sf: ts.SourceFile): ts.TextRange[] {
+    if (this.generatedRangeCache.has(sf)) {
+      return this.generatedRangeCache.get(sf)!;
+    }
+
+    const ranges: ts.TextRange[] = [];
+    const visit = (node: ts.Node) => {
+      if (ts.isInterfaceDeclaration(node)) {
+        return;
+      }
+      if (ts.isFunctionDeclaration(node)) {
+        if (node.name !== undefined) {
+          const name = node.name.text;
+          if (name.startsWith(TCB_FUNCTION_PREFIX)) {
+            ranges.push({pos: node.getStart(), end: node.getEnd()});
+            // TCBs never contain other TCBs or generated utilities, so we can skip traversing inside them.
+            return;
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+
+    // We do a full AST traversal because TCBs can be generated inside closures (e.g. `it` blocks in tests)
+    // so a shallow scan of top-level statements is insufficient.
+    ts.forEachChild(sf, visit);
+
+    this.generatedRangeCache.set(sf, ranges);
+    return ranges;
+  }
+
+  private filterShimDiagnostics(
+    shimSf: ts.SourceFile,
+    semanticDiagnostics: readonly ts.Diagnostic[],
+  ): readonly ts.Diagnostic[] {
+    if (this.programDriver.inliningMode !== InliningMode.CopySourceToTcb) {
+      return semanticDiagnostics;
+    }
+    const ranges = this.getGeneratedCodeRanges(shimSf);
+    return semanticDiagnostics.filter((diag) => {
+      if (diag.start === undefined) return true;
+      return ranges.some((range) => diag.start! >= range.pos && diag.start! < range.end);
+    });
+  }
+
   /**
    * Retrieve type-checking and template parse diagnostics from the given `ts.SourceFile` using the
    * most recent type-checking program.
@@ -592,10 +674,12 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
 
       for (const [shimPath, shimRecord] of fileRecord.shimData) {
         const shimSf = getSourceFileOrError(typeCheckProgram, shimPath);
+        const semanticDiagnostics = typeCheckProgram.getSemanticDiagnostics(shimSf);
+
+        const filteredDiagnostics = this.filterShimDiagnostics(shimSf, semanticDiagnostics);
+
         diagnostics.push(
-          ...typeCheckProgram
-            .getSemanticDiagnostics(shimSf)
-            .map((diag) => convertDiagnostic(diag, fileRecord.sourceManager)),
+          ...filteredDiagnostics.map((diag) => convertDiagnostic(diag, fileRecord.sourceManager)),
         );
         diagnostics.push(...shimRecord.genesisDiagnostics);
 
@@ -677,10 +761,11 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
       }
 
       const shimSf = getSourceFileOrError(typeCheckProgram, shimPath);
+      const semanticDiagnostics = typeCheckProgram.getSemanticDiagnostics(shimSf);
+      const filteredDiagnostics = this.filterShimDiagnostics(shimSf, semanticDiagnostics);
+
       diagnostics.push(
-        ...typeCheckProgram
-          .getSemanticDiagnostics(shimSf)
-          .map((diag) => convertDiagnostic(diag, fileRecord.sourceManager)),
+        ...filteredDiagnostics.map((diag) => convertDiagnostic(diag, fileRecord.sourceManager)),
       );
       diagnostics.push(...shimRecord.genesisDiagnostics);
 
@@ -957,16 +1042,13 @@ export class TemplateTypeCheckerImpl implements TemplateTypeChecker {
   }
 
   private newContext(host: TypeCheckingHost): TypeCheckContextImpl {
-    const inlining = this.programDriver.supportsInlineOperations
-      ? InliningMode.InlineOps
-      : InliningMode.Error;
     return new TypeCheckContextImpl(
       this.config,
       this.compilerHost,
       this.refEmitter,
       this.reflector,
       host,
-      inlining,
+      this.programDriver.inliningMode,
       this.perf,
     );
   }

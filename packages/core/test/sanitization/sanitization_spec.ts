@@ -125,10 +125,38 @@ describe('sanitization', () => {
         contextsByProp.set(prop, contexts);
         // check only in case a prop can be a part of both URL contexts
         if (contexts.size === 2) {
-          expect(getUrlSanitizer(tag, prop)).toEqual(sanitizerNameByContext.get(context)!);
+          expect(getUrlSanitizer(tag, prop))
+            .withContext(`key: ${key}, context: ${context}`)
+            .toEqual(sanitizerNameByContext.get(context)!);
         }
       }
     });
+  });
+
+  it('should select URL sanitizer case-insensitively', () => {
+    expect(getUrlSanitizer('IFRAME', 'SRC')).toEqual(ɵɵsanitizeResourceUrl);
+    expect(getUrlSanitizer('IFRAME', 'src')).toEqual(ɵɵsanitizeResourceUrl);
+    expect(getUrlSanitizer('iframe', 'SRC')).toEqual(ɵɵsanitizeResourceUrl);
+    expect(getUrlSanitizer('ScRiPt', 'xLiNk:HrEf')).toEqual(ɵɵsanitizeResourceUrl);
+    expect(getUrlSanitizer('A', 'HREF')).toEqual(ɵɵsanitizeUrl);
+  });
+
+  it('should sanitize URL or ResourceURL case-insensitively', () => {
+    const ERROR = /NG0904: unsafe value used in a resource URL context.*/;
+
+    expect(() => ɵɵsanitizeUrlOrResourceUrl('http://server', 'IFRAME', 'SRC')).toThrowError(ERROR);
+
+    expect(() => ɵɵsanitizeUrlOrResourceUrl('http://server', 'IFRAME', 'src')).toThrowError(ERROR);
+
+    expect(() => ɵɵsanitizeUrlOrResourceUrl('http://server', 'iframe', 'SRC')).toThrowError(ERROR);
+
+    expect(() => ɵɵsanitizeUrlOrResourceUrl('http://server', 'ScRiPt', 'xLiNk:HrEf')).toThrowError(
+      ERROR,
+    );
+
+    expect(ɵɵsanitizeUrlOrResourceUrl('javascript:true', 'A', 'HREF')).toEqual(
+      'unsafe:javascript:true',
+    );
   });
 
   it('should sanitize resourceUrls via sanitizeUrlOrResourceUrl', () => {

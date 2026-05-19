@@ -8,14 +8,16 @@
 
 import {
   DomElementSchemaRegistry,
+  DomSchemaChecker,
   ParseSourceSpan,
   SchemaMetadata,
   TmplAstHostElement,
+  TypeCheckId,
 } from '@angular/compiler';
 import ts from 'typescript';
 
 import {ErrorCode, ngErrorCode} from '../../diagnostics';
-import {DomSchemaChecker, TemplateDiagnostic, TypeCheckId} from '../api';
+import {TemplateDiagnostic} from '../api';
 import {makeTemplateDiagnostic} from '../diagnostics';
 
 import {TypeCheckSourceResolver} from './tcb_util';
@@ -84,6 +86,21 @@ export class RegistryDomSchemaChecker implements DomSchemaChecker<TemplateDiagno
     schemas: SchemaMetadata[],
     hostIsStandalone: boolean,
   ): void {
+    const report = REGISTRY.validateProperty(name);
+    if (report.error) {
+      const mapping = this.resolver.getTemplateSourceMapping(id);
+      const diag = makeTemplateDiagnostic(
+        id,
+        mapping,
+        span,
+        ts.DiagnosticCategory.Error,
+        ngErrorCode(ErrorCode.SCHEMA_INVALID_ATTRIBUTE),
+        report.msg!,
+      );
+      this._diagnostics.push(diag);
+      return;
+    }
+
     if (!REGISTRY.hasProperty(tagName, name, schemas)) {
       const mapping = this.resolver.getTemplateSourceMapping(id);
 
@@ -126,6 +143,21 @@ export class RegistryDomSchemaChecker implements DomSchemaChecker<TemplateDiagno
     span: ParseSourceSpan,
     schemas: SchemaMetadata[],
   ): void {
+    const report = REGISTRY.validateProperty(name);
+    if (report.error) {
+      const mapping = this.resolver.getHostBindingsMapping(id);
+      const diag = makeTemplateDiagnostic(
+        id,
+        mapping,
+        span,
+        ts.DiagnosticCategory.Error,
+        ngErrorCode(ErrorCode.SCHEMA_INVALID_ATTRIBUTE),
+        report.msg!,
+      );
+      this._diagnostics.push(diag);
+      return;
+    }
+
     for (const tagName of element.tagNames) {
       if (REGISTRY.hasProperty(tagName, name, schemas)) {
         continue;
