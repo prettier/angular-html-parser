@@ -72,8 +72,6 @@ export interface ComponentType {
 }
 
 export type HydrationStatus =
-  // null represent the absence of hydration status (a node created via CSR)
-  | null
   | {status: 'hydrated' | 'skipped' | 'dehydrated'}
   | {
       status: 'mismatched';
@@ -123,15 +121,16 @@ export type ChangeDetection = 'ng-on-push' | 'ng-eager' | 'acx-on-push' | 'acx-d
 // TODO: refactor to remove nativeElement as it is not serializable
 // and only really exists on the ng-devtools-backend
 export interface DevToolsNode<DirType = DirectiveType, CmpType = ComponentType> {
-  element: string;
+  element?: string;
   directives?: DirType[];
   component: CmpType | null;
   children: DevToolsNode<DirType, CmpType>[];
   nativeElement?: Node;
   resolutionPath?: SerializedInjector[];
-  hydration: HydrationStatus;
+  hydration?: HydrationStatus;
   controlFlowBlock: ControlFlowBlock | null;
   changeDetection?: ChangeDetection;
+  injector?: Injector;
 }
 
 export interface SerializedInjector {

@@ -40,8 +40,10 @@ import {HttpParams} from './params';
  * @param includePostRequests Enables caching for POST requests. By default, only GET and HEAD
  *     requests are cached. This option can be enabled if POST requests are used to retrieve data
  *     (for example using GraphQL).
- * @param includeRequestsWithAuthHeaders Enables caching of requests containing either `Authorization`
- *     or `Proxy-Authorization` headers. By default, these requests are excluded from caching.
+ * @param includeRequestsWithAuthHeaders Enables caching of requests containing `Authorization`,
+ *     `Proxy-Authorization`, or `Cookie` headers. By default, these requests are excluded from
+ *     caching. Requests sent using `withCredentials` or Fetch API `credentials` modes that can send
+ *     credentials are also excluded by default.
  *
  * @see [Configuring the caching options](guide/ssr#configuring-the-caching-options)
  *
@@ -130,11 +132,17 @@ function shouldCacheRequest(req: HttpRequest<unknown>, options: CacheOptions): b
   if (
     !isCacheActive ||
     requestOptions === false ||
+    // Do not cache requests sent with credentials.
+    hasOutgoingCredentials(req) ||
     // POST requests are allowed either globally or at request level
     (requestMethod === 'POST' && !globalOptions.includePostRequests && !requestOptions) ||
     (requestMethod !== 'POST' && !ALLOWED_METHODS.includes(requestMethod)) ||
-    // Do not cache request that require authorization when includeRequestsWithAuthHeaders is falsey
+    // Do not cache requests with authentication or cookie headers unless explicitly enabled.
     (!globalOptions.includeRequestsWithAuthHeaders && hasAuthHeaders(req)) ||
+    // Do not cache requests that explicitly forbid caching via Cache-Control
+    // or Fetch API cache mode.
+    hasUncacheableCacheControl(req.headers) ||
+    isNonCacheableRequest(req.cache) ||
     globalOptions.filter?.(req) === false
   ) {
     return false;
@@ -267,8 +275,9 @@ export function transferCacheInterceptorFn(
     // Request not found in cache. Make the request and cache it if on the server.
     return event$.pipe(
       tap((event: HttpEvent<unknown>) => {
-        // Only cache successful HTTP responses.
-        if (event instanceof HttpResponse) {
+        // Only cache successful HTTP responses that do not have Cache-Control
+        // directives that forbid shared caching (no-store or private).
+        if (event instanceof HttpResponse && !hasUncacheableCacheControl(event.headers)) {
           transferState.set<TransferHttpResponse>(storeKey, {
             [BODY]:
               req.responseType === 'arraybuffer' || req.responseType === 'blob'
@@ -288,9 +297,37 @@ export function transferCacheInterceptorFn(
   return event$;
 }
 
-/** @returns true when the requests contains autorization related headers. */
+/** @returns true when the request contains authentication or cookie headers. */
 function hasAuthHeaders(req: HttpRequest<unknown>): boolean {
-  return req.headers.has('authorization') || req.headers.has('proxy-authorization');
+  return (
+    req.headers.has('authorization') ||
+    req.headers.has('proxy-authorization') ||
+    req.headers.has('cookie')
+  );
+}
+
+const UNCACHEABLE_CACHE_CONTROL_DIRECTIVES = new Set(['no-store', 'private', 'no-cache']);
+
+function hasUncacheableCacheControl(headers: HttpHeaders): boolean {
+  const cacheControl = headers.get('cache-control');
+
+  if (!cacheControl) {
+    return false;
+  }
+
+  return cacheControl.split(',').some((directive) => {
+    const directiveName = directive.split('=', 1)[0].trim().toLowerCase();
+
+    return UNCACHEABLE_CACHE_CONTROL_DIRECTIVES.has(directiveName);
+  });
+}
+
+function isNonCacheableRequest(cache: RequestCache): boolean {
+  return cache === 'no-cache' || cache === 'no-store';
+}
+
+function hasOutgoingCredentials(req: HttpRequest<unknown>): boolean {
+  return req.withCredentials || req.credentials === 'include' || req.credentials === 'same-origin';
 }
 
 function getFilteredHeaders(

@@ -949,6 +949,12 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
         path: 'ai/design-patterns',
         contentPath: 'ai/design-patterns',
       },
+      {
+        label: 'WebMCP',
+        path: 'ai/webmcp',
+        contentPath: 'ai/webmcp',
+        status: 'new',
+      },
     ],
   },
   {
@@ -1150,6 +1156,12 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             category: 'Loading Performance',
           },
           {
+            label: 'Lazy loading services',
+            path: 'best-practices/performance/lazy-loading-services',
+            contentPath: 'guide/di/lazy-loading-services',
+            category: 'Loading Performance',
+          },
+          {
             label: 'Image optimization',
             path: 'best-practices/performance/image-optimization',
             contentPath: 'guide/image-optimization',
@@ -1213,10 +1225,15 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
     label: 'Developer Events',
     children: [
       {
+        label: 'Angular v22 Release',
+        path: 'events/v22',
+        contentPath: 'events/v22',
+        status: 'new',
+      },
+      {
         label: 'Angular v21 Release',
         path: 'events/v21',
         contentPath: 'events/v21',
-        status: 'new',
       },
     ],
   },

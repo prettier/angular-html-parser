@@ -17,17 +17,19 @@ import {
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {useAutoTick, timeout, withBody} from '@angular/private/testing';
-import {BehaviorSubject} from 'rxjs';
+import {BehaviorSubject, Observable, of} from 'rxjs';
 
-import {HttpClient, HttpResponse, provideHttpClient} from '../public_api';
+import {HttpClient, HttpHeaders, HttpRequest, HttpResponse, provideHttpClient} from '../public_api';
 import {
   BODY,
+  CACHE_OPTIONS,
   HEADERS,
   HTTP_TRANSFER_CACHE_ORIGIN_MAP,
   RESPONSE_TYPE,
   STATUS,
   STATUS_TEXT,
   REQ_URL,
+  transferCacheInterceptorFn,
   withHttpTransferCache,
 } from '../src/transfer_cache';
 import {HttpTestingController, provideHttpClientTesting} from '../testing';
@@ -38,6 +40,11 @@ interface RequestParams {
   observe?: 'body' | 'response';
   transferCache?: {includeHeaders: string[]} | boolean;
   headers?: {[key: string]: string};
+  /** Separate response headers for flush(); falls back to headers if not set  */
+  responseHeaders?: {[key: string]: string};
+  withCredentials?: boolean;
+  credentials?: RequestCredentials;
+  cache?: RequestCache;
   body?: RequestBody;
 }
 
@@ -60,6 +67,200 @@ describe('TransferCache', () => {
   })
   class SomeComponent {}
 
+  describe('transferCacheInterceptorFn', () => {
+    afterEach(() => {
+      TestBed.resetTestingModule();
+    });
+
+    function configureInterceptor(options: {includeRequestsWithAuthHeaders?: boolean} = {}): void {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          TransferState,
+          {
+            provide: CACHE_OPTIONS,
+            useValue: {
+              isCacheActive: true,
+              ...options,
+            },
+          },
+        ],
+      });
+    }
+
+    function runOnServer<T>(callback: () => T): T {
+      const previousServerMode = globalThis['ngServerMode'];
+      globalThis['ngServerMode'] = true;
+      try {
+        return callback();
+      } finally {
+        globalThis['ngServerMode'] = previousServerMode;
+      }
+    }
+
+    function runInterceptor(
+      req: HttpRequest<unknown>,
+      next: (req: HttpRequest<unknown>) => Observable<HttpResponse<unknown>>,
+    ): HttpResponse<unknown> {
+      let response!: HttpResponse<unknown>;
+      TestBed.runInInjectionContext(() => {
+        transferCacheInterceptorFn(req, next).subscribe((event) => {
+          if (event instanceof HttpResponse) {
+            response = event;
+          }
+        });
+      });
+      return response;
+    }
+
+    it('should not reuse cached responses for Cookie-bearing requests by default', () => {
+      configureInterceptor();
+
+      const firstRequest = new HttpRequest('GET', '/test-cookie', null, {
+        headers: new HttpHeaders({Cookie: 'session=user-a'}),
+      });
+      const secondRequest = new HttpRequest('GET', '/test-cookie', null, {
+        headers: new HttpHeaders({Cookie: 'session=user-b'}),
+      });
+
+      const firstNext = jasmine
+        .createSpy('firstNext')
+        .and.returnValue(of(new HttpResponse({body: 'user-a-secret'})));
+      const secondNext = jasmine
+        .createSpy('secondNext')
+        .and.returnValue(of(new HttpResponse({body: 'user-b-secret'})));
+
+      runOnServer(() => {
+        expect(runInterceptor(firstRequest, firstNext).body).toBe('user-a-secret');
+        expect(runInterceptor(secondRequest, secondNext).body).toBe('user-b-secret');
+      });
+
+      expect(firstNext).toHaveBeenCalledTimes(1);
+      expect(secondNext).toHaveBeenCalledTimes(1);
+    });
+
+    it("should preserve opt-in caching for Cookie-bearing requests when 'includeRequestsWithAuthHeaders' is true", () => {
+      configureInterceptor({includeRequestsWithAuthHeaders: true});
+
+      const request = new HttpRequest('GET', '/test-cookie', null, {
+        headers: new HttpHeaders({Cookie: 'session=user-a'}),
+      });
+
+      const firstNext = jasmine
+        .createSpy('firstNext')
+        .and.returnValue(of(new HttpResponse({body: 'user-a-secret'})));
+      const secondNext = jasmine
+        .createSpy('secondNext')
+        .and.returnValue(of(new HttpResponse({body: 'network-should-not-run'})));
+
+      runOnServer(() => {
+        expect(runInterceptor(request, firstNext).body).toBe('user-a-secret');
+        expect(runInterceptor(request, secondNext).body).toBe('user-a-secret');
+      });
+
+      expect(firstNext).toHaveBeenCalledTimes(1);
+      expect(secondNext).not.toHaveBeenCalled();
+    });
+
+    it('should not cache responses with Cache-Control: no-store', () => {
+      configureInterceptor();
+
+      const request = new HttpRequest('GET', '/test-no-store');
+
+      const firstNext = jasmine.createSpy('firstNext').and.returnValue(
+        of(
+          new HttpResponse({
+            body: 'sensitive-data',
+            headers: new HttpHeaders({'Cache-Control': 'no-store'}),
+          }),
+        ),
+      );
+      const secondNext = jasmine
+        .createSpy('secondNext')
+        .and.returnValue(of(new HttpResponse({body: 'fresh-data'})));
+
+      runOnServer(() => {
+        expect(runInterceptor(request, firstNext).body).toBe('sensitive-data');
+        expect(runInterceptor(request, secondNext).body).toBe('fresh-data');
+      });
+
+      expect(firstNext).toHaveBeenCalledTimes(1);
+      expect(secondNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not cache responses with Cache-Control: private', () => {
+      configureInterceptor();
+
+      const request = new HttpRequest('GET', '/test-private');
+
+      const firstNext = jasmine.createSpy('firstNext').and.returnValue(
+        of(
+          new HttpResponse({
+            body: 'user-data',
+            headers: new HttpHeaders({'Cache-Control': 'private'}),
+          }),
+        ),
+      );
+      const secondNext = jasmine
+        .createSpy('secondNext')
+        .and.returnValue(of(new HttpResponse({body: 'public-data'})));
+
+      runOnServer(() => {
+        expect(runInterceptor(request, firstNext).body).toBe('user-data');
+        expect(runInterceptor(request, secondNext).body).toBe('public-data');
+      });
+
+      expect(firstNext).toHaveBeenCalledTimes(1);
+      expect(secondNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not cache requests with Cache-Control: no-store', () => {
+      configureInterceptor();
+
+      const request = new HttpRequest('GET', '/test-req-no-store', null, {
+        headers: new HttpHeaders({'Cache-Control': 'no-store'}),
+      });
+
+      const firstNext = jasmine
+        .createSpy('firstNext')
+        .and.returnValue(of(new HttpResponse({body: 'data'})));
+      const secondNext = jasmine
+        .createSpy('secondNext')
+        .and.returnValue(of(new HttpResponse({body: 'fresh-data'})));
+
+      runOnServer(() => {
+        expect(runInterceptor(request, firstNext).body).toBe('data');
+        expect(runInterceptor(request, secondNext).body).toBe('fresh-data');
+      });
+
+      expect(firstNext).toHaveBeenCalledTimes(1);
+      expect(secondNext).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not cache requests with Cache-Control: no-cache', () => {
+      configureInterceptor();
+
+      const request = new HttpRequest('GET', '/test-req-no-cache', null, {
+        headers: new HttpHeaders({'Cache-Control': 'no-cache'}),
+      });
+
+      const firstNext = jasmine
+        .createSpy('firstNext')
+        .and.returnValue(of(new HttpResponse({body: 'data'})));
+      const secondNext = jasmine
+        .createSpy('secondNext')
+        .and.returnValue(of(new HttpResponse({body: 'fresh-data'})));
+
+      runOnServer(() => {
+        expect(runInterceptor(request, firstNext).body).toBe('data');
+        expect(runInterceptor(request, secondNext).body).toBe('fresh-data');
+      });
+
+      expect(firstNext).toHaveBeenCalledTimes(1);
+      expect(secondNext).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('withHttpTransferCache', () => {
     let isStable: BehaviorSubject<boolean>;
 
@@ -78,7 +279,9 @@ describe('TransferCache', () => {
       TestBed.inject(HttpClient)
         .request(params?.method ?? 'GET', url, params)
         .subscribe((r) => (response = r));
-      TestBed.inject(HttpTestingController).expectOne(url).flush(body, {headers: params?.headers});
+      TestBed.inject(HttpTestingController)
+        .expectOne(url)
+        .flush(body, {headers: params?.responseHeaders ?? params?.headers});
       return response;
     }
 
@@ -331,6 +534,156 @@ describe('TransferCache', () => {
       makeRequestAndExpectOne('/test-auth', 'foo');
     });
 
+    it('should not cache requests with credentials', async () => {
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        withCredentials: true,
+      });
+
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        withCredentials: true,
+      });
+    });
+
+    it('should not cache requests with included credentials', async () => {
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        credentials: 'include',
+      });
+
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        credentials: 'include',
+      });
+    });
+
+    it('should not cache requests with same-origin credentials', async () => {
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        credentials: 'same-origin',
+      });
+
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        credentials: 'same-origin',
+      });
+    });
+
+    it('should cache requests with omitted credentials', async () => {
+      makeRequestAndExpectOne('/test-auth', 'foo', {
+        credentials: 'omit',
+      });
+
+      makeRequestAndExpectNone('/test-auth', 'GET', {
+        credentials: 'omit',
+      });
+    });
+
+    it('should not cache responses with Cache-Control: no-store', () => {
+      makeRequestAndExpectOne('/test-no-store', 'private-data', {
+        responseHeaders: {'Cache-Control': 'no-store'},
+      });
+
+      makeRequestAndExpectOne('/test-no-store', 'fresh-data');
+    });
+
+    it('should not cache responses with Cache-Control: private', () => {
+      makeRequestAndExpectOne('/test-private', 'user-data', {
+        responseHeaders: {'Cache-Control': 'private'},
+      });
+
+      makeRequestAndExpectOne('/test-private', 'fresh-data');
+    });
+
+    it('should not cache responses with Cache-Control containing no-store among other directives', () => {
+      makeRequestAndExpectOne('/test-multi', 'data', {
+        responseHeaders: {'Cache-Control': 'max-age=0, no-store, must-revalidate'},
+      });
+
+      makeRequestAndExpectOne('/test-multi', 'fresh-data');
+    });
+
+    it('should not cache responses with Cache-Control containing private among other directives', () => {
+      makeRequestAndExpectOne('/test-multi-private', 'data', {
+        responseHeaders: {'Cache-Control': 'max-age=60, private'},
+      });
+
+      makeRequestAndExpectOne('/test-multi-private', 'fresh-data');
+    });
+
+    it('should cache responses with Cache-Control: public', () => {
+      makeRequestAndExpectOne('/test-public', 'public-data', {
+        responseHeaders: {'Cache-Control': 'public'},
+      });
+
+      makeRequestAndExpectNone('/test-public');
+    });
+
+    it('should cache responses with Cache-Control: max-age without no-store or private', () => {
+      makeRequestAndExpectOne('/test-max-age', 'cacheable-data', {
+        responseHeaders: {'Cache-Control': 'max-age=3600'},
+      });
+
+      makeRequestAndExpectNone('/test-max-age');
+    });
+
+    it('should cache responses without Cache-Control header', () => {
+      makeRequestAndExpectOne('/test-no-cc', 'data');
+
+      makeRequestAndExpectNone('/test-no-cc');
+    });
+
+    it('should not cache responses with Cache-Control: no-store (case-insensitive)', () => {
+      makeRequestAndExpectOne('/test-case-resp', 'data', {
+        responseHeaders: {'Cache-Control': 'No-Store'},
+      });
+
+      makeRequestAndExpectOne('/test-case-resp', 'fresh-data');
+    });
+
+    it('should not cache requests with Cache-Control: no-store', () => {
+      makeRequestAndExpectOne('/test-req-no-store', 'data', {
+        headers: {'Cache-Control': 'no-store'},
+      });
+
+      makeRequestAndExpectOne('/test-req-no-store', 'fresh-data');
+    });
+
+    it('should not cache requests with Cache-Control: no-cache', () => {
+      makeRequestAndExpectOne('/test-req-no-cache', 'data', {
+        headers: {'Cache-Control': 'no-cache'},
+      });
+
+      makeRequestAndExpectOne('/test-req-no-cache', 'fresh-data');
+    });
+
+    it('should not cache requests with Cache-Control containing no-store among other directives', () => {
+      makeRequestAndExpectOne('/test-req-multi', 'data', {
+        headers: {'Cache-Control': 'max-age=0, no-store'},
+      });
+
+      makeRequestAndExpectOne('/test-req-multi', 'fresh-data');
+    });
+
+    it('should cache requests with Cache-Control: max-age', () => {
+      makeRequestAndExpectOne('/test-req-max-age', 'data', {
+        headers: {'Cache-Control': 'max-age=3600'},
+      });
+
+      makeRequestAndExpectNone('/test-req-max-age');
+    });
+
+    it('should not cache requests with Fetch API cache mode: no-store', () => {
+      makeRequestAndExpectOne('/test-fetch-no-store', 'data', {
+        cache: 'no-store',
+      });
+
+      makeRequestAndExpectOne('/test-fetch-no-store', 'fresh-data');
+    });
+
+    it('should not cache requests with Fetch API cache mode: no-cache', () => {
+      makeRequestAndExpectOne('/test-fetch-no-cache', 'data', {
+        cache: 'no-cache',
+      });
+
+      makeRequestAndExpectOne('/test-fetch-no-cache', 'fresh-data');
+    });
+
     it('should cache POST with the differing body in string form', () => {
       makeRequestAndExpectOne('/test-1', null, {method: 'POST', transferCache: true, body: 'foo'});
       makeRequestAndExpectNone('/test-1', 'POST', {transferCache: true, body: 'foo'});
@@ -481,6 +834,26 @@ describe('TransferCache', () => {
         });
 
         makeRequestAndExpectNone('/test-auth');
+      });
+
+      it(`should not cache requests with credentials when 'includeRequestsWithAuthHeaders' is 'true'`, async () => {
+        makeRequestAndExpectOne('/test-auth', 'foo', {
+          withCredentials: true,
+        });
+
+        makeRequestAndExpectOne('/test-auth', 'foo', {
+          withCredentials: true,
+        });
+      });
+
+      it(`should not cache requests with included credentials when 'includeRequestsWithAuthHeaders' is 'true'`, async () => {
+        makeRequestAndExpectOne('/test-auth', 'foo', {
+          credentials: 'include',
+        });
+
+        makeRequestAndExpectOne('/test-auth', 'foo', {
+          credentials: 'include',
+        });
       });
 
       it('should cache a POST request', () => {
