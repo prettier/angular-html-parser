@@ -3001,6 +3001,14 @@ export const RECOMMENDATIONS: Step[] = [
   {
     possibleIn: 2200,
     necessaryAsOf: 2200,
+    level: ApplicationComplexity.Medium,
+    step: '22.0.0-resource-stream-synchronous-resolution',
+    action:
+      'The `stream` property on `Resource`, including `rxResource`, now resolves synchronously when the stream or observable emits synchronously. Tests that assumed asynchronous resolution may need to wait for the value immediately instead.',
+  },
+  {
+    possibleIn: 2200,
+    necessaryAsOf: 2200,
     level: ApplicationComplexity.Advanced,
     step: '22.0.0-remove-in-expressions',
     action:
@@ -3029,6 +3037,14 @@ export const RECOMMENDATIONS: Step[] = [
     step: '22.0.0-deprecate-report-progress-option',
     action:
       'The `reportProgress` option in HTTP requests is deprecated. Use `reportUploadProgress` or `reportDownloadProgress` instead for more explicit control over progress reporting.',
+  },
+  {
+    possibleIn: 2200,
+    necessaryAsOf: 2200,
+    level: ApplicationComplexity.Medium,
+    step: '22.0.0-deprecate-server-xhr',
+    action:
+      'XHR support in `@angular/platform-server` is deprecated and is intended to be removed in Angular 23. The underlying `xhr2` library does not safely handle redirects (e.g. it can forward `Authorization` headers on cross-origin redirects and is susceptible to DoS via redirect loops). For server-side rendering, use the default `fetch` backend instead of `withXhr()`.',
   },
   {
     possibleIn: 2200,

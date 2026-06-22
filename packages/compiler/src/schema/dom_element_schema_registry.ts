@@ -10,7 +10,7 @@ import {CUSTOM_ELEMENTS_SCHEMA, NO_ERRORS_SCHEMA, SchemaMetadata, SecurityContex
 import {isNgContainer, isNgContent, splitNsName} from '../ml_parser/tags';
 import {MATH_ML_NAMESPACE, SVG_NAMESPACE} from '../template/pipeline/src/namespaces';
 import {dashCaseToCamelCase} from '../util';
-import {SECURITY_SCHEMA} from './dom_security_schema';
+import {checkSecurityContext} from './dom_security_schema';
 import {ElementSchemaRegistry} from './element_schema_registry';
 
 const BOOLEAN = 'boolean';
@@ -123,7 +123,7 @@ export const SCHEMA: string[] = [
   'head^[HTMLElement]|',
   'h1,h2,h3,h4,h5,h6^[HTMLElement]|align',
   'html^[HTMLElement]|version',
-  'iframe^[HTMLElement]|align,allow,!allowFullscreen,!allowPaymentRequest,csp,frameBorder,height,loading,longDesc,marginHeight,marginWidth,name,referrerPolicy,%sandbox,scrolling,src,srcdoc,width',
+  'iframe^[HTMLElement]|align,allow,!allowFullscreen,!allowPaymentRequest,csp,!credentialless,frameBorder,height,loading,longDesc,marginHeight,marginWidth,name,referrerPolicy,%sandbox,scrolling,src,srcdoc,width',
   'img^[HTMLElement]|align,alt,border,%crossOrigin,decoding,#height,#hspace,!isMap,loading,longDesc,lowsrc,name,referrerPolicy,sizes,src,srcset,useMap,#vspace,#width',
   'input^[HTMLElement]|accept,align,alt,autocomplete,!checked,!defaultChecked,defaultValue,dirName,!disabled,%files,formAction,formEnctype,formMethod,!formNoValidate,formTarget,#height,!incremental,!indeterminate,max,#maxLength,min,#minLength,!multiple,name,pattern,placeholder,!readOnly,!required,selectionDirection,#selectionEnd,#selectionStart,#size,src,step,type,useMap,value,%valueAsDate,#valueAsNumber,#width',
   'li^[HTMLElement]|type,#value',
@@ -453,16 +453,8 @@ export class DomElementSchemaRegistry extends ElementSchemaRegistry {
       propName = this.getMappedPropName(propName);
     }
 
-    const normalizedTag = normalizeTagName(tagName);
-    propName = propName.toLowerCase();
-
-    const securitySchema = SECURITY_SCHEMA();
-    const ctx =
-      securitySchema[normalizedTag + '|' + propName] ??
-      securitySchema['*|' + propName] ??
-      SecurityContext.NONE;
-
-    return ctx;
+    const [ns, name] = splitNsName(tagName, false);
+    return checkSecurityContext(name, propName, ns);
   }
 
   override getMappedPropName(propName: string): string {

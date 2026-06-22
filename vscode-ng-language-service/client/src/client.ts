@@ -630,24 +630,37 @@ export class AngularLanguageClient implements vscode.Disposable {
 
   private async getTsdkPath(): Promise<string> {
     const config = vscode.workspace.getConfiguration();
-    const tsdkInspect =
-      config.inspect<string>('js/ts.tsdk.path') ?? config.inspect<string>('typescript.tsdk');
-
-    if (!tsdkInspect) {
-      return '';
-    }
+    const jsTsTsdkInspect = config.inspect<string>('js/ts.tsdk.path');
+    const tsTsdkInspect = config.inspect<string>('typescript.tsdk');
 
     // 1. Check workspace/folder settings first (highest priority)
     // ONLY check or load workspace-level settings if the workspace is trusted
     if (vscode.workspace.isTrusted) {
-      const workspaceTsdk = (
-        tsdkInspect.workspaceValue ?? tsdkInspect.workspaceFolderValue
+      const jsTsWorkspaceTsdk = (
+        jsTsTsdkInspect?.workspaceValue ?? jsTsTsdkInspect?.workspaceFolderValue
       )?.trim();
+      const tsWorkspaceTsdk = (
+        tsTsdkInspect?.workspaceValue ?? tsTsdkInspect?.workspaceFolderValue
+      )?.trim();
+      const workspaceTsdk = jsTsWorkspaceTsdk || tsWorkspaceTsdk;
+
       if (workspaceTsdk) {
         const stateKey = `approvedTsdk:${workspaceTsdk}`;
         const isApproved = this.context.workspaceState.get<boolean>(stateKey);
 
         if (isApproved) {
+          if (!path.isAbsolute(workspaceTsdk)) {
+            const workspaceFolders = vscode.workspace.workspaceFolders || [];
+            for (const folder of workspaceFolders) {
+              const absolutePath = path.join(folder.uri.fsPath, workspaceTsdk);
+              if (fs.existsSync(path.join(absolutePath, 'tsserverlibrary.js'))) {
+                return absolutePath;
+              }
+            }
+            if (workspaceFolders.length > 0) {
+              return path.join(workspaceFolders[0].uri.fsPath, workspaceTsdk);
+            }
+          }
           return workspaceTsdk;
         }
 
@@ -660,7 +673,7 @@ export class AngularLanguageClient implements vscode.Disposable {
       }
     }
 
-    return tsdkInspect.globalValue?.trim() ?? '';
+    return jsTsTsdkInspect?.globalValue?.trim() ?? tsTsdkInspect?.globalValue?.trim() ?? '';
   }
 
   private async promptForTsdkApproval(workspaceTsdk: string, stateKey: string): Promise<void> {

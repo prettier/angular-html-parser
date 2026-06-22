@@ -6,6 +6,10 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {ɵRuntimeError as RuntimeError} from '@angular/core';
+
+import {RuntimeErrorCode} from './errors';
+
 /**
  * Matches http: or https:
  */
@@ -17,8 +21,14 @@ const HTTP_OR_HTTPS_PROTOCOL_REGEX = /^https?:/i;
 export interface ResolveUrlOptions {
   /**
    * Allow protocol-relative URLs (e.g. `//example.com`).
+   * @default false
    */
   allowProtocolRelative?: boolean;
+  /**
+   * Allow origin changes.
+   * @default true
+   */
+  allowOriginChange?: boolean;
 }
 
 /**
@@ -54,9 +64,10 @@ export function resolveUrl(
   try {
     resolved = new URL(urlStr);
   } catch {}
+  const {allowProtocolRelative = false, allowOriginChange = true} = options;
 
   if (resolved) {
-    if (originUrl && !isSafeOriginChange(resolved, originUrl, urlStr)) {
+    if (originUrl && !isSafeOriginChange(resolved, originUrl, urlStr, allowOriginChange)) {
       throwSuspiciousUrlError(urlStr);
     }
 
@@ -69,20 +80,26 @@ export function resolveUrl(
   // absolute URL. Since it is malformed, the native URL constructor will throw a validation
   // error. Standard relative/protocol-relative paths parse successfully, allowing the flow to continue.
   if (!URL.canParse(urlStr, 'http://fake')) {
-    throw new Error(`Invalid URL: ${urlStr}`);
+    throw new RuntimeError(
+      RuntimeErrorCode.INVALID_URL,
+      typeof ngDevMode === 'undefined' || ngDevMode ? `Invalid URL: ${urlStr}` : urlStr,
+    );
   }
 
   if (!originUrl) {
     return null;
   }
 
-  const {allowProtocolRelative = false} = options;
-
   // Check if we have a legitimate protocol-relative URL (starts with '//' and not a duplicate/backslash bypass)
   // and we are configured to allow and preserve standard cross-origin protocol-relative requests.
   if (urlStr.startsWith('//')) {
     if (!allowProtocolRelative) {
-      throw new Error(`Protocol relative URLs are not allowed in this context. URL: ${urlStr}`);
+      throw new RuntimeError(
+        RuntimeErrorCode.PROTOCOL_RELATIVE_URL_NOT_ALLOWED,
+        typeof ngDevMode === 'undefined' || ngDevMode
+          ? `Protocol relative URLs are not allowed in this context. URL: ${urlStr}`
+          : urlStr,
+      );
     }
 
     return new URL(urlStr, origin);
@@ -90,7 +107,7 @@ export function resolveUrl(
 
   resolved = new URL(urlStr, origin);
 
-  if (!isSafeOriginChange(resolved, originUrl, urlStr)) {
+  if (!isSafeOriginChange(resolved, originUrl, urlStr, allowOriginChange)) {
     throwSuspiciousUrlError(urlStr);
   }
 
@@ -101,8 +118,11 @@ export function resolveUrl(
  * Throws a suspicious URL error indicating a security bypass attempt.
  */
 function throwSuspiciousUrlError(urlStr: string): never {
-  throw new Error(
-    `URL ${urlStr} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
+  throw new RuntimeError(
+    RuntimeErrorCode.SUSPICIOUS_URL_CHANGE_ORIGIN,
+    typeof ngDevMode === 'undefined' || ngDevMode
+      ? `URL ${urlStr} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`
+      : urlStr,
   );
 }
 
@@ -112,8 +132,22 @@ function throwSuspiciousUrlError(urlStr: string): never {
  * @param resolved The resolved URL.
  * @param origin The origin URL.
  * @param urlStr The URL string.
+ * @param allowOriginChange Whether to allow origin changes.
  * @returns True if the origin has changed in a safe way, false otherwise.
  */
-function isSafeOriginChange(resolved: URL, origin: URL, urlStr: string): boolean {
-  return origin.origin === resolved.origin || HTTP_OR_HTTPS_PROTOCOL_REGEX.test(urlStr);
+function isSafeOriginChange(
+  resolved: URL,
+  origin: URL,
+  urlStr: string,
+  allowOriginChange: boolean,
+): boolean {
+  if (origin.origin === resolved.origin) {
+    return true;
+  }
+
+  if (!allowOriginChange) {
+    return false;
+  }
+
+  return HTTP_OR_HTTPS_PROTOCOL_REGEX.test(urlStr);
 }

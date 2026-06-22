@@ -60,6 +60,7 @@ export type CreateOp =
   | ProjectionDefOp
   | EnableIncrementalHydrationRuntimeOp
   | ProjectionOp
+  | ContentOp
   | ExtractedAttributeOp
   | DeferOp
   | DeferOnOp
@@ -250,14 +251,14 @@ export interface ForeignComponentOp extends Op<CreateOp>, ConsumesSlotOpTrait {
   xref: XrefId;
 
   /**
-   * Reference to the foreign component class/function itself as an output AST expression.
+   * Index of the foreign component class/function in the constant pool.
    */
-  foreignComponentRef: o.Expression;
+  constIndex: ConstIndex;
 
   /**
-   * Static attributes and property bindings aggregated as an object literal.
+   * Static attributes and property bindings.
    */
-  props: o.Expression | null;
+  props: Map<string, o.Expression>;
 
   sourceSpan: ParseSourceSpan | null;
 }
@@ -267,18 +268,64 @@ export interface ForeignComponentOp extends Op<CreateOp>, ConsumesSlotOpTrait {
  */
 export function createForeignComponentOp(
   xref: XrefId,
-  foreignComponentRef: o.Expression,
-  props: o.Expression | null,
+  constIndex: ConstIndex,
+  props: Map<string, o.Expression>,
   sourceSpan: ParseSourceSpan | null,
 ): ForeignComponentOp {
   return {
     kind: OpKind.ForeignComponent,
     xref,
     handle: new SlotHandle(),
-    foreignComponentRef,
+    constIndex,
     props,
     sourceSpan,
     ...TRAIT_CONSUMES_SLOT,
+    ...NEW_OP,
+  };
+}
+
+/**
+ * Logical operation representing a project `@content` block for a foreign component.
+ */
+export interface ContentOp extends Op<CreateOp> {
+  kind: OpKind.Content;
+
+  /**
+   * The `XrefId` of the foreign component this content is projected into.
+   */
+  target: XrefId;
+
+  /**
+   * The name of the property on the foreign component to assign this content to.
+   */
+  propertyName: string;
+
+  /**
+   * The `XrefId` of the view containing the content.
+   */
+  view: XrefId;
+
+  startSourceSpan: ParseSourceSpan;
+  sourceSpan: ParseSourceSpan;
+}
+
+/**
+ * Create a `ContentOp`.
+ */
+export function createContentOp(
+  target: XrefId,
+  view: XrefId,
+  propertyName: string,
+  startSourceSpan: ParseSourceSpan,
+  sourceSpan: ParseSourceSpan,
+): ContentOp {
+  return {
+    kind: OpKind.Content,
+    target,
+    propertyName,
+    view,
+    startSourceSpan,
+    sourceSpan,
     ...NEW_OP,
   };
 }

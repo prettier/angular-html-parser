@@ -19,7 +19,14 @@ import {TestBed} from '@angular/core/testing';
 import {useAutoTick, timeout, withBody} from '@angular/private/testing';
 import {BehaviorSubject, Observable, of} from 'rxjs';
 
-import {HttpClient, HttpHeaders, HttpRequest, HttpResponse, provideHttpClient} from '../public_api';
+import {
+  HttpClient,
+  HttpHeaders,
+  HttpParams,
+  HttpRequest,
+  HttpResponse,
+  provideHttpClient,
+} from '../public_api';
 import {
   BODY,
   CACHE_OPTIONS,
@@ -31,6 +38,7 @@ import {
   REQ_URL,
   transferCacheInterceptorFn,
   withHttpTransferCache,
+  generateHash,
 } from '../src/transfer_cache';
 import {HttpTestingController, provideHttpClientTesting} from '../testing';
 import {PLATFORM_BROWSER_ID, PLATFORM_SERVER_ID} from '../../src/platform_id';
@@ -385,7 +393,7 @@ describe('TransferCache', () => {
 
       const transferState = TestBed.inject(TransferState);
       expect(JSON.parse(transferState.toJson()) as Record<string, unknown>).toEqual({
-        '2400571479': {
+        '2da5dfaf112523258ec9c26a0abe9a093b59ed7dbe5f43e4b5ee25a407ac9cf0': {
           [BODY]: 'foo',
           [HEADERS]: {},
           [STATUS]: 200,
@@ -393,7 +401,7 @@ describe('TransferCache', () => {
           [REQ_URL]: '/test-1',
           [RESPONSE_TYPE]: 'json',
         },
-        '2400572440': {
+        '869485290d9385f3c0a9ba571918c335bbca9e03373bf8260d02f2b7dd335849': {
           [BODY]: 'buzz',
           [HEADERS]: {},
           [STATUS]: 200,
@@ -429,6 +437,38 @@ describe('TransferCache', () => {
       await expectAsync(TestBed.inject(HttpClient).get('/test-1?foo=1').toPromise()).toBeResolvedTo(
         'foo',
       );
+    });
+
+    it('should differentiate repeated parameters from scalar comma parameters', () => {
+      let scalarResponse!: string;
+      TestBed.inject(HttpClient)
+        .get('/test-params', {params: new HttpParams().set('role', 'user,admin')})
+        .subscribe((response) => (scalarResponse = response as string));
+      TestBed.inject(HttpTestingController)
+        .expectOne('/test-params?role=user,admin')
+        .flush('scalar');
+
+      let repeatedResponse!: string;
+      TestBed.inject(HttpClient)
+        .get('/test-params', {
+          params: new HttpParams().append('role', 'user').append('role', 'admin'),
+        })
+        .subscribe((response) => (repeatedResponse = response as string));
+      TestBed.inject(HttpTestingController)
+        .expectOne('/test-params?role=user&role=admin')
+        .flush('repeated');
+
+      let repeatedCachedResponse!: string;
+      TestBed.inject(HttpClient)
+        .get('/test-params', {
+          params: new HttpParams().append('role', 'user').append('role', 'admin'),
+        })
+        .subscribe((response) => (repeatedCachedResponse = response as string));
+      TestBed.inject(HttpTestingController).expectNone('/test-params?role=user&role=admin');
+
+      expect(scalarResponse).toBe('scalar');
+      expect(repeatedResponse).toBe('repeated');
+      expect(repeatedCachedResponse).toBe('repeated');
     });
 
     it('should skip cache when specified', () => {
@@ -1063,6 +1103,36 @@ describe('TransferCache', () => {
             });
         });
       });
+    });
+  });
+
+  describe('generateHash', () => {
+    async function computeNativeSha256(value: string): Promise<string> {
+      const msgUint8 = new TextEncoder().encode(value);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    it('should generate standard SHA-256 hashes matching Web Crypto specs', async () => {
+      const testCases = [
+        '',
+        'hello',
+        'angular',
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        'Angular 🚀',
+        'a'.repeat(55),
+        'a'.repeat(56),
+        'a'.repeat(63),
+        'a'.repeat(64),
+        'a'.repeat(65),
+        'a'.repeat(1000),
+      ];
+
+      for (const testCase of testCases) {
+        const expected = await computeNativeSha256(testCase);
+        expect(generateHash(testCase)).withContext(`For: ${testCase}`).toBe(expected);
+      }
     });
   });
 });

@@ -26,3 +26,46 @@ function frameworkImport(component: {}): Function {
 export class TestCmp {
   title = 'Submit';
 }
+
+@Component({
+  selector: 'main-children',
+  template: `
+    <FancyButton [label]="title">
+      @content(icon) {
+        <span>Icon!</span>
+      }
+      @content(description) {
+        <span>Description text</span>
+      }
+      <span>Other children</span>
+    </FancyButton>
+  `,
+  // @ts-ignore: @angular/core does not expose the `foreignImports` property.
+  foreignImports: [
+    // @ts-ignore: @angular/core does not expose the `ForeignComponent` type this expects.
+    frameworkImport(FancyButton)
+  ],
+})
+export class TestCmpChildren {
+  title = 'Submit';
+}
+
+@Component({
+  selector: 'main-render-props',
+  template: `
+    <FancyButton [label]="title">
+      @content(items; let item, index) {
+        <span>#{{index}}: {{item}}</span>
+      }
+    </FancyButton>
+  `,
+  // @ts-ignore: @angular/core does not expose the `foreignImports` property.
+  foreignImports: [
+    // @ts-ignore: @angular/core does not expose the `ForeignComponent` type this expects.
+    frameworkImport(FancyButton)
+  ],
+})
+export class TestCmpRenderProps {
+  title = 'Submit';
+}
+

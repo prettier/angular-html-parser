@@ -208,6 +208,11 @@ export enum OpKind {
   Projection,
 
   /**
+   * Represents a projected `@content` block for a foreign component.
+   */
+  Content,
+
+  /**
    * Create a repeater creation instruction op.
    */
   RepeaterCreate,
@@ -459,6 +464,11 @@ export enum ExpressionKind {
    * Operation that sets the value of a two-way binding.
    */
   TwoWayBindingSet,
+
+  /**
+   * Renders foreign content (children of a foreign component) and extracts its root DOM nodes.
+   */
+  ForeignContent,
 
   /**
    * Definition of an arrow function inside of an expression.

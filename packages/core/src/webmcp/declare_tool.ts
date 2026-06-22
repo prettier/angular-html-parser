@@ -33,13 +33,18 @@ export function declareExperimentalWebMcpTool<const InputSchema extends JsonSche
   tool: ToolDescriptor<InputSchema>,
   injector?: Injector,
 ): void {
+  // SSR may not have a document yet, so we abort before checking it.
+  if (typeof ngServerMode !== 'undefined' && ngServerMode) return;
+
   // modelContext was moved from `navigator` to `document` in the spec, but we check both for compatibility with different environments.
   const modelContext =
     (globalThis.document as {modelContext?: ModelContext}).modelContext ??
     (globalThis.navigator as unknown as {modelContext?: ModelContext}).modelContext;
 
-  // Verify WebMCP is supported in this client.
-  if (!modelContext) return;
+  // Verify WebMCP is supported in this client. The typeof check guards against
+  // DOM clobbering (e.g. <form id="modelContext">), which would produce a truthy
+  // Element instead of a ModelContext object.
+  if (!modelContext || typeof modelContext.registerTool !== 'function') return;
 
   if (typeof ngDevMode !== 'undefined' && ngDevMode) {
     if (!injector) assertInInjectionContext(declareExperimentalWebMcpTool);

@@ -21,7 +21,7 @@ describe('resolveUrl', () => {
       const urls = ['/\\attacker.com/deep/path', '\\\\attacker.com/deep/path'];
       for (const url of urls) {
         expect(() => resolveUrl(url, 'http://test.com')).toThrowError(
-          `URL ${url} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
+          `NG05703: URL ${url} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
         );
       }
     });
@@ -30,6 +30,26 @@ describe('resolveUrl', () => {
       const url = resolveUrl('http://other.com/deep/path', 'http://test.com');
       expect(url.href).toBe('http://other.com/deep/path');
       expect(url.origin).toBe('http://other.com');
+    });
+
+    it('should throw when allowOriginChange is false and origin changes', () => {
+      expect(() =>
+        resolveUrl('http://other.com/deep/path', 'http://test.com', {allowOriginChange: false}),
+      ).toThrowError(
+        `NG05703: URL http://other.com/deep/path changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
+      );
+    });
+
+    it('should resolve same origin when allowOriginChange is false', () => {
+      const url = resolveUrl('http://test.com/other-path', 'http://test.com', {
+        allowOriginChange: false,
+      });
+      expect(url.href).toBe('http://test.com/other-path');
+    });
+
+    it('should resolve relative paths when allowOriginChange is false', () => {
+      const url = resolveUrl('/other-path', 'http://test.com', {allowOriginChange: false});
+      expect(url.href).toBe('http://test.com/other-path');
     });
 
     it('should throw an error for malformed absolute URLs', () => {
@@ -51,7 +71,7 @@ describe('resolveUrl', () => {
     it('should throw on obfuscated protocols attempting to change origin', () => {
       const url = 'ht\ntp://evil.com/path';
       expect(() => resolveUrl(url, 'http://test.com')).toThrowError(
-        `URL ${url} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
+        `NG05703: URL ${url} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
       );
     });
   });

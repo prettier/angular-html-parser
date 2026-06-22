@@ -49,7 +49,7 @@ import {mutateNestedProp} from '../property-mutation';
 import {ComponentTreeNode, DirectiveInstanceType, ComponentInstanceType} from '../interfaces';
 import {getAppRoots} from './get-roots';
 import {AcxChangeDetectionStrategy, ChangeDetectionStrategy, Framework} from './core-enums';
-import {unwrapSignal} from '../utils';
+import {unwrapSignal} from '../utils/general';
 
 export const injectorToId = new WeakMap<Injector | HTMLElement, string>();
 export const nodeInjectorToResolutionPath = new WeakMap<HTMLElement, SerializedInjector[]>();
@@ -685,7 +685,8 @@ export const buildDirectiveForest = (): ComponentTreeNode[] => {
     const frontier = [...forest];
     while (frontier.length) {
       const node = frontier.pop()!;
-      node.element ??= node.nativeElement?.nodeName.toLowerCase() ?? '';
+      const rawNode = node as any;
+      node.tagName ??= rawNode.element ?? rawNode.nativeElement?.nodeName.toLowerCase() ?? '';
       node.component!.isElement ??= false;
       for (const child of node.children) {
         frontier.push(child);

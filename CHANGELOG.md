@@ -1,3 +1,255 @@
+<a name="22.1.0-next.1"></a>
+# 22.1.0-next.1 (2026-06-17)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [a69e56df71](https://github.com/angular/angular/commit/a69e56df718ccf139f0b3f8f528c87a6818d9ba2) | fix | escape anchor fragment in shadow DOM name selector |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [417a4071a7](https://github.com/angular/angular/commit/417a4071a776464d549509ed3aec121dbd2fda5e) | fix | restrict possible event handler check to property names longer than 2 characters |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [98f42eaaae](https://github.com/angular/angular/commit/98f42eaaaeea9eb5ca5e8fc905a456df25b403e9) | fix | avoid caching missing locale data |
+| [ea1a3ed64c](https://github.com/angular/angular/commit/ea1a3ed64c538fa768fff586796ece6ffb8b6598) | fix | escape overlapping comment delimiters in escapeCommentText |
+| [8cf7731468](https://github.com/angular/angular/commit/8cf7731468f2afcfa03cbddefe90b57dff680d30) | fix | guard against DOM clobbering in declareExperimentalWebMcpTool |
+| [6b5616b2c7](https://github.com/angular/angular/commit/6b5616b2c7745ff4777f8d2ea038ebd297aeeb38) | fix | preserve leave animation for sibling instances sharing a TNode |
+| [28cb15a2bb](https://github.com/angular/angular/commit/28cb15a2bb79a072fce661b14e87954096ee9366) | fix | prevent unsubscribe during emit from throwing off other listeners |
+| [0152e3cbdf](https://github.com/angular/angular/commit/0152e3cbdf5d31a5283059374e4a6352782fcd0f) | fix | treat iframe credentialless as security-sensitive |
+| [327744ac17](https://github.com/angular/angular/commit/327744ac171b30e54ee46d20bb13482fd1904f9a) | perf | detect existing signal dependency without checking all producer links |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [a6c7fc5c13](https://github.com/angular/angular/commit/a6c7fc5c13e6e494a4c9bd8e773b8d4b2a99b20c) | fix | distinguish repeated transfer cache params |
+### migrations
+| Commit | Type | Description |
+| -- | -- | -- |
+| [58efd86c78](https://github.com/angular/angular/commit/58efd86c78f244689b1bad5285aed9418a0772d1) | fix | migration skip any target are not build or test |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="22.0.2"></a>
+# 22.0.2 (2026-06-17)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [94ea403563](https://github.com/angular/angular/commit/94ea4035638db37e938831e3cb0e9562ca399475) | fix | escape anchor fragment in shadow DOM name selector |
+| [6c1f3e9d49](https://github.com/angular/angular/commit/6c1f3e9d49907ef643f1bc5297ff404768017acf) | fix | skip transfer cache for uncacheable HTTP traffic ([#69316](https://github.com/angular/angular/pull/69316)) |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [6f1171991a](https://github.com/angular/angular/commit/6f1171991a1262b5384470f34029f7312dc4fc53) | fix | restrict possible event handler check to property names longer than 2 characters |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [528a34f766](https://github.com/angular/angular/commit/528a34f766191da3fc684c6fac988b1bd2028f49) | fix | avoid caching missing locale data |
+| [e17e8d5422](https://github.com/angular/angular/commit/e17e8d542242333359946863d0272680c966325b) | fix | escape overlapping comment delimiters in escapeCommentText |
+| [59dea13f80](https://github.com/angular/angular/commit/59dea13f802f0bf43c4ee2b65c2a1aa0e59a2a15) | fix | guard against DOM clobbering in declareExperimentalWebMcpTool |
+| [3a48abc15c](https://github.com/angular/angular/commit/3a48abc15c038692a856c588c3037cd51e035f0b) | fix | preserve leave animation for sibling instances sharing a TNode |
+| [93d0a5f95c](https://github.com/angular/angular/commit/93d0a5f95c9376272b5ebf71e94ff3ddb25a294d) | fix | prevent unsubscribe during emit from throwing off other listeners |
+| [b32ee7ceb3](https://github.com/angular/angular/commit/b32ee7ceb3878d25ed58b7bbad58aaf3a01d9966) | fix | treat iframe credentialless as security-sensitive |
+| [f902d1d35e](https://github.com/angular/angular/commit/f902d1d35e90e9220e40581fa2d7c4463b2d1190) | perf | detect existing signal dependency without checking all producer links |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [6867f77ec7](https://github.com/angular/angular/commit/6867f77ec779a0a24f6339ad6c775f444202103c) | fix | distinguish repeated transfer cache params |
+| [7ef1399068](https://github.com/angular/angular/commit/7ef139906802ddd98ce12ce99fdd8c11a684d87d) | fix | skip transfer cache for fetch credentialed requests ([#69316](https://github.com/angular/angular/pull/69316)) |
+### migrations
+| Commit | Type | Description |
+| -- | -- | -- |
+| [15314c1736](https://github.com/angular/angular/commit/15314c1736afd9cafb24518cd458768973169d24) | fix | migration skip any target are not build or test |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="22.1.0-next.0"></a>
+# 22.1.0-next.0 (2026-06-10)
+## Deprecations
+### http
+- `HttpClient.jsonp`, `HttpClientJsonpModule`, and related JSONP classes/functions are deprecated. Use standard HTTP requests instead.
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [1ad6824d0d](https://github.com/angular/angular/commit/1ad6824d0dd17a0515ad0544cf435d1e3af6982e) | fix | skip transfer cache for uncacheable HTTP traffic ([#69017](https://github.com/angular/angular/pull/69017)) |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [25c744c4d0](https://github.com/angular/angular/commit/25c744c4d0abd3bfe863ed2d528fea756ec5801b) | fix | support foreign components defined outside top-level scope |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [aeb55c8bc1](https://github.com/angular/angular/commit/aeb55c8bc101dc313dc64f83f4428ddfad28d54e) | fix | allow passing uninvoked signals as foreign component props |
+| [7c60a98b3c](https://github.com/angular/angular/commit/7c60a98b3ccc2090f3bfb3c76d6207f37a5df0ff) | fix | support import aliases in foreignImports ([#68674](https://github.com/angular/angular/pull/68674)) |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [124ba10ead](https://github.com/angular/angular/commit/124ba10ead58c9f93b0b74c4102022c4674db1f5) | feat | add custom set option to linkedSignal |
+| [b3748e9fe4](https://github.com/angular/angular/commit/b3748e9fe4a4f9f56f9843b448db59674ad01452) | fix | correct container anchor collection order to match DOM layout |
+| [11b206b919](https://github.com/angular/angular/commit/11b206b919074149f2db6e3640a55284aecfe48a) | fix | introduce disposal mechanism for Angular views in foreign `@content` |
+| [56607967db](https://github.com/angular/angular/commit/56607967dbba25e63f86fd128ec0c1c4ce3e5232) | fix | introduce logical-only containers for foreign content |
+| [0c07356c5c](https://github.com/angular/angular/commit/0c07356c5c9dc76a532d7d4ecf43d8fce81b405b) | fix | set current tnode in foreign component instruction on reuse |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [c0cbd46bd7](https://github.com/angular/angular/commit/c0cbd46bd77443749444f816de1e0df4ede28c96) | fix | skip transfer cache for fetch credentialed requests ([#69017](https://github.com/angular/angular/pull/69017)) |
+| [af04e266cc](https://github.com/angular/angular/commit/af04e266cc9df4502802b565ccbb9928f10f51f5) | refactor | deprecate jsonp support |
+### language-service
+| Commit | Type | Description |
+| -- | -- | -- |
+| [7f0265e43a](https://github.com/angular/angular/commit/7f0265e43ab9f6b1ab9ad0ae84e70a40db417417) | feat | compile non-exported classes if standalone ([#68454](https://github.com/angular/angular/pull/68454)) |
+| [4f9c824dd9](https://github.com/angular/angular/commit/4f9c824dd9ec4462d29ed07b5e7916be86c19e84) | feat | Typecheck templates which would require inline typecheck blocks ([#68454](https://github.com/angular/angular/pull/68454)) |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [cf9d7fa0f8](https://github.com/angular/angular/commit/cf9d7fa0f8090bae61bb4fa2f50d6f0570412e6e) | fix | harden platform location origin validation during SSR ([#69184](https://github.com/angular/angular/pull/69184)) |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="22.0.1"></a>
+# 22.0.1 (2026-06-10)
+## Deprecations
+### platform-server
+- XHR support in `@angular/platform-server` is deprecated. Use standard `fetch` APIs instead.
+  (cherry picked from commit 8446e46f8bc33bd4419fa7f6106b8d117ca2e099)
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [c4b5fa3c92](https://github.com/angular/angular/commit/c4b5fa3c9263ac127f5053c5a03dd4b6313659b8) | fix | escape CSS string-terminating characters in escapeCssUrl |
+| [dfff57ede9](https://github.com/angular/angular/commit/dfff57ede93dbc51a7eeac3311ff2b1279595ee5) | fix | Limits date format string length |
+| [3c2892c8df](https://github.com/angular/angular/commit/3c2892c8dffbbbe32940306b53779cc0c4e3f73c) | fix | prevent prototype pollution in formatDateTime |
+| [1d87c49f6e](https://github.com/angular/angular/commit/1d87c49f6ee4aac27146f39ef370a87ba707a2c1) | fix | use cryptographically secure SHA-256 for transfer cache key generation |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [1ee224ca30](https://github.com/angular/angular/commit/1ee224ca30b9b5a7906b4f481135f1fb900fb3ce) | fix | disallow i18n event attributes |
+| [a56f1cdf8f](https://github.com/angular/angular/commit/a56f1cdf8fa24e335409250798ee804d95eae136) | fix | more robust logic to check if regex can be optimized |
+| [5946c18275](https://github.com/angular/angular/commit/5946c18275800539b2f47f80a573ee9312a45e8b) | fix | sanitize `href`/`xlink:href` attributes of any element of the MathML namespace |
+| [393b84caf8](https://github.com/angular/angular/commit/393b84caf8bda05b31cfac014751deed142eb918) | fix | sanitize two-way properties |
+### compiler-cli
+| Commit | Type | Description |
+| -- | -- | -- |
+| [3d9ca2f173](https://github.com/angular/angular/commit/3d9ca2f1730689232f0ba1d6eddbd7dcedd1da39) | fix | bind switch exhaustive check expressions |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [669146b0e7](https://github.com/angular/angular/commit/669146b0e74ab1bed4196ccebe1c3608f52fd4f8) | fix | disable WebMCP during SSR |
+| [562a566ead](https://github.com/angular/angular/commit/562a566eadfdec3d9708f1a5e03e7dd2821d3432) | fix | Handle synchronous errors in PendingTasks.run function |
+| [fa546f382d](https://github.com/angular/angular/commit/fa546f382de10af46d0508733c6630ffe4bef328) | fix | harden TransferState restoration against DOM clobbering |
+| [29fdb98684](https://github.com/angular/angular/commit/29fdb98684a57c99417efb5aac5a3b7f205e2c8f) | fix | prevent dangling prevConsumer reference from leaking destroyed views ([#68681](https://github.com/angular/angular/pull/68681)) |
+| [cdcea80327](https://github.com/angular/angular/commit/cdcea80327e8984981144d99194d7b194da4889f) | fix | require WebMCP tool descriptions |
+| [4289c4c840](https://github.com/angular/angular/commit/4289c4c8408056eb90cd25cdb76475d00de129d6) | fix | update comment for Default change detection |
+| [3dd433b39a](https://github.com/angular/angular/commit/3dd433b39a66609412427f06162fb4ebc2b3e4aa) | fix | use Object.hasOwn to handle null-prototype objects in toStylingKeyValueArray |
+| [045bb736b3](https://github.com/angular/angular/commit/045bb736b373a5a0301cde3a4469194404b289c5) | fix | validate lowercase SVG animation attribute names |
+### forms
+| Commit | Type | Description |
+| -- | -- | -- |
+| [11836a670a](https://github.com/angular/angular/commit/11836a670af5c64153d57a2d47b4688605379014) | fix | delay mcp reading the form model by a `tick` |
+| [85d2d100e3](https://github.com/angular/angular/commit/85d2d100e38999f1342742573166c7af0f29b4bd) | fix | harden FormGroup control lookups against prototype shadowing |
+| [e51ad374ea](https://github.com/angular/angular/commit/e51ad374ea628de33843332f6798635dc8af02ae) | fix | remove animationstart listener on component destroy to prevent memory leak |
+| [55b7b5a6b6](https://github.com/angular/angular/commit/55b7b5a6b6324c1886eca8dbc492e6af5fc4cd7a) | fix | set `additionalProperties: false` on generated WebMCP form |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [ffb06c0514](https://github.com/angular/angular/commit/ffb06c0514ace66e83160e544dec63f36340c297) | fix | ensure query parameters are inserted before URL fragments |
+| [2dd65d21e6](https://github.com/angular/angular/commit/2dd65d21e656186cd2598a11dd51a34fcab2ecfe) | fix | pass down the `reportUploadProgress` and `reportDownloadProgress` on post/patch requests |
+| [4254eb416c](https://github.com/angular/angular/commit/4254eb416c81570a6d3313711aaeba7817305320) | fix | preserve empty referrer option in HttpRequest |
+| [167bd4c162](https://github.com/angular/angular/commit/167bd4c162d6af87cd207650bbc41d6c7a073c22) | fix | Rejects non-HTTP(S) URLs in JSONP requests |
+### language-service
+| Commit | Type | Description |
+| -- | -- | -- |
+| [43a0e28729](https://github.com/angular/angular/commit/43a0e2872908d1a614139317e8dfeb52d9f69f75) | fix | prevent external template inlay hints from appearing in TS files |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [ed48ca7f51](https://github.com/angular/angular/commit/ed48ca7f5108768c326ddc7ce51199dd575ced7a) | fix | harden platform location origin validation during SSR |
+| [1881ede3a7](https://github.com/angular/angular/commit/1881ede3a791fca97350ffb3beadbe4e9fae8e73) | refactor | deprecate ServerXhr |
+### router
+| Commit | Type | Description |
+| -- | -- | -- |
+| [43edc8410f](https://github.com/angular/angular/commit/43edc8410f2ef9feed8efe1b52c509c167f72946) | fix | use native URL object for navigation boundary and comparison |
+### service-worker
+| Commit | Type | Description |
+| -- | -- | -- |
+| [cf97b1f828](https://github.com/angular/angular/commit/cf97b1f828e41df71c49fc19ed2e16d1cb4c3f34) | fix | Strips sensitive headers on cross-origin redirects |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="21.2.17"></a>
+# 21.2.17 (2026-06-10)
+## Deprecations
+### platform-server
+- XHR support in `@angular/platform-server` is deprecated. Use standard `fetch` APIs instead.
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [86a56dc279](https://github.com/angular/angular/commit/86a56dc279e71159d09a073a3cb138f49131995b) | fix | Limits date format string length |
+| [d846326b07](https://github.com/angular/angular/commit/d846326b071e0a4ab090e068d934b182926c6b15) | fix | skip transfer cache for uncacheable HTTP traffic |
+| [bc55749698](https://github.com/angular/angular/commit/bc55749698ce3917160cd8e9f7108f3c5d1c0b32) | fix | use cryptographically secure SHA-256 for transfer cache key generation |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [dc9c99636d](https://github.com/angular/angular/commit/dc9c99636d3471ed5a3c5cda54b95f604cd2b9a4) | fix | sanitize two-way properties |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [1523061137](https://github.com/angular/angular/commit/152306113760e13196653699b42046d9f4129a37) | fix | harden TransferState restoration against DOM clobbering |
+| [88832c84f8](https://github.com/angular/angular/commit/88832c84f8a3cd88d80adcde539a6f91a1f30b74) | fix | validate lowercase SVG animation attribute names ([#69269](https://github.com/angular/angular/pull/69269)) |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [bcb1b7ea25](https://github.com/angular/angular/commit/bcb1b7ea2575b140f7bf202ad4f779e402cd6094) | fix | preserve empty referrer option in HttpRequest |
+| [a810a319d1](https://github.com/angular/angular/commit/a810a319d10a8254307eb8f0598e7a888ce09ec0) | fix | Rejects non-HTTP(S) URLs in JSONP requests |
+| [e245d40c4d](https://github.com/angular/angular/commit/e245d40c4d05665ab4814c594b8e0849b6e88a2d) | fix | skip transfer cache for fetch credentialed requests |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [35510746b7](https://github.com/angular/angular/commit/35510746b7d6b5c3de41de04c0586fc286c9e748) | fix | harden platform location origin validation during SSR |
+| [13fb0afe93](https://github.com/angular/angular/commit/13fb0afe93b45e3c2383969f70d3ee1f0146ecfb) | refactor | deprecate ServerXhr ([#69255](https://github.com/angular/angular/pull/69255)) |
+### service-worker
+| Commit | Type | Description |
+| -- | -- | -- |
+| [b9d29381bb](https://github.com/angular/angular/commit/b9d29381bb4442164b19d9b7e0baa147a7b25629) | fix | Strips sensitive headers on cross-origin redirects |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
+<a name="20.3.25"></a>
+# 20.3.25 (2026-06-10)
+## Deprecations
+### platform-server
+- XHR support in `@angular/platform-server` is deprecated. Use standard `fetch` APIs instead.
+### common
+| Commit | Type | Description |
+| -- | -- | -- |
+| [9f443bc24c](https://github.com/angular/angular/commit/9f443bc24c79dca998c9434d1e235dc19dc29bba) | fix | Limits date format string length |
+| [566ad05f20](https://github.com/angular/angular/commit/566ad05f20732c38855353c3e73771ef9a34dadc) | fix | skip transfer cache for uncacheable HTTP traffic |
+| [1a62130a6b](https://github.com/angular/angular/commit/1a62130a6bb313e4441f005e480768a360c71be5) | fix | use cryptographically secure SHA-256 for transfer cache key generation |
+### compiler
+| Commit | Type | Description |
+| -- | -- | -- |
+| [a68ec702a0](https://github.com/angular/angular/commit/a68ec702a056a2706a152fce29081241fd276f12) | fix | sanitize two-way properties |
+### core
+| Commit | Type | Description |
+| -- | -- | -- |
+| [768a349e6e](https://github.com/angular/angular/commit/768a349e6e54ff16deba4c1bfe12be9d0f55f443) | fix | harden TransferState restoration against DOM clobbering |
+| [ca48b4728d](https://github.com/angular/angular/commit/ca48b4728d5f6770be63a08f64a6432207ad54c0) | fix | validate lowercase SVG animation attribute names ([#69270](https://github.com/angular/angular/pull/69270)) |
+### http
+| Commit | Type | Description |
+| -- | -- | -- |
+| [06be298267](https://github.com/angular/angular/commit/06be29826741212ca00e21efb6abff653e4541b5) | fix | preserve empty referrer option in HttpRequest |
+| [fa940e1f4d](https://github.com/angular/angular/commit/fa940e1f4de75c33ccca50357d941be53a5a0950) | fix | Rejects non-HTTP(S) URLs in JSONP requests |
+| [e2ef1ce72a](https://github.com/angular/angular/commit/e2ef1ce72ae084e01a76950c731052f4fa97fcdd) | fix | skip transfer cache for fetch credentialed requests |
+### platform-server
+| Commit | Type | Description |
+| -- | -- | -- |
+| [49368c1859](https://github.com/angular/angular/commit/49368c185907edb48467074c56e305abbfa3544a) | fix | harden platform location origin validation during SSR |
+| [d55c94ad81](https://github.com/angular/angular/commit/d55c94ad811a15c9c255164a0d66892c645f602e) | refactor | deprecate ServerXhr ([#69256](https://github.com/angular/angular/pull/69256)) |
+### service-worker
+| Commit | Type | Description |
+| -- | -- | -- |
+| [d65a5f457b](https://github.com/angular/angular/commit/d65a5f457b1afd6bdd4d952d3f213c6aa1aabcbc) | fix | Strips sensitive headers on cross-origin redirects |
+
+<!-- CHANGELOG SPLIT MARKER -->
+
 <a name="22.0.0"></a>
 # 22.0.0 (2026-06-03)
 

@@ -123,6 +123,7 @@ describe('iframe processing', () => {
     'referrerPolicy',
     'csp',
     'fetchPriority',
+    'credentialless',
   ];
 
   const TEST_IFRAME_URL = 'https://angular.io/assets/images/logos/angular/angular.png';
@@ -257,6 +258,22 @@ describe('iframe processing', () => {
                 `,
 
                 changeDetection: ChangeDetectionStrategy.Eager,
+              })
+              class IframeComp {}
+
+              expectIframeCreationToFail(IframeComp);
+            },
+          );
+
+          it(
+            `should error when a security-sensitive attribute is applied ` +
+              `using a property binding (checking \`${securityAttr}\` (attr.) with null, with \`${srcAttr}\`)`,
+            () => {
+              @Component({
+                selector: 'my-comp',
+                template: `
+                  <iframe ${srcAttr}="${TEST_IFRAME_URL}" [attr.${securityAttr}]="null"></iframe>
+                `,
               })
               class IframeComp {}
 

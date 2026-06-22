@@ -10,7 +10,7 @@ import semver from 'semver';
 
 import {getDirectiveName} from '../highlighter';
 import {ComponentInstanceType, ComponentTreeNode, DirectiveInstanceType} from '../interfaces';
-import {isCustomElement} from '../utils';
+import {isCustomElement} from '../utils/general';
 import {VERSION} from '../version';
 
 let HEADER_OFFSET = 19;
@@ -91,7 +91,7 @@ export class LTreeStrategy {
       return {
         nativeElement: node,
         children: [],
-        element,
+        tagName: element,
         directives: [],
         component: null,
         controlFlowBlock: null, // neither there will be any control flow block
@@ -116,7 +116,7 @@ export class LTreeStrategy {
     return {
       nativeElement: node,
       children: [],
-      element,
+      tagName: element,
       directives,
       component,
       controlFlowBlock: null, // neither there will be any control flow block
