@@ -107,6 +107,7 @@ export interface TokenizeOptions {
 
   canSelfClose?: boolean;
   allowHtmComponentClosingTags?: boolean;
+  allowInElementComments?: boolean,
 }
 
 export function tokenize(
@@ -170,6 +171,7 @@ class _Tokenizer {
   private _leadingTriviaCodePoints: number[] | undefined;
   private _canSelfClose: boolean;
   private _allowHtmComponentClosingTags: boolean;
+  private _allowInElementComments: boolean;
   private _currentTokenStart: CharacterCursor | null = null;
   private _currentTokenType: TokenType | null = null;
   private _expansionCaseStack: TokenType[] = [];
@@ -203,6 +205,7 @@ class _Tokenizer {
       options.leadingTriviaChars && options.leadingTriviaChars.map((c) => c.codePointAt(0) || 0);
     this._canSelfClose = options.canSelfClose || false;
     this._allowHtmComponentClosingTags = options.allowHtmComponentClosingTags || false;
+    this._allowInElementComments = options.allowInElementComments ?? true;
     const range = options.range || {
       endPos: _file.content.length,
       startPos: 0,
@@ -920,15 +923,18 @@ class _Tokenizer {
       }
 
       while (true) {
-        const commentStart = this._cursor.clone();
-        if (this._attemptStr('//')) {
-          this._consumeSingleLineComment(commentStart);
-          continue;
-        }
+        if (this._allowInElementComments) {
+          const commentStart = this._cursor.clone();
 
-        if (this._attemptStr('/*')) {
-          this._consumeMultiLineComment(commentStart);
-          continue;
+          if (this._attemptStr('//')) {
+            this._consumeSingleLineComment(commentStart);
+            continue;
+          }
+
+          if (this._attemptStr('/*')) {
+            this._consumeMultiLineComment(commentStart);
+            continue;
+          }
         }
 
         if (isAttributeTerminator(this._cursor.peek())) {

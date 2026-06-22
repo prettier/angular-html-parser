@@ -243,6 +243,17 @@ describe("AST format", () => {
   });
 });
 
+it("in-element comments", () => {
+  expect(parse("<div/* comment */></div>").errors[0]).toMatchInlineSnapshot(`[Error: Opening tag "div" not terminated.]`);
+  expect(humanizeDom(parse("<div/* block comment */></div>", {allowInElementComments: true}))).toEqual([
+    [ast.Comment, ' block comment ', 0],
+    [ast.Element, 'div', 0],
+  ]);  expect(humanizeDom(parse("<div// line comment\n></div>", {allowInElementComments: true}))).toEqual([
+    [ast.Comment, ' line comment', 0],
+    [ast.Element, 'div', 0],
+  ]);
+})
+
 it("Edge cases", () => {
   expect(humanizeDom(parse("<html:style></html:style>"))).toEqual([
     [ast.Element, ":html:style", 0],
