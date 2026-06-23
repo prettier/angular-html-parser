@@ -107,6 +107,7 @@ export {
   ParseSourceFile,
 } from "../../compiler/src/parse_util.ts";
 export { getHtmlTagDefinition } from "../../compiler/src/ml_parser/html_tags.ts";
+export { SUPPORTED_BLOCKS as SUPPORTED_ANGULAR_BLOCKS } from "../../compiler/src/ml_parser/lexer.ts";
 
 // Types
 export type { ParseTreeResult } from "../../compiler/src/ml_parser/parser.ts";

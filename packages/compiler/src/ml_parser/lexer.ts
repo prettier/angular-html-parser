@@ -147,7 +147,7 @@ enum CharacterReferenceType {
   DEC = 'decimal',
 }
 
-const SUPPORTED_BLOCKS = [
+export const SUPPORTED_BLOCKS = [
   '@if',
   '@else', // Covers `@else if` as well
   '@for',
