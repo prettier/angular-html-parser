@@ -28,14 +28,14 @@
     "lint:types": "tsc"
   },
   "devDependencies": {
-    "@types/node": "25.9.1",
-    "@vitest/coverage-v8": "4.1.8",
+    "@types/node": "26.0.0",
+    "@vitest/coverage-v8": "4.1.9",
     "outdent": "0.8.0",
-    "prettier": "3.8.3",
+    "prettier": "3.8.4",
     "release-it": "20.2.0",
-    "tsdown": "0.22.1",
+    "tsdown": "0.22.3",
     "typescript": "6.0.3",
-    "vitest": "4.1.8"
+    "vitest": "4.1.9"
   },
   "engines": {
     "node": ">= 14"
@@ -49,6 +49,6 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "packageManager": "yarn@4.9.1",
+  "packageManager": "yarn@4.17.0",
   "sideEffects": false
 }
