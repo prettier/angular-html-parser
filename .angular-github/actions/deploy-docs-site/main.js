@@ -2064,6 +2064,7 @@ var require_dispatcher_base = __commonJS({
       }
       get webSocketOptions() {
         return {
+          maxFragments: this[kWebSocketOptions].maxFragments ?? 131072,
           maxPayloadSize: this[kWebSocketOptions].maxPayloadSize ?? 128 * 1024 * 1024
         };
       }
@@ -5711,6 +5712,9 @@ var require_client_h1 = __commonJS({
     var FastBuffer = Buffer[Symbol.species];
     var addListener = util.addListener;
     var removeAllListeners = util.removeAllListeners;
+    var kIdleSocketValidation = Symbol("kIdleSocketValidation");
+    var kIdleSocketValidationTimeout = Symbol("kIdleSocketValidationTimeout");
+    var kSocketUsed = Symbol("kSocketUsed");
     var extractBody;
     async function lazyllhttp() {
       const llhttpWasmData = process.env.JEST_WORKER_ID ? require_llhttp_wasm() : void 0;
@@ -5873,23 +5877,54 @@ var require_client_h1 = __commonJS({
             currentBufferRef = null;
           }
           const offset = llhttp.llhttp_get_error_pos(this.ptr) - currentBufferPtr;
-          if (ret === constants3.ERROR.PAUSED_UPGRADE) {
-            this.onUpgrade(data.slice(offset));
-          } else if (ret === constants3.ERROR.PAUSED) {
-            this.paused = true;
-            socket.unshift(data.slice(offset));
-          } else if (ret !== constants3.ERROR.OK) {
-            const ptr = llhttp.llhttp_get_error_reason(this.ptr);
-            let message = "";
-            if (ptr) {
-              const len = new Uint8Array(llhttp.memory.buffer, ptr).indexOf(0);
-              message = "Response does not match the HTTP/1.1 protocol (" + Buffer.from(llhttp.memory.buffer, ptr, len).toString() + ")";
+          if (ret !== constants3.ERROR.OK) {
+            const body = data.subarray(offset);
+            if (ret === constants3.ERROR.PAUSED_UPGRADE) {
+              this.onUpgrade(body);
+            } else if (ret === constants3.ERROR.PAUSED) {
+              this.paused = true;
+              socket.unshift(body);
+            } else {
+              throw this.createError(ret, body);
             }
-            throw new HTTPParserError(message, constants3.ERROR[ret], data.slice(offset));
           }
         } catch (err) {
           util.destroy(socket, err);
         }
+      }
+      finish() {
+        assert2(currentParser === null);
+        assert2(this.ptr != null);
+        assert2(!this.paused);
+        const { llhttp } = this;
+        let ret;
+        try {
+          currentParser = this;
+          ret = llhttp.llhttp_finish(this.ptr);
+        } finally {
+          currentParser = null;
+        }
+        if (ret === constants3.ERROR.OK) {
+          return null;
+        }
+        if (ret === constants3.ERROR.PAUSED || ret === constants3.ERROR.PAUSED_UPGRADE) {
+          this.paused = true;
+          return null;
+        }
+        return this.createError(ret, EMPTY_BUF);
+      }
+      createError(ret, data) {
+        const { llhttp, contentLength, bytesRead } = this;
+        if (contentLength && bytesRead !== parseInt(contentLength, 10)) {
+          return new ResponseContentLengthMismatchError();
+        }
+        const ptr = llhttp.llhttp_get_error_reason(this.ptr);
+        let message = "";
+        if (ptr) {
+          const len = new Uint8Array(llhttp.memory.buffer, ptr).indexOf(0);
+          message = "Response does not match the HTTP/1.1 protocol (" + Buffer.from(llhttp.memory.buffer, ptr, len).toString() + ")";
+        }
+        return new HTTPParserError(message, constants3.ERROR[ret], data);
       }
       destroy() {
         assert2(this.ptr != null);
@@ -5908,6 +5943,10 @@ var require_client_h1 = __commonJS({
       onMessageBegin() {
         const { socket, client } = this;
         if (socket.destroyed) {
+          return -1;
+        }
+        if (client[kRunning] === 0) {
+          util.destroy(socket, new SocketError("bad response", util.getSocketInfo(socket)));
           return -1;
         }
         const request3 = client[kQueue][client[kRunningIdx]];
@@ -5987,6 +6026,10 @@ var require_client_h1 = __commonJS({
       onHeadersComplete(statusCode, upgrade, shouldKeepAlive) {
         const { client, socket, headers, statusText } = this;
         if (socket.destroyed) {
+          return -1;
+        }
+        if (client[kRunning] === 0) {
+          util.destroy(socket, new SocketError("bad response", util.getSocketInfo(socket)));
           return -1;
         }
         const request3 = client[kQueue][client[kRunningIdx]];
@@ -6114,6 +6157,7 @@ var require_client_h1 = __commonJS({
         }
         request3.onComplete(headers);
         client[kQueue][client[kRunningIdx]++] = null;
+        socket[kSocketUsed] = true;
         if (socket[kWriting]) {
           assert2(client[kRunning] === 0);
           util.destroy(socket, new InformationalError("reset"));
@@ -6157,12 +6201,19 @@ var require_client_h1 = __commonJS({
       socket[kWriting] = false;
       socket[kReset2] = false;
       socket[kBlocking] = false;
+      socket[kIdleSocketValidation] = 0;
+      socket[kIdleSocketValidationTimeout] = null;
+      socket[kSocketUsed] = false;
       socket[kParser] = new Parser2(client, socket, llhttpInstance);
       addListener(socket, "error", function(err) {
         assert2(err.code !== "ERR_TLS_CERT_ALTNAME_INVALID");
         const parser2 = this[kParser];
         if (err.code === "ECONNRESET" && parser2.statusCode && !parser2.shouldKeepAlive) {
-          parser2.onMessageComplete();
+          const parserErr = parser2.finish();
+          if (parserErr) {
+            this[kError] = parserErr;
+            this[kClient][kOnError](parserErr);
+          }
           return;
         }
         this[kError] = err;
@@ -6177,7 +6228,10 @@ var require_client_h1 = __commonJS({
       addListener(socket, "end", function() {
         const parser2 = this[kParser];
         if (parser2.statusCode && !parser2.shouldKeepAlive) {
-          parser2.onMessageComplete();
+          const parserErr = parser2.finish();
+          if (parserErr) {
+            util.destroy(this, parserErr);
+          }
           return;
         }
         util.destroy(this, new SocketError("other side closed", util.getSocketInfo(this)));
@@ -6185,9 +6239,10 @@ var require_client_h1 = __commonJS({
       addListener(socket, "close", function() {
         const client2 = this[kClient];
         const parser2 = this[kParser];
+        clearIdleSocketValidation(this);
         if (parser2) {
           if (!this[kError] && parser2.statusCode && !parser2.shouldKeepAlive) {
-            parser2.onMessageComplete();
+            this[kError] = parser2.finish() || this[kError];
           }
           this[kParser].destroy();
           this[kParser] = null;
@@ -6236,7 +6291,7 @@ var require_client_h1 = __commonJS({
           return socket.destroyed;
         },
         busy(request3) {
-          if (socket[kWriting] || socket[kReset2] || socket[kBlocking]) {
+          if (socket[kWriting] || socket[kReset2] || socket[kBlocking] || socket[kIdleSocketValidation] === 1) {
             return true;
           }
           if (request3) {
@@ -6254,6 +6309,24 @@ var require_client_h1 = __commonJS({
         }
       };
     }
+    function clearIdleSocketValidation(socket) {
+      if (socket[kIdleSocketValidationTimeout]) {
+        clearTimeout(socket[kIdleSocketValidationTimeout]);
+        socket[kIdleSocketValidationTimeout] = null;
+      }
+      socket[kIdleSocketValidation] = 0;
+    }
+    function scheduleIdleSocketValidation(client, socket) {
+      socket[kIdleSocketValidation] = 1;
+      socket[kIdleSocketValidationTimeout] = setTimeout(() => {
+        socket[kIdleSocketValidationTimeout] = null;
+        socket[kIdleSocketValidation] = 2;
+        if (client[kSocket] === socket && !socket.destroyed) {
+          client[kResume]();
+        }
+      }, 0);
+      socket[kIdleSocketValidationTimeout].unref?.();
+    }
     function resumeH1(client) {
       const socket = client[kSocket];
       if (socket && !socket.destroyed) {
@@ -6265,6 +6338,29 @@ var require_client_h1 = __commonJS({
         } else if (socket[kNoRef] && socket.ref) {
           socket.ref();
           socket[kNoRef] = false;
+        }
+        if (client[kRunning] === 0 && client[kPending] > 0 && socket[kSocketUsed]) {
+          if (socket[kIdleSocketValidation] === 0) {
+            scheduleIdleSocketValidation(client, socket);
+            socket[kParser].readMore();
+            if (socket.destroyed) {
+              return;
+            }
+            return;
+          }
+          if (socket[kIdleSocketValidation] === 1) {
+            socket[kParser].readMore();
+            if (socket.destroyed) {
+              return;
+            }
+            return;
+          }
+        }
+        if (client[kRunning] === 0) {
+          socket[kParser].readMore();
+          if (socket.destroyed) {
+            return;
+          }
         }
         if (client[kSize] === 0) {
           if (socket[kParser].timeoutType !== TIMEOUT_KEEP_ALIVE) {
@@ -6318,6 +6414,7 @@ var require_client_h1 = __commonJS({
         process.emitWarning(new RequestContentLengthMismatchError());
       }
       const socket = client[kSocket];
+      clearIdleSocketValidation(socket);
       const abort = (err) => {
         if (request3.aborted || request3.completed) {
           return;
@@ -16110,18 +16207,14 @@ var require_parse = __commonJS({
       } else if (attributeNameLowercase === "httponly") {
         cookieAttributeList.httpOnly = true;
       } else if (attributeNameLowercase === "samesite") {
-        let enforcement = "Default";
         const attributeValueLowercase = attributeValue.toLowerCase();
-        if (attributeValueLowercase.includes("none")) {
-          enforcement = "None";
+        if (attributeValueLowercase === "none") {
+          cookieAttributeList.sameSite = "None";
+        } else if (attributeValueLowercase === "strict") {
+          cookieAttributeList.sameSite = "Strict";
+        } else if (attributeValueLowercase === "lax") {
+          cookieAttributeList.sameSite = "Lax";
         }
-        if (attributeValueLowercase.includes("strict")) {
-          enforcement = "Strict";
-        }
-        if (attributeValueLowercase.includes("lax")) {
-          enforcement = "Lax";
-        }
-        cookieAttributeList.sameSite = enforcement;
       } else {
         cookieAttributeList.unparsed ??= [];
         cookieAttributeList.unparsed.push(`${attributeName}=${attributeValue}`);
@@ -17143,6 +17236,10 @@ var require_receiver = __commonJS({
     var { closeWebSocketConnection } = require_connection();
     var { PerMessageDeflate } = require_permessage_deflate();
     var { MessageSizeExceededError } = require_errors();
+    function failWebsocketConnectionWithCode(ws, code, reason) {
+      closeWebSocketConnection(ws, code, reason, Buffer.byteLength(reason));
+      failWebsocketConnection(ws, reason);
+    }
     var ByteParser = class extends Writable {
       #buffers = [];
       #fragmentsBytes = 0;
@@ -17154,16 +17251,19 @@ var require_receiver = __commonJS({
       /** @type {Map<string, PerMessageDeflate>} */
       #extensions;
       /** @type {number} */
+      #maxFragments;
+      /** @type {number} */
       #maxPayloadSize;
       /**
        * @param {import('./websocket').WebSocket} ws
        * @param {Map<string, string>|null} extensions
-       * @param {{ maxPayloadSize?: number }} [options]
+       * @param {{ maxFragments?: number, maxPayloadSize?: number }} [options]
        */
       constructor(ws, extensions, options = {}) {
         super();
         this.ws = ws;
         this.#extensions = extensions == null ? /* @__PURE__ */ new Map() : extensions;
+        this.#maxFragments = options.maxFragments ?? 0;
         this.#maxPayloadSize = options.maxPayloadSize ?? 0;
         if (this.#extensions.has("permessage-deflate")) {
           this.#extensions.set("permessage-deflate", new PerMessageDeflate(extensions, options));
@@ -17180,8 +17280,8 @@ var require_receiver = __commonJS({
         this.run(callback);
       }
       #validatePayloadLength() {
-        if (this.#maxPayloadSize > 0 && !isControlFrame(this.#info.opcode) && this.#info.payloadLength > this.#maxPayloadSize) {
-          failWebsocketConnection(this.ws, "Payload size exceeds maximum allowed size");
+        if (this.#maxPayloadSize > 0 && !isControlFrame(this.#info.opcode) && this.#info.payloadLength + this.#fragmentsBytes > this.#maxPayloadSize) {
+          failWebsocketConnectionWithCode(this.ws, 1009, "Payload size exceeds maximum allowed size");
           return false;
         }
         return true;
@@ -17297,9 +17397,11 @@ var require_receiver = __commonJS({
               this.#state = parserStates.INFO;
             } else {
               if (!this.#info.compressed) {
-                this.writeFragments(body);
+                if (!this.writeFragments(body)) {
+                  return;
+                }
                 if (this.#maxPayloadSize > 0 && this.#fragmentsBytes > this.#maxPayloadSize) {
-                  failWebsocketConnection(this.ws, new MessageSizeExceededError().message);
+                  failWebsocketConnectionWithCode(this.ws, 1009, new MessageSizeExceededError().message);
                   return;
                 }
                 if (!this.#info.fragmented && this.#info.fin) {
@@ -17312,12 +17414,15 @@ var require_receiver = __commonJS({
                   this.#info.fin,
                   (error2, data) => {
                     if (error2) {
-                      failWebsocketConnection(this.ws, error2.message);
+                      const code = error2 instanceof MessageSizeExceededError ? 1009 : 1007;
+                      failWebsocketConnectionWithCode(this.ws, code, error2.message);
                       return;
                     }
-                    this.writeFragments(data);
+                    if (!this.writeFragments(data)) {
+                      return;
+                    }
                     if (this.#maxPayloadSize > 0 && this.#fragmentsBytes > this.#maxPayloadSize) {
-                      failWebsocketConnection(this.ws, new MessageSizeExceededError().message);
+                      failWebsocketConnectionWithCode(this.ws, 1009, new MessageSizeExceededError().message);
                       return;
                     }
                     if (!this.#info.fin) {
@@ -17375,8 +17480,13 @@ var require_receiver = __commonJS({
         return buffer;
       }
       writeFragments(fragment) {
+        if (this.#maxFragments > 0 && this.#fragments.length === this.#maxFragments) {
+          failWebsocketConnectionWithCode(this.ws, 1008, "Too many message fragments");
+          return false;
+        }
         this.#fragmentsBytes += fragment.length;
         this.#fragments.push(fragment);
+        return true;
       }
       consumeFragments() {
         const fragments = this.#fragments;
@@ -17826,8 +17936,11 @@ var require_websocket = __commonJS({
        */
       #onConnectionEstablished(response, parsedExtensions) {
         this[kResponse] = response;
-        const maxPayloadSize = this[kController]?.dispatcher?.webSocketOptions?.maxPayloadSize;
+        const webSocketOptions = this[kController]?.dispatcher?.webSocketOptions;
+        const maxFragments = webSocketOptions?.maxFragments;
+        const maxPayloadSize = webSocketOptions?.maxPayloadSize;
         const parser2 = new ByteParser(this, parsedExtensions, {
+          maxFragments,
           maxPayloadSize
         });
         parser2.on("drain", onParserDrain);
@@ -28643,7 +28756,7 @@ var RequestError = class extends Error {
 };
 
 // 
-var VERSION2 = "10.0.9";
+var VERSION2 = "10.0.10";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -40891,7 +41004,7 @@ var require_sbcs = __commonJS2({
       return mod && mod.__esModule ? mod : { "default": mod };
     };
     Object.defineProperty(exports, "__esModule", { value: true });
-    exports.KOI8_R = exports.windows_1256 = exports.windows_1251 = exports.ISO_8859_9 = exports.ISO_8859_8 = exports.ISO_8859_7 = exports.ISO_8859_6 = exports.ISO_8859_5 = exports.ISO_8859_2 = exports.ISO_8859_1 = void 0;
+    exports.KOI8_R = exports.windows_874 = exports.windows_1258 = exports.windows_1257 = exports.windows_1256 = exports.windows_1251 = exports.ISO_8859_9 = exports.ISO_8859_8 = exports.ISO_8859_7 = exports.ISO_8859_6 = exports.ISO_8859_5 = exports.ISO_8859_2 = exports.ISO_8859_1 = void 0;
     var match_1 = __importDefault(require_match());
     var N_GRAM_MASK = 16777215;
     var NGramParser = class {
@@ -44894,6 +45007,443 @@ var require_sbcs = __commonJS2({
       }
     };
     exports.windows_1256 = windows_1256;
+    var windows_1257 = class extends sbcs {
+      match(det) {
+        return det.inputBytes.some((byte) => byte >= 128) ? super.match(det) : null;
+      }
+      byteMap() {
+        const byteMap = new Array(256).fill(32);
+        byteMap[39] = 0;
+        for (let i = 65; i <= 90; i++)
+          byteMap[i] = i + 32;
+        for (let i = 97; i <= 122; i++)
+          byteMap[i] = i;
+        byteMap[142] = 142;
+        byteMap[168] = byteMap[184] = 184;
+        byteMap[170] = byteMap[186] = 186;
+        byteMap[175] = byteMap[191] = 191;
+        byteMap[181] = 181;
+        for (let i = 192; i <= 214; i++)
+          byteMap[i] = i + 32;
+        for (let i = 216; i <= 222; i++)
+          byteMap[i] = i + 32;
+        byteMap[223] = 223;
+        for (let i = 224; i <= 246; i++)
+          byteMap[i] = i;
+        for (let i = 248; i <= 254; i++)
+          byteMap[i] = i;
+        return byteMap;
+      }
+      ngrams() {
+        return [
+          new NGramsPlusLang("et", [
+            2122090,
+            2122098,
+            2123109,
+            2124135,
+            2124385,
+            2124641,
+            2124645,
+            2124649,
+            2124655,
+            2124661,
+            2124897,
+            2125417,
+            2125678,
+            2126441,
+            2126693,
+            2126949,
+            6365281,
+            6365290,
+            6365291,
+            6365292,
+            6382112,
+            6382624,
+            6384499,
+            6386549,
+            6386785,
+            6387297,
+            6561908,
+            6578464,
+            6583667,
+            6627435,
+            6627443,
+            6645100,
+            6645107,
+            6646816,
+            6646885,
+            6646900,
+            6648608,
+            6648692,
+            6889579,
+            6906912,
+            6910570,
+            6910752,
+            6971680,
+            7037299,
+            7038309,
+            7039346,
+            7040879,
+            7041893,
+            7041908,
+            7104875,
+            7107616,
+            7544929,
+            7544939,
+            7562528,
+            7562604,
+            7566437,
+            7566441,
+            7566708,
+            7627115,
+            7627124,
+            7629088,
+            7697184,
+            7697253,
+            7697505
+          ]),
+          new NGramsPlusLang("lv", [
+            2122098,
+            2122601,
+            2122849,
+            2124146,
+            2124154,
+            2124897,
+            2125282,
+            2125921,
+            2125938,
+            2126433,
+            2126689,
+            2126699,
+            2126949,
+            2127214,
+            2127457,
+            6365289,
+            6365301,
+            6365302,
+            6382185,
+            6383904,
+            6384499,
+            6384751,
+            6385778,
+            6386293,
+            6386464,
+            6386806,
+            6449509,
+            6452512,
+            6515052,
+            6515060,
+            6578464,
+            6578546,
+            6583584,
+            6584864,
+            6644850,
+            6646123,
+            6646643,
+            6647393,
+            6648608,
+            6680693,
+            6889577,
+            6907236,
+            6907376,
+            6908642,
+            6909046,
+            7041908,
+            7102836,
+            7106404,
+            7233824,
+            7300193,
+            7496043,
+            7501166,
+            7544947,
+            7544949,
+            7544950,
+            7566453,
+            7566574,
+            7632160,
+            7632489,
+            7676022,
+            7695904,
+            7697184,
+            7758188,
+            14840608
+          ]),
+          new NGramsPlusLang("lt", [
+            2122089,
+            2122341,
+            2124146,
+            2124641,
+            2124905,
+            2125167,
+            2126433,
+            2126689,
+            2126699,
+            2126709,
+            2126945,
+            2126949,
+            2126965,
+            2127457,
+            2127465,
+            6365300,
+            6365424,
+            6383904,
+            6383988,
+            6384112,
+            6384738,
+            6384993,
+            6385268,
+            6386274,
+            6386292,
+            6386976,
+            6387050,
+            6418553,
+            6447392,
+            6448489,
+            6448494,
+            6647401,
+            6648949,
+            6889569,
+            6889577,
+            6889579,
+            6889581,
+            6906217,
+            6907246,
+            6907252,
+            6909543,
+            6910496,
+            6910752,
+            6942827,
+            6971757,
+            6972704,
+            7037289,
+            7037292,
+            7103073,
+            7104869,
+            7170419,
+            7171947,
+            7269152,
+            7301733,
+            7302009,
+            7303968,
+            7496176,
+            7544937,
+            7544939,
+            7544950,
+            7564129,
+            7629088,
+            7632246,
+            7957356
+          ])
+        ];
+      }
+      name() {
+        return "windows-1257";
+      }
+    };
+    exports.windows_1257 = windows_1257;
+    var windows_1258 = class extends sbcs {
+      match(det) {
+        return det.inputBytes.some((byte) => byte >= 128) ? super.match(det) : null;
+      }
+      byteMap() {
+        const byteMap = new Array(256).fill(32);
+        byteMap[39] = 0;
+        for (let i = 65; i <= 90; i++)
+          byteMap[i] = i + 32;
+        for (let i = 97; i <= 122; i++)
+          byteMap[i] = i;
+        byteMap[131] = 131;
+        byteMap[136] = 136;
+        byteMap[140] = byteMap[156] = 156;
+        byteMap[159] = 255;
+        byteMap[170] = 170;
+        byteMap[181] = 181;
+        byteMap[186] = 186;
+        for (let i = 192; i <= 203; i++)
+          byteMap[i] = i + 32;
+        byteMap[204] = 204;
+        for (let i = 205; i <= 209; i++)
+          byteMap[i] = i + 32;
+        byteMap[210] = 210;
+        for (let i = 211; i <= 214; i++)
+          byteMap[i] = i + 32;
+        for (let i = 216; i <= 221; i++)
+          byteMap[i] = i + 32;
+        byteMap[222] = 222;
+        byteMap[223] = 223;
+        for (let i = 224; i <= 246; i++)
+          byteMap[i] = i;
+        for (let i = 248; i <= 253; i++)
+          byteMap[i] = i;
+        byteMap[255] = 255;
+        return byteMap;
+      }
+      ngrams() {
+        return [
+          2122600,
+          2122721,
+          2123625,
+          2123887,
+          2125415,
+          2125928,
+          2126952,
+          2126953,
+          2126962,
+          2127465,
+          2127584,
+          6419060,
+          6496355,
+          6496374,
+          6514720,
+          6514925,
+          6545763,
+          6758504,
+          6758510,
+          6758516,
+          6758518,
+          6812782,
+          6815198,
+          6815221,
+          6824052,
+          6844402,
+          6876526,
+          6889582,
+          6889588,
+          6941394,
+          6941420,
+          6941426,
+          7217251,
+          7217262,
+          7217268,
+          7235360,
+          7235572,
+          7235581,
+          7235616,
+          7302759,
+          7336547,
+          7610483,
+          7629053,
+          7629290,
+          7631471,
+          7676020,
+          7760362,
+          7790624,
+          13396256,
+          13397607,
+          14557288,
+          14771048,
+          15395950,
+          15397492,
+          15494759,
+          15496224,
+          15560296,
+          15885088,
+          15886624,
+          15887904,
+          15889440,
+          16018976,
+          16108649,
+          16643532
+        ];
+      }
+      name() {
+        return "windows-1258";
+      }
+      language() {
+        return "vi";
+      }
+    };
+    exports.windows_1258 = windows_1258;
+    var windows_874 = class extends sbcs {
+      byteMap() {
+        const byteMap = new Array(256).fill(32);
+        byteMap[39] = 0;
+        for (let i = 65; i <= 90; i++)
+          byteMap[i] = i + 32;
+        for (let i = 97; i <= 122; i++)
+          byteMap[i] = i;
+        for (let i = 161; i <= 218; i++)
+          byteMap[i] = i;
+        for (let i = 223; i <= 251; i++)
+          byteMap[i] = i;
+        return byteMap;
+      }
+      ngrams() {
+        return [
+          2138578,
+          2138856,
+          2146514,
+          2148291,
+          2154949,
+          10604985,
+          10605251,
+          10669479,
+          10671554,
+          10799058,
+          11064263,
+          11195847,
+          11200960,
+          11200995,
+          11910083,
+          12042976,
+          12042979,
+          12047848,
+          12132544,
+          12165586,
+          12173522,
+          12305360,
+          12314553,
+          12636873,
+          12828960,
+          12829619,
+          12829633,
+          12832936,
+          12832994,
+          12837026,
+          13091779,
+          13095353,
+          13095617,
+          13096117,
+          13226679,
+          13226724,
+          13293544,
+          13477063,
+          13674707,
+          13689538,
+          13744416,
+          13805473,
+          13812171,
+          13812452,
+          13812512,
+          13812704,
+          13814226,
+          13821111,
+          13879249,
+          13940155,
+          14009017,
+          14010324,
+          14149837,
+          14721749,
+          14728167,
+          14796240,
+          14860964,
+          14920425,
+          14924193,
+          14989250,
+          15258279,
+          15262634,
+          15319250,
+          15328185
+        ];
+      }
+      name() {
+        return "windows-874";
+      }
+      language() {
+        return "th";
+      }
+    };
+    exports.windows_874 = windows_874;
     var KOI8_R = class extends sbcs {
       byteMap() {
         return [
@@ -45448,6 +45998,9 @@ var require_lib3 = __commonJS2({
       new sbcs.ISO_8859_9(),
       new sbcs.windows_1251(),
       new sbcs.windows_1256(),
+      new sbcs.windows_1257(),
+      new sbcs.windows_1258(),
+      new sbcs.windows_874(),
       new sbcs.KOI8_R(),
       new ascii_1.default()
     ];
@@ -64099,7 +64652,7 @@ content-type/dist/index.js:
      *)
   *)
 
-@angular/ng-dev/bundles/chunk-OTOLHPGZ.mjs:
+@angular/ng-dev/bundles/chunk-6XSRLCXJ.mjs:
   (*! Bundled license information:
   
   content-type/dist/index.js:

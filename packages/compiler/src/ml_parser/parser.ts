@@ -476,7 +476,8 @@ class _TreeBuilder {
   private _consumeElementStartTag(startTagToken: TagOpenStartToken | IncompleteTagOpenToken) {
     const attrs: html.Attribute[] = [];
     const directives: html.Directive[] = [];
-    this._consumeAttributesAndDirectives(attrs, directives);
+    const comments: html.StartTagComment[] = [];
+    this._consumeAttributesAndDirectives(attrs, directives, comments);
 
     const fullName = this._getElementFullName(startTagToken, this._getClosestElementLikeParent());
     const tagDef = this._getTagDefinition(fullName);
@@ -527,6 +528,8 @@ class _TreeBuilder {
       undefined,
       nameSpan,
       tagDef?.isVoid ?? false,
+      undefined,
+      comments,
     );
     const parent = this._getContainer();
     const isClosedByChild =
@@ -553,7 +556,8 @@ class _TreeBuilder {
     const componentName = startToken.parts[0];
     const attrs: html.Attribute[] = [];
     const directives: html.Directive[] = [];
-    this._consumeAttributesAndDirectives(attrs, directives);
+    const comments: html.StartTagComment[] = [];
+    this._consumeAttributesAndDirectives(attrs, directives, comments);
 
     const closestElement = this._getClosestElementLikeParent();
     const tagName = this._getComponentTagName(startToken, closestElement);
@@ -583,6 +587,8 @@ class _TreeBuilder {
       span,
       startSpan,
       undefined,
+      undefined,
+      comments,
     );
     const parent = this._getContainer();
     const isClosedByChild =
@@ -604,6 +610,7 @@ class _TreeBuilder {
   private _consumeAttributesAndDirectives(
     attributesResult: html.Attribute[],
     directivesResult: html.Directive[],
+    commentsResult: html.StartTagComment[],
   ) {
     while (
       this._peek.type === TokenType.ATTR_NAME ||
@@ -616,7 +623,13 @@ class _TreeBuilder {
         attributesResult.push(this._consumeAttr(this._advance<AttributeNameToken>()));
       } else {
         const commentToken = this._advance<InElementCommentToken>();
-        this._addToParent(new html.Comment(commentToken.parts[0], commentToken.sourceSpan));
+        commentsResult.push(
+          new html.StartTagComment(
+            commentToken.parts[0],
+            commentToken.parts[1],
+            commentToken.sourceSpan,
+          ),
+        );
       }
     }
   }
