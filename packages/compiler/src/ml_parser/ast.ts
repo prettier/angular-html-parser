@@ -134,6 +134,7 @@ export class StartTagComment implements BaseNode {
   visit(visitor: Visitor, context: any): any {
     return visitor.visitAttributeComment ? visitor.visitAttributeComment(this, context) : undefined;
   }
+  readonly kind = 'startTagComment';
 }
 
 export class Element extends NodeWithI18n {
@@ -171,7 +172,10 @@ export class Comment implements BaseNode {
 }
 
 export class DocType implements BaseNode {
-  constructor(public value: string|null, public sourceSpan: ParseSourceSpan) {}
+  constructor(
+    public value: string | null,
+    public sourceSpan: ParseSourceSpan,
+  ) {}
   visit(visitor: Visitor, context: any): any {
     return visitor.visitDocType(this, context);
   }

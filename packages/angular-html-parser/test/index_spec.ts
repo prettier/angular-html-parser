@@ -243,25 +243,41 @@ describe("AST format", () => {
   });
 });
 
-it("in-element comments", () => {
+it("Start tag comments", () => {
   expect(parse("<div/* comment */></div>").errors[0]).toMatchInlineSnapshot(
     `[Error: Opening tag "div" not terminated.]`,
   );
   expect(
-    humanizeDom(
-      parse("<div/* block comment */></div>", { allowInElementComments: true }),
-    ),
+    parse("<div/* block comment */></div>", { allowStartTagComments: true })
+      .rootNodes,
   ).toEqual([
-    [ast.Comment, " block comment ", 0],
-    [ast.Element, "div", 0],
+    expect.objectContaining({
+      kind: "element",
+      name: "div",
+      comments: [
+        expect.objectContaining({
+          kind: "startTagComment",
+          type: "multi",
+          value: " block comment ",
+        }),
+      ],
+    }),
   ]);
   expect(
-    humanizeDom(
-      parse("<div// line comment\n></div>", { allowInElementComments: true }),
-    ),
+    parse("<div// line comment\n></div>", { allowStartTagComments: true })
+      .rootNodes,
   ).toEqual([
-    [ast.Comment, " line comment", 0],
-    [ast.Element, "div", 0],
+    expect.objectContaining({
+      kind: "element",
+      name: "div",
+      comments: [
+        expect.objectContaining({
+          kind: "startTagComment",
+          type: "single",
+          value: " line comment",
+        }),
+      ],
+    }),
   ]);
 });
 

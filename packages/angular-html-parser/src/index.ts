@@ -17,11 +17,11 @@ export interface HtmlParseOptions {
    */
   allowHtmComponentClosingTags?: boolean;
   /**
-   * allow in-element comments
+   * allow comments in start tag
    *
    * defaults to false
    */
-  allowInElementComments?: boolean;
+  allowStartTagComments?: boolean;
   /**
    * do not lowercase tag names before querying their tag definitions
    *
@@ -62,7 +62,7 @@ export function parseHtml(
   const {
     canSelfClose = false,
     allowHtmComponentClosingTags = false,
-    allowInElementComments = false,
+    allowStartTagComments = false,
     isTagNameCaseSensitive = false,
     getTagContentType,
     tokenizeAngularBlocks = false,
@@ -78,7 +78,7 @@ export function parseHtml(
       tokenizeExpansionForms: tokenizeAngularBlocks,
       canSelfClose,
       allowHtmComponentClosingTags,
-      allowInElementComments,
+      allowStartTagComments,
       tokenizeBlocks: tokenizeAngularBlocks,
       tokenizeLet: tokenizeAngularLetDeclaration,
       selectorlessEnabled: enableAngularSelectorlessSyntax,
