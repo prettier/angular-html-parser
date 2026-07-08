@@ -6,7 +6,17 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {Component, ElementRef, computed, effect, signal, viewChildren} from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  Injector,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+  viewChildren,
+} from '@angular/core';
 import {TestBed} from '@angular/core/testing';
 import {ForeignComponent} from '../../../src/interface/foreign_component';
 import {foreignImport} from '../../../src/render3/foreign_import';
@@ -15,6 +25,7 @@ function frameworkImport<TProps>(component: (props: TProps) => Node[]): ForeignC
   return foreignImport(
     (props) => [component(props)],
     () => {},
+    (producer) => producer(),
   );
 }
 
@@ -215,11 +226,11 @@ describe('foreign components', () => {
         selector: 'test-cmp',
         template: `
           <Card>
-            @content(header) {
+            @content (header) {
               <h1>My Title</h1>
             }
             <p>Card body content</p>
-            @content(footer) {
+            @content (footer) {
               <button>Close</button>
             }
           </Card>
@@ -366,10 +377,10 @@ describe('foreign components', () => {
 
       expect(fixture.nativeElement.innerHTML).toBe(
         '' +
-          '<!--container-->' + // @content(children) (implicit)
+          '<!--container-->' + // @content (children) (implicit)
           '<!--foreign-view-head-->' + // <SimpleWrapper>
           '<div class="wrapper">' +
-          '<!--container-->' + // @content(children) (implicit)
+          '<!--container-->' + // @content (children) (implicit)
           '<!--foreign-view-head-->' + // <FancyButton>
           '<button>' +
           '<span id="text">Inside wrapper button</span>' +
@@ -437,7 +448,7 @@ describe('foreign components', () => {
         selector: 'test-cmp',
         template: `
           <FancyList>
-            @content(renderHeader; let _) {
+            @content (renderHeader; let _) {
               <span>Header Content</span>
             }
           </FancyList>
@@ -452,7 +463,7 @@ describe('foreign components', () => {
 
       expect(fixture.nativeElement.innerHTML).toBe(
         '' +
-          '<!--container-->' + // for @content(renderHeader)
+          '<!--container-->' + // for @content (renderHeader)
           '<!--foreign-view-head-->' +
           '<div><span>Header Content</span></div>' +
           '<!--foreign-view-tail-->' +
@@ -476,7 +487,7 @@ describe('foreign components', () => {
         selector: 'test-cmp',
         template: `
           <FancyList>
-            @content(renderItem; let item) {
+            @content (renderItem; let item) {
               <span>{{ item }}</span>
             }
           </FancyList>
@@ -491,7 +502,7 @@ describe('foreign components', () => {
 
       expect(fixture.nativeElement.innerHTML).toBe(
         '' +
-          '<!--container-->' + // for @content(renderItem)
+          '<!--container-->' + // for @content (renderItem)
           '<!--foreign-view-head-->' +
           '<div><span>Hello Single</span></div>' +
           '<!--foreign-view-tail-->' +
@@ -517,7 +528,7 @@ describe('foreign components', () => {
         selector: 'test-cmp',
         template: `
           <FancyTable>
-            @content(renderRow; let row, idx, isLast) {
+            @content (renderRow; let row, idx, isLast) {
               <span>{{ idx }} - {{ row }} (Last: {{ isLast }})</span>
             }
           </FancyTable>
@@ -532,7 +543,7 @@ describe('foreign components', () => {
 
       expect(fixture.nativeElement.innerHTML).toBe(
         '' +
-          '<!--container-->' + // for @content(renderRow)
+          '<!--container-->' + // for @content (renderRow)
           '<!--foreign-view-head-->' +
           '<div><span>0 - RowA (Last: false)</span></div>' +
           '<!--foreign-view-tail-->' +
@@ -580,9 +591,9 @@ describe('foreign components', () => {
         selector: 'test-cmp',
         template: `
           <OuterComp>
-            @content(renderContent; let message) {
+            @content (renderContent; let message) {
               <InnerComp>
-                @content(renderHeader; let innerMessage) {
+                @content (renderHeader; let innerMessage) {
                   {{ message }} - {{ innerMessage }}
                 }
                 Body Content
@@ -600,11 +611,11 @@ describe('foreign components', () => {
 
       expect(fixture.nativeElement.innerHTML).toBe(
         '' +
-          '<!--container-->' + // @content(renderContent)
+          '<!--container-->' + // @content (renderContent)
           '<!--foreign-view-head-->' + // <OuterComp>
           '<div class="outer">' +
-          '<!--container-->' + // @content(renderHeader)
-          '<!--container-->' + // @content(children) (implicit)
+          '<!--container-->' + // @content (renderHeader)
+          '<!--container-->' + // @content (children) (implicit)
           '<!--foreign-view-head-->' + // <InnerComp>
           '<div class="inner">' +
           '<div class="inner-header"> Outer Msg - Inner Msg </div>' +
@@ -692,45 +703,90 @@ describe('foreign components', () => {
   });
 
   describe('lifecycle', () => {
-    it('should destroy projected content when its foreign container is destroyed', async () => {
-      // Track the destroy callback registered by the projected content.
-      let destroy: VoidFunction | undefined;
-      function frameworkOnDestroy(callback: VoidFunction) {
-        destroy = callback;
+    // A minimal foreign context system for tracking cleanup.
+    class Context {
+      private static current: Context | undefined;
+
+      // Ensures there is currently an active context and returns it.
+      static get active(): Context {
+        if (!Context.current) {
+          throw new Error('There is no active context');
+        }
+        return Context.current;
       }
 
-      function frameworkImport<TProps>(
-        component: (props: TProps) => Node[],
-      ): ForeignComponent<TProps> {
-        return foreignImport((props) => [component(props)], frameworkOnDestroy);
+      private destroyFn: VoidFunction | undefined;
+
+      // Executes action with this context.
+      run<T>(action: () => T): T {
+        const prev = Context.current;
+        Context.current = this;
+        try {
+          return action();
+        } finally {
+          Context.current = prev;
+        }
       }
 
-      // A foreign component that acts like a conditional container (e.g. @if).
-      function Conditional(props: {when: () => boolean; then: () => Node[]}) {
-        effect((onCleanup) => {
-          // On cleanup (when `when()` changes or the component is destroyed), call the destroy
-          // callback registered by Angular for the projected content.
-          onCleanup(() => destroy?.());
-
-          if (props.when()) {
-            // Render the conditional content, instantiating any Angular views contained within.
-            // Internally this will call `frameworkOnDestroy` to register a callback to destroy the
-            // views when this effect's cleanup is run.
-            props.then();
-          }
-        });
-
-        // We don't care about returning any nodes since we're just testing the content lifecycle.
-        return [];
+      // Destroys this context.
+      destroy() {
+        this.destroyFn?.();
+        this.destroyFn = undefined;
       }
 
-      const ngOnDestroySpy = jasmine.createSpy();
+      // Registers a callback to be invoked when this context is destroyed.
+      onDestroy(callback: VoidFunction) {
+        if (this.destroyFn) {
+          throw new Error('There is already a destroy callback registered');
+        }
+        this.destroyFn = callback;
+      }
+    }
 
-      @Component({
-        selector: 'disposable',
-        template: ``,
-      })
-      class Disposable {
+    function frameworkImport<TProps>(
+      component: (props: TProps) => Node[],
+    ): ForeignComponent<TProps> {
+      return foreignImport(
+        (props) => [component(props)],
+        (callback) => Context.active.onDestroy(callback),
+        // Do *not* render nodes eagerly. Return the node producer function directly.
+        (producer) => producer,
+      );
+    }
+
+    it('should integrate lifecycle of static content', async () => {
+      function StaticIf(props: {injector: Injector; cond: () => boolean; children: () => Node[]}) {
+        const container = document.createElement('div');
+        const context = new Context();
+
+        effect(
+          (onCleanup) => {
+            onCleanup(() => context.destroy());
+
+            if (props.cond()) {
+              context.run(() => {
+                const nodes = untracked(() => props.children());
+                for (const node of nodes) {
+                  container.appendChild(node);
+                }
+              });
+            }
+          },
+          {injector: props.injector},
+        );
+
+        return [container];
+      }
+
+      const ngOnInitSpy = jasmine.createSpy('ngOnInit');
+      const ngOnDestroySpy = jasmine.createSpy('ngOnDestroy');
+
+      @Component({selector: 'child', template: '<div>child</div>'})
+      class Child {
+        ngOnInit() {
+          ngOnInitSpy();
+        }
+
         ngOnDestroy() {
           ngOnDestroySpy();
         }
@@ -738,46 +794,144 @@ describe('foreign components', () => {
 
       @Component({
         template: `
-          <Conditional [when]="visible">
-            @content (then; let _) {
-              <disposable />
-            }
-          </Conditional>
+          <StaticIf [injector]="injector" [cond]="visible">
+            <child />
+          </StaticIf>
         `,
-        imports: [Disposable],
+        imports: [Child],
         // @ts-ignore
-        foreignImports: [frameworkImport(Conditional)],
+        foreignImports: [frameworkImport(StaticIf)],
       })
-      class TestDisposal {
-        readonly visible = signal(true);
+      class App {
+        readonly injector = inject(Injector);
+        readonly visible = signal(false);
       }
 
-      const fixture = TestBed.createComponent(TestDisposal);
+      const fixture = TestBed.createComponent(App);
       await fixture.whenStable();
 
-      // Initially, visible is true, so the <disposable> component is created and NOT destroyed.
+      // Initially, visible is false, so <child> is not rendered.
+      expect(ngOnInitSpy).not.toHaveBeenCalled();
       expect(ngOnDestroySpy).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toBe('');
 
-      // Toggle visible to false: this triggers the Conditional component's effect cleanup,
-      // which calls the destroy callback registered during props.then() invocation.
-      fixture.componentInstance.visible.set(false);
-      await fixture.whenStable();
-
-      // The projected Angular content <disposable> should be destroyed.
-      expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
-
-      // Toggle visible back to true: a new instance of <disposable> is created.
+      // Toggle visible to true: this renders <child>.
       fixture.componentInstance.visible.set(true);
       await fixture.whenStable();
 
-      // Since the new instance is not yet destroyed, the destroy spy count remains at 1.
-      expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
+      expect(ngOnInitSpy).toHaveBeenCalledTimes(1);
+      expect(ngOnDestroySpy).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toBe('child');
 
-      // Toggle visible to false again: the new instance is destroyed.
+      // Toggle visible back to false: this destroys the previously rendered <child>.
       fixture.componentInstance.visible.set(false);
       await fixture.whenStable();
 
-      expect(ngOnDestroySpy).toHaveBeenCalledTimes(2);
+      expect(ngOnInitSpy).toHaveBeenCalledTimes(1);
+      expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.textContent).toBe('');
+
+      // Toggle visible to true again: this renders a new <child>.
+      fixture.componentInstance.visible.set(true);
+      await fixture.whenStable();
+
+      expect(ngOnInitSpy).toHaveBeenCalledTimes(2);
+      expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.textContent).toBe('child');
+    });
+
+    it('should integrate lifecycle of dynamic content', async () => {
+      function DynamicIf(props: {
+        injector: Injector;
+        cond: () => boolean;
+        children: (value: boolean) => () => Node[];
+      }) {
+        const container = document.createElement('div');
+        const context = new Context();
+
+        effect(
+          (onCleanup) => {
+            onCleanup(() => context.destroy());
+
+            const result = props.cond();
+            if (result) {
+              context.run(() => {
+                const children = untracked(() => props.children(result));
+                const nodes = children();
+                for (const node of nodes) {
+                  container.appendChild(node);
+                }
+              });
+            }
+          },
+          {injector: props.injector},
+        );
+
+        return [container];
+      }
+
+      const ngOnInitSpy = jasmine.createSpy('ngOnInit');
+      const ngOnDestroySpy = jasmine.createSpy('ngOnDestroy');
+
+      @Component({selector: 'child', template: '<ng-content />'})
+      class Child {
+        ngOnInit() {
+          ngOnInitSpy();
+        }
+
+        ngOnDestroy() {
+          ngOnDestroySpy();
+        }
+      }
+
+      @Component({
+        template: `
+          <DynamicIf [injector]="injector" [cond]="visible">
+            @content (children; let result) {
+              <child>{{ result }}</child>
+            }
+          </DynamicIf>
+        `,
+        imports: [Child],
+        // @ts-ignore
+        foreignImports: [frameworkImport(DynamicIf)],
+      })
+      class App {
+        readonly injector = inject(Injector);
+        readonly visible = signal(false);
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      // Initially, visible is false, so <child> is not rendered.
+      expect(ngOnInitSpy).not.toHaveBeenCalled();
+      expect(ngOnDestroySpy).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toBe('');
+
+      // Toggle visible to true: this renders <child>.
+      fixture.componentInstance.visible.set(true);
+      await fixture.whenStable();
+
+      expect(ngOnInitSpy).toHaveBeenCalledTimes(1);
+      expect(ngOnDestroySpy).not.toHaveBeenCalled();
+      expect(fixture.nativeElement.textContent).toBe('true');
+
+      // Toggle visible back to false: this destroys the previously rendered <child>.
+      fixture.componentInstance.visible.set(false);
+      await fixture.whenStable();
+
+      expect(ngOnInitSpy).toHaveBeenCalledTimes(1);
+      expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.textContent).toBe('');
+
+      // Toggle visible to true again: this renders a new <child>.
+      fixture.componentInstance.visible.set(true);
+      await fixture.whenStable();
+
+      expect(ngOnInitSpy).toHaveBeenCalledTimes(2);
+      expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
+      expect(fixture.nativeElement.textContent).toBe('true');
     });
   });
 });

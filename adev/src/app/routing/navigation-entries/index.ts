@@ -531,9 +531,21 @@ export const DOCS_SUB_NAVIGATION_DATA: NavigationItem[] = [
             category: 'Signal Forms',
           },
           {
+            label: 'Dynamic forms with JSON',
+            path: 'guide/forms/signals/dynamic-forms-with-json',
+            contentPath: 'guide/forms/signals/dynamic-forms-with-json',
+            category: 'Signal Forms',
+          },
+          {
             label: 'Custom controls',
             path: 'guide/forms/signals/custom-controls',
             contentPath: 'guide/forms/signals/custom-controls',
+            category: 'Signal Forms',
+          },
+          {
+            label: 'Testing',
+            path: 'guide/forms/signals/testing',
+            contentPath: 'guide/forms/signals/testing',
             category: 'Signal Forms',
           },
           {

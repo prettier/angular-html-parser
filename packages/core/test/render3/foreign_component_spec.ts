@@ -19,9 +19,6 @@ import {ɵɵelement, ɵɵelementEnd, ɵɵelementStart} from '../../src/render3/i
 import {ɵɵtext} from '../../src/render3/instructions/text';
 import {ɵɵadvance} from '../../src/render3/instructions/advance';
 import {ɵɵtextInterpolate2} from '../../src/render3/instructions/text_interpolation';
-import {inject, InjectionToken} from '../../src/di';
-import {ɵɵdefineDirective} from '../../src/render3/definition';
-import {ɵɵProvidersFeature} from '../../src/render3/features/providers_feature';
 import {createLView} from '../../src/render3/view/construction';
 import {renderView} from '../../src/render3/instructions/render';
 import {LView, LViewFlags, PARENT, RENDERER, T_HOST} from '../../src/render3/interfaces/view';
@@ -37,7 +34,8 @@ describe('ɵɵforeignComponent', () => {
         el.textContent = 'Foreign Content';
         return [[el]];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const fixture = new ViewFixture({
@@ -53,14 +51,8 @@ describe('ɵɵforeignComponent', () => {
   });
 
   it('should pass props to a foreign component', () => {
-    let passedProps: any = null;
-    const foreignComp = foreignImport<{name: string}>(
-      (props) => {
-        passedProps = props;
-        return [[]];
-      },
-      () => {},
-    );
+    const render = jasmine.createSpy('render').and.returnValue([[]]);
+    const foreignComp = foreignImport<{name: string}>(render, noopOnDestroy, eagerContentAdapter);
 
     new ViewFixture({
       decls: 1,
@@ -71,21 +63,17 @@ describe('ɵɵforeignComponent', () => {
       },
     });
 
-    expect(passedProps).toEqual({name: 'Angular'});
+    expect(render).toHaveBeenCalledOnceWith({name: 'Angular'}, /* context= */ undefined);
   });
 
   it('should call the dispose function when the containing view is destroyed', () => {
-    let disposeCalled = false;
+    const dispose = jasmine.createSpy();
     const foreignComp = foreignImport(
       () => {
-        return [
-          [],
-          () => {
-            disposeCalled = true;
-          },
-        ];
+        return [[], dispose];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const fixture = new ViewFixture({
@@ -97,11 +85,11 @@ describe('ɵɵforeignComponent', () => {
       },
     });
 
-    expect(disposeCalled).toBeFalse();
+    expect(dispose).toHaveBeenCalledTimes(0);
 
     destroyLView(fixture.tView, fixture.lView);
 
-    expect(disposeCalled).toBeTrue();
+    expect(dispose).toHaveBeenCalledTimes(1);
   });
 
   it('should render foreign view between sibling elements', () => {
@@ -111,7 +99,8 @@ describe('ɵɵforeignComponent', () => {
         el.textContent = 'Foreign Content';
         return [[el]];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const fixture = new ViewFixture({
@@ -143,7 +132,8 @@ describe('ɵɵforeignComponent', () => {
         el.textContent = 'Foreign Content';
         return [[el]];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const fixture = new ViewFixture({
@@ -168,50 +158,13 @@ describe('ɵɵforeignComponent', () => {
     );
   });
 
-  it('should execute the RENDER function inside the template injection context', () => {
-    const TEST_TOKEN = new InjectionToken<string>('test-token');
-
-    const foreignComp = foreignImport(
-      () => {
-        const value = inject(TEST_TOKEN, {optional: true}) ?? 'null';
-        const el = document.createElement('div');
-        el.id = 'foreign-el';
-        el.textContent = value;
-        return [[el]];
-      },
-      () => {},
-    );
-
-    class ProviderDirective {
-      static ɵfac = () => new ProviderDirective();
-      static ɵdir = ɵɵdefineDirective({
-        type: ProviderDirective,
-        selectors: [['', 'provider-dir', '']],
-        features: [ɵɵProvidersFeature([{provide: TEST_TOKEN, useValue: 'templated-value'}])],
-      });
-    }
-
-    const fixture = new ViewFixture({
-      decls: 2,
-      vars: 0,
-      consts: [['provider-dir', ''], foreignComp],
-      directives: [ProviderDirective],
-      create: () => {
-        ɵɵelementStart(0, 'div', 0);
-        ɵɵforeignComponent(1, 1);
-        ɵɵelementEnd();
-      },
-    });
-
-    expect(fixture.host.innerHTML).toContain('<div id="foreign-el">templated-value</div>');
-  });
-
   it('should support reusing the same template between multiple view instances', () => {
     const foreignComp1 = foreignImport(
       () => {
         return [[document.createTextNode('foreign content')]];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const createFn = () => {
@@ -273,7 +226,8 @@ describe('ɵɵforeignComponent', () => {
 
         return [[div]];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const iconTemplate = (rf: number, ctx: any) => {
@@ -309,9 +263,9 @@ describe('ɵɵforeignComponent', () => {
         ɵɵdomTemplate(1, descriptionTemplate, 2, 0);
         ɵɵdomTemplate(2, childrenTemplate, 2, 0);
         ɵɵforeignComponent(3, 0, {
-          icon: ɵɵforeignContent(0),
-          description: ɵɵforeignContent(1),
-          children: ɵɵforeignContent(2),
+          icon: ɵɵforeignContent(0, 0),
+          description: ɵɵforeignContent(1, 0),
+          children: ɵɵforeignContent(2, 0),
         });
       },
     });
@@ -346,7 +300,8 @@ describe('ɵɵforeignComponent', () => {
 
         return [[div]];
       },
-      () => {},
+      noopOnDestroy,
+      eagerContentAdapter,
     );
 
     const itemTemplate = (rf: number, ctx: any) => {
@@ -382,6 +337,12 @@ describe('ɵɵforeignComponent', () => {
     );
   });
 });
+
+function noopOnDestroy() {}
+
+function eagerContentAdapter(producer: () => Node[]): Node[] {
+  return producer();
+}
 
 function renderSecondInstance(fixture: ViewFixture): HTMLElement {
   const hostLView = fixture.lView[PARENT] as LView;

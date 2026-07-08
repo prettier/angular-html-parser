@@ -7,7 +7,7 @@ You can use a `Resource` to perform any kind of async operation, but the most co
 The easiest way to create a `Resource` is the `resource` function.
 
 ```typescript
-import {resource, Signal} from '@angular/core';
+import {computed, resource, Signal} from '@angular/core';
 
 const userId: Signal<string> = getUserId();
 
@@ -56,6 +56,25 @@ The `ResourceLoaderParams` object contains three properties: `params`, `previous
 | `abortSignal` | An [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal). See [Aborting requests](#aborting-requests) below for details. |
 
 If the `params` computation returns `undefined`, the loader function does not run and the resource status becomes `'idle'`.
+
+### Streaming resources
+
+Some asynchronous data sources produce multiple values over time instead of returning a single result. Examples include WebSockets, Server-Sent Events (SSE), and Firestore `onSnapshot` listeners.
+
+Use `stream` for these continuously updating data sources. Unlike `loader`, which resolves once for each request, `stream` returns a signal whose value can continue to update as new data becomes available.
+
+Use `loader` for one-time asynchronous operations, such as fetching data from an HTTP endpoint.
+
+```typescript
+const userUpdates = signal({value: 'Alice'});
+
+const userResource = resource({
+  stream: () => userUpdates,
+});
+
+// Later, when new data arrives:
+userUpdates.set({value: 'Bob'});
+```
 
 ### Aborting requests
 

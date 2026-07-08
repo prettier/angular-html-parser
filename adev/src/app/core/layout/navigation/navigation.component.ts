@@ -7,7 +7,7 @@
  */
 
 import {CdkMenu, CdkMenuItem, CdkMenuTrigger} from '@angular/cdk/menu';
-import {ConnectionPositionPair} from '@angular/cdk/overlay';
+import {ConnectedPosition, ConnectionPositionPair} from '@angular/cdk/overlay';
 import {DOCUMENT, Location, isPlatformBrowser} from '@angular/common';
 import {Component, PLATFORM_ID, inject, signal} from '@angular/core';
 import {takeUntilDestroyed, toObservable} from '@angular/core/rxjs-interop';
@@ -22,7 +22,7 @@ import {
 import {NavigationEnd, Router, RouterLink} from '@angular/router';
 import {filter, map, startWith} from 'rxjs/operators';
 import {DOCS_ROUTES, REFERENCE_ROUTES, TUTORIALS_ROUTES} from '../../../routing/routes';
-import {PRIMARY_NAV_ID, SECONDARY_NAV_ID} from '../../constants/element-ids';
+import {PRIMARY_NAV_ID, SEARCH_DIALOG_ID, SECONDARY_NAV_ID} from '../../constants/element-ids';
 import {COMMAND, CONTROL, SEARCH_TRIGGER_KEY} from '../../constants/keys';
 import {ANGULAR_LINKS} from '../../constants/links';
 import {PAGE_PREFIX} from '../../constants/pages';
@@ -51,6 +51,7 @@ export class Navigation {
   protected ngLinks = ANGULAR_LINKS;
   protected readonly PRIMARY_NAV_ID = PRIMARY_NAV_ID;
   protected readonly SECONDARY_NAV_ID = SECONDARY_NAV_ID;
+  protected readonly SEARCH_DIALOG_ID = SEARCH_DIALOG_ID;
 
   // We can't use the ActivatedRouter queryParams as we're outside the router outlet
   protected readonly isUwu = 'location' in globalThis ? location.search.includes('uwu') : false;
@@ -63,6 +64,12 @@ export class Navigation {
     new ConnectionPositionPair(
       {originX: 'end', originY: 'top'},
       {overlayX: 'start', overlayY: 'top'},
+    ),
+  ];
+  protected bottomMiniMenuPositions: ConnectedPosition[] = [
+    new ConnectionPositionPair(
+      {originX: 'end', originY: 'bottom'},
+      {overlayX: 'start', overlayY: 'bottom'},
     ),
   ];
 
