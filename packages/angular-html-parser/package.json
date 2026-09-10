@@ -29,13 +29,14 @@
   },
   "devDependencies": {
     "@types/node": "26.1.1",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "5.0.0",
     "outdent": "0.8.0",
-    "prettier": "3.9.4",
-    "release-it": "20.2.1",
-    "tsdown": "0.22.4",
+    "prettier": "3.9.6",
+    "release-it": "21.0.2",
+    "tsdown": "0.23.0",
     "typescript": "6.0.3",
-    "vitest": "4.1.10"
+    "vite": "8.2.2",
+    "vitest": "5.0.0"
   },
   "engines": {
     "node": ">= 14"
@@ -49,6 +50,6 @@
     "access": "public",
     "registry": "https://registry.npmjs.org/"
   },
-  "packageManager": "yarn@4.17.0",
+  "packageManager": "yarn@4.18.0",
   "sideEffects": false
 }
