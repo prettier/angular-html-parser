@@ -1636,6 +1636,8 @@ describe('HtmlParser', () => {
     describe('ignored syntax', () => {
       it('should ignore doctype declaration', () => {
         expect(humanizeDom(parser.parse(`<!DOCTYPE html>hello`, 'TestComp'))).toEqual([
+          // angular-html-parser: diverge
+          [html.DocType, 'html', 0],
           [html.Text, 'hello', 0, ['hello']],
         ]);
       });
@@ -1643,7 +1645,11 @@ describe('HtmlParser', () => {
       it('should ignore processing instruction', () => {
         expect(
           humanizeDom(parser.parse(`<?xml version="1.0" encoding="UTF-8"?>hello`, 'TestComp')),
-        ).toEqual([[html.Text, 'hello', 0, ['hello']]]);
+        ).toEqual([
+          // angular-html-parser: diverge
+          [html.Comment, '?xml version="1.0" encoding="UTF-8"?', 0],
+          [html.Text, 'hello', 0, ['hello']],
+        ]);
       });
     });
 

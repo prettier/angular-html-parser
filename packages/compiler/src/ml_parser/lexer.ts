@@ -260,8 +260,10 @@ class _Tokenizer {
             }
           } else if (this._attemptCharCode(chars.$SLASH)) {
             this._consumeTagClose(start);
-          } else if (this._attemptCharCode(chars.$QUESTION)) {
-            this._consumeProcessingInstruction(start);
+          // angular-html-parser: Revert https://github.com/angular/angular/pull/69726
+          // We support bogus comments in https://github.com/prettier/angular-html-parser/pull/5
+          // } else if (this._attemptCharCode(chars.$QUESTION)) {
+          //   this._consumeProcessingInstruction(start);
           } else {
             const savedPos = this._cursor.clone();
             if (this._attemptCharCode(chars.$QUESTION)) {
