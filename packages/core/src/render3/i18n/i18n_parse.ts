@@ -73,6 +73,8 @@ import {
   setTIcu,
   setTNodeInsertBeforeIndex,
 } from './i18n_util';
+import {splitNsName} from '../util/tags';
+import {NAMESPACE_URIS} from '../namespaces';
 
 const BINDING_REGEXP = /�(\d+):?\d*�/gi;
 const ICU_REGEXP = /({\s*�\d+:?\d*�\s*,\s*\S{6}\s*,[\s\S]*})/gi;
@@ -658,7 +660,7 @@ function parseICUBlock(pattern: string): IcuExpression {
 
   const parts = i18nParseTextIntoPartsAndICU(pattern) as string[];
   // Looking for (key block)+ sequence. One of the keys has to be "other".
-  for (let pos = 0; pos < parts.length; ) {
+  for (let pos = 0; pos < parts.length;) {
     let key = parts[pos++].trim();
     if (icuType === IcuType.plural) {
       // Key can be "=x", we just want "x"
@@ -806,7 +808,7 @@ function walkIcuTree(
       case Node.ELEMENT_NODE:
         const element = currentNode as Element;
         const tagName = element.tagName.toLowerCase();
-        if (VALID_ELEMENTS.hasOwnProperty(tagName)) {
+        if (Object.hasOwn(VALID_ELEMENTS, tagName)) {
           addCreateNodeAndAppend(create, ELEMENT_MARKER, tagName, parentIdx, newIndex);
           tView.data[newIndex] = tagName;
           const elAttrs = element.attributes;
@@ -814,15 +816,12 @@ function walkIcuTree(
             const attr = elAttrs.item(i)!;
             const lowerAttrName = attr.name.toLowerCase();
             const hasBinding = !!attr.value.match(BINDING_REGEXP);
-            const elementNS = element.namespaceURI;
-            const tagNameWithNamespace =
-              elementNS === 'http://www.w3.org/2000/svg'
-                ? `:svg:${tagName}`
-                : elementNS === 'http://www.w3.org/1998/Math/MathML'
-                  ? `:math:${tagName}`
-                  : tagName;
+            const namespaceUri = element.namespaceURI;
+            const namespace = namespaceUri && NAMESPACE_URIS[namespaceUri];
+            const tagNameWithNamespace = namespace ? `:${namespace}:${tagName}` : tagName;
+
             if (hasBinding) {
-              if (VALID_ATTRS.hasOwnProperty(lowerAttrName)) {
+              if (Object.hasOwn(VALID_ATTRS, lowerAttrName)) {
                 generateBindingUpdateOpCodes(
                   update,
                   attr.value,
@@ -982,24 +981,6 @@ function addCreateAttribute(
   attrValue: string,
 ) {
   create.push((newIndex << IcuCreateOpCode.SHIFT_REF) | IcuCreateOpCode.Attr, attrName, attrValue);
-}
-
-function splitNsName(elementName: string, fatal: boolean = true): [string | null, string] {
-  if (elementName[0] != ':') {
-    return [null, elementName];
-  }
-
-  const colonIndex = elementName.indexOf(':', 1);
-
-  if (colonIndex === -1) {
-    if (fatal) {
-      throw new Error(`Unsupported format "${elementName}" expecting ":namespace:name"`);
-    } else {
-      return [null, elementName];
-    }
-  }
-
-  return [elementName.slice(1, colonIndex), elementName.slice(colonIndex + 1)];
 }
 
 function i18nResolveSanitizer(attrName: string, tagName?: string): SanitizerFn | null {

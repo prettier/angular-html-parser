@@ -419,7 +419,9 @@ Available `mode` values:
 - `'cors'`: Allow cross-origin requests with CORS (default)
 - `'no-cors'`: Allow simple cross-origin requests without CORS, response is opaque
 
-TIP: Use `mode: 'same-origin'` for sensitive requests that should never go cross-origin.
+TIP: In the browser, use `mode: 'same-origin'` for sensitive requests that should never go cross-origin.
+
+IMPORTANT: During SSR on Node.js, `HttpClient` uses Node.js's [Undici-based Fetch implementation](https://nodejs.org/api/globals.html#fetch). [Undici does not enforce browser CORS checks](https://undici.nodejs.org/#cors), so `mode: 'same-origin'` does not restrict server-side requests. Validate user-influenced URLs against an allowlist.
 
 #### Redirect handling
 
@@ -528,6 +530,8 @@ Available `credentials` values:
 - `'include'`: Always send credentials, even for cross-origin requests
 
 TIP: Use `credentials: 'include'` when you need to send authentication cookies or headers to a different domain that supports CORS. Avoid mixing `credentials` and `withCredentials` options to prevent confusion.
+
+IMPORTANT: During SSR on Node.js, `credentials: 'include'` does not automatically forward cookies from the incoming browser request. The `credentials` option does not remove `Cookie` or `Authorization` headers that you add explicitly. [Undici permits some headers that browsers forbid](https://undici.nodejs.org/#forbidden-and-safelisted-header-names), so only forward credential headers to trusted origins.
 
 #### Referrer
 

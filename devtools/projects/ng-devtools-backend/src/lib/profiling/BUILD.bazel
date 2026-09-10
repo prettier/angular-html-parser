@@ -1,4 +1,4 @@
-load("//devtools/tools:defaults.bzl", "ts_project")
+load("//devtools/tools:defaults.bzl", "ts_project", "ts_test_library", "zoneless_web_test_suite")
 
 package(default_visibility = ["//devtools:__subpackages__"])
 
@@ -11,12 +11,28 @@ ts_project(
         ],
     ),
     deps = [
-        "//devtools/projects/ng-devtools-backend/src/lib:highlighter",
-        "//devtools/projects/ng-devtools-backend/src/lib:interfaces",
-        "//devtools/projects/ng-devtools-backend/src/lib/directive-forest:identity-tracker",
         "//devtools/projects/ng-devtools-backend/src/lib/directive-forest:manager",
+        "//devtools/projects/ng-devtools-backend/src/lib/directive-forest/component-tree",
+        "//devtools/projects/ng-devtools-backend/src/lib/directive-forest/identity-tracker",
         "//devtools/projects/ng-devtools-backend/src/lib/profiling/profiler",
-        "//devtools/projects/ng-devtools-backend/src/lib/utils",
+        "//devtools/projects/ng-devtools-backend/src/lib/shared:interfaces",
+        "//devtools/projects/ng-devtools-backend/src/lib/shared/highlighter",
+        "//devtools/projects/ng-devtools-backend/src/lib/shared/utils:error",
+        "//devtools/projects/ng-devtools-backend/src/lib/shared/utils:general",
+        "//devtools/projects/ng-devtools-backend/src/lib/shared/utils:log",
         "//devtools/projects/protocol",
     ],
+)
+
+ts_test_library(
+    name = "performance_track_test_lib",
+    srcs = ["performance-track.spec.ts"],
+    deps = [
+        ":profiling",
+    ],
+)
+
+zoneless_web_test_suite(
+    name = "performance_track_test",
+    deps = [":performance_track_test_lib"],
 )

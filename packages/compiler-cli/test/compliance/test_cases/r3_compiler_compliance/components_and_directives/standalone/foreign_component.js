@@ -36,6 +36,23 @@ function TestCmpRenderProps_Items_0_Template(rf, ctx) {
   }
 }
 
+function TestCmpConditional_Conditional_0_Conditional_0_Template(rf, ctx) {
+  if (rf & 1) {
+    const ctx_r0 = i0.ɵɵnextContext(2);
+    i0.ɵɵforeignComponent(0, 0, () => ({ label: ctx_r0.title }));
+  }
+}
+
+function TestCmpConditional_Conditional_0_Template(rf, ctx) {
+  if (rf & 1) {
+    i0.ɵɵconditionalCreate(0, TestCmpConditional_Conditional_0_Conditional_0_Template, 1, 0);
+  }
+  if (rf & 2) {
+    const ctx_r0 = i0.ɵɵnextContext();
+    i0.ɵɵconditional(ctx_r0.innerCondition ? 0 : -1);
+  }
+}
+
 …
 
 export class TestCmp {
@@ -48,7 +65,7 @@ export class TestCmp {
     consts: [frameworkImport(FancyButton)],
     template: function TestCmp_Template(rf, ctx) {
       if (rf & 1) {
-        i0.ɵɵforeignComponent(0, 0, { class: "btn-cls", "unsafe-attr": "value", label: ctx.title, "unsafe-input": ctx.title });
+        i0.ɵɵforeignComponent(0, 0, () => ({ class: "btn-cls", "unsafe-attr": "value", label: ctx.title, "unsafe-input": ctx.title }));
       }
     },
     encapsulation: 2
@@ -68,7 +85,10 @@ export class TestCmpChildren {
     template: function TestCmpChildren_Template(rf, ctx) {
       if (rf & 1) {
         i0.ɵɵdomTemplate(0, TestCmpChildren_Icon_0_Template, 2, 0)(1, TestCmpChildren_Description_1_Template, 2, 0)(2, TestCmpChildren_Children_2_Template, 2, 0);
-        i0.ɵɵforeignComponent(3, 0, { label: ctx.title, icon: i0.ɵɵforeignContent(0, 0), description: i0.ɵɵforeignContent(1, 0), children: i0.ɵɵforeignContent(2, 0) });
+        const icon_r1 = i0.ɵɵforeignContent(0, 0);
+        const description_r2 = i0.ɵɵforeignContent(1, 0);
+        const children_r3 = i0.ɵɵforeignContent(2, 0);
+        i0.ɵɵforeignComponent(3, 0, () => ({ label: ctx.title, icon: icon_r1, description: description_r2, children: children_r3 }));
       }
     },
     encapsulation: 2
@@ -88,10 +108,34 @@ export class TestCmpRenderProps {
     template: function TestCmpRenderProps_Template(rf, ctx) {
       if (rf & 1) {
         i0.ɵɵdomTemplate(0, TestCmpRenderProps_Items_0_Template, 2, 2);
-        i0.ɵɵforeignComponent(1, 0, { label: ctx.title, items: i0.ɵɵforeignContentFn(0, 0) });
+        const items_r3 = i0.ɵɵforeignContentFn(0, 0);
+        i0.ɵɵforeignComponent(1, 0, () => ({ label: ctx.title, items: items_r3 }));
       }
     },
     encapsulation: 2
   });
 }
+
+…
+
+export class TestCmpConditional {
+  // ...
+  static ɵcmp = /*@__PURE__*/ i0.ɵɵdefineComponent({
+    type: TestCmpConditional,
+    selectors: [["main-conditional"]],
+    decls: 1,
+    vars: 1,
+    consts: [frameworkImport(FancyButton)],
+    template: function TestCmpConditional_Template(rf, ctx) {
+      if (rf & 1) {
+        i0.ɵɵconditionalCreate(0, TestCmpConditional_Conditional_0_Template, 1, 1);
+      }
+      if (rf & 2) {
+        i0.ɵɵconditional(ctx.outerCondition ? 0 : -1);
+      }
+    },
+    encapsulation: 2
+  });
+}
+
 

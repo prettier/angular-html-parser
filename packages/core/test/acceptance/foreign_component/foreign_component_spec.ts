@@ -7,14 +7,20 @@
  */
 
 import {
+  AfterViewInit,
   Component,
   ElementRef,
   Injector,
+  Input,
+  OnInit,
+  ViewChild,
   computed,
   effect,
   inject,
+  input,
   signal,
   untracked,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import {TestBed} from '@angular/core/testing';
@@ -630,6 +636,282 @@ describe('foreign components', () => {
     });
   });
 
+  describe('control flow', () => {
+    it('should support foreign component with bindings @if', async () => {
+      function LabeledButton(props: {label: () => string}): Node[] {
+        const button = document.createElement('button');
+        button.textContent = props.label();
+        return [button];
+      }
+
+      @Component({
+        selector: 'test-cmp',
+        template: `
+          @if (show()) {
+            <LabeledButton [label]="buttonText" />
+          }
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(LabeledButton)],
+      })
+      class TestForeignInIf {
+        readonly show = signal(true);
+        readonly buttonText = signal('Submit');
+      }
+
+      const fixture = TestBed.createComponent(TestForeignInIf);
+      await fixture.whenStable();
+
+      let button = fixture.nativeElement.querySelector('button');
+      expect(button).toBeTruthy();
+      expect(button.textContent).toBe('Submit');
+
+      fixture.componentInstance.show.set(false);
+      await fixture.whenStable();
+
+      button = fixture.nativeElement.querySelector('button');
+      expect(button).toBeFalsy();
+
+      fixture.componentInstance.show.set(true);
+      await fixture.whenStable();
+
+      button = fixture.nativeElement.querySelector('button');
+      expect(button).toBeTruthy();
+      expect(button.textContent).toBe('Submit');
+    });
+
+    it('should support foreign components in @if, @else if, and @else blocks', async () => {
+      function StatusBadge(props: {text: () => string}): Node[] {
+        const badge = document.createElement('span');
+        badge.textContent = props.text();
+        return [badge];
+      }
+
+      @Component({
+        selector: 'test-cmp',
+        template: `
+          @if (status() === 'success') {
+            <StatusBadge [text]="successText" />
+          } @else if (status() === 'warning') {
+            <StatusBadge [text]="warningText" />
+          } @else {
+            <StatusBadge [text]="errorText" />
+          }
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(StatusBadge)],
+      })
+      class TestForeignInIfElse {
+        readonly status = signal('success');
+        readonly successText = signal('Success');
+        readonly warningText = signal('Warning');
+        readonly errorText = signal('Error');
+      }
+
+      const fixture = TestBed.createComponent(TestForeignInIfElse);
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Success');
+
+      fixture.componentInstance.status.set('warning');
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Warning');
+
+      fixture.componentInstance.status.set('other');
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Error');
+
+      fixture.componentInstance.status.set('success');
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Success');
+    });
+
+    it('should support foreign components in @for blocks', async () => {
+      function ItemCard(props: {title: string}): Node[] {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.textContent = props.title;
+        return [div];
+      }
+
+      @Component({
+        selector: 'test-cmp',
+        template: `
+          @for (item of items(); track item.id) {
+            <ItemCard [title]="item.name" />
+          } @empty {
+            <ItemCard [title]="emptyText" />
+          }
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(ItemCard)],
+      })
+      class TestForeignInFor {
+        readonly items = signal([
+          {id: 1, name: 'First'},
+          {id: 2, name: 'Second'},
+        ]);
+        readonly emptyText = 'No Items';
+      }
+
+      const fixture = TestBed.createComponent(TestForeignInFor);
+      await fixture.whenStable();
+
+      let cards = fixture.nativeElement.querySelectorAll('.item-card');
+      expect(cards.length).toBe(2);
+      expect(cards[0].textContent).toBe('First');
+      expect(cards[1].textContent).toBe('Second');
+
+      // Reorder existing and add a new item
+      fixture.componentInstance.items.set([
+        {id: 2, name: 'Second'},
+        {id: 1, name: 'First'},
+        {id: 3, name: 'Third'},
+      ]);
+      await fixture.whenStable();
+
+      cards = fixture.nativeElement.querySelectorAll('.item-card');
+      expect(cards.length).toBe(3);
+      expect(cards[0].textContent).toBe('Second');
+      expect(cards[1].textContent).toBe('First');
+      expect(cards[2].textContent).toBe('Third');
+
+      // Remove an item
+      fixture.componentInstance.items.set([
+        {id: 3, name: 'Third'},
+        {id: 1, name: 'First'},
+      ]);
+      await fixture.whenStable();
+
+      cards = fixture.nativeElement.querySelectorAll('.item-card');
+      expect(cards.length).toBe(2);
+      expect(cards[0].textContent).toBe('Third');
+      expect(cards[1].textContent).toBe('First');
+
+      // Remove all items (trigger @empty block)
+      fixture.componentInstance.items.set([]);
+      await fixture.whenStable();
+
+      cards = fixture.nativeElement.querySelectorAll('.item-card');
+      expect(cards.length).toBe(1);
+      expect(cards[0].textContent).toBe('No Items');
+    });
+
+    it('should support foreign components in @switch blocks', async () => {
+      function RoleBadge(props: {role: string}): Node[] {
+        const span = document.createElement('span');
+        span.textContent = props.role;
+        return [span];
+      }
+
+      @Component({
+        selector: 'test-cmp',
+        template: `
+          @switch (role()) {
+            @case ('admin') {
+              <RoleBadge role="Admin" />
+            }
+            @case ('editor') {
+              <RoleBadge role="Editor" />
+            }
+            @default {
+              <RoleBadge role="Guest" />
+            }
+          }
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(RoleBadge)],
+      })
+      class TestForeignInSwitch {
+        readonly role = signal('admin');
+      }
+
+      const fixture = TestBed.createComponent(TestForeignInSwitch);
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Admin');
+
+      fixture.componentInstance.role.set('editor');
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Editor');
+
+      fixture.componentInstance.role.set('viewer');
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Guest');
+
+      fixture.componentInstance.role.set('admin');
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.textContent).toBe('Admin');
+    });
+
+    it('should support nested control flow with foreign components', async () => {
+      function UserTag(props: {name: string}): Node[] {
+        const span = document.createElement('span');
+        span.className = 'user-tag';
+        span.textContent = props.name;
+        return [span];
+      }
+
+      @Component({
+        selector: 'test-cmp',
+        template: `
+          @if (sectionVisible()) {
+            @for (user of users; track user.id) {
+              @if (user.active()) {
+                <UserTag [name]="user.name" />
+              }
+            }
+          }
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(UserTag)],
+      })
+      class TestNestedControlFlow {
+        readonly sectionVisible = signal(true);
+        readonly users = [
+          {id: 1, name: 'Alice', active: signal(true)},
+          {id: 2, name: 'Bob', active: signal(false)},
+          {id: 3, name: 'Charlie', active: signal(true)},
+        ];
+      }
+
+      const fixture = TestBed.createComponent(TestNestedControlFlow);
+      await fixture.whenStable();
+
+      let tags = fixture.nativeElement.querySelectorAll('.user-tag');
+      expect(tags.length).toBe(2);
+      expect(tags[0].textContent).toBe('Alice');
+      expect(tags[1].textContent).toBe('Charlie');
+
+      fixture.componentInstance.users[1].active.set(true);
+      await fixture.whenStable();
+
+      tags = fixture.nativeElement.querySelectorAll('.user-tag');
+      expect(tags.length).toBe(3);
+      expect(tags[0].textContent).toBe('Alice');
+      expect(tags[1].textContent).toBe('Bob');
+      expect(tags[2].textContent).toBe('Charlie');
+
+      fixture.componentInstance.sectionVisible.set(false);
+      await fixture.whenStable();
+
+      tags = fixture.nativeElement.querySelectorAll('.user-tag');
+      expect(tags.length).toBe(0);
+
+      fixture.componentInstance.sectionVisible.set(true);
+      await fixture.whenStable();
+
+      tags = fixture.nativeElement.querySelectorAll('.user-tag');
+      expect(tags.length).toBe(3);
+    });
+  });
+
   describe('queries', () => {
     it('should support querying elements inside projected foreign content', async () => {
       @Component({
@@ -932,6 +1214,280 @@ describe('foreign components', () => {
       expect(ngOnInitSpy).toHaveBeenCalledTimes(2);
       expect(ngOnDestroySpy).toHaveBeenCalledTimes(1);
       expect(fixture.nativeElement.textContent).toBe('true');
+    });
+  });
+
+  // Verify deferred rendering and property initialization timing
+  describe('deferred rendering and property initialization', () => {
+    function TitleWidget(props: {title: string}): Node[] {
+      const span = document.createElement('span');
+      span.id = 'title-display';
+      span.textContent = props.title ?? 'UNDEFINED';
+      return [span];
+    }
+
+    function QueryWidget(props: {target: any}): Node[] {
+      const span = document.createElement('span');
+      span.id = 'query-display';
+      span.textContent = props.target ? 'HAS_TARGET' : 'NO_TARGET';
+      return [span];
+    }
+
+    function ReactiveTitleWidget(props: {title: () => string; injector: Injector}): Node[] {
+      const span = document.createElement('span');
+      span.id = 'title-display';
+      effect(
+        () => {
+          span.textContent = props.title();
+        },
+        {injector: props.injector},
+      );
+      return [span];
+    }
+
+    function ReactiveQueryWidget(props: {target: () => any; injector: Injector}): Node[] {
+      const span = document.createElement('span');
+      span.id = 'query-display';
+      effect(
+        () => {
+          const target = props.target();
+          span.textContent = target ? 'HAS_TARGET' : 'NO_TARGET';
+        },
+        {injector: props.injector},
+      );
+      return [span];
+    }
+
+    it('should support passing required inputs to foreign component props', async () => {
+      @Component({
+        selector: 'foreign-host',
+        template: `<TitleWidget [title]="title()" />`,
+        // @ts-ignore
+        foreignImports: [frameworkImport(TitleWidget)],
+      })
+      class ForeignHost {
+        readonly title = input.required<string>();
+      }
+
+      @Component({
+        imports: [ForeignHost],
+        template: `<foreign-host [title]="parentTitle()" />`,
+      })
+      class App {
+        readonly parentTitle = signal('Required Title');
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#title-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('Required Title');
+    });
+
+    it('should support passing raw input.required signal to foreign component props and track reactively', async () => {
+      @Component({
+        selector: 'foreign-host',
+        template: `<ReactiveTitleWidget [title]="title" [injector]="injector" />`,
+        // @ts-ignore
+        foreignImports: [frameworkImport(ReactiveTitleWidget)],
+      })
+      class ForeignHost {
+        readonly title = input.required<string>();
+        readonly injector = inject(Injector);
+      }
+
+      @Component({
+        imports: [ForeignHost],
+        template: `<foreign-host [title]="parentTitle()" />`,
+      })
+      class App {
+        readonly parentTitle = signal('Initial Title');
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#title-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('Initial Title');
+
+      fixture.componentInstance.parentTitle.set('Updated Title');
+      await fixture.whenStable();
+
+      expect(span.textContent).toBe('Updated Title');
+    });
+
+    it('should support passing @Input() properties to foreign component props', async () => {
+      @Component({
+        selector: 'foreign-input-host',
+        template: `<TitleWidget [title]="title" />`,
+        // @ts-ignore
+        foreignImports: [frameworkImport(TitleWidget)],
+      })
+      class ForeignInputHost {
+        @Input() title = 'default';
+      }
+
+      @Component({
+        imports: [ForeignInputHost],
+        template: `<foreign-input-host [title]="parentTitle" />`,
+      })
+      class App {
+        parentTitle = 'Passed from Parent';
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#title-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('Passed from Parent');
+    });
+
+    it('should support passing ngOnInit initialized properties to foreign component props', async () => {
+      @Component({
+        template: `<TitleWidget [title]="title" />`,
+        // @ts-ignore
+        foreignImports: [frameworkImport(TitleWidget)],
+      })
+      class App implements OnInit {
+        title!: string;
+
+        ngOnInit() {
+          this.title = 'Initialized in ngOnInit';
+        }
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#title-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('Initialized in ngOnInit');
+    });
+
+    it('should support passing viewChild query results to foreign component props', async () => {
+      @Component({
+        template: `
+          <div #myDiv id="my-div">Hello</div>
+          <QueryWidget [target]="myDivRef()" />
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(QueryWidget)],
+      })
+      class App {
+        readonly myDivRef = viewChild<ElementRef>('myDiv');
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#query-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('HAS_TARGET');
+    });
+
+    it('should support passing viewChild.required query results to foreign component props', async () => {
+      @Component({
+        template: `
+          <div #myDiv id="my-div">Hello</div>
+          <QueryWidget [target]="myDivRef()" />
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(QueryWidget)],
+      })
+      class App {
+        readonly myDivRef = viewChild.required<ElementRef>('myDiv');
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#query-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('HAS_TARGET');
+    });
+
+    it('should support passing raw viewChild signal to foreign component props and track reactively when query changes', async () => {
+      @Component({
+        template: `
+          @if (showDiv()) {
+            <div #myDiv id="my-div">Hello</div>
+          }
+          <ReactiveQueryWidget [target]="myDivRef" [injector]="injector" />
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(ReactiveQueryWidget)],
+      })
+      class App {
+        readonly showDiv = signal(true);
+        readonly myDivRef = viewChild<ElementRef>('myDiv');
+        readonly injector = inject(Injector);
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#query-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('HAS_TARGET');
+
+      fixture.componentInstance.showDiv.set(false);
+      await fixture.whenStable();
+
+      expect(span.textContent).toBe('NO_TARGET');
+
+      fixture.componentInstance.showDiv.set(true);
+      await fixture.whenStable();
+
+      expect(span.textContent).toBe('HAS_TARGET');
+    });
+
+    it('should support passing raw viewChild.required signal to foreign component props and track reactively', async () => {
+      @Component({
+        template: `
+          <div #myDiv id="my-div">Hello</div>
+          <ReactiveQueryWidget [target]="myDivRef" [injector]="injector" />
+        `,
+        // @ts-ignore
+        foreignImports: [frameworkImport(ReactiveQueryWidget)],
+      })
+      class App {
+        readonly myDivRef = viewChild.required<ElementRef>('myDiv');
+        readonly injector = inject(Injector);
+      }
+
+      const fixture = TestBed.createComponent(App);
+      await fixture.whenStable();
+
+      const span = fixture.nativeElement.querySelector('#query-display');
+      expect(span).toBeTruthy();
+      expect(span.textContent).toBe('HAS_TARGET');
+    });
+
+    it('should attach foreign component DOM before ngAfterViewInit', async () => {
+      let textInAfterViewInit = '';
+
+      @Component({
+        selector: 'test-cmp',
+        template: `<TitleWidget title="Rendered Before ViewInit" />`,
+        // @ts-ignore
+        foreignImports: [frameworkImport(TitleWidget)],
+      })
+      class TestCmp implements AfterViewInit {
+        private readonly elementRef = inject(ElementRef);
+
+        ngAfterViewInit() {
+          const span = this.elementRef.nativeElement.querySelector('#title-display');
+          textInAfterViewInit = span?.textContent ?? '';
+        }
+      }
+
+      const fixture = TestBed.createComponent(TestCmp);
+      await fixture.whenStable();
+
+      expect(textInAfterViewInit).toBe('Rendered Before ViewInit');
     });
   });
 });

@@ -7,9 +7,9 @@
  */
 
 import * as o from '../../../../output/output_ast';
-import {CONTEXT_NAME} from '../../../../render3/view/util';
-import {isUnsafeObjectKey} from '../../../../render3/util';
 import {Identifiers} from '../../../../render3/r3_identifiers';
+import {isUnsafeObjectKey} from '../../../../render3/util';
+import {CONTEXT_NAME} from '../../../../render3/view/util';
 import * as ir from '../../ir';
 import {
   TemplateCompilationMode,
@@ -144,7 +144,7 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
         );
         break;
       case ir.OpKind.ForeignComponent:
-        const propsExpr =
+        const propsMap =
           op.props.size > 0
             ? o.literalMap(
                 Array.from(op.props.entries()).map(([key, value]) => ({
@@ -154,6 +154,7 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
                 })),
               )
             : null;
+        const propsExpr = propsMap !== null ? o.arrowFn([], propsMap) : null;
         ir.OpList.replace(
           op,
           ng.foreignComponent(op.handle.slot!, o.literal(op.constIndex), propsExpr, op.sourceSpan),
@@ -403,7 +404,9 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
         break;
       case ir.OpKind.DeferOn:
         let args: o.Expression[] = [];
-        switch (op.trigger.kind) {
+        const triggerKind = op.trigger.kind;
+
+        switch (triggerKind) {
           case ir.DeferTriggerKind.Never:
           case ir.DeferTriggerKind.Immediate:
             break;
@@ -447,12 +450,13 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
               }
             }
             break;
-          default:
+          default: {
+            const unhandledTriggerKind: never = triggerKind;
+
             throw new Error(
-              `AssertionError: Unsupported reification of defer trigger kind ${
-                (op.trigger as any).kind
-              }`,
+              `AssertionError: Unsupported reification of defer trigger kind ${unhandledTriggerKind}`,
             );
+          }
         }
         ir.OpList.replace(op, ng.deferOn(op.trigger.kind, args, op.modifier, op.sourceSpan));
         break;
@@ -552,6 +556,36 @@ function reifyCreateOperations(unit: CompilationUnit, ops: ir.OpList<ir.CreateOp
             op.startSourceSpan,
           ),
         );
+        break;
+      case ir.OpKind.BoundaryErrorCreate:
+        if (!(unit instanceof ViewCompilationUnit)) {
+          throw new Error(`AssertionError: must be compiling a component`);
+        }
+        const boundaryErrorCreateChildView = unit.job.views.get(op.xref)!;
+        ir.OpList.replace(
+          op,
+          ng.conditionalBranchCreate(
+            op.handle.slot!,
+            o.variable(boundaryErrorCreateChildView.fnName!),
+            boundaryErrorCreateChildView.decls!,
+            boundaryErrorCreateChildView.vars!,
+            null, // tag
+            null, // attributes
+            null, // localRefs
+            op.startSourceSpan,
+          ),
+        );
+        break;
+      case ir.OpKind.BoundaryCreate:
+        if (!(unit instanceof ViewCompilationUnit)) {
+          throw new Error(`AssertionError: must be compiling a component`);
+        }
+        if (Array.isArray(op.localRefs) && op.localRefs.length > 0) {
+          throw new Error(
+            `AssertionError: local refs array should have been extracted into a constant`,
+          );
+        }
+        ir.OpList.replace(op, ng.boundaryCreate(op.handle.slot!, op.startSourceSpan));
         break;
       case ir.OpKind.RepeaterCreate:
         if (op.handle.slot === null) {
@@ -732,6 +766,28 @@ function reifyUpdateOperations(unit: CompilationUnit, ops: ir.OpList<ir.UpdateOp
           throw new Error(`Conditional test was not set.`);
         }
         ir.OpList.replace(op, ng.conditional(op.processed, op.contextValue, op.sourceSpan));
+        break;
+      case ir.OpKind.Boundary:
+        if (op.processed === null) {
+          throw new Error(`Boundary test was not set.`);
+        }
+        const boundarySlot = op.targetSlot.slot;
+        if (boundarySlot === null) {
+          throw new Error(`AssertionError: Boundary target slot not found`);
+        }
+        const primarySlot = op.guarded.targetSlot.slot;
+        if (primarySlot === null) {
+          throw new Error(`AssertionError: Primary slot not found for boundary`);
+        }
+        ir.OpList.replace(
+          op,
+          ng.boundary(
+            o.literal(boundarySlot),
+            op.processed!,
+            o.literal(primarySlot),
+            op.sourceSpan,
+          ),
+        );
         break;
       case ir.OpKind.Repeater:
         ir.OpList.replace(op, ng.repeater(op.collection, op.sourceSpan));

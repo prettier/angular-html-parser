@@ -91,7 +91,7 @@ At the same time, the AOT **collector** analyzes the metadata recorded in the An
 
 You can think of `.metadata.json` as a diagram of the overall structure of a decorator's metadata, represented as an [abstract syntax tree (AST)](https://en.wikipedia.org/wiki/Abstract_syntax_tree).
 
-HELPFUL: Angular's [schema.ts](https://github.com/angular/angular/blob/main/packages/compiler-cli/src/metadata/schema.ts) describes the JSON format as a collection of TypeScript interfaces.
+HELPFUL: Angular's [schema.ts](https://github.com/angular/angular/blob/12.2.x/packages/compiler-cli/src/metadata/schema.ts) describes the JSON format as a collection of TypeScript interfaces.
 
 ### Expression syntax limitations
 
@@ -258,7 +258,7 @@ The following table describes which expressions the collector can and cannot fol
 | Conditional operator             | yes, if condition is foldable            |
 | Parentheses                      | yes, if the expression is foldable       |
 
-If an expression is not foldable, the collector writes it to `.metadata.json` as an [AST](https://en.wikipedia.org/wiki/Abstract*syntax*tree) for the compiler to resolve.
+If an expression is not foldable, the collector writes it to `.metadata.json` as an [AST](https://en.wikipedia.org/wiki/Abstract_syntax_tree) for the compiler to resolve.
 
 ## Phase 2: code generation
 

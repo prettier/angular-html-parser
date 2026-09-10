@@ -305,7 +305,7 @@ export function expandBoundAttributesForField(
   return boundInputs;
 }
 
-export function isFieldDirective(meta: TcbDirectiveMetadata): boolean {
+function isFieldDirective(meta: TcbDirectiveMetadata): boolean {
   if (meta.name !== 'FormField') {
     return false;
   }
@@ -428,6 +428,8 @@ export function checkUnsupportedFieldBindings(
       input.type === BindingType.Attribute &&
       unsupportedBindingFields.has(input.name.toLowerCase())
     ) {
+      tcb.oobRecorder.formFieldUnsupportedBinding(tcb.id, input);
+    } else if (input.type === BindingType.TwoWay && unsupportedBindingFields.has(input.name)) {
       tcb.oobRecorder.formFieldUnsupportedBinding(tcb.id, input);
     }
   }

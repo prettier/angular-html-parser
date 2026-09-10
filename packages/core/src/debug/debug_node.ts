@@ -350,7 +350,7 @@ export class DebugElement extends DebugNode {
    * @param eventName The name of the event to trigger
    * @param eventObj The _event object_ expected by the handler
    *
-   * @see [Testing components scenarios](guide/testing/components-scenarios#trigger-event-handler)
+   * @see [Testing components scenarios](guide/testing/components-scenarios#triggereventhandler)
    */
   triggerEventHandler(eventName: string, eventObj?: any): void {
     const node = this.nativeNode as any;
@@ -723,7 +723,7 @@ const NG_DEBUG_PROPERTY = '__ng_debug__';
  */
 export function getDebugNode(nativeNode: any): DebugNode | null {
   if (nativeNode instanceof Node) {
-    if (!nativeNode.hasOwnProperty(NG_DEBUG_PROPERTY)) {
+    if (!Object.hasOwn(nativeNode, NG_DEBUG_PROPERTY)) {
       (nativeNode as any)[NG_DEBUG_PROPERTY] =
         nativeNode.nodeType == Node.ELEMENT_NODE
           ? new DebugElement(nativeNode as Element)

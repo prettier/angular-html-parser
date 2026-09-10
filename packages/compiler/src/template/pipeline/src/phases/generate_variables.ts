@@ -8,6 +8,7 @@
 
 import * as o from '../../../../output/output_ast';
 import * as ir from '../../ir';
+import * as ng from '../instruction';
 
 import type {ComponentCompilationJob, ViewCompilationUnit} from '../compilation';
 
@@ -44,6 +45,7 @@ function recursivelyProcessView(view: ViewCompilationUnit, parentScope: Scope | 
     switch (op.kind) {
       case ir.OpKind.ConditionalCreate:
       case ir.OpKind.ConditionalBranchCreate:
+      case ir.OpKind.BoundaryErrorCreate:
       case ir.OpKind.Template:
         // Descend into child embedded views.
         recursivelyProcessView(view.job.views.get(op.xref)!, scope);
@@ -73,6 +75,7 @@ function recursivelyProcessView(view: ViewCompilationUnit, parentScope: Scope | 
     }
   }
 
+  view.create.prepend(generateVariablesInScopeForView(view, scope, false));
   view.update.prepend(generateVariablesInScopeForView(view, scope, false));
 
   for (const expr of view.functions) {
@@ -96,6 +99,8 @@ interface Scope {
   contextVariables: Map<string, ir.SemanticVariable>;
 
   aliases: Set<ir.AliasVariable>;
+
+  boundaryVariables: Map<ir.XrefId, {variable: ir.SemanticVariable; handle: ir.SlotHandle}>;
 
   /**
    * Local references collected from elements within the view.
@@ -172,6 +177,7 @@ function getScopeForView(view: ViewCompilationUnit, parent: Scope | null): Scope
     aliases: view.aliases,
     references: [],
     letDeclarations: [],
+    boundaryVariables: new Map<ir.XrefId, {variable: ir.SemanticVariable; handle: ir.SlotHandle}>(),
     parent,
   };
 
@@ -211,6 +217,17 @@ function getScopeForView(view: ViewCompilationUnit, parent: Scope | null): Scope
         }
         break;
 
+      case ir.OpKind.BoundaryCreate:
+        scope.boundaryVariables.set(op.xref, {
+          variable: {
+            kind: ir.SemanticVariableKind.BoundaryState,
+            name: null,
+            boundaryXref: op.xref,
+          },
+          handle: op.handle,
+        });
+        break;
+
       case ir.OpKind.DeclareLet:
         scope.letDeclarations.push({
           targetId: op.xref,
@@ -222,6 +239,22 @@ function getScopeForView(view: ViewCompilationUnit, parent: Scope | null): Scope
             local: false,
           },
         });
+        break;
+
+      case ir.OpKind.BoundaryErrorCreate:
+        const boundaryStateExpr = new ir.BoundaryStateExpr(op.boundaryXref);
+        const errorProp = new o.ReadPropExpr(boundaryStateExpr, 'error');
+
+        for (const variable of op.contextVariables) {
+          if (variable.value === '$error') {
+            view.aliases.add({
+              kind: ir.SemanticVariableKind.Alias,
+              name: null,
+              identifier: variable.name,
+              expression: errorProp,
+            });
+          }
+        }
         break;
     }
   }
@@ -235,12 +268,12 @@ function getScopeForView(view: ViewCompilationUnit, parent: Scope | null): Scope
  * This is a recursive process, as views inherit variables available from their parent view, which
  * itself may have inherited variables, etc.
  */
-function generateVariablesInScopeForView(
+function generateVariablesInScopeForView<OpT extends ir.Op<OpT>>(
   view: ViewCompilationUnit,
   scope: Scope,
   isCallback: boolean,
-): ir.VariableOp<ir.UpdateOp>[] {
-  const newOps: ir.VariableOp<ir.UpdateOp>[] = [];
+): ir.VariableOp<OpT>[] {
+  const newOps: ir.VariableOp<OpT>[] = [];
 
   if (scope.view !== view.xref) {
     // Before generating variables for a parent view, we need to switch to the context of the parent
@@ -291,6 +324,18 @@ function generateVariablesInScopeForView(
     );
   }
 
+  // Add variables for all boundaries declared in this scope.
+  for (const [xref, {variable, handle}] of scope.boundaryVariables) {
+    newOps.push(
+      ir.createVariableOp(
+        view.job.allocateXrefId(),
+        variable,
+        ng.getBoundary(new ir.SlotLiteralExpr(handle)),
+        ir.VariableFlags.None,
+      ),
+    );
+  }
+
   // Add variables for all local references declared for elements in this scope.
   for (const ref of scope.references) {
     newOps.push(
@@ -306,7 +351,7 @@ function generateVariablesInScopeForView(
   if (scope.view !== view.xref || isCallback) {
     for (const decl of scope.letDeclarations) {
       newOps.push(
-        ir.createVariableOp<ir.UpdateOp>(
+        ir.createVariableOp<OpT>(
           view.job.allocateXrefId(),
           decl.variable,
           new ir.ContextLetReferenceExpr(decl.targetId, decl.targetSlot),
@@ -318,7 +363,7 @@ function generateVariablesInScopeForView(
 
   if (scope.parent !== null) {
     // Recursively add variables from the parent scope.
-    newOps.push(...generateVariablesInScopeForView(view, scope.parent, false));
+    newOps.push(...generateVariablesInScopeForView<OpT>(view, scope.parent, false));
   }
   return newOps;
 }

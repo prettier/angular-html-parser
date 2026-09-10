@@ -10,6 +10,8 @@ import {DOCUMENT} from '../../index';
 import {
   ApplicationRef,
   Component,
+  createEnvironmentInjector,
+  EnvironmentInjector,
   Injectable,
   PLATFORM_ID,
   TransferState,
@@ -26,6 +28,8 @@ import {
   HttpRequest,
   HttpResponse,
   provideHttpClient,
+  withInterceptors,
+  withRequestsMadeViaParent,
 } from '../public_api';
 import {
   BODY,
@@ -295,6 +299,124 @@ describe('TransferCache', () => {
     });
   });
 
+  describe('withRequestsMadeViaParent()', () => {
+    let childInjector: EnvironmentInjector;
+
+    beforeEach(() => {
+      globalThis['ngServerMode'] = true;
+
+      TestBed.configureTestingModule({
+        providers: [
+          TransferState,
+          withHttpTransferCache({
+            filter: (request) => !request.headers.has('X-API-Key'),
+          }),
+          provideHttpClient(
+            withInterceptors([
+              (request, next) => {
+                if (request.url === '/private') {
+                  request = request.clone({
+                    setHeaders: {Authorization: 'Bearer server-token'},
+                  });
+                } else if (request.url === '/secret') {
+                  request = request.clone({setHeaders: {'X-API-Key': 'secret-a'}});
+                } else if (request.url === '/public-alias') {
+                  request = request.clone({url: '/public'});
+                }
+
+                return next(request);
+              },
+            ]),
+          ),
+          provideHttpClientTesting(),
+        ],
+      });
+
+      childInjector = createEnvironmentInjector(
+        [
+          provideHttpClient(
+            withInterceptors([
+              (request, next) =>
+                next(request.clone({setHeaders: {'X-Trace-Id': 'feature-request'}})),
+            ]),
+            withRequestsMadeViaParent(),
+          ),
+        ],
+        TestBed.inject(EnvironmentInjector),
+      );
+    });
+
+    afterEach(() => {
+      childInjector.destroy();
+      TestBed.inject(HttpTestingController).verify();
+      globalThis['ngServerMode'] = undefined;
+    });
+
+    it('should evaluate cache eligibility and keys after parent interceptors', () => {
+      const httpClient = childInjector.get(HttpClient);
+      const httpTestingController = TestBed.inject(HttpTestingController);
+      const transferState = TestBed.inject(TransferState);
+
+      let privateResponse: unknown;
+      httpClient.get('/private').subscribe((response) => (privateResponse = response));
+      const privateRequest = httpTestingController.expectOne('/private');
+      expect(privateRequest.request.headers.get('Authorization')).toBe('Bearer server-token');
+      expect(privateRequest.request.headers.get('X-Trace-Id')).toBe('feature-request');
+      privateRequest.flush({internalSecret: 'server-only'});
+
+      expect(privateResponse).toEqual({internalSecret: 'server-only'});
+      expect(JSON.parse(transferState.toJson())).toEqual({});
+
+      let publicResponse: unknown;
+      httpClient.get('/public-alias').subscribe((response) => (publicResponse = response));
+      httpTestingController.expectOne('/public').flush({message: 'public'});
+
+      publicResponse = undefined;
+      httpClient.get('/public-alias').subscribe((response) => (publicResponse = response));
+      httpTestingController.expectNone('/public');
+      expect(publicResponse).toEqual({message: 'public'});
+    });
+
+    it('should evaluate cache filters after parent interceptors', () => {
+      const httpClient = childInjector.get(HttpClient);
+      const httpTestingController = TestBed.inject(HttpTestingController);
+      const transferState = TestBed.inject(TransferState);
+
+      let response: unknown;
+      httpClient.get('/secret').subscribe((value) => (response = value));
+      const request = httpTestingController.expectOne('/secret');
+      expect(request.request.headers.get('X-API-KEY')).toBe('secret-a');
+      request.flush({internalSecret: 'secret-only'});
+
+      expect(response).toEqual({internalSecret: 'secret-only'});
+      expect(JSON.parse(transferState.toJson())).toEqual({});
+    });
+
+    it('should evaluate cache eligibility through multiple parent clients', () => {
+      const grandchildInjector = createEnvironmentInjector(
+        [provideHttpClient(withRequestsMadeViaParent())],
+        childInjector,
+      );
+
+      try {
+        const httpClient = grandchildInjector.get(HttpClient);
+        const httpTestingController = TestBed.inject(HttpTestingController);
+        const transferState = TestBed.inject(TransferState);
+
+        let privateResponse: unknown;
+        httpClient.get('/private').subscribe((response) => (privateResponse = response));
+        const privateRequest = httpTestingController.expectOne('/private');
+        expect(privateRequest.request.headers.get('Authorization')).toBe('Bearer server-token');
+        privateRequest.flush({internalSecret: 'server-only'});
+
+        expect(privateResponse).toEqual({internalSecret: 'server-only'});
+        expect(JSON.parse(transferState.toJson())).toEqual({});
+      } finally {
+        grandchildInjector.destroy();
+      }
+    });
+  });
+
   describe('withHttpTransferCache', () => {
     let isStable: BehaviorSubject<boolean>;
 
@@ -419,7 +541,7 @@ describe('TransferCache', () => {
 
       const transferState = TestBed.inject(TransferState);
       expect(JSON.parse(transferState.toJson()) as Record<string, unknown>).toEqual({
-        '2da5dfaf112523258ec9c26a0abe9a093b59ed7dbe5f43e4b5ee25a407ac9cf0': {
+        'd501aa2d57b63a95df74e3b0558782b71b077974e968ed303cd30b27e4b70702': {
           [BODY]: 'foo',
           [HEADERS]: {},
           [STATUS]: 200,
@@ -427,7 +549,7 @@ describe('TransferCache', () => {
           [REQ_URL]: '/test-1',
           [RESPONSE_TYPE]: 'json',
         },
-        '869485290d9385f3c0a9ba571918c335bbca9e03373bf8260d02f2b7dd335849': {
+        'ceddc6689dc1f2fc3a0b8c364b6e00a79b99a149f27e84da87cec03d44c150c8': {
           [BODY]: 'buzz',
           [HEADERS]: {},
           [STATUS]: 200,
@@ -762,6 +884,15 @@ describe('TransferCache', () => {
       makeRequestAndExpectOne('/test-1', null, {method: 'POST', transferCache: true, body: 'foo'});
       makeRequestAndExpectNone('/test-1', 'POST', {transferCache: true, body: 'foo'});
       makeRequestAndExpectOne('/test-1', null, {method: 'POST', transferCache: true, body: 'bar'});
+    });
+
+    it('should differentiate POST requests with an ambiguous url/body boundary', () => {
+      // `/items/a` with body `b|c` and `/items/a|b` with body `c` are different requests, but a
+      // cache key that concatenates the fields with `|` maps both to the same string. The second
+      // request must be treated as a cache miss and hit the network.
+      makeRequestAndExpectOne('/items/a', null, {method: 'POST', transferCache: true, body: 'b|c'});
+      makeRequestAndExpectNone('/items/a', 'POST', {transferCache: true, body: 'b|c'});
+      makeRequestAndExpectOne('/items/a|b', null, {method: 'POST', transferCache: true, body: 'c'});
     });
 
     it('should cache POST with the differing body in object form', () => {

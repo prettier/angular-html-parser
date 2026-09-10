@@ -1931,7 +1931,11 @@ var require_request = __commonJS({
           } else if (typeof val[i] === "object") {
             throw new InvalidArgumentError(`invalid ${key} header`);
           } else {
-            arr.push(`${val[i]}`);
+            const str = `${val[i]}`;
+            if (!isValidHeaderValue(str)) {
+              throw new InvalidArgumentError(`invalid ${key} header`);
+            }
+            arr.push(str);
           }
         }
         val = arr;
@@ -1943,6 +1947,9 @@ var require_request = __commonJS({
         val = "";
       } else {
         val = `${val}`;
+        if (!isValidHeaderValue(val)) {
+          throw new InvalidArgumentError(`invalid ${key} header`);
+        }
       }
       if (headerName === "host") {
         if (request3.host !== null) {
@@ -5666,6 +5673,7 @@ var require_client_h1 = __commonJS({
       RequestContentLengthMismatchError,
       ResponseContentLengthMismatchError,
       RequestAbortedError,
+      InvalidArgumentError,
       HeadersTimeoutError,
       HeadersOverflowError,
       SocketError,
@@ -6392,8 +6400,16 @@ var require_client_h1 = __commonJS({
         }
         body = bodyStream.stream;
         contentLength = bodyStream.length;
-      } else if (util.isBlobLike(body) && request3.contentType == null && body.type) {
-        headers.push("content-type", body.type);
+      } else if (util.isBlobLike(body) && request3.contentType == null) {
+        const contentType = body.type;
+        if (contentType) {
+          const contentTypeValue = `${contentType}`;
+          if (!util.isValidHeaderValue(contentTypeValue)) {
+            util.errorRequest(client, request3, new InvalidArgumentError("invalid content-type header"));
+            return false;
+          }
+          headers.push("content-type", contentTypeValue);
+        }
       }
       if (body && typeof body.read === "function") {
         body.read(0);
@@ -8948,6 +8964,24 @@ var require_retry_handler = __commonJS({
       const current = Date.now();
       return new Date(retryAfter).getTime() - current;
     }
+    function validatePartialResponseContentLength(headers, range, statusCode, retryCount) {
+      const contentLength = headers["content-length"];
+      if (contentLength == null) {
+        return null;
+      }
+      if (!Number.isFinite(range.start) || !Number.isFinite(range.end)) {
+        return null;
+      }
+      const length = Number(contentLength);
+      const expectedLength = range.end - range.start + 1;
+      if (!Number.isFinite(length) || length !== expectedLength) {
+        return new RequestRetryError("Content-Length mismatch", statusCode, {
+          headers,
+          data: { count: retryCount }
+        });
+      }
+      return null;
+    }
     var RetryHandler = class _RetryHandler {
       constructor(opts, handlers) {
         const { retryOptions, ...dispatchOpts } = opts;
@@ -9121,6 +9155,11 @@ var require_retry_handler = __commonJS({
             );
             return false;
           }
+          const contentLengthError = validatePartialResponseContentLength(headers, contentRange, statusCode, this.retryCount);
+          if (contentLengthError != null) {
+            this.abort(contentLengthError);
+            return false;
+          }
           const { start, size, end = size - 1 } = contentRange;
           assert2(this.start === start, "content-range mismatch");
           assert2(this.end == null || this.end === end, "content-range mismatch");
@@ -9137,6 +9176,11 @@ var require_retry_handler = __commonJS({
                 resume,
                 statusMessage
               );
+            }
+            const contentLengthError = validatePartialResponseContentLength(headers, range, statusCode, this.retryCount);
+            if (contentLengthError != null) {
+              this.abort(contentLengthError);
+              return false;
             }
             const { start, size, end = size - 1 } = range;
             assert2(
@@ -15987,14 +16031,48 @@ var require_util6 = __commonJS({
       for (let i = 0; i < path3.length; ++i) {
         const code = path3.charCodeAt(i);
         if (code < 32 || // exclude CTLs (0-31)
-        code === 127 || // DEL
+        code > 126 || // exclude DEL and non-ascii
         code === 59) {
           throw new Error("Invalid cookie path");
         }
       }
     }
+    function isLetterOrDigit(code) {
+      return code >= 48 && code <= 57 || // 0-9
+      code >= 65 && code <= 90 || // A-Z
+      code >= 97 && code <= 122;
+    }
     function validateCookieDomain(domain) {
-      if (domain.startsWith("-") || domain.endsWith(".") || domain.endsWith("-")) {
+      if (domain === " ") {
+        return;
+      }
+      if (domain.length > 255) {
+        throw new Error("Invalid cookie domain");
+      }
+      let labelLength = 0;
+      for (let i = 0; i < domain.length; ++i) {
+        const code = domain.charCodeAt(i);
+        if (code === 46) {
+          if (labelLength === 0) {
+            throw new Error("Invalid cookie domain");
+          }
+          if (domain.charCodeAt(i - 1) === 45) {
+            throw new Error("Invalid cookie domain");
+          }
+          labelLength = 0;
+          continue;
+        }
+        if (labelLength === 0 && !isLetterOrDigit(code)) {
+          throw new Error("Invalid cookie domain");
+        }
+        if (!isLetterOrDigit(code) && code !== 45) {
+          throw new Error("Invalid cookie domain");
+        }
+        if (++labelLength > 63) {
+          throw new Error("Invalid cookie domain");
+        }
+      }
+      if (labelLength === 0 || domain.charCodeAt(domain.length - 1) === 45) {
         throw new Error("Invalid cookie domain");
       }
     }
@@ -16077,7 +16155,11 @@ var require_util6 = __commonJS({
           throw new Error("Invalid unparsed");
         }
         const [key, ...value] = part.split("=");
-        out.push(`${key.trim()}=${value.join("=")}`);
+        const trimmedKey = key.trim();
+        const joinedValue = value.join("=");
+        validateCookieName(trimmedKey);
+        validateCookieValue(joinedValue);
+        out.push(`${trimmedKey}=${joinedValue}`);
       }
       return out.join("; ");
     }
@@ -19535,138 +19617,6 @@ var require_lib = __commonJS({
     };
     exports.HttpClient = HttpClient3;
     var lowercaseKeys3 = (obj) => Object.keys(obj).reduce((c, k) => (c[k.toLowerCase()] = obj[k], c), {});
-  }
-});
-
-// 
-var require_dist = __commonJS({
-  ""(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.format = format3;
-    exports.parse = parse4;
-    var TEXT_REGEXP = /^[\u0009\u0020-\u007e\u0080-\u00ff]*$/;
-    var TOKEN_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
-    var QUOTE_REGEXP = /[\\"]/g;
-    var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
-    var NullObject = (() => {
-      const C = function() {
-      };
-      C.prototype = /* @__PURE__ */ Object.create(null);
-      return C;
-    })();
-    function format3(obj) {
-      const { type, parameters } = obj;
-      if (!type || !TYPE_REGEXP.test(type)) {
-        throw new TypeError(`Invalid type: ${type}`);
-      }
-      let result = type;
-      if (parameters) {
-        for (const param of Object.keys(parameters)) {
-          if (!TOKEN_REGEXP.test(param)) {
-            throw new TypeError(`Invalid parameter name: ${param}`);
-          }
-          result += `; ${param}=${qstring(parameters[param])}`;
-        }
-      }
-      return result;
-    }
-    function parse4(header, options) {
-      const len = header.length;
-      let index = skipOWS(header, 0, len);
-      const valueStart = index;
-      index = skipValue(header, index, len);
-      const valueEnd = trailingOWS(header, valueStart, index);
-      const type = header.slice(valueStart, valueEnd).toLowerCase();
-      const parameters = options?.parameters === false ? new NullObject() : parseParameters(header, index, len);
-      return { type, parameters };
-    }
-    var SP = 32;
-    var HTAB = 9;
-    var SEMI = 59;
-    var EQ = 61;
-    var DQUOTE = 34;
-    var BSLASH = 92;
-    function parseParameters(header, index, len) {
-      const parameters = new NullObject();
-      parameter:
-        while (index < len) {
-          index = skipOWS(header, index + 1, len);
-          const keyStart = index;
-          while (index < len) {
-            const code = header.charCodeAt(index);
-            if (code === SEMI)
-              continue parameter;
-            if (code === EQ) {
-              const keyEnd = trailingOWS(header, keyStart, index);
-              const key = header.slice(keyStart, keyEnd).toLowerCase();
-              index = skipOWS(header, index + 1, len);
-              if (index < len && header.charCodeAt(index) === DQUOTE) {
-                index++;
-                let value = "";
-                while (index < len) {
-                  const code2 = header.charCodeAt(index++);
-                  if (code2 === DQUOTE) {
-                    index = skipValue(header, index, len);
-                    if (parameters[key] === void 0)
-                      parameters[key] = value;
-                    break;
-                  }
-                  if (code2 === BSLASH && index < len) {
-                    value += header[index++];
-                    continue;
-                  }
-                  value += String.fromCharCode(code2);
-                }
-                continue parameter;
-              }
-              const valueStart = index;
-              index = skipValue(header, index, len);
-              if (parameters[key] === void 0) {
-                const valueEnd = trailingOWS(header, valueStart, index);
-                parameters[key] = header.slice(valueStart, valueEnd);
-              }
-              continue parameter;
-            }
-            index++;
-          }
-        }
-      return parameters;
-    }
-    function skipValue(str, index, len) {
-      while (index < len) {
-        const char = str.charCodeAt(index);
-        if (char === SEMI)
-          break;
-        index++;
-      }
-      return index;
-    }
-    function skipOWS(header, index, len) {
-      while (index < len) {
-        const char = header.charCodeAt(index);
-        if (char !== SP && char !== HTAB)
-          break;
-        index++;
-      }
-      return index;
-    }
-    function trailingOWS(header, start, end) {
-      while (end > start) {
-        const char = header.charCodeAt(end - 1);
-        if (char !== SP && char !== HTAB)
-          break;
-        end--;
-      }
-      return end;
-    }
-    function qstring(str) {
-      if (TOKEN_REGEXP.test(str))
-        return str;
-      if (TEXT_REGEXP.test(str))
-        return `"${str.replace(QUOTE_REGEXP, "\\$&")}"`;
-      throw new TypeError(`Invalid parameter value: ${str}`);
-    }
   }
 });
 
@@ -28595,7 +28545,109 @@ function withDefaults(oldDefaults, newDefaults) {
 var endpoint = withDefaults(null, DEFAULTS);
 
 // 
-var import_content_type = __toESM(require_dist());
+var NullObject = (() => {
+  const C = function() {
+  };
+  C.prototype = /* @__PURE__ */ Object.create(null);
+  return C;
+})();
+function parse2(header, options) {
+  const stopChar = options?.comma === true ? COMMA : 65536;
+  const len = header.length;
+  let index = skipOWS(header, options?.start ?? 0, len);
+  const valueStart = index;
+  index = skipValue(header, index, len, stopChar);
+  const valueEnd = trailingOWS(header, valueStart, index);
+  const type = header.slice(valueStart, valueEnd).toLowerCase();
+  if (options?.parameters === false) {
+    return { type, index, parameters: new NullObject() };
+  }
+  return parseParameters(header, type, index, len, stopChar);
+}
+var SP = 32;
+var HTAB = 9;
+var SEMI = 59;
+var EQ = 61;
+var DQUOTE = 34;
+var BSLASH = 92;
+var COMMA = 44;
+function parseParameters(header, type, index, len, stopChar) {
+  const parameters = new NullObject();
+  parameter:
+    while (index < len) {
+      if (header.charCodeAt(index) === stopChar)
+        break;
+      index = skipOWS(header, index + 1, len);
+      const keyStart = index;
+      while (index < len) {
+        const code = header.charCodeAt(index);
+        if (code === stopChar)
+          break parameter;
+        if (code === SEMI)
+          continue parameter;
+        if (code === EQ) {
+          const keyEnd = trailingOWS(header, keyStart, index);
+          const key = header.slice(keyStart, keyEnd).toLowerCase();
+          index = skipOWS(header, index + 1, len);
+          if (index < len && header.charCodeAt(index) === DQUOTE) {
+            index++;
+            let value = "";
+            while (index < len) {
+              const code2 = header.charCodeAt(index++);
+              if (code2 === DQUOTE) {
+                index = skipValue(header, index, len, stopChar);
+                if (parameters[key] === void 0)
+                  parameters[key] = value;
+                break;
+              }
+              if (code2 === BSLASH && index < len) {
+                value += header[index++];
+                continue;
+              }
+              value += String.fromCharCode(code2);
+            }
+            continue parameter;
+          }
+          const valueStart = index;
+          index = skipValue(header, index, len, stopChar);
+          if (parameters[key] === void 0) {
+            const valueEnd = trailingOWS(header, valueStart, index);
+            parameters[key] = header.slice(valueStart, valueEnd);
+          }
+          continue parameter;
+        }
+        index++;
+      }
+    }
+  return { type, index, parameters };
+}
+function skipValue(str, index, len, stopChar) {
+  while (index < len) {
+    const code = str.charCodeAt(index);
+    if (code === SEMI || code === stopChar)
+      break;
+    index++;
+  }
+  return index;
+}
+function skipOWS(header, index, len) {
+  while (index < len) {
+    const char = header.charCodeAt(index);
+    if (char !== SP && char !== HTAB)
+      break;
+    index++;
+  }
+  return index;
+}
+function trailingOWS(header, start, end) {
+  while (end > start) {
+    const char = header.charCodeAt(end - 1);
+    if (char !== SP && char !== HTAB)
+      break;
+    end--;
+  }
+  return end;
+}
 
 // 
 var intRegex = /^-?\d+$/;
@@ -28603,48 +28655,232 @@ var noiseValue = /^-?\d+n+$/;
 var originalStringify = JSON.stringify;
 var originalParse = JSON.parse;
 var customFormat = /^-?\d+n$/;
-var bigIntsStringify = /([\[:])?"(-?\d+)n"($|([\\n]|\s)*(\s|[\\n])*[,\}\]])/g;
-var noiseStringify = /([\[:])?("-?\d+n+)n("$|"([\\n]|\s)*(\s|[\\n])*[,\}\]])/g;
+var bigIntsStringify = /([\[:])?"(-?\d+)n"($|\s*[,\}\]])/g;
+var noiseStringify = /([\[:])?("-?\d+n+)n("$|"\s*[,\}\]])/g;
+var isUnstringifiable = (val) => val === void 0 || typeof val === "function" || typeof val === "symbol";
+var isRawJSON = (val) => val !== null && typeof val === "object" && val.constructor && val.constructor.name === "RawJSON";
+var stringifyIteratively = (rootValue, replacer, spaceParam) => {
+  let space = "";
+  if (typeof spaceParam === "number") {
+    space = " ".repeat(Math.min(10, Math.max(0, Math.floor(spaceParam))));
+  } else if (typeof spaceParam === "string") {
+    space = spaceParam.slice(0, 10);
+  }
+  const isFunctionReplacer = typeof replacer === "function";
+  const propertyList = Array.isArray(replacer) ? new Set(replacer.map(String)) : null;
+  const prepareVal = (parent, key, val) => {
+    const isObject = val !== null && typeof val === "object";
+    const hasToJSON = isObject && typeof val.toJSON === "function";
+    if (hasToJSON) {
+      val = val.toJSON(key);
+    }
+    const isNoise = typeof val === "string" && noiseValue.test(val);
+    if (isNoise)
+      return val + "n";
+    const isBigInt = typeof val === "bigint";
+    if (isBigInt) {
+      const supportsRawJSON = "rawJSON" in JSON;
+      if (supportsRawJSON)
+        return JSON.rawJSON(val.toString());
+      return val.toString() + "n";
+    }
+    if (isFunctionReplacer) {
+      val = replacer.call(parent, key, val);
+    }
+    const isPostReplacerObject = val !== null && typeof val === "object";
+    if (isPostReplacerObject) {
+      const isPrimitiveWrapper = val instanceof Number || val instanceof String || val instanceof Boolean;
+      if (isPrimitiveWrapper) {
+        val = val.valueOf();
+      }
+    }
+    return val;
+  };
+  const rootProcessed = prepareVal({ "": rootValue }, "", rootValue);
+  if (isUnstringifiable(rootProcessed)) {
+    return void 0;
+  }
+  const isRootPrimitive = rootProcessed === null || typeof rootProcessed !== "object";
+  const isRootNativeRawJSON = isRawJSON(rootProcessed);
+  if (isRootPrimitive || isRootNativeRawJSON) {
+    return originalStringify(rootProcessed);
+  }
+  const chunks = [];
+  let level = 0;
+  const stack = [
+    {
+      parent: { "": rootProcessed },
+      key: "",
+      val: rootProcessed,
+      isArray: Array.isArray(rootProcessed),
+      keys: Array.isArray(rootProcessed) ? null : Object.keys(rootProcessed),
+      index: 0,
+      first: true
+    }
+  ];
+  const visited = new WeakSet([rootProcessed]);
+  while (stack.length > 0) {
+    const node = stack[stack.length - 1];
+    if (node.index === 0) {
+      chunks.push(node.isArray ? "[" : "{");
+      level++;
+    }
+    let isDone = false;
+    if (node.isArray) {
+      if (node.index < node.val.length) {
+        if (!node.first)
+          chunks.push(",");
+        if (space)
+          chunks.push("\n" + space.repeat(level));
+        const childRaw = node.val[node.index];
+        const childVal = prepareVal(node.val, String(node.index), childRaw);
+        if (isUnstringifiable(childVal)) {
+          chunks.push("null");
+          node.first = false;
+          node.index++;
+        } else {
+          const isComplexObject = childVal !== null && typeof childVal === "object";
+          const isNativeRaw = isRawJSON(childVal);
+          if (isComplexObject && !isNativeRaw) {
+            if (visited.has(childVal)) {
+              throw new TypeError("Converting circular structure to JSON");
+            }
+            visited.add(childVal);
+            stack.push({
+              parent: node.val,
+              key: String(node.index),
+              val: childVal,
+              isArray: Array.isArray(childVal),
+              keys: Array.isArray(childVal) ? null : Object.keys(childVal),
+              index: 0,
+              first: true
+            });
+            node.first = false;
+            node.index++;
+          } else {
+            chunks.push(originalStringify(childVal));
+            node.first = false;
+            node.index++;
+          }
+        }
+      } else {
+        isDone = true;
+      }
+    } else {
+      while (node.index < node.keys.length) {
+        const k = node.keys[node.index++];
+        const isFilteredOutByArray = propertyList && !propertyList.has(k);
+        if (isFilteredOutByArray)
+          continue;
+        const childRaw = node.val[k];
+        const childVal = prepareVal(node.val, k, childRaw);
+        if (isUnstringifiable(childVal))
+          continue;
+        if (!node.first)
+          chunks.push(",");
+        if (space) {
+          chunks.push("\n" + space.repeat(level) + originalStringify(k) + ": ");
+        } else {
+          chunks.push(originalStringify(k) + ":");
+        }
+        const isComplexObject = childVal !== null && typeof childVal === "object";
+        const isNativeRaw = isRawJSON(childVal);
+        if (isComplexObject && !isNativeRaw) {
+          if (visited.has(childVal)) {
+            throw new TypeError("Converting circular structure to JSON");
+          }
+          visited.add(childVal);
+          stack.push({
+            parent: node.val,
+            key: k,
+            val: childVal,
+            isArray: Array.isArray(childVal),
+            keys: Array.isArray(childVal) ? null : Object.keys(childVal),
+            index: 0,
+            first: true
+          });
+          node.first = false;
+          break;
+        } else {
+          chunks.push(originalStringify(childVal));
+          node.first = false;
+        }
+      }
+      const isNodeFullyProcessed = node.index >= node.keys.length && stack[stack.length - 1] === node;
+      if (isNodeFullyProcessed) {
+        isDone = true;
+      }
+    }
+    if (isDone) {
+      level--;
+      if (!node.first && space)
+        chunks.push("\n" + space.repeat(level));
+      chunks.push(node.isArray ? "]" : "}");
+      visited.delete(node.val);
+      stack.pop();
+    }
+  }
+  return chunks.join("");
+};
 var JSONStringify = (value, replacer, space) => {
-  if ("rawJSON" in JSON) {
-    return originalStringify(
+  try {
+    const supportsRawJSON = "rawJSON" in JSON;
+    if (supportsRawJSON) {
+      return originalStringify(
+        value,
+        (key, val) => {
+          if (typeof val === "bigint")
+            return JSON.rawJSON(val.toString());
+          const hasFunctionReplacer = typeof replacer === "function";
+          if (hasFunctionReplacer)
+            return replacer(key, val);
+          const isKeyInArrayReplacer = Array.isArray(replacer) && replacer.includes(key);
+          if (isKeyInArrayReplacer)
+            return val;
+          return val;
+        },
+        space
+      );
+    }
+    if (!value)
+      return originalStringify(value, replacer, space);
+    const convertedToCustomJSON = originalStringify(
       value,
-      (key, value2) => {
-        if (typeof value2 === "bigint")
-          return JSON.rawJSON(value2.toString());
-        if (typeof replacer === "function")
-          return replacer(key, value2);
-        if (Array.isArray(replacer) && replacer.includes(key))
-          return value2;
-        return value2;
+      (key, val) => {
+        const isNoise = typeof val === "string" && noiseValue.test(val);
+        if (isNoise)
+          return val.toString() + "n";
+        if (typeof val === "bigint")
+          return val.toString() + "n";
+        const hasFunctionReplacer = typeof replacer === "function";
+        if (hasFunctionReplacer)
+          return replacer(key, val);
+        const isKeyInArrayReplacer = Array.isArray(replacer) && replacer.includes(key);
+        if (isKeyInArrayReplacer)
+          return val;
+        return val;
       },
       space
     );
+    const processedJSON = convertedToCustomJSON.replace(
+      bigIntsStringify,
+      "$1$2$3"
+    );
+    const denoisedJSON = processedJSON.replace(noiseStringify, "$1$2$3");
+    return denoisedJSON;
+  } catch (error2) {
+    if (error2 instanceof RangeError) {
+      const convertedJSON = stringifyIteratively(value, replacer, space);
+      if (convertedJSON === void 0)
+        return void 0;
+      const supportsRawJSON = "rawJSON" in JSON;
+      if (supportsRawJSON)
+        return convertedJSON;
+      const processedJSON = convertedJSON.replace(bigIntsStringify, "$1$2$3");
+      return processedJSON.replace(noiseStringify, "$1$2$3");
+    }
+    throw error2;
   }
-  if (!value)
-    return originalStringify(value, replacer, space);
-  const convertedToCustomJSON = originalStringify(
-    value,
-    (key, value2) => {
-      const isNoise = typeof value2 === "string" && noiseValue.test(value2);
-      if (isNoise)
-        return value2.toString() + "n";
-      if (typeof value2 === "bigint")
-        return value2.toString() + "n";
-      if (typeof replacer === "function")
-        return replacer(key, value2);
-      if (Array.isArray(replacer) && replacer.includes(key))
-        return value2;
-      return value2;
-    },
-    space
-  );
-  const processedJSON = convertedToCustomJSON.replace(
-    bigIntsStringify,
-    "$1$2$3"
-  );
-  const denoisedJSON = processedJSON.replace(noiseStringify, "$1$2$3");
-  return denoisedJSON;
 };
 var featureCache = /* @__PURE__ */ new Map();
 var isContextSourceSupported = () => {
@@ -28671,49 +28907,109 @@ var convertMarkedBigIntsReviver = (key, value, context3, userReviver) => {
   const isNoiseValue = typeof value === "string" && noiseValue.test(value);
   if (isNoiseValue)
     return value.slice(0, -1);
-  if (typeof userReviver !== "function")
+  const hasUserReviver = typeof userReviver === "function";
+  if (!hasUserReviver)
     return value;
   return userReviver(key, value, context3);
 };
 var JSONParseV2 = (text, reviver) => {
   return JSON.parse(text, (key, value, context3) => {
-    const isBigNumber = typeof value === "number" && (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER);
+    const isNumber = typeof value === "number";
+    const isOutOfBounds = value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER;
+    const isBigNumber = isNumber && isOutOfBounds;
     const isInt = context3 && intRegex.test(context3.source);
     const isBigInt = isBigNumber && isInt;
     if (isBigInt)
       return BigInt(context3.source);
-    if (typeof reviver !== "function")
+    const hasCustomReviver = typeof reviver === "function";
+    if (!hasCustomReviver)
       return value;
     return reviver(key, value, context3);
   });
 };
 var MAX_INT = Number.MAX_SAFE_INTEGER.toString();
 var MAX_DIGITS = MAX_INT.length;
-var stringsOrLargeNumbers = /"(?:\\.|[^"])*"|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/g;
+var stringsOrLargeNumbers = /"(?:[^"\\]|\\.)*"|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/g;
 var noiseValueWithQuotes = /^"-?\d+n+"$/;
+var applyReviverIteratively = (parsed, userReviver) => {
+  const rootHolder = { "": parsed };
+  const stack = [{ parent: rootHolder, key: "", visited: false }];
+  while (stack.length > 0) {
+    const node = stack[stack.length - 1];
+    if (!node.visited) {
+      node.visited = true;
+      const value = node.parent[node.key];
+      const isComplexObject = value !== null && typeof value === "object";
+      if (isComplexObject) {
+        const keys = Object.keys(value);
+        for (let i = keys.length - 1; i >= 0; i--) {
+          stack.push({ parent: value, key: keys[i], visited: false });
+        }
+      }
+    } else {
+      const { parent, key } = node;
+      let value = parent[key];
+      if (typeof value === "string") {
+        const isCustomFormatBigInt = customFormat.test(value);
+        if (isCustomFormatBigInt) {
+          value = BigInt(value.slice(0, -1));
+        } else {
+          const isNoise = noiseValue.test(value);
+          if (isNoise)
+            value = value.slice(0, -1);
+        }
+      }
+      const hasUserReviver = typeof userReviver === "function";
+      if (hasUserReviver) {
+        value = userReviver.call(parent, key, value);
+      }
+      const isDeleted = value === void 0;
+      if (isDeleted) {
+        delete parent[key];
+      } else {
+        parent[key] = value;
+      }
+      stack.pop();
+    }
+  }
+  return rootHolder[""];
+};
+var serializeBigInts = (text) => {
+  return text.replace(
+    stringsOrLargeNumbers,
+    (match, digits, fractional, exponential) => {
+      const isString = match[0] === '"';
+      const isNoise = isString && noiseValueWithQuotes.test(match);
+      if (isNoise)
+        return match.substring(0, match.length - 1) + 'n"';
+      const hasFractionalOrExponential = fractional || exponential;
+      const isLessThanMaxSafeInt = digits && (digits.length < MAX_DIGITS || digits.length === MAX_DIGITS && digits <= MAX_INT);
+      const isStandardValue = isString || hasFractionalOrExponential || isLessThanMaxSafeInt;
+      if (isStandardValue)
+        return match;
+      return '"' + match + 'n"';
+    }
+  );
+};
 var JSONParse = (text, reviver) => {
   if (!text)
     return originalParse(text, reviver);
-  if (isContextSourceSupported())
-    return JSONParseV2(text, reviver);
-  const serializedData = text.replace(
-    stringsOrLargeNumbers,
-    (text2, digits, fractional, exponential) => {
-      const isString = text2[0] === '"';
-      const isNoise = isString && noiseValueWithQuotes.test(text2);
-      if (isNoise)
-        return text2.substring(0, text2.length - 1) + 'n"';
-      const isFractionalOrExponential = fractional || exponential;
-      const isLessThanMaxSafeInt = digits && (digits.length < MAX_DIGITS || digits.length === MAX_DIGITS && digits <= MAX_INT);
-      if (isString || isFractionalOrExponential || isLessThanMaxSafeInt)
-        return text2;
-      return '"' + text2 + 'n"';
+  try {
+    if (isContextSourceSupported())
+      return JSONParseV2(text, reviver);
+    const serializedData = serializeBigInts(text);
+    return originalParse(
+      serializedData,
+      (key, value, context3) => convertMarkedBigIntsReviver(key, value, context3, reviver)
+    );
+  } catch (error2) {
+    if (error2 instanceof RangeError) {
+      const serializedData = serializeBigInts(text);
+      const parsed = originalParse(serializedData);
+      return applyReviverIteratively(parsed, reviver);
     }
-  );
-  return originalParse(
-    serializedData,
-    (key, value, context3) => convertMarkedBigIntsReviver(key, value, context3, reviver)
-  );
+    throw error2;
+  }
 };
 
 // 
@@ -28756,7 +29052,7 @@ var RequestError = class extends Error {
 };
 
 // 
-var VERSION2 = "10.0.10";
+var VERSION2 = "10.0.16";
 var defaults_default = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION2} ${getUserAgent()}`
@@ -28877,7 +29173,7 @@ async function getResponseData(response) {
   if (!contentType) {
     return response.text().catch(noop);
   }
-  const mimetype = (0, import_content_type.parse)(contentType);
+  const mimetype = parse2(contentType);
   if (isJSONResponse(mimetype)) {
     let text = "";
     try {
@@ -28886,7 +29182,10 @@ async function getResponseData(response) {
     } catch (err) {
       return text;
     }
-  } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8") {
+  } else if (mimetype.type.startsWith("text/") || // `application/octet-stream` is the canonical "arbitrary binary" type
+  // (RFC 2046) and must never be decoded as text, even when the response
+  // carries a (misleading) `charset=utf-8` parameter — see #751.
+  mimetype.parameters.charset?.toLowerCase() === "utf-8" && mimetype.type !== "application/octet-stream") {
     return response.text().catch(noop);
   } else {
     return response.arrayBuffer().catch(
@@ -28905,9 +29204,10 @@ function toErrorMessage(data) {
   if (data instanceof ArrayBuffer) {
     return "Unknown error";
   }
-  if ("message" in data) {
-    const suffix = "documentation_url" in data ? ` - ${data.documentation_url}` : "";
-    return Array.isArray(data.errors) ? `${data.message}: ${data.errors.map((v) => JSON.stringify(v)).join(", ")}${suffix}` : `${data.message}${suffix}`;
+  if (typeof data === "object" && data !== null && "message" in data) {
+    const objectData = data;
+    const suffix = "documentation_url" in objectData ? ` - ${objectData.documentation_url}` : "";
+    return Array.isArray(objectData.errors) ? `${objectData.message}: ${objectData.errors.map((v) => JSON.stringify(v)).join(", ")}${suffix}` : `${objectData.message}${suffix}`;
   }
   return `Unknown error: ${JSON.stringify(data)}`;
 }
@@ -28954,6 +29254,9 @@ var GraphqlResponseError = class extends Error {
       Error.captureStackTrace(this, this.constructor);
     }
   }
+  request;
+  headers;
+  response;
   name = "GraphqlResponseError";
   errors;
   data;
@@ -29090,7 +29393,7 @@ var createTokenAuth = function createTokenAuth2(token) {
 };
 
 // 
-var VERSION4 = "7.0.6";
+var VERSION4 = "7.0.8";
 
 // 
 var noop2 = () => {
@@ -31883,9 +32186,6 @@ function firebase(cmd, cwd) {
 }
 
 // 
-import { createRequire as __cjsCompatRequire_ngDev5 } from "module";
-
-// 
 import { createRequire as __cjsCompatRequire_ngDev4 } from "module";
 
 // 
@@ -31941,7 +32241,50 @@ var __toESM2 = (mod, isNodeMode, target) => (target = mod != null ? __create2(__
 import process2 from "node:process";
 import os3 from "node:os";
 import tty from "node:tty";
+import { notStrictEqual, strictEqual } from "assert";
+import { dirname, resolve } from "path";
+import { readdirSync, statSync } from "fs";
+import { inspect } from "util";
+import { fileURLToPath } from "url";
+import { format } from "util";
+import { normalize, resolve as resolve2 } from "path";
+import { readFileSync as readFileSync2 } from "fs";
+import { createRequire } from "node:module";
+import { basename, dirname as dirname2, extname, relative, resolve as resolve4, join as join3 } from "path";
+import { readFileSync as readFileSync22, statSync as statSync2, writeFile as writeFile3 } from "fs";
+import { format as format2 } from "util";
+import { resolve as resolve3 } from "path";
+import { createRequire as createRequire2 } from "node:module";
+import { readFileSync as readFileSync3, readdirSync as readdirSync2 } from "node:fs";
+import { styleText } from "util";
+import { spawn as _spawn, spawnSync as _spawnSync, exec as _exec } from "child_process";
+import assert from "assert";
+import { stripVTControlCharacters } from "util";
+import { join as join32 } from "path";
+import { pathToFileURL } from "url";
 var require3 = __cjsCompatRequire_ngDev2(import.meta.url);
+var require_get_caller_file = __commonJS2({
+  ""(exports, module) {
+    "use strict";
+    module.exports = function getCallerFile2(position) {
+      if (position === void 0) {
+        position = 2;
+      }
+      if (position >= Error.stackTraceLimit) {
+        throw new TypeError("getCallerFile(position) requires position be less then Error.stackTraceLimit but position was: `" + position + "` and Error.stackTraceLimit was: `" + Error.stackTraceLimit + "`");
+      }
+      var oldPrepareStackTrace = Error.prepareStackTrace;
+      Error.prepareStackTrace = function(_, stack2) {
+        return stack2;
+      };
+      var stack = new Error().stack;
+      Error.prepareStackTrace = oldPrepareStackTrace;
+      if (stack !== null && typeof stack === "object") {
+        return stack[position] ? stack[position].getFileName() : void 0;
+      }
+    };
+  }
+});
 var supports_color_exports = {};
 __export(supports_color_exports, {
   createSupportsColor: () => createSupportsColor,
@@ -31954,19 +32297,22 @@ function hasFlag(flag, argv = globalThis.Deno ? globalThis.Deno.args : process2.
   return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
 }
 function envForceColor() {
-  if (!("FORCE_COLOR" in env)) {
+  if (!("FORCE_COLOR" in env2)) {
     return;
   }
-  if (env.FORCE_COLOR === "true") {
+  if (env2.FORCE_COLOR === "true") {
     return 1;
   }
-  if (env.FORCE_COLOR === "false") {
+  if (env2.FORCE_COLOR === "false") {
     return 0;
   }
-  if (env.FORCE_COLOR.length === 0) {
+  if (env2.FORCE_COLOR.length === 0) {
     return 1;
   }
-  const level = Math.min(Number.parseInt(env.FORCE_COLOR, 10), 3);
+  if (!new RegExp("^\\d+$", "v").test(env2.FORCE_COLOR)) {
+    return;
+  }
+  const level = Math.min(Number(env2.FORCE_COLOR), 3);
   if (![0, 1, 2, 3].includes(level)) {
     return;
   }
@@ -32000,14 +32346,17 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
       return 2;
     }
   }
-  if ("TF_BUILD" in env && "AGENT_NAME" in env) {
+  if (forceColor !== void 0 && new RegExp("^\\d+$", "v").test(env2.FORCE_COLOR)) {
+    return forceColor;
+  }
+  if ("TF_BUILD" in env2 && "AGENT_NAME" in env2) {
     return 1;
   }
   if (haveStream && !streamIsTTY && forceColor === void 0) {
     return 0;
   }
   const min = forceColor || 0;
-  if (env.TERM === "dumb") {
+  if (env2.TERM === "dumb") {
     return min;
   }
   if (process2.platform === "win32") {
@@ -32017,33 +32366,33 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
     }
     return 1;
   }
-  if ("CI" in env) {
-    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => key in env)) {
+  if ("CI" in env2) {
+    if (["GITHUB_ACTIONS", "GITEA_ACTIONS", "CIRCLECI"].some((key) => Object.hasOwn(env2, key))) {
       return 3;
     }
-    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => sign in env) || env.CI_NAME === "codeship") {
+    if (["TRAVIS", "APPVEYOR", "GITLAB_CI", "BUILDKITE", "DRONE"].some((sign) => Object.hasOwn(env2, sign)) || env2.CI_NAME === "codeship") {
       return 1;
     }
     return min;
   }
-  if ("TEAMCITY_VERSION" in env) {
-    return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0;
+  if ("TEAMCITY_VERSION" in env2) {
+    return new RegExp("^(?:9\\.0*[1-9]\\d*\\.|\\d{2,}\\.)", "v").test(env2.TEAMCITY_VERSION) ? 1 : 0;
   }
-  if (env.COLORTERM === "truecolor") {
+  if (env2.COLORTERM === "truecolor") {
     return 3;
   }
-  if (env.TERM === "xterm-kitty") {
+  if (env2.TERM === "xterm-kitty") {
     return 3;
   }
-  if (env.TERM === "xterm-ghostty") {
+  if (env2.TERM === "xterm-ghostty") {
     return 3;
   }
-  if (env.TERM === "wezterm") {
+  if (env2.TERM === "wezterm") {
     return 3;
   }
-  if ("TERM_PROGRAM" in env) {
-    const version = Number.parseInt((env.TERM_PROGRAM_VERSION || "").split(".")[0], 10);
-    switch (env.TERM_PROGRAM) {
+  if ("TERM_PROGRAM" in env2) {
+    const version = Number((env2.TERM_PROGRAM_VERSION || "").split(".", 1)[0]);
+    switch (env2.TERM_PROGRAM) {
       case "iTerm.app": {
         return version >= 3 ? 3 : 2;
       }
@@ -32052,13 +32401,13 @@ function _supportsColor(haveStream, { streamIsTTY, sniffFlags = true } = {}) {
       }
     }
   }
-  if (/-256(color)?$/i.test(env.TERM)) {
+  if (new RegExp("-256(?:color)?$", "iv").test(env2.TERM)) {
     return 2;
   }
-  if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+  if (new RegExp("^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux", "iv").test(env2.TERM)) {
     return 1;
   }
-  if ("COLORTERM" in env) {
+  if ("COLORTERM" in env2) {
     return 1;
   }
   return min;
@@ -32070,13 +32419,13 @@ function createSupportsColor(stream, options = {}) {
   });
   return translateLevel(level);
 }
-var env;
+var env2;
 var flagForceColor;
 var supportsColor;
 var supports_color_default;
 var init_supports_color = __esm({
   ""() {
-    ({ env } = process2);
+    ({ env: env2 } = process2);
     if (hasFlag("no-color") || hasFlag("no-colors") || hasFlag("color=false") || hasFlag("color=never")) {
       flagForceColor = 0;
     } else if (hasFlag("color") || hasFlag("colors") || hasFlag("color=true") || hasFlag("color=always")) {
@@ -32087,52 +32436,6 @@ var init_supports_color = __esm({
       stderr: createSupportsColor({ isTTY: tty.isatty(2) })
     };
     supports_color_default = supportsColor;
-  }
-});
-
-// 
-import { notStrictEqual, strictEqual } from "assert";
-import { dirname, resolve } from "path";
-import { readdirSync, statSync } from "fs";
-import { inspect } from "util";
-import { fileURLToPath } from "url";
-import { format } from "util";
-import { normalize, resolve as resolve2 } from "path";
-import { readFileSync as readFileSync2 } from "fs";
-import { createRequire } from "node:module";
-import { basename, dirname as dirname2, extname, relative, resolve as resolve4, join as join3 } from "path";
-import { readFileSync as readFileSync22, statSync as statSync2, writeFile as writeFile3 } from "fs";
-import { format as format2 } from "util";
-import { resolve as resolve3 } from "path";
-import { createRequire as createRequire2 } from "node:module";
-import { readFileSync as readFileSync3, readdirSync as readdirSync2 } from "node:fs";
-import { styleText } from "util";
-import { spawn as _spawn, spawnSync as _spawnSync, exec as _exec } from "child_process";
-import assert from "assert";
-import { stripVTControlCharacters } from "util";
-import { join as join32 } from "path";
-import { pathToFileURL } from "url";
-var require4 = __cjsCompatRequire_ngDev3(import.meta.url);
-var require_get_caller_file = __commonJS2({
-  ""(exports, module) {
-    "use strict";
-    module.exports = function getCallerFile2(position) {
-      if (position === void 0) {
-        position = 2;
-      }
-      if (position >= Error.stackTraceLimit) {
-        throw new TypeError("getCallerFile(position) requires position be less then Error.stackTraceLimit but position was: `" + position + "` and Error.stackTraceLimit was: `" + Error.stackTraceLimit + "`");
-      }
-      var oldPrepareStackTrace = Error.prepareStackTrace;
-      Error.prepareStackTrace = function(_, stack2) {
-        return stack2;
-      };
-      var stack = new Error().stack;
-      Error.prepareStackTrace = oldPrepareStackTrace;
-      if (stack !== null && typeof stack === "object") {
-        return stack[position] ? stack[position].getFileName() : void 0;
-      }
-    };
   }
 });
 var align = {
@@ -32391,7 +32694,7 @@ function cliui(opts, _mixin) {
 }
 function ansiRegex({ onlyFirst = false } = {}) {
   const ST = "(?:\\u0007|\\u001B\\u005C|\\u009C)";
-  const osc = `(?:\\u001B\\][\\s\\S]*?${ST})`;
+  const osc = `(?:\\u001B\\][^\\u0007\\u001B\\u009C]*${ST})`;
   const csi = "[\\u001B\\u009B][[\\]()#;?]*(?:\\d{1,4}(?:[;:]\\d{0,4})*)?[\\dA-PR-TZcf-nq-uy=><~]";
   const pattern = `${osc}|${csi}`;
   return new RegExp(pattern, onlyFirst ? void 0 : "g");
@@ -33511,8 +33814,8 @@ var YargsParser = class {
       if (typeof envPrefix === "undefined")
         return;
       const prefix = typeof envPrefix === "string" ? envPrefix : "";
-      const env22 = mixin2.env();
-      Object.keys(env22).forEach(function(envVar) {
+      const env3 = mixin2.env();
+      Object.keys(env3).forEach(function(envVar) {
         if (prefix === "" || envVar.lastIndexOf(prefix, 0) === 0) {
           const keys = envVar.split("__").map(function(key, i) {
             if (i === 0) {
@@ -33521,7 +33824,7 @@ var YargsParser = class {
             return camelCase(key);
           });
           if ((configOnly && flags.configs[keys.join(".")] || !configOnly) && !hasKey(argv2, keys)) {
-            setArg(keys.join("."), env22[envVar]);
+            setArg(keys.join("."), env3[envVar]);
           }
         }
       });
@@ -33828,12 +34131,12 @@ if (nodeVersion) {
     throw Error(`yargs parser supports a minimum Node.js version of ${minNodeVersion}. Read our version support policy: https://github.com/yargs/yargs-parser#supported-nodejs-versions`);
   }
 }
-var env2 = process ? process.env : {};
+var env = process ? process.env : {};
 var require22 = createRequire ? createRequire(import.meta.url) : void 0;
 var parser = new YargsParser({
   cwd: process.cwd,
   env: () => {
-    return env2;
+    return env;
   },
   format,
   normalize,
@@ -33872,6 +34175,130 @@ function isElectronApp() {
 }
 function getProcessArgvBin() {
   return process.argv[getProcessArgvBinIndex()];
+}
+var segmenter2 = new Intl.Segmenter();
+var zeroWidthClusterRegex = new RegExp("^(?:\\p{Default_Ignorable_Code_Point}|\\p{Control}|\\p{Format}|\\p{Nonspacing_Mark}|\\p{Enclosing_Mark}|\\p{Surrogate})+$", "v");
+var leadingNonPrintingRegex = new RegExp("^[\\p{Default_Ignorable_Code_Point}\\p{Control}\\p{Format}\\p{Nonspacing_Mark}\\p{Enclosing_Mark}\\p{Surrogate}]+", "v");
+var spacingMarkRegex = new RegExp("\\p{Spacing_Mark}", "v");
+var rgiEmojiRegex = new RegExp("^\\p{RGI_Emoji}$", "v");
+var unqualifiedKeycapRegex = /^[\d#*]\u20E3$/;
+var extendedPictographicRegex = new RegExp("\\p{Extended_Pictographic}", "gu");
+function isDoubleWidthNonRgiEmojiSequence(segment) {
+  if (segment.length > 50) {
+    return false;
+  }
+  if (unqualifiedKeycapRegex.test(segment)) {
+    return true;
+  }
+  if (segment.includes("\u200D")) {
+    const pictographics = segment.match(extendedPictographicRegex);
+    return pictographics !== null && pictographics.length >= 2;
+  }
+  return false;
+}
+function baseVisible(segment) {
+  return segment.replace(leadingNonPrintingRegex, "");
+}
+function isZeroWidthCluster(segment) {
+  return zeroWidthClusterRegex.test(segment);
+}
+function isHangulLeadingJamo(codePoint) {
+  return codePoint >= 4352 && codePoint <= 4447 || codePoint >= 43360 && codePoint <= 43388;
+}
+function isHangulVowelJamo(codePoint) {
+  return codePoint >= 4448 && codePoint <= 4519 || codePoint >= 55216 && codePoint <= 55238;
+}
+function isHangulTrailingJamo(codePoint) {
+  return codePoint >= 4520 && codePoint <= 4607 || codePoint >= 55243 && codePoint <= 55291;
+}
+function isHangulJamo(codePoint) {
+  return isHangulLeadingJamo(codePoint) || isHangulVowelJamo(codePoint) || isHangulTrailingJamo(codePoint);
+}
+function hangulClusterWidth(visibleSegment, eastAsianWidthOptions) {
+  const codePoints = [];
+  for (const character of visibleSegment) {
+    if (zeroWidthClusterRegex.test(character)) {
+      continue;
+    }
+    codePoints.push(character.codePointAt(0));
+  }
+  if (codePoints.length === 0) {
+    return void 0;
+  }
+  let width = 0;
+  for (let index = 0; index < codePoints.length; index++) {
+    const codePoint = codePoints[index];
+    if (!isHangulJamo(codePoint)) {
+      if (width === 0) {
+        return void 0;
+      }
+      for (let remaining = index; remaining < codePoints.length; remaining++) {
+        width += eastAsianWidth(codePoints[remaining], eastAsianWidthOptions);
+      }
+      return width;
+    }
+    if (isHangulLeadingJamo(codePoint) && isHangulVowelJamo(codePoints[index + 1])) {
+      width += 2;
+      index += isHangulTrailingJamo(codePoints[index + 2]) ? 2 : 1;
+      continue;
+    }
+    width += eastAsianWidth(codePoint, eastAsianWidthOptions);
+  }
+  return width;
+}
+function trailingWidth(visibleSegment, eastAsianWidthOptions) {
+  let extra = 0;
+  let first = true;
+  for (const character of visibleSegment) {
+    if (first) {
+      first = false;
+      continue;
+    }
+    if (spacingMarkRegex.test(character) || character >= "\uFF00" && character <= "\uFFEF") {
+      extra += eastAsianWidth(character.codePointAt(0), eastAsianWidthOptions);
+    }
+  }
+  return extra;
+}
+function stringWidth2(input, options = {}) {
+  if (typeof input !== "string" || input.length === 0) {
+    return 0;
+  }
+  const {
+    ambiguousIsNarrow = true,
+    countAnsiEscapeCodes = false
+  } = options;
+  let string = input;
+  if (!countAnsiEscapeCodes && (string.includes("\x1B") || string.includes("\x9B"))) {
+    string = stripAnsi(string);
+  }
+  if (string.length === 0) {
+    return 0;
+  }
+  if (/^[\u0020-\u007E]*$/.test(string)) {
+    return string.length;
+  }
+  let width = 0;
+  const eastAsianWidthOptions = { ambiguousAsWide: !ambiguousIsNarrow };
+  for (const { segment } of segmenter2.segment(string)) {
+    if (isZeroWidthCluster(segment)) {
+      continue;
+    }
+    if (rgiEmojiRegex.test(segment) || isDoubleWidthNonRgiEmojiSequence(segment)) {
+      width += 2;
+      continue;
+    }
+    const visibleSegment = baseVisible(segment);
+    const hangulWidth = hangulClusterWidth(visibleSegment, eastAsianWidthOptions);
+    if (hangulWidth !== void 0) {
+      width += hangulWidth;
+      continue;
+    }
+    const codePoint = visibleSegment.codePointAt(0);
+    width += eastAsianWidth(codePoint, eastAsianWidthOptions);
+    width += trailingWidth(visibleSegment, eastAsianWidthOptions);
+  }
+  return width;
 }
 var node_default = {
   fs: {
@@ -34095,7 +34522,7 @@ var esm_default = {
     const callerFile = (0, import_get_caller_file.default)(3);
     return callerFile.match(/^file:\/\//) ? fileURLToPath(callerFile) : callerFile;
   },
-  stringWidth,
+  stringWidth: stringWidth2,
   y18n: y18n_default({
     directory: resolve4(__dirname2, "../../../locales"),
     updateFiles: false
@@ -35872,6 +36299,8 @@ function mergeDeep2(config1, config2) {
   }
   Object.assign(target, config1);
   for (const key of Object.keys(config2)) {
+    if (key === "__proto__")
+      continue;
     if (isObject(config2[key]) && isObject(target[key])) {
       target[key] = mergeDeep2(config1[key], config2[key]);
     } else {
@@ -36920,7 +37349,7 @@ var YargsInstance = class {
   [kGetDollarZero]() {
     let $0 = "";
     let default$0;
-    if (/\b(node|iojs|electron)(\.exe)?$/.test(__classPrivateFieldGet(this, _YargsInstance_shim, "f").process.argv()[0])) {
+    if (/\b(node|iojs|electron|bun)(\.exe)?$/.test(__classPrivateFieldGet(this, _YargsInstance_shim, "f").process.argv()[0])) {
       default$0 = __classPrivateFieldGet(this, _YargsInstance_shim, "f").process.argv().slice(1, 2);
     } else {
       default$0 = __classPrivateFieldGet(this, _YargsInstance_shim, "f").process.argv().slice(0, 1);
@@ -37395,9 +37824,9 @@ var ChildProcess = class {
   }
   static spawnSync(command2, args, options = {}) {
     const commandText = `${command2} ${args.join(" ")}`;
-    const env22 = getEnvironmentForNonInteractiveCommand(options.env);
+    const env3 = getEnvironmentForNonInteractiveCommand(options.env);
     Log.debug(`Executing command: ${sanitize(commandText)}`);
-    const { status: exitCode, signal, stdout, stderr } = _spawnSync(command2, args, { ...options, env: env22, encoding: "utf8", stdio: "pipe" });
+    const { status: exitCode, signal, stdout, stderr } = _spawnSync(command2, args, { ...options, env: env3, encoding: "utf8", stdio: "pipe" });
     const status = statusFromExitCodeAndSignal(exitCode, signal);
     if (status === 0 || options.suppressErrorOnFailingExitCode) {
       return { status, stdout, stderr };
@@ -37406,12 +37835,12 @@ var ChildProcess = class {
   }
   static spawn(command2, args, options = {}) {
     const commandText = `${command2} ${args.join(" ")}`;
-    const env22 = getEnvironmentForNonInteractiveCommand(options.env);
-    return processAsyncCmd(commandText, options, _spawn(command2, args, { ...options, env: env22, stdio: "pipe" }));
+    const env3 = getEnvironmentForNonInteractiveCommand(options.env);
+    return processAsyncCmd(commandText, options, _spawn(command2, args, { ...options, env: env3, stdio: "pipe" }));
   }
   static exec(command2, options = {}) {
-    const env22 = getEnvironmentForNonInteractiveCommand(options.env);
-    return processAsyncCmd(command2, options, _exec(command2, { ...options, env: env22 }));
+    const env3 = getEnvironmentForNonInteractiveCommand(options.env);
+    return processAsyncCmd(command2, options, _exec(command2, { ...options, env: env3 }));
   }
 };
 function statusFromExitCodeAndSignal(exitCode, signal) {
@@ -37629,137 +38058,9 @@ import { styleText as styleText4 } from "node:util";
 import { styleText as styleText5 } from "node:util";
 import { styleText as styleText6 } from "node:util";
 import { styleText as styleText7 } from "node:util";
-var require5 = __cjsCompatRequire_ngDev4(import.meta.url);
-var require_dist2 = __commonJS2({
-  ""(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.format = format3;
-    exports.parse = parse32;
-    var TEXT_REGEXP = /^[\u0009\u0020-\u007e\u0080-\u00ff]*$/;
-    var TOKEN_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
-    var QUOTE_REGEXP = /[\\"]/g;
-    var TYPE_REGEXP = /^[!#$%&'*+.^_`|~0-9A-Za-z-]+\/[!#$%&'*+.^_`|~0-9A-Za-z-]+$/;
-    var NullObject = (() => {
-      const C = function() {
-      };
-      C.prototype = /* @__PURE__ */ Object.create(null);
-      return C;
-    })();
-    function format3(obj) {
-      const { type, parameters } = obj;
-      if (!type || !TYPE_REGEXP.test(type)) {
-        throw new TypeError(`Invalid type: ${type}`);
-      }
-      let result = type;
-      if (parameters) {
-        for (const param of Object.keys(parameters)) {
-          if (!TOKEN_REGEXP.test(param)) {
-            throw new TypeError(`Invalid parameter name: ${param}`);
-          }
-          result += `; ${param}=${qstring(parameters[param])}`;
-        }
-      }
-      return result;
-    }
-    function parse32(header, options) {
-      const len = header.length;
-      let index = skipOWS(header, 0, len);
-      const valueStart = index;
-      index = skipValue(header, index, len);
-      const valueEnd = trailingOWS(header, valueStart, index);
-      const type = header.slice(valueStart, valueEnd).toLowerCase();
-      const parameters = options?.parameters === false ? new NullObject() : parseParameters(header, index, len);
-      return { type, parameters };
-    }
-    var SP = 32;
-    var HTAB = 9;
-    var SEMI = 59;
-    var EQ = 61;
-    var DQUOTE = 34;
-    var BSLASH = 92;
-    function parseParameters(header, index, len) {
-      const parameters = new NullObject();
-      parameter:
-        while (index < len) {
-          index = skipOWS(header, index + 1, len);
-          const keyStart = index;
-          while (index < len) {
-            const code = header.charCodeAt(index);
-            if (code === SEMI)
-              continue parameter;
-            if (code === EQ) {
-              const keyEnd = trailingOWS(header, keyStart, index);
-              const key = header.slice(keyStart, keyEnd).toLowerCase();
-              index = skipOWS(header, index + 1, len);
-              if (index < len && header.charCodeAt(index) === DQUOTE) {
-                index++;
-                let value = "";
-                while (index < len) {
-                  const code2 = header.charCodeAt(index++);
-                  if (code2 === DQUOTE) {
-                    index = skipValue(header, index, len);
-                    if (parameters[key] === void 0)
-                      parameters[key] = value;
-                    break;
-                  }
-                  if (code2 === BSLASH && index < len) {
-                    value += header[index++];
-                    continue;
-                  }
-                  value += String.fromCharCode(code2);
-                }
-                continue parameter;
-              }
-              const valueStart = index;
-              index = skipValue(header, index, len);
-              if (parameters[key] === void 0) {
-                const valueEnd = trailingOWS(header, valueStart, index);
-                parameters[key] = header.slice(valueStart, valueEnd);
-              }
-              continue parameter;
-            }
-            index++;
-          }
-        }
-      return parameters;
-    }
-    function skipValue(str, index, len) {
-      while (index < len) {
-        const char = str.charCodeAt(index);
-        if (char === SEMI)
-          break;
-        index++;
-      }
-      return index;
-    }
-    function skipOWS(header, index, len) {
-      while (index < len) {
-        const char = header.charCodeAt(index);
-        if (char !== SP && char !== HTAB)
-          break;
-        index++;
-      }
-      return index;
-    }
-    function trailingOWS(header, start, end) {
-      while (end > start) {
-        const char = header.charCodeAt(end - 1);
-        if (char !== SP && char !== HTAB)
-          break;
-        end--;
-      }
-      return end;
-    }
-    function qstring(str) {
-      if (TOKEN_REGEXP.test(str))
-        return str;
-      if (TEXT_REGEXP.test(str))
-        return `"${str.replace(QUOTE_REGEXP, "\\$&")}"`;
-      throw new TypeError(`Invalid parameter value: ${str}`);
-    }
-  }
-});
+import { styleText as styleText8 } from "node:util";
+import { styleText as styleText9 } from "node:util";
+var require4 = __cjsCompatRequire_ngDev3(import.meta.url);
 var require_constants6 = __commonJS2({
   ""(exports, module) {
     "use strict";
@@ -38812,15 +39113,16 @@ var require_range = __commonJS2({
     };
     var replaceTilde = (comp, options) => {
       const r = options.loose ? re[t.TILDELOOSE] : re[t.TILDE];
+      const z = options.includePrerelease ? "-0" : "";
       return comp.replace(r, (_, M, m, p, pr) => {
         debug2("tilde", comp, _, M, m, p, pr);
         let ret;
         if (isX(M)) {
           ret = "";
         } else if (isX(m)) {
-          ret = `>=${M}.0.0 <${+M + 1}.0.0-0`;
+          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
         } else if (isX(p)) {
-          ret = `>=${M}.${m}.0 <${M}.${+m + 1}.0-0`;
+          ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
         } else if (pr) {
           debug2("replaceTilde pr", pr);
           ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`;
@@ -46429,7 +46731,7 @@ var require_utf32 = __commonJS2({
     }
     Utf32Encoder.prototype.write = function(str) {
       var src = Buffer2.from(str, "ucs2");
-      var dst = Buffer2.alloc(src.length * 2);
+      var dst = Buffer2.alloc(src.length * 2 + 4);
       var write32 = this.isLE ? dst.writeUInt32LE : dst.writeUInt32BE;
       var offset = 0;
       for (var i = 0; i < src.length; i += 2) {
@@ -46496,9 +46798,9 @@ var require_utf32 = __commonJS2({
         }
         if (overflow.length === 4) {
           if (isLE) {
-            codepoint = overflow[i] | overflow[i + 1] << 8 | overflow[i + 2] << 16 | overflow[i + 3] << 24;
+            codepoint = overflow[0] | overflow[1] << 8 | overflow[2] << 16 | overflow[3] << 24;
           } else {
-            codepoint = overflow[i + 3] | overflow[i + 2] << 8 | overflow[i + 1] << 16 | overflow[i] << 24;
+            codepoint = overflow[3] | overflow[2] << 8 | overflow[1] << 16 | overflow[0] << 24;
           }
           overflow.length = 0;
           offset = _writeCodepoint(dst, offset, codepoint, badChar);
@@ -46533,7 +46835,11 @@ var require_utf32 = __commonJS2({
       return offset;
     }
     Utf32Decoder.prototype.end = function() {
+      if (this.overflow.length === 0) {
+        return;
+      }
       this.overflow.length = 0;
+      return String.fromCharCode(this.badChar);
     };
     exports.utf32 = Utf32AutoCodec;
     exports.ucs4 = "utf32";
@@ -47162,6 +47468,8 @@ var require_sbcs_data = __commonJS2({
       elot928: "iso88597",
       hebrew: "iso88598",
       hebrew8: "iso88598",
+      iso88598i: "iso88598",
+      iso88598e: "iso88598",
       turkish: "iso88599",
       turkish8: "iso88599",
       thai: "iso885911",
@@ -56983,7 +57291,7 @@ var require_public_api = __commonJS2({
     exports.stringify = stringify;
   }
 });
-var require_dist22 = __commonJS2({
+var require_dist = __commonJS2({
   ""(exports) {
     "use strict";
     var composer = require_composer();
@@ -57456,54 +57764,340 @@ function withDefaults4(oldDefaults, newDefaults) {
   });
 }
 var endpoint2 = withDefaults4(null, DEFAULTS2);
-var import_content_type2 = __toESM2(require_dist2());
+var NullObject2 = (() => {
+  const C = function() {
+  };
+  C.prototype = /* @__PURE__ */ Object.create(null);
+  return C;
+})();
+function parse22(header, options) {
+  const stopChar = options?.comma === true ? COMMA2 : 65536;
+  const len = header.length;
+  let index = skipOWS2(header, options?.start ?? 0, len);
+  const valueStart = index;
+  index = skipValue2(header, index, len, stopChar);
+  const valueEnd = trailingOWS2(header, valueStart, index);
+  const type = header.slice(valueStart, valueEnd).toLowerCase();
+  if (options?.parameters === false) {
+    return { type, index, parameters: new NullObject2() };
+  }
+  return parseParameters2(header, type, index, len, stopChar);
+}
+var SP2 = 32;
+var HTAB2 = 9;
+var SEMI2 = 59;
+var EQ2 = 61;
+var DQUOTE2 = 34;
+var BSLASH2 = 92;
+var COMMA2 = 44;
+function parseParameters2(header, type, index, len, stopChar) {
+  const parameters = new NullObject2();
+  parameter:
+    while (index < len) {
+      if (header.charCodeAt(index) === stopChar)
+        break;
+      index = skipOWS2(header, index + 1, len);
+      const keyStart = index;
+      while (index < len) {
+        const code = header.charCodeAt(index);
+        if (code === stopChar)
+          break parameter;
+        if (code === SEMI2)
+          continue parameter;
+        if (code === EQ2) {
+          const keyEnd = trailingOWS2(header, keyStart, index);
+          const key = header.slice(keyStart, keyEnd).toLowerCase();
+          index = skipOWS2(header, index + 1, len);
+          if (index < len && header.charCodeAt(index) === DQUOTE2) {
+            index++;
+            let value = "";
+            while (index < len) {
+              const code2 = header.charCodeAt(index++);
+              if (code2 === DQUOTE2) {
+                index = skipValue2(header, index, len, stopChar);
+                if (parameters[key] === void 0)
+                  parameters[key] = value;
+                break;
+              }
+              if (code2 === BSLASH2 && index < len) {
+                value += header[index++];
+                continue;
+              }
+              value += String.fromCharCode(code2);
+            }
+            continue parameter;
+          }
+          const valueStart = index;
+          index = skipValue2(header, index, len, stopChar);
+          if (parameters[key] === void 0) {
+            const valueEnd = trailingOWS2(header, valueStart, index);
+            parameters[key] = header.slice(valueStart, valueEnd);
+          }
+          continue parameter;
+        }
+        index++;
+      }
+    }
+  return { type, index, parameters };
+}
+function skipValue2(str, index, len, stopChar) {
+  while (index < len) {
+    const code = str.charCodeAt(index);
+    if (code === SEMI2 || code === stopChar)
+      break;
+    index++;
+  }
+  return index;
+}
+function skipOWS2(header, index, len) {
+  while (index < len) {
+    const char = header.charCodeAt(index);
+    if (char !== SP2 && char !== HTAB2)
+      break;
+    index++;
+  }
+  return index;
+}
+function trailingOWS2(header, start, end) {
+  while (end > start) {
+    const char = header.charCodeAt(end - 1);
+    if (char !== SP2 && char !== HTAB2)
+      break;
+    end--;
+  }
+  return end;
+}
 var intRegex2 = /^-?\d+$/;
 var noiseValue2 = /^-?\d+n+$/;
 var originalStringify2 = JSON.stringify;
 var originalParse2 = JSON.parse;
 var customFormat2 = /^-?\d+n$/;
-var bigIntsStringify2 = /([\[:])?"(-?\d+)n"($|([\\n]|\s)*(\s|[\\n])*[,\}\]])/g;
-var noiseStringify2 = /([\[:])?("-?\d+n+)n("$|"([\\n]|\s)*(\s|[\\n])*[,\}\]])/g;
+var bigIntsStringify2 = /([\[:])?"(-?\d+)n"($|\s*[,\}\]])/g;
+var noiseStringify2 = /([\[:])?("-?\d+n+)n("$|"\s*[,\}\]])/g;
+var isUnstringifiable2 = (val) => val === void 0 || typeof val === "function" || typeof val === "symbol";
+var isRawJSON2 = (val) => val !== null && typeof val === "object" && val.constructor && val.constructor.name === "RawJSON";
+var stringifyIteratively2 = (rootValue, replacer, spaceParam) => {
+  let space = "";
+  if (typeof spaceParam === "number") {
+    space = " ".repeat(Math.min(10, Math.max(0, Math.floor(spaceParam))));
+  } else if (typeof spaceParam === "string") {
+    space = spaceParam.slice(0, 10);
+  }
+  const isFunctionReplacer = typeof replacer === "function";
+  const propertyList = Array.isArray(replacer) ? new Set(replacer.map(String)) : null;
+  const prepareVal = (parent, key, val) => {
+    const isObject = val !== null && typeof val === "object";
+    const hasToJSON = isObject && typeof val.toJSON === "function";
+    if (hasToJSON) {
+      val = val.toJSON(key);
+    }
+    const isNoise = typeof val === "string" && noiseValue2.test(val);
+    if (isNoise)
+      return val + "n";
+    const isBigInt = typeof val === "bigint";
+    if (isBigInt) {
+      const supportsRawJSON = "rawJSON" in JSON;
+      if (supportsRawJSON)
+        return JSON.rawJSON(val.toString());
+      return val.toString() + "n";
+    }
+    if (isFunctionReplacer) {
+      val = replacer.call(parent, key, val);
+    }
+    const isPostReplacerObject = val !== null && typeof val === "object";
+    if (isPostReplacerObject) {
+      const isPrimitiveWrapper = val instanceof Number || val instanceof String || val instanceof Boolean;
+      if (isPrimitiveWrapper) {
+        val = val.valueOf();
+      }
+    }
+    return val;
+  };
+  const rootProcessed = prepareVal({ "": rootValue }, "", rootValue);
+  if (isUnstringifiable2(rootProcessed)) {
+    return void 0;
+  }
+  const isRootPrimitive = rootProcessed === null || typeof rootProcessed !== "object";
+  const isRootNativeRawJSON = isRawJSON2(rootProcessed);
+  if (isRootPrimitive || isRootNativeRawJSON) {
+    return originalStringify2(rootProcessed);
+  }
+  const chunks = [];
+  let level = 0;
+  const stack = [
+    {
+      parent: { "": rootProcessed },
+      key: "",
+      val: rootProcessed,
+      isArray: Array.isArray(rootProcessed),
+      keys: Array.isArray(rootProcessed) ? null : Object.keys(rootProcessed),
+      index: 0,
+      first: true
+    }
+  ];
+  const visited = new WeakSet([rootProcessed]);
+  while (stack.length > 0) {
+    const node = stack[stack.length - 1];
+    if (node.index === 0) {
+      chunks.push(node.isArray ? "[" : "{");
+      level++;
+    }
+    let isDone = false;
+    if (node.isArray) {
+      if (node.index < node.val.length) {
+        if (!node.first)
+          chunks.push(",");
+        if (space)
+          chunks.push("\n" + space.repeat(level));
+        const childRaw = node.val[node.index];
+        const childVal = prepareVal(node.val, String(node.index), childRaw);
+        if (isUnstringifiable2(childVal)) {
+          chunks.push("null");
+          node.first = false;
+          node.index++;
+        } else {
+          const isComplexObject = childVal !== null && typeof childVal === "object";
+          const isNativeRaw = isRawJSON2(childVal);
+          if (isComplexObject && !isNativeRaw) {
+            if (visited.has(childVal)) {
+              throw new TypeError("Converting circular structure to JSON");
+            }
+            visited.add(childVal);
+            stack.push({
+              parent: node.val,
+              key: String(node.index),
+              val: childVal,
+              isArray: Array.isArray(childVal),
+              keys: Array.isArray(childVal) ? null : Object.keys(childVal),
+              index: 0,
+              first: true
+            });
+            node.first = false;
+            node.index++;
+          } else {
+            chunks.push(originalStringify2(childVal));
+            node.first = false;
+            node.index++;
+          }
+        }
+      } else {
+        isDone = true;
+      }
+    } else {
+      while (node.index < node.keys.length) {
+        const k = node.keys[node.index++];
+        const isFilteredOutByArray = propertyList && !propertyList.has(k);
+        if (isFilteredOutByArray)
+          continue;
+        const childRaw = node.val[k];
+        const childVal = prepareVal(node.val, k, childRaw);
+        if (isUnstringifiable2(childVal))
+          continue;
+        if (!node.first)
+          chunks.push(",");
+        if (space) {
+          chunks.push("\n" + space.repeat(level) + originalStringify2(k) + ": ");
+        } else {
+          chunks.push(originalStringify2(k) + ":");
+        }
+        const isComplexObject = childVal !== null && typeof childVal === "object";
+        const isNativeRaw = isRawJSON2(childVal);
+        if (isComplexObject && !isNativeRaw) {
+          if (visited.has(childVal)) {
+            throw new TypeError("Converting circular structure to JSON");
+          }
+          visited.add(childVal);
+          stack.push({
+            parent: node.val,
+            key: k,
+            val: childVal,
+            isArray: Array.isArray(childVal),
+            keys: Array.isArray(childVal) ? null : Object.keys(childVal),
+            index: 0,
+            first: true
+          });
+          node.first = false;
+          break;
+        } else {
+          chunks.push(originalStringify2(childVal));
+          node.first = false;
+        }
+      }
+      const isNodeFullyProcessed = node.index >= node.keys.length && stack[stack.length - 1] === node;
+      if (isNodeFullyProcessed) {
+        isDone = true;
+      }
+    }
+    if (isDone) {
+      level--;
+      if (!node.first && space)
+        chunks.push("\n" + space.repeat(level));
+      chunks.push(node.isArray ? "]" : "}");
+      visited.delete(node.val);
+      stack.pop();
+    }
+  }
+  return chunks.join("");
+};
 var JSONStringify2 = (value, replacer, space) => {
-  if ("rawJSON" in JSON) {
-    return originalStringify2(
+  try {
+    const supportsRawJSON = "rawJSON" in JSON;
+    if (supportsRawJSON) {
+      return originalStringify2(
+        value,
+        (key, val) => {
+          if (typeof val === "bigint")
+            return JSON.rawJSON(val.toString());
+          const hasFunctionReplacer = typeof replacer === "function";
+          if (hasFunctionReplacer)
+            return replacer(key, val);
+          const isKeyInArrayReplacer = Array.isArray(replacer) && replacer.includes(key);
+          if (isKeyInArrayReplacer)
+            return val;
+          return val;
+        },
+        space
+      );
+    }
+    if (!value)
+      return originalStringify2(value, replacer, space);
+    const convertedToCustomJSON = originalStringify2(
       value,
-      (key, value2) => {
-        if (typeof value2 === "bigint")
-          return JSON.rawJSON(value2.toString());
-        if (typeof replacer === "function")
-          return replacer(key, value2);
-        if (Array.isArray(replacer) && replacer.includes(key))
-          return value2;
-        return value2;
+      (key, val) => {
+        const isNoise = typeof val === "string" && noiseValue2.test(val);
+        if (isNoise)
+          return val.toString() + "n";
+        if (typeof val === "bigint")
+          return val.toString() + "n";
+        const hasFunctionReplacer = typeof replacer === "function";
+        if (hasFunctionReplacer)
+          return replacer(key, val);
+        const isKeyInArrayReplacer = Array.isArray(replacer) && replacer.includes(key);
+        if (isKeyInArrayReplacer)
+          return val;
+        return val;
       },
       space
     );
+    const processedJSON = convertedToCustomJSON.replace(
+      bigIntsStringify2,
+      "$1$2$3"
+    );
+    const denoisedJSON = processedJSON.replace(noiseStringify2, "$1$2$3");
+    return denoisedJSON;
+  } catch (error2) {
+    if (error2 instanceof RangeError) {
+      const convertedJSON = stringifyIteratively2(value, replacer, space);
+      if (convertedJSON === void 0)
+        return void 0;
+      const supportsRawJSON = "rawJSON" in JSON;
+      if (supportsRawJSON)
+        return convertedJSON;
+      const processedJSON = convertedJSON.replace(bigIntsStringify2, "$1$2$3");
+      return processedJSON.replace(noiseStringify2, "$1$2$3");
+    }
+    throw error2;
   }
-  if (!value)
-    return originalStringify2(value, replacer, space);
-  const convertedToCustomJSON = originalStringify2(
-    value,
-    (key, value2) => {
-      const isNoise = typeof value2 === "string" && noiseValue2.test(value2);
-      if (isNoise)
-        return value2.toString() + "n";
-      if (typeof value2 === "bigint")
-        return value2.toString() + "n";
-      if (typeof replacer === "function")
-        return replacer(key, value2);
-      if (Array.isArray(replacer) && replacer.includes(key))
-        return value2;
-      return value2;
-    },
-    space
-  );
-  const processedJSON = convertedToCustomJSON.replace(
-    bigIntsStringify2,
-    "$1$2$3"
-  );
-  const denoisedJSON = processedJSON.replace(noiseStringify2, "$1$2$3");
-  return denoisedJSON;
 };
 var featureCache2 = /* @__PURE__ */ new Map();
 var isContextSourceSupported2 = () => {
@@ -57530,49 +58124,109 @@ var convertMarkedBigIntsReviver2 = (key, value, context3, userReviver) => {
   const isNoiseValue = typeof value === "string" && noiseValue2.test(value);
   if (isNoiseValue)
     return value.slice(0, -1);
-  if (typeof userReviver !== "function")
+  const hasUserReviver = typeof userReviver === "function";
+  if (!hasUserReviver)
     return value;
   return userReviver(key, value, context3);
 };
 var JSONParseV22 = (text, reviver) => {
   return JSON.parse(text, (key, value, context3) => {
-    const isBigNumber = typeof value === "number" && (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER);
+    const isNumber = typeof value === "number";
+    const isOutOfBounds = value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER;
+    const isBigNumber = isNumber && isOutOfBounds;
     const isInt = context3 && intRegex2.test(context3.source);
     const isBigInt = isBigNumber && isInt;
     if (isBigInt)
       return BigInt(context3.source);
-    if (typeof reviver !== "function")
+    const hasCustomReviver = typeof reviver === "function";
+    if (!hasCustomReviver)
       return value;
     return reviver(key, value, context3);
   });
 };
 var MAX_INT2 = Number.MAX_SAFE_INTEGER.toString();
 var MAX_DIGITS2 = MAX_INT2.length;
-var stringsOrLargeNumbers2 = /"(?:\\.|[^"])*"|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/g;
+var stringsOrLargeNumbers2 = /"(?:[^"\\]|\\.)*"|-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?/g;
 var noiseValueWithQuotes2 = /^"-?\d+n+"$/;
+var applyReviverIteratively2 = (parsed, userReviver) => {
+  const rootHolder = { "": parsed };
+  const stack = [{ parent: rootHolder, key: "", visited: false }];
+  while (stack.length > 0) {
+    const node = stack[stack.length - 1];
+    if (!node.visited) {
+      node.visited = true;
+      const value = node.parent[node.key];
+      const isComplexObject = value !== null && typeof value === "object";
+      if (isComplexObject) {
+        const keys = Object.keys(value);
+        for (let i = keys.length - 1; i >= 0; i--) {
+          stack.push({ parent: value, key: keys[i], visited: false });
+        }
+      }
+    } else {
+      const { parent, key } = node;
+      let value = parent[key];
+      if (typeof value === "string") {
+        const isCustomFormatBigInt = customFormat2.test(value);
+        if (isCustomFormatBigInt) {
+          value = BigInt(value.slice(0, -1));
+        } else {
+          const isNoise = noiseValue2.test(value);
+          if (isNoise)
+            value = value.slice(0, -1);
+        }
+      }
+      const hasUserReviver = typeof userReviver === "function";
+      if (hasUserReviver) {
+        value = userReviver.call(parent, key, value);
+      }
+      const isDeleted = value === void 0;
+      if (isDeleted) {
+        delete parent[key];
+      } else {
+        parent[key] = value;
+      }
+      stack.pop();
+    }
+  }
+  return rootHolder[""];
+};
+var serializeBigInts2 = (text) => {
+  return text.replace(
+    stringsOrLargeNumbers2,
+    (match, digits, fractional, exponential) => {
+      const isString = match[0] === '"';
+      const isNoise = isString && noiseValueWithQuotes2.test(match);
+      if (isNoise)
+        return match.substring(0, match.length - 1) + 'n"';
+      const hasFractionalOrExponential = fractional || exponential;
+      const isLessThanMaxSafeInt = digits && (digits.length < MAX_DIGITS2 || digits.length === MAX_DIGITS2 && digits <= MAX_INT2);
+      const isStandardValue = isString || hasFractionalOrExponential || isLessThanMaxSafeInt;
+      if (isStandardValue)
+        return match;
+      return '"' + match + 'n"';
+    }
+  );
+};
 var JSONParse2 = (text, reviver) => {
   if (!text)
     return originalParse2(text, reviver);
-  if (isContextSourceSupported2())
-    return JSONParseV22(text, reviver);
-  const serializedData = text.replace(
-    stringsOrLargeNumbers2,
-    (text2, digits, fractional, exponential) => {
-      const isString = text2[0] === '"';
-      const isNoise = isString && noiseValueWithQuotes2.test(text2);
-      if (isNoise)
-        return text2.substring(0, text2.length - 1) + 'n"';
-      const isFractionalOrExponential = fractional || exponential;
-      const isLessThanMaxSafeInt = digits && (digits.length < MAX_DIGITS2 || digits.length === MAX_DIGITS2 && digits <= MAX_INT2);
-      if (isString || isFractionalOrExponential || isLessThanMaxSafeInt)
-        return text2;
-      return '"' + text2 + 'n"';
+  try {
+    if (isContextSourceSupported2())
+      return JSONParseV22(text, reviver);
+    const serializedData = serializeBigInts2(text);
+    return originalParse2(
+      serializedData,
+      (key, value, context3) => convertMarkedBigIntsReviver2(key, value, context3, reviver)
+    );
+  } catch (error2) {
+    if (error2 instanceof RangeError) {
+      const serializedData = serializeBigInts2(text);
+      const parsed = originalParse2(serializedData);
+      return applyReviverIteratively2(parsed, reviver);
     }
-  );
-  return originalParse2(
-    serializedData,
-    (key, value, context3) => convertMarkedBigIntsReviver2(key, value, context3, reviver)
-  );
+    throw error2;
+  }
 };
 var RequestError2 = class extends Error {
   name;
@@ -57611,7 +58265,7 @@ var RequestError2 = class extends Error {
     this.request = requestCopy;
   }
 };
-var VERSION22 = "10.0.10";
+var VERSION22 = "10.0.16";
 var defaults_default2 = {
   headers: {
     "user-agent": `octokit-request.js/${VERSION22} ${getUserAgent2()}`
@@ -57732,7 +58386,7 @@ async function getResponseData2(response) {
   if (!contentType) {
     return response.text().catch(noop3);
   }
-  const mimetype = (0, import_content_type2.parse)(contentType);
+  const mimetype = parse22(contentType);
   if (isJSONResponse2(mimetype)) {
     let text = "";
     try {
@@ -57741,7 +58395,10 @@ async function getResponseData2(response) {
     } catch (err) {
       return text;
     }
-  } else if (mimetype.type.startsWith("text/") || mimetype.parameters.charset?.toLowerCase() === "utf-8") {
+  } else if (mimetype.type.startsWith("text/") || // `application/octet-stream` is the canonical "arbitrary binary" type
+  // (RFC 2046) and must never be decoded as text, even when the response
+  // carries a (misleading) `charset=utf-8` parameter — see #751.
+  mimetype.parameters.charset?.toLowerCase() === "utf-8" && mimetype.type !== "application/octet-stream") {
     return response.text().catch(noop3);
   } else {
     return response.arrayBuffer().catch(
@@ -57760,9 +58417,10 @@ function toErrorMessage2(data) {
   if (data instanceof ArrayBuffer) {
     return "Unknown error";
   }
-  if ("message" in data) {
-    const suffix = "documentation_url" in data ? ` - ${data.documentation_url}` : "";
-    return Array.isArray(data.errors) ? `${data.message}: ${data.errors.map((v) => JSON.stringify(v)).join(", ")}${suffix}` : `${data.message}${suffix}`;
+  if (typeof data === "object" && data !== null && "message" in data) {
+    const objectData = data;
+    const suffix = "documentation_url" in objectData ? ` - ${objectData.documentation_url}` : "";
+    return Array.isArray(objectData.errors) ? `${objectData.message}: ${objectData.errors.map((v) => JSON.stringify(v)).join(", ")}${suffix}` : `${objectData.message}${suffix}`;
   }
   return `Unknown error: ${JSON.stringify(data)}`;
 }
@@ -57807,6 +58465,9 @@ var GraphqlResponseError2 = class extends Error {
       Error.captureStackTrace(this, this.constructor);
     }
   }
+  request;
+  headers;
+  response;
   name = "GraphqlResponseError";
   errors;
   data;
@@ -57939,7 +58600,7 @@ var createTokenAuth3 = function createTokenAuth22(token) {
     hook: hook2.bind(null, token)
   });
 };
-var VERSION42 = "7.0.6";
+var VERSION42 = "7.0.8";
 var noop22 = () => {
 };
 var consoleWarn2 = console.warn.bind(console);
@@ -61867,11 +62528,16 @@ var effectScheduler = {
 function isFactory(value) {
   return typeof value === "function";
 }
+function isReducer(value) {
+  return typeof value === "function";
+}
 function useState(defaultValue) {
   return withPointer((pointer) => {
     const setState = AsyncResource2.bind(function setState2(newValue) {
-      if (pointer.get() !== newValue) {
-        pointer.set(newValue);
+      const currentValue = pointer.get();
+      const nextValue = isReducer(newValue) ? newValue(currentValue) : newValue;
+      if (!Object.is(currentValue, nextValue)) {
+        pointer.set(nextValue);
         handleChange();
       }
     });
@@ -62267,7 +62933,7 @@ function usePrefix({ status = "idle", theme }) {
 function useMemo(fn, dependencies) {
   return withPointer((pointer) => {
     const prev = pointer.get();
-    if (!prev || prev.dependencies.length !== dependencies.length || prev.dependencies.some((dep, i) => dep !== dependencies[i])) {
+    if (!pointer.initialized || prev.dependencies.length !== dependencies.length || prev.dependencies.some((dep, i) => dep !== dependencies[i])) {
       const value = fn();
       pointer.set({ value, dependencies });
       return value;
@@ -63605,23 +64271,44 @@ var dist_default5 = createPrompt((config, done) => {
   }
   return [[prefix, message, helpTip].filter(Boolean).join(" "), error2];
 });
-function getBooleanValue(value, defaultValue) {
-  let answer = defaultValue !== false;
-  if (/^(y|yes)/i.test(value))
-    answer = true;
-  else if (/^(n|no)/i.test(value))
-    answer = false;
-  return answer;
-}
-function boolToString(value) {
-  return value ? "Yes" : "No";
-}
+var confirmTheme = {
+  keywords: {
+    yes: "Yes",
+    no: "No"
+  },
+  style: {
+    confirmDefault: (text) => {
+      const first = text[0] ?? "";
+      if (first.toLowerCase() === first.toUpperCase()) {
+        return styleText4("cyan", text);
+      }
+      return first.toUpperCase() + text.slice(1);
+    }
+  }
+};
 var dist_default6 = createPrompt((config, done) => {
-  const { transformer = boolToString } = config;
   const [status, setStatus] = useState("idle");
   const [value, setValue] = useState("");
-  const theme = makeTheme(config.theme);
+  const theme = makeTheme(confirmTheme, config.theme);
   const prefix = usePrefix({ status, theme });
+  const { yes, no } = theme.keywords;
+  const yesHint = (yes[0] ?? "").toLowerCase();
+  const noHint = (no[0] ?? "").toLowerCase();
+  const hint = config.default === false ? `${yesHint}/${theme.style.confirmDefault(noHint)}` : `${theme.style.confirmDefault(yesHint)}/${noHint}`;
+  function boolToString(value2) {
+    return value2 ? yes : no;
+  }
+  const { transformer = boolToString } = config;
+  function getBooleanValue(value2, defaultValue2) {
+    const v = value2.toLowerCase();
+    if (v === "")
+      return defaultValue2 !== false;
+    if (yes.toLowerCase().startsWith(v))
+      return true;
+    if (no.toLowerCase().startsWith(v))
+      return false;
+    return defaultValue2 !== false;
+  }
   useKeypress((key, rl) => {
     if (status !== "idle")
       return;
@@ -63644,7 +64331,7 @@ var dist_default6 = createPrompt((config, done) => {
   if (status === "done") {
     formattedValue = theme.style.answer(value);
   } else {
-    defaultValue = ` ${theme.style.defaultAnswer(config.default === false ? "y/N" : "Y/n")}`;
+    defaultValue = ` ${theme.style.defaultAnswer(hint)}`;
   }
   const message = theme.style.message(config.message, status);
   return `${prefix} ${message}${defaultValue} ${formattedValue}`;
@@ -63732,11 +64419,27 @@ var dist_default7 = createPrompt((config, done) => {
     error2
   ];
 });
+function toDecimal(value) {
+  const [coefficient = "", exponent = "0"] = value.toString().toLowerCase().split("e");
+  const [integer = "", fraction = ""] = coefficient.split(".");
+  return {
+    significand: BigInt(`${integer}${fraction}`),
+    exponent: Number(exponent) - fraction.length
+  };
+}
 function isStepOf(value, step, min) {
-  const valuePow = value * Math.pow(10, 6);
-  const stepPow = step * Math.pow(10, 6);
-  const minPow = min * Math.pow(10, 6);
-  return (valuePow - (Number.isFinite(min) ? minPow : 0)) % stepPow === 0;
+  if (!Number.isFinite(value) || !Number.isFinite(step) || step === 0) {
+    return false;
+  }
+  const valueDecimal = toDecimal(value);
+  const stepDecimal = toDecimal(step);
+  const minDecimal = Number.isFinite(min) ? toDecimal(min) : void 0;
+  const exponent = Math.min(valueDecimal.exponent, stepDecimal.exponent, minDecimal?.exponent ?? Infinity);
+  const toInteger = (decimal) => decimal.significand * 10n ** BigInt(decimal.exponent - exponent);
+  const valueInteger = toInteger(valueDecimal);
+  const stepInteger = toInteger(stepDecimal);
+  const minInteger = minDecimal ? toInteger(minDecimal) : 0n;
+  return (valueInteger - minInteger) % stepInteger === 0n;
 }
 function validateNumber(value, { min, max, step }) {
   if (value == null || Number.isNaN(value)) {
@@ -63854,7 +64557,7 @@ var expand22 = createPrompt((config, done) => {
         } else if (value === "") {
           setError("Please input a value");
         } else {
-          setError(`"${styleText4("red", value)}" isn't an available option`);
+          setError(`"${styleText5("red", value)}" isn't an available option`);
         }
       }
     } else {
@@ -63894,7 +64597,7 @@ var expand22 = createPrompt((config, done) => {
   let helpTip = "";
   const currentOption = choices.find((choice) => !Separator.isSeparator(choice) && choice.key === value.toLowerCase());
   if (currentOption) {
-    helpTip = `${styleText4("cyan", ">>")} ${currentOption.name}`;
+    helpTip = `${styleText5("cyan", ">>")} ${currentOption.name}`;
   }
   let error2 = "";
   if (errorMsg) {
@@ -63908,7 +64611,7 @@ var expand22 = createPrompt((config, done) => {
 var numberRegex = /\d+/;
 var rawlistTheme = {
   style: {
-    description: (text) => styleText5("cyan", text)
+    description: (text) => styleText6("cyan", text)
   }
 };
 function isSelectableChoice(choice) {
@@ -63979,7 +64682,7 @@ var dist_default9 = createPrompt((config, done) => {
       } else if (value === "") {
         setError("Please input a value");
       } else {
-        setError(`"${styleText5("red", value)}" isn't an available option`);
+        setError(`"${styleText6("red", value)}" isn't an available option`);
       }
     } else if (isUpKey(key, keybindings2) || isDownKey(key, keybindings2)) {
       rl.clearLine(0);
@@ -64032,15 +64735,17 @@ var dist_default9 = createPrompt((config, done) => {
 });
 var passwordTheme = {
   style: {
-    maskedText: "[input is masked]"
+    maskedText: "[input is masked]",
+    keysHelpTip: (keys) => keys.map(([key, action]) => `${styleText7("bold", key)} ${styleText7("dim", action)}`).join(styleText7("dim", " \u2022 "))
   }
 };
 var dist_default10 = createPrompt((config, done) => {
-  const { validate: validate2 = () => true } = config;
+  const { toggleMask = true, validate: validate2 = () => true } = config;
   const theme = makeTheme(passwordTheme, config.theme);
   const [status, setStatus] = useState("idle");
   const [errorMsg, setError] = useState();
   const [value, setValue] = useState("");
+  const [revealed, setRevealed] = useState(false);
   const prefix = usePrefix({ status, theme });
   useKeypress(async (key, rl) => {
     if (status !== "idle") {
@@ -64059,36 +64764,43 @@ var dist_default10 = createPrompt((config, done) => {
         setError(isValid || "You must provide a valid value");
         setStatus("idle");
       }
+    } else if (toggleMask && key.ctrl && key.name === "t") {
+      setRevealed((prev) => !prev);
     } else {
       setValue(rl.line);
       setError(void 0);
     }
   });
   const message = theme.style.message(config.message, status);
+  const showPlaintext = toggleMask && revealed && status === "idle";
   let formattedValue = "";
-  let helpTip;
-  if (config.mask) {
+  if (showPlaintext) {
+    formattedValue = value;
+  } else if (config.mask) {
     const maskChar = typeof config.mask === "string" ? config.mask : "*";
     formattedValue = maskChar.repeat(value.length);
   } else if (status !== "done") {
-    helpTip = `${theme.style.help(theme.style.maskedText)}${cursorHide}`;
+    formattedValue = theme.style.help(theme.style.maskedText);
   }
   if (status === "done") {
     formattedValue = theme.style.answer(formattedValue);
+  } else if (!config.mask) {
+    formattedValue += cursorHide;
   }
-  let error2 = "";
-  if (errorMsg) {
-    error2 = theme.style.error(errorMsg);
-  }
-  return [[prefix, message, config.mask ? formattedValue : helpTip].join(" "), error2];
+  const content = [prefix, message, formattedValue].filter(Boolean).join(" ");
+  const bottomContent = [
+    errorMsg ? theme.style.error(errorMsg) : "",
+    toggleMask && status === "idle" ? theme.style.keysHelpTip([["ctrl+t", "toggle visibility"]]) : ""
+  ].filter(Boolean).join("\n");
+  return [content, bottomContent];
 });
 var searchTheme = {
   icon: { cursor: dist_default.pointer },
   style: {
-    disabled: (text) => styleText6("dim", `- ${text}`),
-    searchTerm: (text) => styleText6("cyan", text),
-    description: (text) => styleText6("cyan", text),
-    keysHelpTip: (keys) => keys.map(([key, action]) => `${styleText6("bold", key)} ${styleText6("dim", action)}`).join(styleText6("dim", " \u2022 "))
+    disabled: (text) => styleText8("dim", `- ${text}`),
+    searchTerm: (text) => styleText8("cyan", text),
+    description: (text) => styleText8("cyan", text),
+    keysHelpTip: (keys) => keys.map(([key, action]) => `${styleText8("bold", key)} ${styleText8("dim", action)}`).join(styleText8("dim", " \u2022 "))
   }
 };
 function isSelectable2(item) {
@@ -64124,7 +64836,7 @@ var dist_default11 = createPrompt((config, done) => {
   const { pageSize = 7, validate: validate2 = () => true } = config;
   const theme = makeTheme(searchTheme, config.theme);
   const [status, setStatus] = useState("loading");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(config.initialValue ?? "");
   const [searchResults, setSearchResults] = useState([]);
   const [searchError, setSearchError] = useState();
   const defaultApplied = useRef(false);
@@ -64135,6 +64847,11 @@ var dist_default11 = createPrompt((config, done) => {
     return { first, last };
   }, [searchResults]);
   const [active = bounds.first, setActive] = useState();
+  useEffect((rl) => {
+    if (config.initialValue) {
+      rl.write(config.initialValue);
+    }
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     setStatus("loading");
@@ -64253,9 +64970,9 @@ var dist_default11 = createPrompt((config, done) => {
 var selectTheme = {
   icon: { cursor: dist_default.pointer },
   style: {
-    disabled: (text) => styleText7("dim", text),
-    description: (text) => styleText7("cyan", text),
-    keysHelpTip: (keys) => keys.map(([key, action]) => `${styleText7("bold", key)} ${styleText7("dim", action)}`).join(styleText7("dim", " \u2022 "))
+    disabled: (text) => styleText9("dim", text),
+    description: (text) => styleText9("cyan", text),
+    keysHelpTip: (keys) => keys.map(([key, action]) => `${styleText9("bold", key)} ${styleText9("dim", action)}`).join(styleText9("dim", " \u2022 "))
   },
   i18n: { disabledError: "This option is disabled and cannot be selected." },
   indexMode: "hidden"
@@ -64432,10 +65149,10 @@ Prompt.input = dist_default7;
 Prompt.checkbox = dist_default4;
 Prompt.select = dist_default12;
 Prompt.editor = dist_default5;
-var import_yaml = __toESM2(require_dist22());
+var import_yaml = __toESM2(require_dist());
 
 // 
-var require6 = __cjsCompatRequire_ngDev5(import.meta.url);
+var require5 = __cjsCompatRequire_ngDev4(import.meta.url);
 
 // .github/actions/deploy-docs-site/lib/deployments.mjs
 async function getDeployments() {
@@ -64611,7 +65328,10 @@ content-type/dist/index.js:
   (* v8 ignore next -- @preserve *)
   (* v8 ignore else -- @preserve *)
 
-@angular/ng-dev/bundles/chunk-N745AQXS.mjs:
+@octokit/graphql/dist-bundle/index.js:
+  (* v8 ignore if -- @preserve *)
+
+@angular/ng-dev/bundles/chunk-H3MYIWGQ.mjs:
   (*! Bundled license information:
   
   yargs-parser/build/lib/string-utils.js:
@@ -64652,7 +65372,7 @@ content-type/dist/index.js:
      *)
   *)
 
-@angular/ng-dev/bundles/chunk-6XSRLCXJ.mjs:
+@angular/ng-dev/bundles/chunk-U7PAJR6D.mjs:
   (*! Bundled license information:
   
   content-type/dist/index.js:
@@ -64668,5 +65388,8 @@ content-type/dist/index.js:
   @octokit/request/dist-bundle/index.js:
     (* v8 ignore next -- @preserve *)
     (* v8 ignore else -- @preserve *)
+  
+  @octokit/graphql/dist-bundle/index.js:
+    (* v8 ignore if -- @preserve *)
   *)
 */

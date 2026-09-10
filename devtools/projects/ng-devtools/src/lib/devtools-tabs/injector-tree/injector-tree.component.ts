@@ -10,6 +10,7 @@ import {
   afterRenderEffect,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
   signal,
@@ -54,6 +55,7 @@ import {SplitAreaDirective} from '../../shared/split/splitArea.directive';
 import {SplitComponent} from '../../shared/split/split.component';
 import {Direction} from '../../shared/split/interface';
 import {DocsRefButtonComponent} from '../../shared/docs-ref-button/docs-ref-button.component';
+import {AngieComponent} from '../../shared/angie/angie.component';
 
 const ENV_HIERARCHY_VER_SIZE = 35;
 const EL_HIERARCHY_VER_SIZE = 65;
@@ -74,6 +76,7 @@ const SELECTED_NODE_CLASS = 'it-selected';
     TreeVisualizerComponent,
     ResponsiveSplitDirective,
     DocsRefButtonComponent,
+    AngieComponent,
   ],
   templateUrl: `./injector-tree.component.html`,
   styleUrls: ['./injector-tree.component.scss'],
@@ -140,6 +143,8 @@ export class InjectorTreeComponent {
   };
 
   constructor() {
+    this.subscribeToBackendEvents();
+
     afterRenderEffect({
       write: () => {
         const view = this.componentExplorerView();
@@ -147,7 +152,6 @@ export class InjectorTreeComponent {
           return;
         }
 
-        this.init();
         this.rawDirectiveForest = view.forest;
         untracked(() => this.updateInjectorTreeVisualization(view.forest));
       },
@@ -197,8 +201,8 @@ export class InjectorTreeComponent {
     }
   }
 
-  private init() {
-    this.messageBus.on('highlightComponent', (id: number) => {
+  private subscribeToBackendEvents(): void {
+    const unregisterHighlight = this.messageBus.on('highlightComponent', (id: number) => {
       const elementTree = this.elementTree();
       if (!elementTree) {
         return;
@@ -209,6 +213,10 @@ export class InjectorTreeComponent {
       }
 
       this.selectInjectorByNode(injectorNode);
+    });
+
+    inject(DestroyRef).onDestroy(() => {
+      unregisterHighlight();
     });
   }
 

@@ -35,18 +35,42 @@
       />
       <label for="show-hydration-overlays">Show hydration overlays</label>
     </li>
+    <li>
+      <input
+        id="show-cd-in-explorer"
+        type="checkbox"
+        (change)="settings.showCdInExplorer.set($event.target.checked)"
+        [checked]="settings.showCdInExplorer()"
+      />
+      <label for="show-cd-in-explorer"
+        >Show change detection data next to nodes (experimental)</label
+      >
+    </li>
   </ul>
 
-  <h3>Profiler</h3>
+  <h3>Profiling</h3>
   <ul>
     <li>
       <input
-        id="enable-timing-api"
+        id="enable-performance-track"
         type="checkbox"
-        (change)="settings.timingAPIEnabled.set($event.target.checked)"
-        [checked]="settings.timingAPIEnabled()"
+        (change)="settings.performanceTrack.set($event.target.checked)"
+        [checked]="settings.performanceTrack()"
       />
-      <label for="enable-timing-api">Enable timing API</label>
+      <label for="enable-performance-track"
+        >Enable Angular’s performance track in the Chrome DevTools profiler</label
+      >
+    </li>
+    <li>
+      <input
+        id="highlight-change-detection"
+        type="checkbox"
+        (change)="settings.highlightChangeDetection.set($event.target.checked)"
+        [checked]="settings.highlightChangeDetection()"
+      />
+      <label for="highlight-change-detection"
+        >Highlight components undergoing change detection (experimental)</label
+      >
     </li>
   </ul>
 </div>

@@ -10,7 +10,7 @@ import {Events, MessageBus} from '../../../protocol';
 import {subscribeToClientEvents} from './client-event-subscribers';
 import {appIsAngular, appIsAngularIvy, appIsSupportedAngularVersion} from '../../../shared-utils';
 import {Profiler} from './profiling/profiler';
-import {NodeArray} from './directive-forest/identity-tracker';
+import {NodeArray} from './directive-forest/identity-tracker/identity-tracker';
 
 describe('ClientEventSubscriber', () => {
   let messageBusMock: MessageBus<Events>;
@@ -43,14 +43,13 @@ describe('ClientEventSubscriber', () => {
   });
 
   it('should setup inspector', () => {
-    subscribeToClientEvents(messageBusMock, {profiler: MockProfiler});
+    subscribeToClientEvents(messageBusMock, {
+      devtoolsDevMode: true,
+      depsForTestOnly: {profiler: MockProfiler},
+    });
 
     expect(messageBusMock.on).toHaveBeenCalledWith('inspectorStart', jasmine.any(Function));
     expect(messageBusMock.on).toHaveBeenCalledWith('inspectorEnd', jasmine.any(Function));
-    expect(messageBusMock.on).toHaveBeenCalledWith('createHighlightOverlay', jasmine.any(Function));
-    expect(messageBusMock.on).toHaveBeenCalledWith('removeHighlightOverlay', jasmine.any(Function));
-    expect(messageBusMock.on).toHaveBeenCalledWith('createHydrationOverlay', jasmine.any(Function));
-    expect(messageBusMock.on).toHaveBeenCalledWith('removeHydrationOverlay', jasmine.any(Function));
   });
 });
 

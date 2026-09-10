@@ -52,6 +52,7 @@ export const enum TokenType {
   DIRECTIVE_NAME,
   DIRECTIVE_OPEN,
   DIRECTIVE_CLOSE,
+  PROCESSING_INSTRUCTION,
   EOF,
 }
 
@@ -96,14 +97,13 @@ export type Token =
   | IncompleteComponentOpenToken
   | DirectiveNameToken
   | DirectiveOpenToken
-  | DirectiveCloseToken;
+  | DirectiveCloseToken
+  | ProcessingInstructionToken;
 
 export type InterpolatedTextToken = TextToken | InterpolationToken | EncodedEntityToken;
 
 export type InterpolatedAttributeToken =
-  | AttributeValueTextToken
-  | AttributeValueInterpolationToken
-  | EncodedEntityToken;
+  AttributeValueTextToken | AttributeValueInterpolationToken | EncodedEntityToken;
 
 export interface TokenBase {
   type: TokenType;
@@ -323,4 +323,9 @@ export interface DirectiveOpenToken extends TokenBase {
 export interface DirectiveCloseToken extends TokenBase {
   type: TokenType.DIRECTIVE_CLOSE;
   parts: [];
+}
+
+export interface ProcessingInstructionToken extends TokenBase {
+  type: TokenType.PROCESSING_INSTRUCTION;
+  parts: [content: string];
 }

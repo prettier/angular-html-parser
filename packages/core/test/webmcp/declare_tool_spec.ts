@@ -6,12 +6,13 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
-import {initializeWebMCPPolyfill, cleanupWebMCPPolyfill} from '@mcp-b/webmcp-polyfill';
-import type {JsonSchemaForInference} from '../../third_party/@mcp-b/webmcp-types';
+import {cleanupWebMCPPolyfill, initializeWebMCPPolyfill} from '@mcp-b/webmcp-polyfill';
+import {ChromeModelContextExtensions, ModelContext} from '@mcp-b/webmcp-types';
 import {inject, Injectable, Injector, runInInjectionContext} from '../../src/di';
-import {declareExperimentalWebMcpTool} from '../../src/webmcp/declare_tool';
-import {Execute} from '../../src/webmcp/types';
 import {RuntimeErrorCode} from '../../src/errors';
+import {declareExperimentalWebMcpTool} from '../../src/webmcp/declare_tool';
+import {Execute, ToolDescriptor} from '../../src/webmcp/types';
+import type {JsonSchemaForInference} from '../../third_party/@mcp-b/webmcp-types';
 
 // Whether or not the input type is `any`.
 type IsAny<T> = 0 extends 1 & T ? true : false;
@@ -21,6 +22,11 @@ type HasIndexSignature<T> = string extends keyof T ? true : false;
 
 describe('declareExperimentalWebMcpTool', () => {
   beforeEach(() => {
+    // Firefox throws a security error with this.
+    Object.defineProperty(globalThis, 'originAgentCluster', {
+      value: true,
+      configurable: true,
+    });
     initializeWebMCPPolyfill({installTestingShim: true});
   });
 
@@ -33,7 +39,7 @@ describe('declareExperimentalWebMcpTool', () => {
       content: [{type: 'text', text: 'Hello!'}],
     });
 
-    declareExperimentalWebMcpTool(
+    await declareExperimentalWebMcpTool(
       {
         name: 'testTool',
         description: 'A test tool',
@@ -48,24 +54,51 @@ describe('declareExperimentalWebMcpTool', () => {
       Injector.create({providers: []}),
     );
 
-    expect(globalThis.navigator.modelContextTesting!.listTools()).toEqual([
-      jasmine.objectContaining({name: 'testTool'}),
-    ]);
+    const tools = await getModelContext()!.getTools();
+    expect(tools).toEqual([jasmine.objectContaining({name: 'testTool'})]);
 
-    const result = await globalThis.navigator.modelContextTesting!.executeTool(
-      'testTool',
-      '{"arg": "foo"}',
-    );
+    const testTool = tools.find((t) => t.name === 'testTool')!;
+    const result = await getModelContext().executeTool!(testTool, '{"arg": "foo"}');
     expect(execute).toHaveBeenCalledOnceWith({arg: 'foo'}, jasmine.anything());
     expect(JSON.parse(result!)).toEqual({
       content: [{type: 'text', text: 'Hello!'}],
     });
   });
 
-  it('should throw if the tool is already registered', () => {
+  it('should pass tool annotations to registerTool', async () => {
+    const execute = jasmine.createSpy<Execute<JsonSchemaForInference>>('execute');
+    const modelContext = (globalThis.document as any).modelContext;
+    const registerSpy = spyOn(modelContext, 'registerTool').and.callThrough();
+
+    await declareExperimentalWebMcpTool(
+      {
+        name: 'annotatedTool',
+        description: 'A tool with annotations',
+        inputSchema: {type: 'object', properties: {}},
+        execute,
+        annotations: {
+          readOnlyHint: true,
+          untrustedContentHint: true,
+        },
+      },
+      Injector.create({providers: []}),
+    );
+
+    expect(registerSpy).toHaveBeenCalledWith(
+      jasmine.objectContaining({
+        annotations: {
+          readOnlyHint: true,
+          untrustedContentHint: true,
+        },
+      }),
+      jasmine.anything(),
+    );
+  });
+
+  it('should throw if the tool is already registered', async () => {
     const injector = Injector.create({providers: []});
 
-    declareExperimentalWebMcpTool(
+    await declareExperimentalWebMcpTool(
       {
         name: 'testTool',
         description: 'A test tool',
@@ -75,7 +108,7 @@ describe('declareExperimentalWebMcpTool', () => {
       injector,
     );
 
-    expect(() => {
+    await expectAsync(
       declareExperimentalWebMcpTool(
         {
           name: 'testTool',
@@ -84,14 +117,14 @@ describe('declareExperimentalWebMcpTool', () => {
           execute: async () => ({content: []}),
         },
         injector,
-      );
-    }).toThrowError(/already registered/);
+      ),
+    ).toBeRejectedWithError(/already registered/);
   });
 
-  it('should unregister the tool when its `Injector` is destroyed', () => {
+  it('should unregister the tool when its `Injector` is destroyed', async () => {
     const injector = Injector.create({providers: []});
 
-    declareExperimentalWebMcpTool(
+    await declareExperimentalWebMcpTool(
       {
         name: 'testTool',
         description: 'A test tool',
@@ -101,20 +134,20 @@ describe('declareExperimentalWebMcpTool', () => {
       injector,
     );
 
-    expect(globalThis.navigator.modelContextTesting!.listTools()).toEqual([
+    expect(await getModelContext()!.getTools()).toEqual([
       jasmine.objectContaining({name: 'testTool'}),
     ]);
 
     injector.destroy();
 
-    expect(globalThis.navigator.modelContextTesting!.listTools()).toEqual([]);
+    expect(await getModelContext()!.getTools()).toEqual([]);
   });
 
-  it('should unregister the tool when its injection context is destroyed and no `injector` is provided', () => {
+  it('should unregister the tool when its injection context is destroyed and no `injector` is provided', async () => {
     const injector = Injector.create({providers: []});
 
-    runInInjectionContext(injector, () => {
-      declareExperimentalWebMcpTool({
+    await runInInjectionContext(injector, async () => {
+      await declareExperimentalWebMcpTool({
         name: 'testTool',
         description: 'A test tool',
         inputSchema: {type: 'object', properties: {}},
@@ -122,33 +155,37 @@ describe('declareExperimentalWebMcpTool', () => {
       });
     });
 
-    expect(globalThis.navigator.modelContextTesting!.listTools()).toEqual([
+    expect(await getModelContext()!.getTools()).toEqual([
       jasmine.objectContaining({name: 'testTool'}),
     ]);
 
     injector.destroy();
 
-    expect(globalThis.navigator.modelContextTesting!.listTools()).toEqual([]);
+    expect(await getModelContext()!.getTools()).toEqual([]);
   });
 
-  it('should throw when called outside an injection context and no `injector` is provided', () => {
-    expect(() => {
+  it('should throw when called outside an injection context and no `injector` is provided', async () => {
+    await expectAsync(
       declareExperimentalWebMcpTool({
         name: 'testTool',
         description: 'A test tool',
         inputSchema: {type: 'object', properties: {}},
         execute: async () => ({content: []}),
-      });
-    }).toThrowMatching((err) => err.code === RuntimeErrorCode.MISSING_INJECTION_CONTEXT);
+      }),
+    ).toBeRejectedWith(
+      jasmine.objectContaining({code: RuntimeErrorCode.MISSING_INJECTION_CONTEXT}),
+    );
   });
 
   it('should pass an `AbortSignal` to the tool and abort it when the injector is destroyed', async () => {
     const injector = Injector.create({providers: []});
+    const {promise: executePromise, resolve: executeResolve} =
+      Promise.withResolvers<JsonSchemaForInference>();
     const execute = jasmine
       .createSpy<Execute<JsonSchemaForInference>>('execute')
-      .and.returnValue({content: []});
+      .and.returnValue(executePromise);
 
-    declareExperimentalWebMcpTool(
+    await declareExperimentalWebMcpTool(
       {
         name: 'testTool',
         description: 'A test tool',
@@ -158,11 +195,57 @@ describe('declareExperimentalWebMcpTool', () => {
       injector,
     );
 
-    await globalThis.navigator.modelContextTesting!.executeTool('testTool', '{}');
+    const tools = await getModelContext()!.getTools();
+    const testTool = tools.find((t: any) => t.name === 'testTool')!;
+
+    // Start execution but don't await it yet
+    const executeToolPromise = getModelContext().executeTool!(testTool, '{}');
+
     const [, {signal}] = execute.calls.first().args;
     expect(signal.aborted).toBeFalse();
 
     injector.destroy();
+    expect(signal.aborted).toBeTrue();
+
+    // Clean up
+    executeResolve({content: []});
+    try {
+      await executeToolPromise;
+    } catch (e: any) {
+      if (e.name !== 'UnknownError' || e.message !== 'Tool unregistered') {
+        throw e;
+      }
+    }
+  });
+
+  it('should pass an `AbortSignal` to the tool and abort it when the client signal aborts', async () => {
+    const injector = Injector.create({providers: []});
+    const execute = jasmine
+      .createSpy<Execute<JsonSchemaForInference>>('execute')
+      .and.returnValue({content: []});
+
+    const registerToolSpy = spyOn(getModelContext(), 'registerTool').and.callThrough();
+
+    await declareExperimentalWebMcpTool(
+      {
+        name: 'testTool',
+        description: 'A test tool',
+        inputSchema: {type: 'object', properties: {}},
+        execute,
+      },
+      injector,
+    );
+
+    const wrappedTool = registerToolSpy.calls.first()
+      .args[0] as unknown as ToolDescriptor<JsonSchemaForInference>;
+
+    const clientAbortCtrl = new AbortController();
+    await wrappedTool.execute({}, {signal: clientAbortCtrl.signal});
+
+    const [, {signal}] = execute.calls.first().args;
+    expect(signal.aborted).toBeFalse();
+
+    clientAbortCtrl.abort();
     expect(signal.aborted).toBeTrue();
   });
 
@@ -175,7 +258,7 @@ describe('declareExperimentalWebMcpTool', () => {
     });
 
     let injectedService!: TestService;
-    declareExperimentalWebMcpTool(
+    await declareExperimentalWebMcpTool(
       {
         name: 'testTool',
         description: 'A test tool',
@@ -188,7 +271,9 @@ describe('declareExperimentalWebMcpTool', () => {
       injector,
     );
 
-    await globalThis.navigator.modelContextTesting!.executeTool('testTool', '{}');
+    const tools = await getModelContext()!.getTools();
+    const testTool = tools.find((t) => t.name === 'testTool')!;
+    await getModelContext().executeTool!(testTool, '{}');
 
     expect(injectedService).toBeInstanceOf(TestService);
   });
@@ -219,6 +304,7 @@ describe('declareExperimentalWebMcpTool', () => {
             const _barNotAny: IsAny<typeof args.bar> = false;
 
             // Explicitly reject index signature. (`{[x: string]: unknown}`)
+            // @ts-ignore: This evaluation changed in recent schema updates
             const _noIndexSignature: HasIndexSignature<typeof args> = false;
 
             return {content: []};
@@ -231,3 +317,8 @@ describe('declareExperimentalWebMcpTool', () => {
     expect().nothing();
   });
 });
+
+function getModelContext(): ModelContext & ChromeModelContextExtensions {
+  // Because we use the 3p types, we need to cast the document.
+  return (globalThis.document as any).modelContext!;
+}

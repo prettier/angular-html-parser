@@ -20,10 +20,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import {toSignal} from '@angular/core/rxjs-interop';
 import {IconComponent, TutorialType} from '@angular/docs';
-import {MatTab, MatTabGroup} from '@angular/material/tabs';
-import {map} from 'rxjs';
+import {MatTab, MatTabGroup, MatTabLabel} from '@angular/material/tabs';
 
 import {MAX_RECOMMENDED_WEBCONTAINERS_INSTANCES} from './alert-manager.service';
 
@@ -44,7 +42,16 @@ export const LARGE_EDITOR_HEIGHT_BREAKPOINT = 550;
 
 @Component({
   selector: EMBEDDED_EDITOR_SELECTOR,
-  imports: [AngularSplitModule, CodeEditor, Preview, Terminal, MatTab, MatTabGroup, IconComponent],
+  imports: [
+    AngularSplitModule,
+    CodeEditor,
+    Preview,
+    Terminal,
+    MatTab,
+    MatTabGroup,
+    MatTabLabel,
+    IconComponent,
+  ],
   templateUrl: './embedded-editor.component.html',
   styleUrls: ['./embedded-editor.component.scss'],
   providers: [EditorUiState],
@@ -84,10 +91,9 @@ export class EmbeddedEditor {
       !this.nodeRuntimeState.isResetting(),
   );
 
-  private readonly errorsCount$ = this.diagnosticsState.diagnostics$.pipe(
-    map((diagnosticsItem) => diagnosticsItem.filter((item) => item.severity === 'error').length),
+  protected readonly errorsCount = computed(
+    () => this.diagnosticsState.diagnostics().filter((item) => item.severity === 'error').length,
   );
-  protected readonly errorsCount = toSignal(this.errorsCount$, {initialValue: 0});
 
   constructor() {
     if (!isPlatformBrowser(this.platformId)) {

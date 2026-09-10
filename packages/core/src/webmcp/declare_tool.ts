@@ -29,10 +29,9 @@ import type {ModelContext, ToolDescriptor} from './types';
  *     `injector` argument provided.
  * @experimental
  */
-export function declareExperimentalWebMcpTool<const InputSchema extends JsonSchemaForInference>(
-  tool: ToolDescriptor<InputSchema>,
-  injector?: Injector,
-): void {
+export async function declareExperimentalWebMcpTool<
+  const InputSchema extends JsonSchemaForInference,
+>(tool: ToolDescriptor<InputSchema>, injector?: Injector): Promise<void> {
   // SSR may not have a document yet, so we abort before checking it.
   if (typeof ngServerMode !== 'undefined' && ngServerMode) return;
 
@@ -60,17 +59,34 @@ export function declareExperimentalWebMcpTool<const InputSchema extends JsonSche
   const abortCtrl = new AbortController();
   const wrappedTool: ToolDescriptor<InputSchema> = {
     ...tool,
-    execute: (args, client) =>
-      runInInjectionContext(currentInjector, () =>
+    execute: (args, client) => {
+      // TODO: `@mcp-b/webmcp-polyfill` currently lacks `AbortSignal` in its mock client.
+      // Remove the optional chaining when it is updated to match Chrome 153 spec.
+      const signal = client?.signal
+        ? AbortSignal.any([abortCtrl.signal, client.signal])
+        : abortCtrl.signal;
+
+      return runInInjectionContext(currentInjector, () =>
         tool.execute(args, {
           ...client,
-          signal: abortCtrl.signal,
+          signal,
         }),
-      ),
+      );
+    },
   };
-
-  modelContext.registerTool(wrappedTool, {signal: abortCtrl.signal});
 
   // Unregister when the associated `Injector` is destroyed.
   destroyRef.onDestroy(() => void abortCtrl.abort());
+
+  try {
+    await modelContext.registerTool(wrappedTool, {signal: abortCtrl.signal});
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      // This happens when an Injector is created and then immediately destroyed
+      // such that the onDestroy above gets called before registerTool resolves
+      // We don't mind swallowing the error in this case.
+      return;
+    }
+    throw error;
+  }
 }

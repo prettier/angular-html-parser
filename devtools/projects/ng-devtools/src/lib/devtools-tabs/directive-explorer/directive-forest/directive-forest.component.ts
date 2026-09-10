@@ -27,7 +27,13 @@ import {
   viewChild,
 } from '@angular/core';
 import {MatSnackBar} from '@angular/material/snack-bar';
-import {DevToolsNode, ElementPosition, Events, MessageBus} from '../../../../../../protocol';
+import {
+  CdElementData,
+  DevToolsNode,
+  ElementPosition,
+  Events,
+  MessageBus,
+} from '../../../../../../protocol';
 
 import {TabUpdate} from '../../tab-update/index';
 import {DEEP_LINK_INSTANCE_ID} from '../../../application-providers/deep_link';
@@ -76,6 +82,7 @@ export class DirectiveForestComponent {
   readonly forest = input<DevToolsNode[]>([]);
   readonly showCommentNodes = input<boolean>(false);
   readonly currentSelectedElement = input.required<IndexedNode>();
+  readonly cdData = input<CdElementData[]>();
 
   readonly selectNode = output<IndexedNode | null>();
   readonly selectDomElement = output<IndexedNode>();
@@ -97,6 +104,38 @@ export class DirectiveForestComponent {
       return this.dataSource.data.indexOf(node);
     }
     return -1;
+  });
+
+  protected readonly mappedCdData = computed<Map<DevToolsNode, CdElementData>>(() => {
+    const mapped = new Map<DevToolsNode, CdElementData>();
+    const cdData = this.cdData();
+    if (!cdData || !cdData.length) {
+      return mapped;
+    }
+
+    const forest = this.forest();
+
+    for (const data of cdData ?? []) {
+      // Wrap the forest in a fake root node-like object.
+      let node: DevToolsNode | null = {children: forest} as DevToolsNode;
+
+      // Attempt to find the target node using the
+      // non-indexed `DevToolsNode[]` structure.
+      for (const pos of data.element) {
+        if (node.children[pos]) {
+          node = node.children[pos];
+        } else {
+          node = null;
+          break;
+        }
+      }
+
+      if (node) {
+        mapped.set(node, data);
+      }
+    }
+
+    return mapped;
   });
 
   readonly treeControl = new FlatTreeControl<FlatNode>(
@@ -188,6 +227,10 @@ export class DirectiveForestComponent {
   }
 
   select(node: FlatNode): void {
+    if (node.static) {
+      return;
+    }
+
     this.populateParents(node.position);
     this.selectNode.emit(node.original);
     this.selectedNode.set(node);
@@ -276,7 +319,7 @@ export class DirectiveForestComponent {
   }
 
   isEditingDirectiveState(event: Event): boolean {
-    return (event.target as Element).tagName === 'INPUT' || !this.selectedNode;
+    return (event.target as Element).tagName === 'INPUT' || !this.selectedNode();
   }
 
   handleFilter(filterFn: FilterFn): void {
@@ -347,13 +390,23 @@ export class DirectiveForestComponent {
     this.forestRoot = this.dataSource.data[0];
 
     if (!this.initialized && forest && forest.length) {
-      this.treeControl.expandAll();
+      for (const n of this.treeControl.dataNodes) {
+        if (!n.collapsedByDefault) {
+          this.treeControl.expand(n);
+        } else {
+          this.treeControl.collapse(n);
+        }
+      }
+
       this.initialized = true;
       result.newItems.forEach((item) => (item.newItem = false));
     }
-    // We want to expand them once they are rendered.
+    // We want to expand them once they are rendered unless
+    // they are `collapsedByDefault`.
     result.newItems.forEach((item) => {
-      this.treeControl.expand(item);
+      if (!item.collapsedByDefault) {
+        this.treeControl.expand(item);
+      }
     });
     return result;
   }

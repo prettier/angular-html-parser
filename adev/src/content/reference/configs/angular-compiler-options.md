@@ -91,6 +91,9 @@ These message formats have some issues, such as whitespace handling and reliance
 The new message format is more resilient to whitespace changes, is the same across all translation file formats, and can be created directly from calls to `$localize`.
 This allows `$localize` messages in application code to use the same ID as identical `i18n` messages in component templates.
 
+IMPORTANT: This option is only supported by the `@angular-devkit/build-angular:browser` builder.
+When using the `@angular/build:application` builder (esbuild), this option has no effect and the new decimal message ID format is always used regardless of this setting.
+
 ### `enableResourceInlining`
 
 When `true`, replaces the `templateUrl` and `styleUrls` properties in all `@Component` decorators with inline content in the `template` and `styles` properties.
@@ -201,8 +204,7 @@ When `true`, enables [strict template type checking](tools/cli/template-typechec
 
 The strictness flags that this option enables allow you to turn on and off specific types of strict template type checking.
 See [troubleshooting template errors](tools/cli/template-typecheck#troubleshooting-template-errors).
-
-When you use the Angular CLI command `ng new --strict`, it is set to `true` in the new project's configuration.
+Default is `true`.
 
 ### `strictStandalone`
 

@@ -6,6 +6,7 @@
  * found in the LICENSE file at https://angular.dev/license
  */
 
+import {DevToolsNode} from '../../../../../../protocol';
 import {FlatNode} from './component-data-source';
 import {
   getDirectivesArrayString,
@@ -35,9 +36,13 @@ describe('directive-forest-utils', () => {
         directives,
         controlFlowBlock: null,
         hasNativeElement: true,
+        static: false,
+        original: {} as DevToolsNode,
       },
       controlFlowBlock: null,
       hasNativeElement: true,
+      collapsedByDefault: false,
+      static: false,
     };
   }
 

@@ -26,6 +26,7 @@ export interface DebugSignalGraphNode {
   label?: string;
   preview: Descriptor;
   debuggable: boolean;
+  watched: boolean;
 }
 
 export interface DebugSignalGraphEdge {
@@ -122,6 +123,7 @@ export interface DevToolsNode<DirType = DirectiveType, CmpType = ComponentType> 
   resolutionPath?: SerializedInjector[];
   hydration?: HydrationStatus;
   controlFlowBlock: ControlFlowBlock | null;
+  static: boolean;
   changeDetection?: ChangeDetection;
   injector?: Injector;
 }
@@ -222,9 +224,7 @@ export interface WizComponentMetadata extends BaseDirectiveMetadata {
 
 /** Directive metadata for all supported frameworks. */
 export type DirectiveMetadata =
-  | AngularDirectiveMetadata
-  | AcxDirectiveMetadata
-  | WizComponentMetadata;
+  AngularDirectiveMetadata | AcxDirectiveMetadata | WizComponentMetadata;
 
 export interface SerializedInjectedService {
   token: string;
@@ -382,13 +382,13 @@ export interface SupportedApis {
 }
 
 export type TransferStateValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | Record<string, unknown>
-  | unknown[];
+  string | number | boolean | null | undefined | Record<string, unknown> | unknown[];
+
+export interface CdElementData {
+  element: ElementPosition;
+  lastCdPassDuration: number;
+  cdCount: number;
+}
 
 export interface Events {
   handshake: () => void;
@@ -434,15 +434,15 @@ export interface Events {
   createHighlightOverlay: (position: ElementPosition) => void;
   removeHighlightOverlay: () => void;
 
-  createHydrationOverlay: () => void;
-  removeHydrationOverlay: () => void;
+  enableHydrationOverlays: () => void;
+  disableHydrationOverlays: () => void;
 
   highlightComponent: (id: number) => void;
   selectComponent: (id: number) => void;
   removeComponentHighlight: () => void;
 
-  enableTimingAPI: () => void;
-  disableTimingAPI: () => void;
+  enablePerformanceTrack: () => void;
+  disablePerformanceTrack: () => void;
 
   // todo: type properly
   getInjectorProviders: (injector: SerializedInjector) => void;
@@ -456,6 +456,13 @@ export interface Events {
   getTransferState: () => void;
   transferStateData: (data: Record<string, TransferStateValue> | null) => void;
 
+  enableCdHighlighting: () => void;
+  disableCdHighlighting: () => void;
+
+  enableCdDataStream: () => void;
+  disableCdDataStream: () => void;
+  latestCdData: (cdData: CdElementData[]) => void;
+
   contentScriptConnected: (frameId: number, name: string, url: string) => void;
   contentScriptDisconnected: (frameId: number, name: string, url: string) => void;
   enableFrameConnection: (frameId: number, tabId: number) => void;
@@ -463,6 +470,9 @@ export interface Events {
   detectAngular: (detectionResult: AngularDetection) => void;
   backendInstalled: (detectionResult: AngularDetection) => void;
   backendReady: () => void;
+  devtoolsShutdown: () => void;
 
   log: (logEvent: {message: string; level: 'log' | 'warn' | 'debug' | 'error'}) => void;
+
+  toggleWatchSignal: (signalId: string) => void;
 }

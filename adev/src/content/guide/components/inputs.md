@@ -1,8 +1,6 @@
 # Accepting data with input properties
 
-TIP: This guide assumes you've already read the [Essentials Guide](essentials). Read that first if you're new to Angular.
-
-TIP: If you're familiar with other web frameworks, input properties are similar to _props_.
+TIP: This guide assumes you've already read the [Essentials Guide](essentials). Read that first if you're new to Angular. If you're familiar with other web frameworks, input properties are similar to _props_.
 
 When you use a component, you commonly want to pass some data to it. A component specifies the data that it accepts by declaring
 **inputs**:
@@ -253,7 +251,7 @@ See [Custom events with outputs](guide/components/outputs) for more details on o
 
 ### Customizing model inputs
 
-You can mark a model input as required or provide an alias in the same way as a [standard input](guide/components/inputs).
+You can mark a model input as [required](#required-inputs) or provide an [alias](#input-aliases) in the same way as a standard input.
 
 Model inputs do not support input transforms.
 
@@ -290,7 +288,7 @@ Binding to an input is the same in both signal-based and decorator-based inputs:
 
 The `@Input` decorator accepts a config object that lets you change the way that input works.
 
-#### Required inputs
+#### Required inputs {#required-inputs-decorator}
 
 You can specify the `required` option to enforce that a given input must always have a value.
 
@@ -303,7 +301,7 @@ export class CustomSlider {
 
 If you try to use a component without specifying all of its required inputs, Angular reports an error at build-time.
 
-#### Input transforms
+#### Input transforms {#input-transforms-decorator}
 
 You can specify a `transform` function to change the value of an input when it's set by Angular. This transform function works identically to transform functions for signal-based inputs described above.
 
@@ -321,7 +319,7 @@ function trimString(value: string | undefined) {
 }
 ```
 
-#### Input aliases
+#### Input aliases {#input-aliases-decorator}
 
 You can specify the `alias` option to change the name of an input in templates.
 

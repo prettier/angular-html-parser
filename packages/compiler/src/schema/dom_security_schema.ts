@@ -56,8 +56,8 @@ type SecuritySchema = Record<
 >;
 
 let _SECURITY_SCHEMA!: SecuritySchema;
-const SVG_NAMESPACE = 'svg';
-const MATH_ML_NAMESPACE = 'math';
+export const SVG_NAMESPACE = 'svg';
+export const MATH_ML_NAMESPACE = 'math';
 const NO_NAMESPACE = '';
 const MATCH_ALL_ELEMENTS = '*';
 const createNullObj = () => Object.create(null);
@@ -207,6 +207,15 @@ export function checkSecurityContext(
     const defaultSchema = attrSchema[NO_NAMESPACE];
     if (defaultSchema) {
       context = defaultSchema[tagLower] ?? defaultSchema[MATCH_ALL_ELEMENTS];
+    }
+  }
+
+  // An SVG animation element declared outside of an `<svg>` has no explicit namespace at compile
+  // time, but can still animate once it is projected into an SVG subtree.
+  if (context === undefined && (!namespace || namespace === NO_NAMESPACE)) {
+    const svgSchema = attrSchema[SVG_NAMESPACE];
+    if (svgSchema) {
+      context = svgSchema[tagLower];
     }
   }
 

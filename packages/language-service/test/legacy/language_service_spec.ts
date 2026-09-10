@@ -35,7 +35,6 @@ describe('language service adapter', () => {
     it('should initialize with angularCompilerOptions from tsconfig.json', () => {
       expect(ngLS.getCompilerOptions()).toEqual(
         jasmine.objectContaining({
-          strictTemplates: true,
           strictInjectionParameters: true,
         }),
       );
@@ -44,7 +43,6 @@ describe('language service adapter', () => {
     it('should reparse angularCompilerOptions on tsconfig.json change', () => {
       expect(ngLS.getCompilerOptions()).toEqual(
         jasmine.objectContaining({
-          strictTemplates: true,
           strictInjectionParameters: true,
         }),
       );
@@ -107,9 +105,11 @@ describe('language service adapter', () => {
   });
 
   describe('compiler options diagnostics', () => {
-    it('suggests turning on strict flag', () => {
+    it('suggests turning on strict flag when strictTemplates is explicitly false', () => {
       configFileFs.overwriteConfigFile(TSCONFIG, {
-        angularCompilerOptions: {},
+        angularCompilerOptions: {
+          strictTemplates: false,
+        },
       });
       const diags = ngLS.getCompilerOptionsDiagnostics();
       const diag = diags.find(isSuggestStrictTemplatesDiag);
@@ -128,6 +128,16 @@ describe('language service adapter', () => {
       const diag = diags.find(isSuggestStrictTemplatesDiag);
       expect(diag).toBeUndefined();
     });
+
+    it('does not suggest turning on strict mode is strictTemplates flag is ommitted', () => {
+      configFileFs.overwriteConfigFile(TSCONFIG, {
+        angularCompilerOptions: {},
+      });
+      const diags = ngLS.getCompilerOptionsDiagnostics();
+      const diag = diags.find(isSuggestStrictTemplatesDiag);
+      expect(diag).toBeUndefined();
+    });
+
     function isSuggestStrictTemplatesDiag(diag: ts.Diagnostic) {
       return diag.code === ngErrorCode(ErrorCode.SUGGEST_STRICT_TEMPLATES);
     }

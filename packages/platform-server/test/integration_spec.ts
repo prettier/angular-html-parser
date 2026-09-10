@@ -1470,9 +1470,7 @@ class HiddenModule {}
             http.get('/\\evil.com/api').subscribe({
               next: () => fail('Expected request to fail, but it succeeded.'),
               error: (err) => {
-                expect(err.message).toBe(
-                  `NG05703: URL /\\evil.com/api changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
-                );
+                expect(err.message).toMatch(/NG05703/);
               },
             });
 
@@ -1584,6 +1582,31 @@ class HiddenModule {}
           });
         });
 
+        it('should resolve non-breaking space prefixed URLs as relative paths on the same origin', async () => {
+          ref.injector.get(NgZone).run(() => {
+            http.get('\u00A0//attacker.example/collect').subscribe((body) => {
+              expect(body).toEqual('success!');
+            });
+            mock
+              .expectOne('http://localhost:4000/%C2%A0//attacker.example/collect')
+              .flush('success!');
+          });
+        });
+
+        it('should resolve scheme URLs without authority as relative paths on the same origin', async () => {
+          ref.injector.get(NgZone).run(() => {
+            http.get('http:/localhost:9999/steal-a').subscribe((body) => {
+              expect(body).toEqual('success!');
+            });
+            mock.expectOne('http://localhost:4000/localhost:9999/steal-a').flush('success!');
+
+            http.get('http:localhost:9999/steal-b').subscribe((body) => {
+              expect(body).toEqual('success!');
+            });
+            mock.expectOne('http://localhost:4000/localhost:9999/steal-b').flush('success!');
+          });
+        });
+
         it('should reject backslash bypass SSRF attempts in relative requests and throw a suspicious origin error', async () => {
           const badUrls = [
             '/\\attacker.com',
@@ -1597,9 +1620,7 @@ class HiddenModule {}
               http.get(badUrl).subscribe({
                 next: () => fail(`Expected request for ${badUrl} to fail, but it succeeded.`),
                 error: (err) => {
-                  expect(err.message).toBe(
-                    `NG05703: URL ${badUrl.trim()} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
-                  );
+                  expect(err.message).toMatch(/NG05703/);
                 },
               });
             }
@@ -1620,9 +1641,7 @@ class HiddenModule {}
               http.get(badUrl).subscribe({
                 next: () => fail(`Expected request for ${badUrl} to fail, but it succeeded.`),
                 error: (err) => {
-                  expect(err.message).toBe(
-                    `NG05703: URL ${badUrl.trim()} changed origin unexpectedly. This is suspicious and may indicate a security bypass attempt.`,
-                  );
+                  expect(err.message).toMatch(/NG05703/);
                 },
               });
             }

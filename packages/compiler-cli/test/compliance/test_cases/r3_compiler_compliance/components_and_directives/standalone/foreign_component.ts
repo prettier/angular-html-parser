@@ -2,7 +2,7 @@ import {Component} from '@angular/core';
 
 export function FancyButton() {}
 
-// @angular/core does not expose the `ForeignComponent` type this should return. 
+// @angular/core does not expose the `ForeignComponent` type this should return.
 function frameworkImport(component: {}): Function {
   return () => {};
 }
@@ -10,17 +10,12 @@ function frameworkImport(component: {}): Function {
 @Component({
   selector: 'main',
   template: `
-    <FancyButton
-      class="btn-cls"
-      unsafe-attr="value"
-      [label]="title"
-      [unsafe-input]="title"
-    />
+    <FancyButton class="btn-cls" unsafe-attr="value" [label]="title" [unsafe-input]="title" />
   `,
   // @ts-ignore: @angular/core does not expose the `foreignImports` property.
   foreignImports: [
     // @ts-ignore: @angular/core does not expose the `ForeignComponent` type this expects.
-    frameworkImport(FancyButton)
+    frameworkImport(FancyButton),
   ],
 })
 export class TestCmp {
@@ -43,7 +38,7 @@ export class TestCmp {
   // @ts-ignore: @angular/core does not expose the `foreignImports` property.
   foreignImports: [
     // @ts-ignore: @angular/core does not expose the `ForeignComponent` type this expects.
-    frameworkImport(FancyButton)
+    frameworkImport(FancyButton),
   ],
 })
 export class TestCmpChildren {
@@ -62,10 +57,31 @@ export class TestCmpChildren {
   // @ts-ignore: @angular/core does not expose the `foreignImports` property.
   foreignImports: [
     // @ts-ignore: @angular/core does not expose the `ForeignComponent` type this expects.
-    frameworkImport(FancyButton)
+    frameworkImport(FancyButton),
   ],
 })
 export class TestCmpRenderProps {
   title = 'Submit';
 }
 
+// Nest @if to demonstrate that multiple `nextContext()` calls are correctly merged into one.
+@Component({
+  selector: 'main-conditional',
+  template: `
+    @if (outerCondition) {
+      @if (innerCondition) {
+        <FancyButton [label]="title" />
+      }
+    }
+  `,
+  // @ts-ignore: @angular/core does not expose the `foreignImports` property.
+  foreignImports: [
+    // @ts-ignore: @angular/core does not expose the `ForeignComponent` type this expects.
+    frameworkImport(FancyButton),
+  ],
+})
+export class TestCmpConditional {
+  title = 'Submit';
+  innerCondition = true;
+  outerCondition = true;
+}

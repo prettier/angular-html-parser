@@ -1508,6 +1508,15 @@ describe('type check blocks', () => {
         expect(block).toContain('(((((this).a))![0] as any)');
         expect(block).toContain('((((((this).a)).optionalMethod))!() as any)');
       });
+
+      it('should produce correct ts expression without extra parentheses for safe navigation chains', () => {
+        expect(tcb(`{{ a?.b.c }}`, DIRECTIVES)).toContain('((((this).a))?.b.c)');
+        expect(tcb(`{{ a?.b.c.d }}`, DIRECTIVES)).toContain('((((this).a))?.b.c.d)');
+        expect(tcb(`{{ a?.b?.c }}`, DIRECTIVES)).toContain('(((((this).a))?.b)?.c)'); // Safe property read receiver wraps
+        expect(tcb(`{{ a?.b['c'].d }}`, DIRECTIVES)).toContain('((((this).a))?.b["c"].d)');
+        expect(tcb(`{{ a?.b().c }}`, DIRECTIVES)).toContain('((((this).a))?.b?.().c)'); // convertToSafeCall no longer wraps
+        expect(tcb(`{{ a?.b?.().c }}`, DIRECTIVES)).toContain('(((((this).a))?.b)?.().c)'); // SafeCall receiver wraps
+      });
     });
 
     describe('config.strictSafeNavigationTypes (View Engine bug emulation)', () => {
@@ -3175,7 +3184,7 @@ describe('type check blocks', () => {
         '_t1.value[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = i1.ɵunwrapWritableSignal((((((this).f)()).value)));',
       );
       expect(block).toContain(
-        '_t1.max[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = (((((((this).f)()).max))?.()));',
+        '_t1.max[i1.ɵINPUT_SIGNAL_BRAND_WRITE_TYPE] = ((((((this).f)()).max))?.());',
       );
       expect(block).toContain('var _t2 = null! as i0.FormField;');
       expect(block).toContain('_t2.field = (((this).f));');

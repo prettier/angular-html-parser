@@ -461,7 +461,7 @@ describe('standard schema integration', () => {
     ]);
   });
 
-  it('should work', () => {
+  it('should support an async validator alongside validateStandardSchema', () => {
     const Schema = z.object({code: z.string().min(1)});
 
     const injector = TestBed.inject(Injector);

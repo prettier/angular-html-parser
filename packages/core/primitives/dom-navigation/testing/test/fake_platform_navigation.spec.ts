@@ -162,13 +162,14 @@ describe('navigation', () => {
           signal: jasmine.any(AbortSignal),
           destination: jasmine.objectContaining({
             url: 'https://test.com/test',
-            key: null,
-            id: null,
+            key: '',
+            id: '',
             index: -1,
             sameDocument: false,
           }),
         }),
       );
+      expect(Object.hasOwn(navigateEvent, 'hasUAVisualTransition')).toBeFalse();
       expect(navigateEvent.destination.getState()).toBeUndefined();
       const committedEntry = await committed;
       expect(committedEntry).toEqual(
@@ -235,8 +236,8 @@ describe('navigation', () => {
           signal: jasmine.any(AbortSignal),
           destination: jasmine.objectContaining({
             url: 'https://test.com/test',
-            key: null,
-            id: null,
+            key: '',
+            id: '',
             index: -1,
             sameDocument: false,
           }),
@@ -958,6 +959,7 @@ describe('navigation', () => {
       expect(locals.popStateEvents.length).toBe(1);
       const popStateEvent = locals.popStateEvents[0];
       expect(popStateEvent.state).toBeNull();
+      expect(Object.hasOwn(popStateEvent, 'hasUAVisualTransition')).toBeFalse();
       expect(locals.navigation.canGoBack).toBeTrue();
       expect(locals.navigation.canGoForward).toBeTrue();
       const finishedEntry = await finished;
@@ -966,6 +968,18 @@ describe('navigation', () => {
       expect(locals.navigateEvents.length).toBe(1);
       expect(locals.navigationCurrentEntryChangeEvents.length).toBe(1);
       expect(locals.popStateEvents.length).toBe(1);
+    });
+
+    it('propagates a UA visual transition to the popstate event', async () => {
+      await setUpEntries();
+      locals.setExtraNavigateCallback((event) => {
+        Object.defineProperty(event, 'hasUAVisualTransition', {value: true});
+      });
+
+      await locals.navigation.back().finished;
+
+      expect(locals.navigateEvents[0].hasUAVisualTransition).toBeTrue();
+      expect(locals.popStateEvents[0].hasUAVisualTransition).toBeTrue();
     });
 
     it('traverses forward', async () => {
@@ -1515,8 +1529,8 @@ describe('navigation', () => {
             signal: jasmine.any(AbortSignal),
             destination: jasmine.objectContaining({
               url: 'https://test.com/test',
-              key: null,
-              id: null,
+              key: '',
+              id: '',
               index: -1,
               sameDocument: true,
             }),
@@ -1571,8 +1585,8 @@ describe('navigation', () => {
             signal: jasmine.any(AbortSignal),
             destination: jasmine.objectContaining({
               url: 'https://test.com/test',
-              key: null,
-              id: null,
+              key: '',
+              id: '',
               index: -1,
               sameDocument: true,
             }),
