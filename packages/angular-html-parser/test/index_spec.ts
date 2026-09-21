@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parse, TagContentType } from "../src/index.ts";
+import { parse, TagContentType, TokenType } from "../src/index.ts";
 import { humanizeDom } from "../../compiler/test/ml_parser/ast_spec_utils.ts";
 import * as ast from "../../compiler/src/ml_parser/ast.ts";
 
@@ -285,4 +285,16 @@ it("Edge cases", () => {
   expect(humanizeDom(parse("<html:style></html:style>"))).toEqual([
     [ast.Element, ":html:style", 0],
   ]);
+});
+
+describe("public token API", () => {
+  it("should expose TokenType", () => {
+    const node = parse('{{ "}}" }}').rootNodes[0] as ast.Text;
+    expect(node).toBeInstanceOf(ast.Text);
+
+    const token = node.tokens.find(
+      ({ type }) => type === TokenType.INTERPOLATION,
+    )!;
+    expect(token.parts).toEqual(["{{", ' "}}" ', "}}"]);
+  });
 });
