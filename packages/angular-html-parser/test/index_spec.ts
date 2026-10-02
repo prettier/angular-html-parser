@@ -298,3 +298,127 @@ describe("public token API", () => {
     expect(token.parts).toEqual(["{{", ' "}}" ', "}}"]);
   });
 });
+
+describe("escapable raw text interpolation", () => {
+  describe.each(["textarea", "title"])("<%s>", (tagName) => {
+    it.each([
+      {
+        name: "multiple expressions",
+        content: "before {{value}} after {{other}}",
+        value: "before {{value}} after {{other}}",
+        expressions: ["value", "other"],
+      },
+      {
+        name: "double braces inside a string",
+        content: 'before {{ "{{first}} / {{second}}" }} after',
+        value: 'before {{ "{{first}} / {{second}}" }} after',
+        expressions: [' "{{first}} / {{second}}" '],
+      },
+      {
+        name: "literal markup inside and outside an expression",
+        content: '<b>{{ "<span>" }}</b>',
+        value: '<b>{{ "<span>" }}</b>',
+        expressions: [' "<span>" '],
+      },
+      {
+        name: "entities inside and outside an expression",
+        content: '&lt;{{ "&amp;" }}&#32;{{value}}&gt;',
+        value: '<{{ "&" }} {{value}}>',
+        expressions: [' "&amp;" ', "value"],
+      },
+      {
+        name: "a leading LF",
+        content: "\n{{value}}\n",
+        value: "\n{{value}}\n",
+        expressions: ["value"],
+      },
+      {
+        name: "CRLF inside an expression",
+        content: "{{a\r\n+b}}tail",
+        value: "{{a\n+b}}tail",
+        expressions: ["a\n+b"],
+      },
+      {
+        name: "adjacent and empty expressions",
+        content: "{{one}}{{two}}{{}}",
+        value: "{{one}}{{two}}{{}}",
+        expressions: ["one", "two", ""],
+      },
+    ])("should tokenize $name", ({ content, value, expressions }) => {
+      const result = parse(`<${tagName}>${content}</${tagName}>`);
+      expect(result.errors).toEqual([]);
+      const element = result.rootNodes[0] as ast.Element;
+      expect(element.children).toHaveLength(1);
+      const text = element.children[0] as ast.Text;
+      expect(text.value).toBe(
+        tagName === "textarea" && value.startsWith("\n")
+          ? value.slice(1)
+          : value,
+      );
+      expect(
+        text.tokens
+          .filter((token) => token.type === TokenType.INTERPOLATION)
+          .map((token) => token.parts),
+      ).toEqual(expressions.map((expression) => ["{{", expression, "}}"]));
+      expect(
+        text.tokens.map((token) => token.sourceSpan.toString()).join(""),
+      ).toBe(content);
+    });
+  });
+
+  it("should stop an unfinished interpolation at the closing tag", () => {
+    const result = parse("<textarea>{{value</textarea><div>after</div>");
+    expect(result.errors).toEqual([]);
+    const element = result.rootNodes[0] as ast.Element;
+    const text = element.children[0] as ast.Text;
+    expect(text.value).toBe("{{value");
+    expect(
+      text.tokens.find((token) => token.type === TokenType.INTERPOLATION)
+        ?.parts,
+    ).toEqual(["{{", "value"]);
+    expect(element.endSourceSpan?.toString()).toBe("</textarea>");
+    expect((result.rootNodes[1] as ast.Element).name).toBe("div");
+  });
+
+  it.each(["", "\\"])(
+    "should keep the closing tag significant after %j in a quoted expression",
+    (escape) => {
+      const result = parse(
+        `<textarea>{{ "${escape}</textarea>" }}<div>after</div>`,
+      );
+      expect(result.errors).toEqual([]);
+      const element = result.rootNodes[0] as ast.Element;
+      expect((element.children[0] as ast.Text).value).toBe(`{{ "${escape}`);
+      expect(element.endSourceSpan?.toString()).toBe("</textarea>");
+      expect((result.rootNodes[2] as ast.Element).name).toBe("div");
+    },
+  );
+
+  describe.each(["textarea", "title"])(
+    "invalid entities in <%s>",
+    (tagName) => {
+      it.each([
+        { entity: "&bogus;", error: "Unknown entity" },
+        { entity: "&#x110000;", error: "Unknown entity" },
+        { entity: "&#x;", error: "Unknown entity" },
+        { entity: "&#x41", error: "Unable to parse entity" },
+        { entity: "\\&bogus;", error: "Unknown entity" },
+      ])("should report $entity as a parse error", ({ entity, error }) => {
+        const result = parse(`<${tagName}>{{ "${entity}" }}</${tagName}>`);
+        expect(result.errors[0]?.msg).toContain(error);
+      });
+    },
+  );
+
+  it.each(["script", "style"])("should keep <%s> as raw text", (tagName) => {
+    const content = '{{ "<b>&amp;" }}';
+    const result = parse(`<${tagName}>${content}</${tagName}>`);
+    expect(result.errors).toEqual([]);
+    const element = result.rootNodes[0] as ast.Element;
+    const text = element.children[0] as ast.Text;
+    expect(text.value).toBe(content);
+    expect(text.tokens.map((token) => token.type)).toEqual([
+      TokenType.RAW_TEXT,
+    ]);
+  });
+});

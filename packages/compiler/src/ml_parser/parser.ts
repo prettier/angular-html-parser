@@ -437,6 +437,7 @@ class _TreeBuilder {
     while (
       this._peek.type === TokenType.INTERPOLATION ||
       this._peek.type === TokenType.TEXT ||
+      this._peek.type === TokenType.ESCAPABLE_RAW_TEXT ||
       this._peek.type === TokenType.ENCODED_ENTITY
     ) {
       token = this._advance();

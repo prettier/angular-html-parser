@@ -97,6 +97,7 @@ interface Options {
 - support [bogus comments](https://www.w3.org/TR/html5/syntax.html#bogus-comment-state) (`<!...>`, `<?...>`)
 - ~~support full [named entities](https://html.spec.whatwg.org/multipage/entities.json)~~ (fixed upstream)
 - add `type` property to nodes
+- tokenize interpolation expressions inside escapable raw text (`textarea` and HTML `title`)
 - value span for attributes includes quotes
 
 ## Development

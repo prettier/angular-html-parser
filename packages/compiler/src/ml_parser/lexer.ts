@@ -739,6 +739,16 @@ class _Tokenizer {
   private _consumeEntity(textTokenType: TokenType): void {
     this._beginToken(TokenType.ENCODED_ENTITY);
     const start = this._cursor.clone();
+    const parts = this._readEntity();
+    if (parts.length === 1) {
+      this._beginToken(textTokenType, start);
+    }
+    this._endToken(parts);
+  }
+
+  /** Consume an HTML entity without emitting a token. */
+  private _readEntity(): [string] | [string, string] {
+    const start = this._cursor.clone();
     this._cursor.advance();
     if (this._attemptCharCode(chars.$HASH)) {
       const isHex = this._attemptCharCode(chars.$x) || this._attemptCharCode(chars.$X);
@@ -758,7 +768,7 @@ class _Tokenizer {
       this._cursor.advance();
       try {
         const charCode = parseInt(strNum, isHex ? 16 : 10);
-        this._endToken([String.fromCodePoint(charCode), this._cursor.getChars(start)]);
+        return [String.fromCodePoint(charCode), this._cursor.getChars(start)];
       } catch {
         throw this._createError(
           _unknownEntityErrorMsg(this._cursor.getChars(start)),
@@ -769,11 +779,9 @@ class _Tokenizer {
       const nameStart = this._cursor.clone();
       this._attemptCharCodeUntilFn(isNamedEntityEnd);
       if (this._cursor.peek() != chars.$SEMICOLON) {
-        // No semicolon was found so abort the encoded entity token that was in progress, and treat
-        // this as a text token
-        this._beginToken(textTokenType, start);
+        // Without a semicolon, only the ampersand is consumed as plain text.
         this._cursor = nameStart;
-        this._endToken(['&']);
+        return ['&'];
       } else {
         const name = this._cursor.getChars(nameStart);
         this._cursor.advance();
@@ -781,13 +789,29 @@ class _Tokenizer {
         if (!char) {
           throw this._createError(_unknownEntityErrorMsg(name), this._cursor.getSpan(start));
         }
-        this._endToken([char, `&${name};`]);
+        return [char, `&${name};`];
       }
     }
   }
 
   private _consumeRawText(consumeEntities: boolean, endMarkerPredicate: () => boolean): void {
-    this._beginToken(consumeEntities ? TokenType.ESCAPABLE_RAW_TEXT : TokenType.RAW_TEXT);
+    if (consumeEntities) {
+      const isRawTextEnd = () => {
+        const start = this._cursor.clone();
+        const foundEndMarker = endMarkerPredicate();
+        this._cursor = start;
+        return foundEndMarker;
+      };
+      this._consumeWithInterpolation(
+        TokenType.ESCAPABLE_RAW_TEXT,
+        TokenType.INTERPOLATION,
+        isRawTextEnd,
+        isRawTextEnd,
+      );
+      return;
+    }
+
+    this._beginToken(TokenType.RAW_TEXT);
     const parts: string[] = [];
     while (true) {
       const tagCloseStart = this._cursor.clone();
@@ -796,14 +820,7 @@ class _Tokenizer {
       if (foundEndMarker) {
         break;
       }
-      if (consumeEntities && this._cursor.peek() === chars.$AMPERSAND) {
-        this._endToken([this._processCarriageReturns(parts.join(''))]);
-        parts.length = 0;
-        this._consumeEntity(TokenType.ESCAPABLE_RAW_TEXT);
-        this._beginToken(TokenType.ESCAPABLE_RAW_TEXT);
-      } else {
-        parts.push(this._readChar());
-      }
+      parts.push(this._readChar());
     }
     this._endToken([this._processCarriageReturns(parts.join(''))]);
   }
@@ -1324,7 +1341,12 @@ class _Tokenizer {
       if (this._attemptStr(INTERPOLATION.start)) {
         this._endToken([this._processCarriageReturns(parts.join(''))], current);
         parts.length = 0;
-        this._consumeInterpolation(interpolationTokenType, current, endInterpolation);
+        this._consumeInterpolation(
+          interpolationTokenType,
+          current,
+          endInterpolation,
+          textTokenType,
+        );
         this._beginToken(textTokenType);
       } else if (this._cursor.peek() === chars.$AMPERSAND) {
         this._endToken([this._processCarriageReturns(parts.join(''))]);
@@ -1352,11 +1374,13 @@ class _Tokenizer {
    * @param interpolationStart a cursor that points to the start of this interpolation.
    * @param prematureEndPredicate a function that should return true if the next characters indicate
    *     an end to the interpolation before its normal closing marker.
+   * @param textTokenType the surrounding text type, which determines whether markup is literal.
    */
   private _consumeInterpolation(
     interpolationTokenType: TokenType,
     interpolationStart: CharacterCursor,
     prematureEndPredicate: (() => boolean) | null,
+    textTokenType: TokenType,
   ): void {
     const parts: string[] = [];
     this._beginToken(interpolationTokenType, interpolationStart);
@@ -1372,7 +1396,7 @@ class _Tokenizer {
     ) {
       const current = this._cursor.clone();
 
-      if (this._isTagStart()) {
+      if (textTokenType !== TokenType.ESCAPABLE_RAW_TEXT && this._isTagStart()) {
         // We are starting what looks like an HTML element in the middle of this interpolation.
         // Reset the cursor to before the `<` character and end the interpolation token.
         // (This is actually wrong but here for backward compatibility).
@@ -1396,8 +1420,22 @@ class _Tokenizer {
       }
 
       const char = this._cursor.peek();
+      if (textTokenType === TokenType.ESCAPABLE_RAW_TEXT && char === chars.$AMPERSAND) {
+        this._readEntity();
+        continue;
+      }
       this._cursor.advance();
       if (char === chars.$BACKSLASH) {
+        if (textTokenType === TokenType.ESCAPABLE_RAW_TEXT) {
+          // String escapes cannot hide a closing tag or bypass HTML entity validation in RCDATA.
+          if (prematureEndPredicate?.()) {
+            continue;
+          }
+          if (this._cursor.peek() === chars.$AMPERSAND) {
+            this._readEntity();
+            continue;
+          }
+        }
         // Skip the next character because it was escaped.
         this._cursor.advance();
       } else if (char === inQuote) {
