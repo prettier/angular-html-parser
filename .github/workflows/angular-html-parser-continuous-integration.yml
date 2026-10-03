@@ -45,3 +45,5 @@ jobs:
           yarn test
           yarn build
           yarn lint
+
+      - run: npx pkg-pr-new publish --compact
