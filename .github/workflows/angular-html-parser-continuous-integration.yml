@@ -47,3 +47,4 @@ jobs:
           yarn lint
 
       - run: npx pkg-pr-new publish --compact
+        if: matrix.node_version == '26'
