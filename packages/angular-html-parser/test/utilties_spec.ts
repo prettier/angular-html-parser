@@ -1,6 +1,7 @@
+import { it, expect } from "vitest";
 import { splitInterpolation } from "../src/index.ts";
 
-test("splitInterpolation", () => {
+it("splitInterpolation", () => {
   expect(splitInterpolation('before {{  "}}"  }}')).toMatchInlineSnapshot(`
     SplitInterpolation {
       "expressions": [
