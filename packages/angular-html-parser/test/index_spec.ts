@@ -189,6 +189,54 @@ describe("AST format", () => {
     }
 
     {
+      // A lowercase `@` is not a selectorless directive — those are referenced by their
+      // PascalCase class name — so it stays an attribute. This used to hang the lexer:
+      // https://github.com/prettier/angular-html-parser/issues/57
+      const result = parse("<div @myDir></div>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(result.errors).toEqual([]);
+      expect(result.rootNodes).toEqual([
+        expect.objectContaining({
+          name: "div",
+          kind: "element",
+          directives: [],
+          attrs: [expect.objectContaining({ name: "@myDir" })],
+        }),
+      ]);
+    }
+
+    {
+      const result = parse("<MyComp @myDir></MyComp>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(result.rootNodes).toEqual([
+        expect.objectContaining({
+          fullName: "MyComp",
+          componentName: "MyComp",
+          kind: "component",
+          directives: [],
+          attrs: [expect.objectContaining({ name: "@myDir" })],
+        }),
+      ]);
+    }
+
+    {
+      // Any `@` that cannot start a directive has to fall back to an attribute name.
+      const result = parse("<div @></div>", {
+        enableAngularSelectorlessSyntax: true,
+      });
+      expect(result.errors).toEqual([]);
+      expect(result.rootNodes).toEqual([
+        expect.objectContaining({
+          name: "div",
+          kind: "element",
+          attrs: [expect.objectContaining({ name: "@" })],
+        }),
+      ]);
+    }
+
+    {
       const result = parse("<MyComp>Hello</MyComp>", {
         enableAngularSelectorlessSyntax: true,
       });

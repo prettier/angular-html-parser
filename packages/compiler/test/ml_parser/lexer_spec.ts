@@ -664,6 +664,44 @@ describe('HtmlLexer', () => {
           [TokenType.EOF, ''],
         ]);
       });
+
+      // https://github.com/prettier/angular-html-parser/issues/57
+      it('should treat a lowercase `@` as an attribute name instead of looping forever', () => {
+        expect(tokenizeAndHumanizeParts('<div @myDir></div>', options)).toEqual([
+          [TokenType.TAG_OPEN_START, '', 'div'],
+          [TokenType.ATTR_NAME, '', '@myDir'],
+          [TokenType.TAG_OPEN_END],
+          [TokenType.TAG_CLOSE, '', 'div'],
+          [TokenType.EOF],
+        ]);
+        expect(tokenizeAndHumanizeParts('<div @myDir="x"></div>', options)).toEqual([
+          [TokenType.TAG_OPEN_START, '', 'div'],
+          [TokenType.ATTR_NAME, '', '@myDir'],
+          [TokenType.ATTR_QUOTE, '"'],
+          [TokenType.ATTR_VALUE_TEXT, 'x'],
+          [TokenType.ATTR_QUOTE, '"'],
+          [TokenType.TAG_OPEN_END],
+          [TokenType.TAG_CLOSE, '', 'div'],
+          [TokenType.EOF],
+        ]);
+      });
+
+      it('should treat any other `@` that cannot start a directive as an attribute name', () => {
+        expect(tokenizeAndHumanizeParts('<div @></div>', options)).toEqual([
+          [TokenType.TAG_OPEN_START, '', 'div'],
+          [TokenType.ATTR_NAME, '', '@'],
+          [TokenType.TAG_OPEN_END],
+          [TokenType.TAG_CLOSE, '', 'div'],
+          [TokenType.EOF],
+        ]);
+        expect(tokenizeAndHumanizeParts('<div @1></div>', options)).toEqual([
+          [TokenType.TAG_OPEN_START, '', 'div'],
+          [TokenType.ATTR_NAME, '', '@1'],
+          [TokenType.TAG_OPEN_END],
+          [TokenType.TAG_CLOSE, '', 'div'],
+          [TokenType.EOF],
+        ]);
+      });
     });
 
     describe('escapable raw text', () => {
